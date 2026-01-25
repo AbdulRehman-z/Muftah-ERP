@@ -9,38 +9,290 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AdminRouteRouteImport } from './routes/admin/route'
+import { Route as AuthLayoutRouteRouteImport } from './routes/_authLayout/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as OperatorIndexRouteImport } from './routes/operator/index'
+import { Route as InvestorIndexRouteImport } from './routes/investor/index'
+import { Route as AdminSettingsIndexRouteImport } from './routes/admin/settings/index'
+import { Route as AdminInventoryIndexRouteImport } from './routes/admin/inventory/index'
+import { Route as AdminHrIndexRouteImport } from './routes/admin/hr/index'
+import { Route as AdminFinanceIndexRouteImport } from './routes/admin/finance/index'
+import { Route as AdminDashboardIndexRouteImport } from './routes/admin/dashboard/index'
+import { Route as AuthLayoutSignUpIndexRouteImport } from './routes/_authLayout/sign-up/index'
+import { Route as AuthLayoutResetPasswordIndexRouteImport } from './routes/_authLayout/reset-password/index'
+import { Route as AuthLayoutLoginIndexRouteImport } from './routes/_authLayout/login/index'
+import { Route as AuthLayoutForgotPasswordIndexRouteImport } from './routes/_authLayout/forgot-password/index'
+import { Route as AuthLayout2FaIndexRouteImport } from './routes/_authLayout/2-fa/index'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AdminSalesNewInvoiceIndexRouteImport } from './routes/admin/sales/new-invoice/index'
+import { Route as AdminSalesCustomersIndexRouteImport } from './routes/admin/sales/customers/index'
+import { Route as AdminManufacturingRecipesIndexRouteImport } from './routes/admin/manufacturing/recipes/index'
+import { Route as AdminManufacturingProductionsIndexRouteImport } from './routes/admin/manufacturing/productions/index'
 
+const AdminRouteRoute = AdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthLayoutRouteRoute = AuthLayoutRouteRouteImport.update({
+  id: '/_authLayout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OperatorIndexRoute = OperatorIndexRouteImport.update({
+  id: '/operator/',
+  path: '/operator/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InvestorIndexRoute = InvestorIndexRouteImport.update({
+  id: '/investor/',
+  path: '/investor/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSettingsIndexRoute = AdminSettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminInventoryIndexRoute = AdminInventoryIndexRouteImport.update({
+  id: '/inventory/',
+  path: '/inventory/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminHrIndexRoute = AdminHrIndexRouteImport.update({
+  id: '/hr/',
+  path: '/hr/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminFinanceIndexRoute = AdminFinanceIndexRouteImport.update({
+  id: '/finance/',
+  path: '/finance/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminDashboardIndexRoute = AdminDashboardIndexRouteImport.update({
+  id: '/dashboard/',
+  path: '/dashboard/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AuthLayoutSignUpIndexRoute = AuthLayoutSignUpIndexRouteImport.update({
+  id: '/sign-up/',
+  path: '/sign-up/',
+  getParentRoute: () => AuthLayoutRouteRoute,
+} as any)
+const AuthLayoutResetPasswordIndexRoute =
+  AuthLayoutResetPasswordIndexRouteImport.update({
+    id: '/reset-password/',
+    path: '/reset-password/',
+    getParentRoute: () => AuthLayoutRouteRoute,
+  } as any)
+const AuthLayoutLoginIndexRoute = AuthLayoutLoginIndexRouteImport.update({
+  id: '/login/',
+  path: '/login/',
+  getParentRoute: () => AuthLayoutRouteRoute,
+} as any)
+const AuthLayoutForgotPasswordIndexRoute =
+  AuthLayoutForgotPasswordIndexRouteImport.update({
+    id: '/forgot-password/',
+    path: '/forgot-password/',
+    getParentRoute: () => AuthLayoutRouteRoute,
+  } as any)
+const AuthLayout2FaIndexRoute = AuthLayout2FaIndexRouteImport.update({
+  id: '/2-fa/',
+  path: '/2-fa/',
+  getParentRoute: () => AuthLayoutRouteRoute,
+} as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSalesNewInvoiceIndexRoute =
+  AdminSalesNewInvoiceIndexRouteImport.update({
+    id: '/sales/new-invoice/',
+    path: '/sales/new-invoice/',
+    getParentRoute: () => AdminRouteRoute,
+  } as any)
+const AdminSalesCustomersIndexRoute =
+  AdminSalesCustomersIndexRouteImport.update({
+    id: '/sales/customers/',
+    path: '/sales/customers/',
+    getParentRoute: () => AdminRouteRoute,
+  } as any)
+const AdminManufacturingRecipesIndexRoute =
+  AdminManufacturingRecipesIndexRouteImport.update({
+    id: '/manufacturing/recipes/',
+    path: '/manufacturing/recipes/',
+    getParentRoute: () => AdminRouteRoute,
+  } as any)
+const AdminManufacturingProductionsIndexRoute =
+  AdminManufacturingProductionsIndexRouteImport.update({
+    id: '/manufacturing/productions/',
+    path: '/manufacturing/productions/',
+    getParentRoute: () => AdminRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
+  '/investor/': typeof InvestorIndexRoute
+  '/operator/': typeof OperatorIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/2-fa/': typeof AuthLayout2FaIndexRoute
+  '/forgot-password/': typeof AuthLayoutForgotPasswordIndexRoute
+  '/login/': typeof AuthLayoutLoginIndexRoute
+  '/reset-password/': typeof AuthLayoutResetPasswordIndexRoute
+  '/sign-up/': typeof AuthLayoutSignUpIndexRoute
+  '/admin/dashboard/': typeof AdminDashboardIndexRoute
+  '/admin/finance/': typeof AdminFinanceIndexRoute
+  '/admin/hr/': typeof AdminHrIndexRoute
+  '/admin/inventory/': typeof AdminInventoryIndexRoute
+  '/admin/settings/': typeof AdminSettingsIndexRoute
+  '/admin/manufacturing/productions/': typeof AdminManufacturingProductionsIndexRoute
+  '/admin/manufacturing/recipes/': typeof AdminManufacturingRecipesIndexRoute
+  '/admin/sales/customers/': typeof AdminSalesCustomersIndexRoute
+  '/admin/sales/new-invoice/': typeof AdminSalesNewInvoiceIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
+  '/investor': typeof InvestorIndexRoute
+  '/operator': typeof OperatorIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/2-fa': typeof AuthLayout2FaIndexRoute
+  '/forgot-password': typeof AuthLayoutForgotPasswordIndexRoute
+  '/login': typeof AuthLayoutLoginIndexRoute
+  '/reset-password': typeof AuthLayoutResetPasswordIndexRoute
+  '/sign-up': typeof AuthLayoutSignUpIndexRoute
+  '/admin/dashboard': typeof AdminDashboardIndexRoute
+  '/admin/finance': typeof AdminFinanceIndexRoute
+  '/admin/hr': typeof AdminHrIndexRoute
+  '/admin/inventory': typeof AdminInventoryIndexRoute
+  '/admin/settings': typeof AdminSettingsIndexRoute
+  '/admin/manufacturing/productions': typeof AdminManufacturingProductionsIndexRoute
+  '/admin/manufacturing/recipes': typeof AdminManufacturingRecipesIndexRoute
+  '/admin/sales/customers': typeof AdminSalesCustomersIndexRoute
+  '/admin/sales/new-invoice': typeof AdminSalesNewInvoiceIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authLayout': typeof AuthLayoutRouteRouteWithChildren
+  '/admin': typeof AdminRouteRouteWithChildren
+  '/investor/': typeof InvestorIndexRoute
+  '/operator/': typeof OperatorIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_authLayout/2-fa/': typeof AuthLayout2FaIndexRoute
+  '/_authLayout/forgot-password/': typeof AuthLayoutForgotPasswordIndexRoute
+  '/_authLayout/login/': typeof AuthLayoutLoginIndexRoute
+  '/_authLayout/reset-password/': typeof AuthLayoutResetPasswordIndexRoute
+  '/_authLayout/sign-up/': typeof AuthLayoutSignUpIndexRoute
+  '/admin/dashboard/': typeof AdminDashboardIndexRoute
+  '/admin/finance/': typeof AdminFinanceIndexRoute
+  '/admin/hr/': typeof AdminHrIndexRoute
+  '/admin/inventory/': typeof AdminInventoryIndexRoute
+  '/admin/settings/': typeof AdminSettingsIndexRoute
+  '/admin/manufacturing/productions/': typeof AdminManufacturingProductionsIndexRoute
+  '/admin/manufacturing/recipes/': typeof AdminManufacturingRecipesIndexRoute
+  '/admin/sales/customers/': typeof AdminSalesCustomersIndexRoute
+  '/admin/sales/new-invoice/': typeof AdminSalesNewInvoiceIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/investor/'
+    | '/operator/'
+    | '/api/auth/$'
+    | '/2-fa/'
+    | '/forgot-password/'
+    | '/login/'
+    | '/reset-password/'
+    | '/sign-up/'
+    | '/admin/dashboard/'
+    | '/admin/finance/'
+    | '/admin/hr/'
+    | '/admin/inventory/'
+    | '/admin/settings/'
+    | '/admin/manufacturing/productions/'
+    | '/admin/manufacturing/recipes/'
+    | '/admin/sales/customers/'
+    | '/admin/sales/new-invoice/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/admin'
+    | '/investor'
+    | '/operator'
+    | '/api/auth/$'
+    | '/2-fa'
+    | '/forgot-password'
+    | '/login'
+    | '/reset-password'
+    | '/sign-up'
+    | '/admin/dashboard'
+    | '/admin/finance'
+    | '/admin/hr'
+    | '/admin/inventory'
+    | '/admin/settings'
+    | '/admin/manufacturing/productions'
+    | '/admin/manufacturing/recipes'
+    | '/admin/sales/customers'
+    | '/admin/sales/new-invoice'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authLayout'
+    | '/admin'
+    | '/investor/'
+    | '/operator/'
+    | '/api/auth/$'
+    | '/_authLayout/2-fa/'
+    | '/_authLayout/forgot-password/'
+    | '/_authLayout/login/'
+    | '/_authLayout/reset-password/'
+    | '/_authLayout/sign-up/'
+    | '/admin/dashboard/'
+    | '/admin/finance/'
+    | '/admin/hr/'
+    | '/admin/inventory/'
+    | '/admin/settings/'
+    | '/admin/manufacturing/productions/'
+    | '/admin/manufacturing/recipes/'
+    | '/admin/sales/customers/'
+    | '/admin/sales/new-invoice/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthLayoutRouteRoute: typeof AuthLayoutRouteRouteWithChildren
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
+  InvestorIndexRoute: typeof InvestorIndexRoute
+  OperatorIndexRoute: typeof OperatorIndexRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authLayout': {
+      id: '/_authLayout'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthLayoutRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +300,184 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/operator/': {
+      id: '/operator/'
+      path: '/operator'
+      fullPath: '/operator/'
+      preLoaderRoute: typeof OperatorIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/investor/': {
+      id: '/investor/'
+      path: '/investor'
+      fullPath: '/investor/'
+      preLoaderRoute: typeof InvestorIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/settings/': {
+      id: '/admin/settings/'
+      path: '/settings'
+      fullPath: '/admin/settings/'
+      preLoaderRoute: typeof AdminSettingsIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/inventory/': {
+      id: '/admin/inventory/'
+      path: '/inventory'
+      fullPath: '/admin/inventory/'
+      preLoaderRoute: typeof AdminInventoryIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/hr/': {
+      id: '/admin/hr/'
+      path: '/hr'
+      fullPath: '/admin/hr/'
+      preLoaderRoute: typeof AdminHrIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/finance/': {
+      id: '/admin/finance/'
+      path: '/finance'
+      fullPath: '/admin/finance/'
+      preLoaderRoute: typeof AdminFinanceIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/dashboard/': {
+      id: '/admin/dashboard/'
+      path: '/dashboard'
+      fullPath: '/admin/dashboard/'
+      preLoaderRoute: typeof AdminDashboardIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/_authLayout/sign-up/': {
+      id: '/_authLayout/sign-up/'
+      path: '/sign-up'
+      fullPath: '/sign-up/'
+      preLoaderRoute: typeof AuthLayoutSignUpIndexRouteImport
+      parentRoute: typeof AuthLayoutRouteRoute
+    }
+    '/_authLayout/reset-password/': {
+      id: '/_authLayout/reset-password/'
+      path: '/reset-password'
+      fullPath: '/reset-password/'
+      preLoaderRoute: typeof AuthLayoutResetPasswordIndexRouteImport
+      parentRoute: typeof AuthLayoutRouteRoute
+    }
+    '/_authLayout/login/': {
+      id: '/_authLayout/login/'
+      path: '/login'
+      fullPath: '/login/'
+      preLoaderRoute: typeof AuthLayoutLoginIndexRouteImport
+      parentRoute: typeof AuthLayoutRouteRoute
+    }
+    '/_authLayout/forgot-password/': {
+      id: '/_authLayout/forgot-password/'
+      path: '/forgot-password'
+      fullPath: '/forgot-password/'
+      preLoaderRoute: typeof AuthLayoutForgotPasswordIndexRouteImport
+      parentRoute: typeof AuthLayoutRouteRoute
+    }
+    '/_authLayout/2-fa/': {
+      id: '/_authLayout/2-fa/'
+      path: '/2-fa'
+      fullPath: '/2-fa/'
+      preLoaderRoute: typeof AuthLayout2FaIndexRouteImport
+      parentRoute: typeof AuthLayoutRouteRoute
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/sales/new-invoice/': {
+      id: '/admin/sales/new-invoice/'
+      path: '/sales/new-invoice'
+      fullPath: '/admin/sales/new-invoice/'
+      preLoaderRoute: typeof AdminSalesNewInvoiceIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/sales/customers/': {
+      id: '/admin/sales/customers/'
+      path: '/sales/customers'
+      fullPath: '/admin/sales/customers/'
+      preLoaderRoute: typeof AdminSalesCustomersIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/manufacturing/recipes/': {
+      id: '/admin/manufacturing/recipes/'
+      path: '/manufacturing/recipes'
+      fullPath: '/admin/manufacturing/recipes/'
+      preLoaderRoute: typeof AdminManufacturingRecipesIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/manufacturing/productions/': {
+      id: '/admin/manufacturing/productions/'
+      path: '/manufacturing/productions'
+      fullPath: '/admin/manufacturing/productions/'
+      preLoaderRoute: typeof AdminManufacturingProductionsIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
   }
 }
 
+interface AuthLayoutRouteRouteChildren {
+  AuthLayout2FaIndexRoute: typeof AuthLayout2FaIndexRoute
+  AuthLayoutForgotPasswordIndexRoute: typeof AuthLayoutForgotPasswordIndexRoute
+  AuthLayoutLoginIndexRoute: typeof AuthLayoutLoginIndexRoute
+  AuthLayoutResetPasswordIndexRoute: typeof AuthLayoutResetPasswordIndexRoute
+  AuthLayoutSignUpIndexRoute: typeof AuthLayoutSignUpIndexRoute
+}
+
+const AuthLayoutRouteRouteChildren: AuthLayoutRouteRouteChildren = {
+  AuthLayout2FaIndexRoute: AuthLayout2FaIndexRoute,
+  AuthLayoutForgotPasswordIndexRoute: AuthLayoutForgotPasswordIndexRoute,
+  AuthLayoutLoginIndexRoute: AuthLayoutLoginIndexRoute,
+  AuthLayoutResetPasswordIndexRoute: AuthLayoutResetPasswordIndexRoute,
+  AuthLayoutSignUpIndexRoute: AuthLayoutSignUpIndexRoute,
+}
+
+const AuthLayoutRouteRouteWithChildren = AuthLayoutRouteRoute._addFileChildren(
+  AuthLayoutRouteRouteChildren,
+)
+
+interface AdminRouteRouteChildren {
+  AdminDashboardIndexRoute: typeof AdminDashboardIndexRoute
+  AdminFinanceIndexRoute: typeof AdminFinanceIndexRoute
+  AdminHrIndexRoute: typeof AdminHrIndexRoute
+  AdminInventoryIndexRoute: typeof AdminInventoryIndexRoute
+  AdminSettingsIndexRoute: typeof AdminSettingsIndexRoute
+  AdminManufacturingProductionsIndexRoute: typeof AdminManufacturingProductionsIndexRoute
+  AdminManufacturingRecipesIndexRoute: typeof AdminManufacturingRecipesIndexRoute
+  AdminSalesCustomersIndexRoute: typeof AdminSalesCustomersIndexRoute
+  AdminSalesNewInvoiceIndexRoute: typeof AdminSalesNewInvoiceIndexRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminDashboardIndexRoute: AdminDashboardIndexRoute,
+  AdminFinanceIndexRoute: AdminFinanceIndexRoute,
+  AdminHrIndexRoute: AdminHrIndexRoute,
+  AdminInventoryIndexRoute: AdminInventoryIndexRoute,
+  AdminSettingsIndexRoute: AdminSettingsIndexRoute,
+  AdminManufacturingProductionsIndexRoute:
+    AdminManufacturingProductionsIndexRoute,
+  AdminManufacturingRecipesIndexRoute: AdminManufacturingRecipesIndexRoute,
+  AdminSalesCustomersIndexRoute: AdminSalesCustomersIndexRoute,
+  AdminSalesNewInvoiceIndexRoute: AdminSalesNewInvoiceIndexRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthLayoutRouteRoute: AuthLayoutRouteRouteWithChildren,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
+  InvestorIndexRoute: InvestorIndexRoute,
+  OperatorIndexRoute: OperatorIndexRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
