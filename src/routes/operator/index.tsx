@@ -2,13 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { GenericLoader } from "@/components/custom/generic-loader";
 import { OperatorInterface } from "@/components/operator/operator-interface";
-import { getRecipesFn } from "@/server-functions/inventory/recipes/get-recipe-fn";
+import { getProductionRunsFn } from "@/server-functions/inventory/production/get-production-run-fn";
 
 export const Route = createFileRoute("/operator/")({
 	loader: async ({ context }) => {
 		void context.queryClient.prefetchQuery({
-			queryKey: ["recipes"],
-			queryFn: getRecipesFn,
+			queryKey: ["productionRuns"],
+			queryFn: getProductionRunsFn,
 		});
 	},
 	component: RouteComponent,
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/operator/")({
 
 function RouteComponent() {
 	return (
-		<main className="flex-1 overflow-y-auto bg-gray-50">
+		<main className="flex-1 overflow-y-auto h-screen">
 			<div className="max-w-4xl mx-auto p-8">
 				<header className="text-center mb-8">
 					<h1 className="font-bold text-4xl mb-2">Production Operator</h1>

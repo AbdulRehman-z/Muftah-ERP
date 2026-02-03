@@ -92,6 +92,7 @@ export const EditMaterialDialog = ({ open, onOpenChange, type, item }: Props) =>
                                     <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg border">
                                         <button
                                             type="button"
+                                            disabled={material?.type?.toLowerCase() === "master"}
                                             onClick={() => {
                                                 field.handleChange("primary");
                                                 if (!form.getFieldValue("capacityUnit")) {
@@ -102,7 +103,8 @@ export const EditMaterialDialog = ({ open, onOpenChange, type, item }: Props) =>
                                                 "flex items-center justify-center gap-2 py-2 text-sm font-semibold rounded-md transition-all duration-200",
                                                 field.state.value === "primary"
                                                     ? "bg-background shadow-sm text-primary ring-1 ring-black/5"
-                                                    : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
+                                                    : "text-muted-foreground hover:bg-background/50 hover:text-foreground",
+                                                material?.type?.toLowerCase() === "master" && "opacity-50 cursor-not-allowed"
                                             )}
                                         >
                                             <Package className={cn("size-4", field.state.value === "primary" ? "text-primary" : "text-muted-foreground")} />
@@ -110,6 +112,7 @@ export const EditMaterialDialog = ({ open, onOpenChange, type, item }: Props) =>
                                         </button>
                                         <button
                                             type="button"
+                                            disabled={material?.type?.toLowerCase() === "primary"}
                                             onClick={() => {
                                                 field.handleChange("master");
                                                 if (!form.getFieldValue("capacityUnit")) {
@@ -120,7 +123,8 @@ export const EditMaterialDialog = ({ open, onOpenChange, type, item }: Props) =>
                                                 "flex items-center justify-center gap-2 py-2 text-sm font-semibold rounded-md transition-all duration-200",
                                                 field.state.value === "master"
                                                     ? "bg-background shadow-sm text-primary ring-1 ring-black/5"
-                                                    : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
+                                                    : "text-muted-foreground hover:bg-background/50 hover:text-foreground",
+                                                material?.type?.toLowerCase() === "primary" && "opacity-50 cursor-not-allowed"
                                             )}
                                         >
                                             <Box className={cn("size-4", field.state.value === "master" ? "text-primary" : "text-muted-foreground")} />

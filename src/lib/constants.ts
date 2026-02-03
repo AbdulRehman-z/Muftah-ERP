@@ -1,6 +1,8 @@
 import {
 	ArrowRightLeftIcon,
 	Banknote,
+	ClipboardListIcon,
+	CookingPotIcon,
 	Factory,
 	LayoutDashboard,
 	type LucideIcon,
@@ -9,6 +11,7 @@ import {
 	Settings,
 	ShoppingCart,
 	Users,
+	UsersIcon,
 	WarehouseIcon,
 } from "lucide-react";
 
@@ -33,10 +36,12 @@ export const navigations: NavigationItem[] = [
 			{
 				title: "Production Run",
 				url: "/admin/manufacturing/productions",
+				icon: ClipboardListIcon,
 			},
 			{
 				title: "Recipes",
 				url: "/admin/manufacturing/recipes",
+				icon: CookingPotIcon
 			},
 		],
 	},
@@ -70,6 +75,7 @@ export const navigations: NavigationItem[] = [
 			{
 				title: "Customers",
 				url: "/admin/sales/customers",
+				icon: UsersIcon
 			},
 		],
 	},

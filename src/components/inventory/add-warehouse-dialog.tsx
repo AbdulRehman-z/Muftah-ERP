@@ -9,8 +9,8 @@ type Props = {
 export const AddWarehouseDialog = ({ open, onOpenChange }: Props) => {
 	return (
 		<ResponsiveDialog
-			title="Add Warehouse"
-			description="Add a new warehouse by entering its name and location."
+			title="Add Facility"
+			description="Add a new facility (e.g. warehouse, factory-floor, etc.) by entering its name and location."
 			open={open}
 			onOpenChange={onOpenChange}
 		>

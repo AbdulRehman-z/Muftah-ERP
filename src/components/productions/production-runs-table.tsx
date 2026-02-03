@@ -19,7 +19,8 @@ import {
 } from "../ui/alert-dialog";
 import { DataTable } from "../ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
+import { ProductionDetailsDialog } from "./production-details-dialog";
 
 type ProductionRunsTableProps = {
 	runs: any[];
@@ -28,6 +29,8 @@ type ProductionRunsTableProps = {
 export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 	const startProduction = useStartProduction();
 	const completeProduction = useCompleteProduction();
+	const [selectedRun, setSelectedRun] = useState<any>(null);
+	const [detailsOpen, setDetailsOpen] = useState(false);
 
 	const getStatusBadge = (status: string) => {
 		switch (status) {
@@ -52,25 +55,25 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 					<Button
 						variant="ghost"
 						onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-						className="-ml-4"
+						className="-ml-4 font-bold uppercase tracking-widest"
 					>
 						Batch ID
-						<ArrowUpDown className="ml-2 h-4 w-4" />
+						<ArrowUpDown className="ml-2 h-3 w-3" />
 					</Button>
 				)
 			},
 			cell: ({ row }) => (
-				<span className="font-mono text-sm">{row.getValue("batchId")}</span>
+				<span className="font-mono text-xs font-bold text-primary tracking-tighter">{row.getValue("batchId")}</span>
 			)
 		},
 		{
 			id: "recipe",
 			accessorFn: (row) => row.recipe.name, // For filtering
-			header: "Recipe",
+			header: () => <span className="text-xs font-bold uppercase tracking-widest">Recipe</span>,
 			cell: ({ row }) => (
 				<div>
-					<p className="font-medium">{row.original.recipe.name}</p>
-					<p className="text-xs text-muted-foreground">
+					<p className="font-bold text-sm tracking-tight">{row.original.recipe.name}</p>
+					<p className="text-[10px] font-medium text-muted-foreground uppercase">
 						{row.original.recipe.product.name}
 					</p>
 				</div>
@@ -78,33 +81,32 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 		},
 		{
 			accessorKey: "status",
-			header: ({ column }) => {
-				return (
-					<Button
-						variant="ghost"
-						onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-						className="-ml-4"
-					>
-						Status
-						<ArrowUpDown className="ml-2 h-4 w-4" />
-					</Button>
-				)
-			},
+			header: () => <span className="text-xs font-bold uppercase tracking-widest text-center block w-full">Status</span>,
 			cell: ({ row }) => getStatusBadge(row.getValue("status"))
 		},
 		{
 			id: "output",
-			header: "Production Output",
+			accessorKey: "containersProduced",
+			header: ({ column }) => (
+				<Button
+					variant="ghost"
+					onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+					className="-ml-4 font-bold uppercase tracking-widest"
+				>
+					Output
+					<ArrowUpDown className="ml-2 h-3 w-3" />
+				</Button>
+			),
 			cell: ({ row }) => (
 				<div className="text-sm">
-					<p>{row.original.containersProduced} Pack(s)</p>
+					<p className="font-bold">{row.original.containersProduced} <span className="text-[10px] font-medium text-muted-foreground uppercase">Pack(s)</span></p>
 					{row.original.looseUnitsProduced > 0 && (
-						<p className="text-xs text-muted-foreground">
+						<p className="text-[10px] text-muted-foreground font-bold uppercase leading-none">
 							{row.original.cartonsProduced} cartons + {row.original.looseUnitsProduced} loose
 						</p>
 					)}
 					{row.original.looseUnitsProduced === 0 && row.original.cartonsProduced > 0 && (
-						<p className="text-xs text-muted-foreground">
+						<p className="text-[10px] text-muted-foreground font-bold uppercase leading-none">
 							{row.original.cartonsProduced} Cartons
 						</p>
 					)}
@@ -113,27 +115,27 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 		},
 		{
 			id: "totalCost",
-			header: ({ column }) => {
-				return (
-					<Button
-						variant="ghost"
-						onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-						className="-ml-4"
-					>
-						Total Cost
-						<ArrowUpDown className="ml-2 h-4 w-4" />
-					</Button>
-				)
-			},
+			accessorKey: "totalProductionCost",
+			header: ({ column }) => (
+				<Button
+					variant="ghost"
+					onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+					className="-ml-4 font-bold uppercase tracking-widest"
+				>
+					Total Cost
+					<ArrowUpDown className="ml-2 h-3 w-3" />
+				</Button>
+			),
 			cell: ({ row }) => (
-				<div>
-					<p className="font-semibold">
-						PKR {parseFloat(row.original.totalProductionCost || "0").toFixed(2)}
+				<div className="space-y-0.5">
+					<p className="font-black text-sm tracking-tight">
+						PKR {parseFloat(row.original.totalProductionCost || "0").toLocaleString()}
 					</p>
 					{row.original.totalChemicalCost && (
-						<p className="text-xs text-muted-foreground">
-							Chem: {parseFloat(row.original.totalChemicalCost).toFixed(0)} | Pkg:{" "}
-							{parseFloat(row.original.totalPackagingCost).toFixed(0)}
+						<p className="text-[10px] text-muted-foreground font-black uppercase flex items-center gap-1">
+							<span className="text-blue-600/60">Chem: {parseFloat(row.original.totalChemicalCost).toFixed(0)}</span>
+							<span className="text-muted-foreground/30">|</span>
+							<span className="text-purple-600/60">Pkg: {parseFloat(row.original.totalPackagingCost).toFixed(0)}</span>
 						</p>
 					)}
 				</div>
@@ -141,29 +143,37 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 		},
 		{
 			id: "costPerContainer",
-			header: "Cost/Container",
+			accessorKey: "costPerContainer",
+			header: ({ column }) => (
+				<Button
+					variant="ghost"
+					onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+					className="-ml-4 font-bold uppercase tracking-widest"
+				>
+					Cost/Unit
+					<ArrowUpDown className="ml-2 h-3 w-3" />
+				</Button>
+			),
 			cell: ({ row }) => (
-				<span className="font-semibold text-green-600">
+				<Badge variant="outline" className="font-bold text-green-600 border-green-200 bg-green-50/50">
 					PKR {parseFloat(row.original.costPerContainer || "0").toFixed(2)}
-				</span>
+				</Badge>
 			)
 		},
 		{
 			accessorKey: "createdAt",
-			header: ({ column }) => {
-				return (
-					<Button
-						variant="ghost"
-						onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-						className="-ml-4"
-					>
-						Date
-						<ArrowUpDown className="ml-2 h-4 w-4" />
-					</Button>
-				)
-			},
+			header: ({ column }) => (
+				<Button
+					variant="ghost"
+					onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+					className="-ml-4 font-bold uppercase tracking-widest"
+				>
+					Created
+					<ArrowUpDown className="ml-2 h-3 w-3" />
+				</Button>
+			),
 			cell: ({ row }) => (
-				<span className="text-sm text-muted-foreground">
+				<span className="text-xs font-medium text-muted-foreground">
 					{formatDistanceToNow(new Date(row.getValue("createdAt")), {
 						addSuffix: true,
 					})}
@@ -182,10 +192,11 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 									<Button
 										variant="default"
 										size="sm"
+										className="h-8 text-[10px] font-black uppercase tracking-wider"
 										disabled={startProduction.isPending}
 									>
-										<Play className="size-4 mr-1" />
-										Start
+										<Play className="size-3 mr-1.5" />
+										Start Run
 									</Button>
 								</AlertDialogTrigger>
 								<AlertDialogContent>
@@ -228,11 +239,11 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 									<Button
 										variant="default"
 										size="sm"
-										className="bg-green-600 hover:bg-green-700"
+										className="h-8 text-[10px] font-black uppercase tracking-wider bg-green-600 hover:bg-green-700"
 										disabled={completeProduction.isPending}
 									>
-										<NotebookPenIcon className="size-4 mr-1" />
-										Set as Completed
+										<NotebookPenIcon className="size-3 mr-1.5" />
+										Finish Run
 									</Button>
 								</AlertDialogTrigger>
 								<AlertDialogContent>
@@ -269,7 +280,15 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 							</AlertDialog>
 						)}
 
-						<Button variant="ghost" size="sm">
+						<Button
+							variant="ghost"
+							size="icon"
+							className="size-8 text-muted-foreground hover:text-primary transition-colors"
+							onClick={() => {
+								setSelectedRun(run);
+								setDetailsOpen(true);
+							}}
+						>
 							<Eye className="size-4" />
 						</Button>
 					</div>
@@ -279,11 +298,18 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 	], [startProduction, completeProduction]);
 
 	return (
-		<DataTable
-			columns={columns}
-			data={runs}
-			showSearch={false}
-			pageSize={6}
-		/>
+		<>
+			<DataTable
+				columns={columns}
+				data={runs}
+				showSearch={false}
+				pageSize={6}
+			/>
+			<ProductionDetailsDialog
+				open={detailsOpen}
+				onOpenChange={setDetailsOpen}
+				run={selectedRun}
+			/>
+		</>
 	);
 };

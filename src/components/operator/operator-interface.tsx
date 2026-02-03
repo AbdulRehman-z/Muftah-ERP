@@ -1,260 +1,159 @@
-import { useForm } from "@tanstack/react-form";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { CheckCircle, Loader2, AlertTriangle } from "lucide-react";
-import { useState } from "react";
-import { getRecipesFn } from "@/server-functions/inventory/recipes/get-recipe-fn";
-import { getWarehousesFn } from "@/server-functions/inventory/get-warehouses-fn";
-import { Alert, AlertDescription } from "../ui/alert";
+import { CheckCircle2, Play, AlertTriangle, Package2, ClipboardList, Info, Loader2Icon, CheckCircle2Icon } from "lucide-react";
+import { getProductionRunsFn } from "@/server-functions/inventory/production/get-production-run-fn";
+import { GenericEmpty } from "../custom/empty";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
-import { Input } from "../ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Badge } from "../ui/badge";
+import { useCompleteProduction } from "@/hooks/production/use-complete-production";
+import { toast } from "sonner";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "../ui/select";
-import { Textarea } from "../ui/textarea";
-import { useCreateProductionRun } from "@/hooks/stock/use-create-production-run";
-
-// Define Recipe type from server function result
-type Recipe = Awaited<ReturnType<typeof getRecipesFn>>[number];
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "../ui/alert-dialog";
 
 export const OperatorInterface = () => {
-	const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-	const [showSuccess, setShowSuccess] = useState(false);
+	const completeProduction = useCompleteProduction();
 
-	const { data: recipes } = useSuspenseQuery({
-		queryKey: ["recipes"],
-		queryFn: getRecipesFn,
+	const { data: allRuns } = useSuspenseQuery({
+		queryKey: ["production-runs"],
+		queryFn: getProductionRunsFn,
 	});
 
-	const { data: warehouses } = useSuspenseQuery({
-		queryKey: ["warehouses"],
-		queryFn: getWarehousesFn,
-	});
+	// Filter for runs that are currently active (In Progress)
+	const activeRuns = allRuns.filter(run => run.status === 'in_progress');
 
-	const factoryFloor = warehouses.find(w => w.type === 'factory_floor');
-
-	const mutate = useCreateProductionRun();
-
-	const form = useForm({
-		defaultValues: {
-			recipeId: "",
-			cartonsProduced: 0,
-			looseUnitsProduced: 0,
-			notes: "",
-		},
-		onSubmit: async ({ value }) => {
-			if (!factoryFloor) {
-				// Handling this visually below, but safety check here
-				return;
-			}
-
-			await mutate.mutateAsync(
-				{
-					data: {
-						...value,
-						warehouseId: factoryFloor.id,
-						batchesProduced: 1, // Logic assumption: 1 batch per log entry for operator simplicity or add field if needed
-					},
-				},
-				{
-					onSuccess: () => {
-						setShowSuccess(true);
-						setTimeout(() => setShowSuccess(false), 3000);
-						form.reset();
-						setSelectedRecipe(null);
-					},
-				},
-			);
-		},
-	});
-
-	const cartonsInput = form.store.state.values.cartonsProduced;
-
-	const totalContainers = selectedRecipe
-		? cartonsInput * (selectedRecipe.containersPerCarton || 0) +
-		form.store.state.values.looseUnitsProduced
-		: 0;
-
-	if (!factoryFloor) {
+	if (activeRuns.length === 0) {
 		return (
-			<Card className="shadow-xl border-red-200">
-				<CardHeader className="bg-red-50 text-red-900">
-					<CardTitle className="flex items-center gap-2">
-						<AlertTriangle className="size-6 text-red-600" />
-						Configuration Error
-					</CardTitle>
-				</CardHeader>
-				<CardContent className="pt-6">
-					<p className="text-lg mb-4">
-						No "Factory Floor" warehouse detected. Please contact the administrator.
-					</p>
-					<p className="text-muted-foreground">
-						Production cannot be logged until a warehouse with type "factory_floor" is created.
-					</p>
-				</CardContent>
-			</Card>
-		)
+			<div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+				<GenericEmpty
+					icon={ClipboardList}
+					title="No Active Production"
+					description="There are currently no production runs in progress. Check back later or contact your supervisor."
+				/>
+			</div>
+		);
 	}
 
 	return (
-		<Card className="shadow-xl">
-			<CardHeader className="bg-primary text-primary-foreground">
-				<CardTitle className="text-2xl">Log Production Output</CardTitle>
-			</CardHeader>
-
-			<CardContent className="pt-6">
-				{showSuccess && (
-					<Alert className="mb-6 border-green-500 bg-green-50">
-						<CheckCircle className="size-4 text-green-600" />
-						<AlertDescription className="text-green-800">
-							Production logged successfully!
-						</AlertDescription>
-					</Alert>
-				)}
-
-				<form
-					className="space-y-6"
-					onSubmit={(e) => {
-						e.preventDefault();
-						form.handleSubmit();
-					}}
-				>
-					<FieldGroup>
-						{/* Recipe Selection */}
-						<form.Field name="recipeId">
-							{(field) => (
-								<Field>
-									<FieldLabel className="text-lg">Select Recipe</FieldLabel>
-									<Select
-										value={field.state.value}
-										onValueChange={(value) => {
-											field.handleChange(value);
-											// Ensure type safety when finding recipe
-											const recipe = recipes.find((r) => r.id === value);
-											setSelectedRecipe(recipe || null);
-										}}
-									>
-										<SelectTrigger className="h-12 text-lg">
-											<SelectValue placeholder="Choose a recipe..." />
-										</SelectTrigger>
-										<SelectContent>
-											{recipes.map((r) => (
-												<SelectItem key={r.id} value={r.id} className="text-lg">
-													{r.name} ({r.product.name})
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-									<FieldError errors={field.state.meta.errors} />
-								</Field>
-							)}
-						</form.Field>
-
-						{/* Production Quantity */}
-						{selectedRecipe && (
-							<>
-								<div className="grid grid-cols-2 gap-4">
-									<form.Field name="cartonsProduced">
-										{(field) => (
-											<Field>
-												<FieldLabel className="text-lg">
-													Cartons Packed
-												</FieldLabel>
-												<Input
-													type="number"
-													min="0"
-													step="1"
-													className="h-12 text-lg"
-													placeholder="0"
-													value={field.state.value || ""}
-													onChange={(e) =>
-														field.handleChange(parseInt(e.target.value) || 0)
-													}
-												/>
-												<p className="text-xs text-muted-foreground mt-1">
-													{selectedRecipe.containersPerCarton || 0} units per carton
-												</p>
-												<FieldError errors={field.state.meta.errors} />
-											</Field>
-										)}
-									</form.Field>
-
-									<form.Field name="looseUnitsProduced">
-										{(field) => (
-											<Field>
-												<FieldLabel className="text-lg">Loose Units</FieldLabel>
-												<Input
-													type="number"
-													min="0"
-													step="1"
-													className="h-12 text-lg"
-													placeholder="0"
-													value={field.state.value || ""}
-													onChange={(e) =>
-														field.handleChange(parseInt(e.target.value) || 0)
-													}
-												/>
-												<p className="text-xs text-muted-foreground mt-1">
-													Units not in cartons
-												</p>
-												<FieldError errors={field.state.meta.errors} />
-											</Field>
-										)}
-									</form.Field>
+		<div className="grid gap-6">
+			{activeRuns.map((run) => (
+				<Card key={run.id} className="overflow-hidden border-border/50 shadow-md hover:shadow-lg transition-shadow">
+					<div className="h-1.5 bg-blue-600 w-full" />
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<div className="space-y-1">
+							<CardTitle className="text-xl font-bold font-mono">
+								{run.batchId}
+							</CardTitle>
+							<CardDescription className="flex items-center gap-2">
+								<Package2 className="size-3" />
+								{run.recipe.product.name}
+							</CardDescription>
+						</div>
+						<Badge variant="default" className="bg-blue-600">
+							In Progress
+						</Badge>
+					</CardHeader>
+					<CardContent className="pt-4">
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+							<div className="space-y-4">
+								<div className="flex items-center gap-3 p-3 rounded-lg border border-border/50">
+									<div className="p-2 rounded-md border border-border/50">
+										<ClipboardList className="size-4 text-primary" />
+									</div>
+									<div>
+										<p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-none mb-1">Recipe Name</p>
+										<p className="font-semibold text-sm">{run.recipe.name}</p>
+									</div>
 								</div>
 
-								{/* Total Display */}
-								{totalContainers > 0 && (
-									<Alert>
-										<AlertDescription className="text-lg">
-											<strong>Total Production:</strong> {totalContainers.toFixed(0)}{" "}
-											containers ({cartonsInput} cartons +{" "}
-											{form.store.state.values.looseUnitsProduced}{" "}
-											loose)
-										</AlertDescription>
-									</Alert>
+								<div className="flex items-center gap-3 p-3 rounded-lg border border-border/50">
+									<div className="p-2 rounded-md border border-border/50">
+										<CheckCircle2 className="size-4 text-green-600" />
+									</div>
+									<div>
+										<p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-none mb-1">Target Output</p>
+										<p className="font-semibold text-sm">{run.containersProduced} Pack(s)</p>
+									</div>
+								</div>
+							</div>
+
+							<div className="flex flex-col justify-center p-4 rounded-xl border border-dashed border-border">
+								<div className="flex items-start gap-2 text-muted-foreground mb-2">
+									<Info className="size-4 mt-0.5" />
+									<p className="text-xs italic leading-snug">
+										Ensure all quality checks are passed for this batch before marking as completed.
+									</p>
+								</div>
+								{run.notes && (
+									<div className="mt-2 text-xs">
+										<span className="font-bold">Supervisor Notes: </span>
+										{run.notes}
+									</div>
 								)}
+							</div>
+						</div>
 
-								{/* Notes */}
-								<form.Field name="notes">
-									{(field) => (
-										<Field>
-											<FieldLabel>Notes (Optional)</FieldLabel>
-											<Textarea
-												placeholder="Any issues or observations..."
-												value={field.state.value}
-												onChange={(e) => field.handleChange(e.target.value)}
-											/>
-											<FieldError errors={field.state.meta.errors} />
-										</Field>
-									)}
-								</form.Field>
-							</>
-						)}
-
-						<Button
-							type="submit"
-							disabled={form.state.isSubmitting || !selectedRecipe}
-							size="lg"
-							className="w-full text-lg h-14"
-						>
-							{form.state.isSubmitting ? (
-								<>
-									<Loader2 className="mr-2 size-5 animate-spin" />
-									Logging Production...
-								</>
-							) : (
-								"Log Production"
-							)}
-						</Button>
-					</FieldGroup>
-				</form>
-			</CardContent>
-		</Card>
+						<div className="flex justify-end">
+							<AlertDialog>
+								<AlertDialogTrigger asChild>
+									<Button
+										size="lg"
+										className="bg-green-600 hover:bg-green-700 text-white font-bold h-12 px-8"
+										disabled={completeProduction.isPending}
+									>
+										{completeProduction.isPending ? (
+											<Loader2Icon className="mr-2 size-5 animate-spin" />
+										) : (
+											<CheckCircle2Icon className="mr-2 size-5" />
+										)}
+										Mark as Completed
+									</Button>
+								</AlertDialogTrigger>
+								<AlertDialogContent>
+									<AlertDialogHeader>
+										<AlertDialogTitle className="text-2xl">Complete Production Run?</AlertDialogTitle>
+										<AlertDialogDescription className="text-lg">
+											By clicking confirm, you certify that the production of <span className="font-bold text-foreground">{run.containersProduced} units</span> for batch <span className="font-mono text-foreground font-bold">{run.batchId}</span> is finished and ready for stock.
+										</AlertDialogDescription>
+									</AlertDialogHeader>
+									<AlertDialogFooter className="gap-2 sm:gap-0">
+										<AlertDialogCancel className="h-11">Go Back</AlertDialogCancel>
+										<AlertDialogAction
+											className="bg-green-600 hover:bg-green-700 h-11 px-6"
+											onClick={() => {
+												completeProduction.mutate({
+													data: { productionRunId: run.id }
+												}, {
+													onSuccess: () => {
+														toast.success("Production Completed", {
+															description: `Batch ${run.batchId} has been added to finished goods.`
+														});
+													},
+													onError: (error) => {
+														toast.error("Failed to complete production", {
+															description: error.message
+														});
+													}
+												});
+											}}
+										>
+											Yes, Set as Completed
+										</AlertDialogAction>
+									</AlertDialogFooter>
+								</AlertDialogContent>
+							</AlertDialog>
+						</div>
+					</CardContent>
+				</Card>
+			))}
+		</div>
 	);
 };

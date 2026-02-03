@@ -57,8 +57,8 @@ export const InventoryContainer = () => {
 				<GenericEmpty
 					icon={BoxesIcon}
 					title="Empty Inventory"
-					description="Nothing in the inventory yet, add warehouse and manage inventory."
-					ctaText="Add warehouse"
+					description="Nothing in the inventory yet, add facility(e.g. warehouse, factory-floor, etc.) and manage inventory."
+					ctaText="Add Facility"
 					onAddChange={setAddWarehouseOpen}
 				/>
 				<AddWarehouseDialog
