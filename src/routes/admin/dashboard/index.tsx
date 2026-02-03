@@ -25,8 +25,15 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+// import { getAnalyticsFn } from "@/server-functions/admin/get-analytics-fn";
 
 export const Route = createFileRoute("/admin/dashboard/")({
+	loader: async ({ context }) => {
+		void context.queryClient.prefetchQuery({
+			queryKey: ["admin-analytics"],
+			// queryFn: getAnalyticsFn,
+		})
+	},
 	component: AdminDashboard,
 });
 
