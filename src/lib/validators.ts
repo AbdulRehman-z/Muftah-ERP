@@ -57,6 +57,8 @@ export const updateProfileSchema = z.object({
 export const addWarehouseSchema = z.object({
 	name: z.string().min(2, "Name is too short").max(100),
 	address: z.string().min(2, "Location/Address is required"),
+	city: z.string().min(1, "City is required"),
+	state: z.string().min(1, "State is required"),
 	latitude: z
 		.string()
 		.refine((val) => !isNaN(Number(val)), "Must be a number")
@@ -67,6 +69,10 @@ export const addWarehouseSchema = z.object({
 		.refine((val) => !isNaN(Number(val)), "Must be a number")
 		.transform(Number)
 		.pipe(z.number().min(-180).max(180)),
+});
+
+export const updateWarehouseSchema = addWarehouseSchema.extend({
+	id: z.string().min(1),
 });
 export const changeEmailSchema = z
 	.object({

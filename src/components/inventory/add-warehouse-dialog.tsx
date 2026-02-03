@@ -14,7 +14,7 @@ export const AddWarehouseDialog = ({ open, onOpenChange }: Props) => {
 			open={open}
 			onOpenChange={onOpenChange}
 		>
-			<AddWarehouseForm />
+			<AddWarehouseForm onSuccess={() => onOpenChange(false)} />
 		</ResponsiveDialog>
 	);
 };

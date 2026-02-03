@@ -6,7 +6,7 @@ import {
     timestamp,
     integer,
 } from "drizzle-orm/pg-core";
-import { productVariants, warehouses } from "./inventory-schema";
+import { recipes, warehouses } from "./inventory-schema";
 import { user } from "./auth-schema";
 
 const timestamps = {
@@ -34,22 +34,34 @@ export const invoices = pgTable("invoices", {
     invoiceNumber: text("invoice_number").unique(),
     customerId: text("customer_id").references(() => customers.id),
 
-    totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull().default("0"),
-    profitMargin: decimal("profit_margin", { precision: 12, scale: 2 }).notNull().default("0"),
+    totalAmount: decimal("total_amount", { precision: 12, scale: 2 })
+        .notNull()
+        .default("0"),
+    profitMargin: decimal("profit_margin", { precision: 12, scale: 2 })
+        .notNull()
+        .default("0"),
 
     status: text("status").notNull().default("paid"), // paid, pending, cancelled
     paymentMethod: text("payment_method"), // "cash", "bank"
-    warehouseId: text("warehouse_id").notNull().references(() => warehouses.id), // Where stock was deducted from
+    warehouseId: text("warehouse_id")
+        .notNull()
+        .references(() => warehouses.id), // Where stock was deducted from
 
-    performedById: text("performed_by_id").notNull().references(() => user.id),
+    performedById: text("performed_by_id")
+        .notNull()
+        .references(() => user.id),
     ...timestamps,
 });
 
 // --- INVOICE ITEMS ---
 export const invoiceItems = pgTable("invoice_items", {
     id: text("id").primaryKey(),
-    invoiceId: text("invoice_id").notNull().references(() => invoices.id),
-    variantId: text("variant_id").notNull().references(() => productVariants.id),
+    invoiceId: text("invoice_id")
+        .notNull()
+        .references(() => invoices.id),
+    recipeId: text("recipe_id")
+        .notNull()
+        .references(() => recipes.id),
 
     quantityCartons: integer("quantity_cartons").notNull(),
     unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
@@ -85,8 +97,8 @@ export const invoiceItemsRelations = relations(invoiceItems, ({ one }) => ({
         fields: [invoiceItems.invoiceId],
         references: [invoices.id],
     }),
-    variant: one(productVariants, {
-        fields: [invoiceItems.variantId],
-        references: [productVariants.id],
+    recipe: one(recipes, {
+        fields: [invoiceItems.recipeId],
+        references: [recipes.id],
     }),
 }));

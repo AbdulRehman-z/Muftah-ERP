@@ -1,16 +1,29 @@
 import { createServerFn } from "@tanstack/react-start";
-import { db, warehouses } from "@/db";
+import { db } from "@/db";
 import { requireAdminMiddleware } from "@/lib/middlewares";
 
 export const getInventoryFn = createServerFn()
 	.middleware([requireAdminMiddleware])
 	.handler(async () => {
-		const inventory = await db.query.warehouses.findMany({
+		const warehouses = await db.query.warehouses.findMany({
 			with: {
-				stock: true,
-				productionRuns: true,
+				materialStock: {
+					with: {
+						chemical: true,
+						packagingMaterial: true,
+					},
+				},
+				finishedGoodsStock: {
+					with: {
+						recipe: {
+							with: {
+								product: true,
+							},
+						},
+					},
+				},
 			},
 		});
 
-		return inventory;
+		return warehouses;
 	});

@@ -14,8 +14,8 @@ import { Route as AuthLayoutRouteRouteImport } from './routes/_authLayout/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OperatorIndexRouteImport } from './routes/operator/index'
 import { Route as InvestorIndexRouteImport } from './routes/investor/index'
+import { Route as AdminUserManagementIndexRouteImport } from './routes/admin/user-management/index'
 import { Route as AdminSettingsIndexRouteImport } from './routes/admin/settings/index'
-import { Route as AdminInventoryIndexRouteImport } from './routes/admin/inventory/index'
 import { Route as AdminHrIndexRouteImport } from './routes/admin/hr/index'
 import { Route as AdminFinanceIndexRouteImport } from './routes/admin/finance/index'
 import { Route as AdminDashboardIndexRouteImport } from './routes/admin/dashboard/index'
@@ -29,6 +29,9 @@ import { Route as AdminSalesNewInvoiceIndexRouteImport } from './routes/admin/sa
 import { Route as AdminSalesCustomersIndexRouteImport } from './routes/admin/sales/customers/index'
 import { Route as AdminManufacturingRecipesIndexRouteImport } from './routes/admin/manufacturing/recipes/index'
 import { Route as AdminManufacturingProductionsIndexRouteImport } from './routes/admin/manufacturing/productions/index'
+import { Route as AdminInventoryWarehousesIndexRouteImport } from './routes/admin/inventory/warehouses/index'
+import { Route as AdminInventoryFactoryFloorIndexRouteImport } from './routes/admin/inventory/factory-floor/index'
+import { Route as AdminManufacturingRecipesRecipeIdRouteImport } from './routes/admin/manufacturing/recipes/$recipeId'
 
 const AdminRouteRoute = AdminRouteRouteImport.update({
   id: '/admin',
@@ -54,14 +57,15 @@ const InvestorIndexRoute = InvestorIndexRouteImport.update({
   path: '/investor/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUserManagementIndexRoute =
+  AdminUserManagementIndexRouteImport.update({
+    id: '/user-management/',
+    path: '/user-management/',
+    getParentRoute: () => AdminRouteRoute,
+  } as any)
 const AdminSettingsIndexRoute = AdminSettingsIndexRouteImport.update({
   id: '/settings/',
   path: '/settings/',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminInventoryIndexRoute = AdminInventoryIndexRouteImport.update({
-  id: '/inventory/',
-  path: '/inventory/',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminHrIndexRoute = AdminHrIndexRouteImport.update({
@@ -135,6 +139,24 @@ const AdminManufacturingProductionsIndexRoute =
     path: '/manufacturing/productions/',
     getParentRoute: () => AdminRouteRoute,
   } as any)
+const AdminInventoryWarehousesIndexRoute =
+  AdminInventoryWarehousesIndexRouteImport.update({
+    id: '/inventory/warehouses/',
+    path: '/inventory/warehouses/',
+    getParentRoute: () => AdminRouteRoute,
+  } as any)
+const AdminInventoryFactoryFloorIndexRoute =
+  AdminInventoryFactoryFloorIndexRouteImport.update({
+    id: '/inventory/factory-floor/',
+    path: '/inventory/factory-floor/',
+    getParentRoute: () => AdminRouteRoute,
+  } as any)
+const AdminManufacturingRecipesRecipeIdRoute =
+  AdminManufacturingRecipesRecipeIdRouteImport.update({
+    id: '/manufacturing/recipes/$recipeId',
+    path: '/manufacturing/recipes/$recipeId',
+    getParentRoute: () => AdminRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -150,8 +172,11 @@ export interface FileRoutesByFullPath {
   '/admin/dashboard/': typeof AdminDashboardIndexRoute
   '/admin/finance/': typeof AdminFinanceIndexRoute
   '/admin/hr/': typeof AdminHrIndexRoute
-  '/admin/inventory/': typeof AdminInventoryIndexRoute
   '/admin/settings/': typeof AdminSettingsIndexRoute
+  '/admin/user-management/': typeof AdminUserManagementIndexRoute
+  '/admin/manufacturing/recipes/$recipeId': typeof AdminManufacturingRecipesRecipeIdRoute
+  '/admin/inventory/factory-floor/': typeof AdminInventoryFactoryFloorIndexRoute
+  '/admin/inventory/warehouses/': typeof AdminInventoryWarehousesIndexRoute
   '/admin/manufacturing/productions/': typeof AdminManufacturingProductionsIndexRoute
   '/admin/manufacturing/recipes/': typeof AdminManufacturingRecipesIndexRoute
   '/admin/sales/customers/': typeof AdminSalesCustomersIndexRoute
@@ -171,8 +196,11 @@ export interface FileRoutesByTo {
   '/admin/dashboard': typeof AdminDashboardIndexRoute
   '/admin/finance': typeof AdminFinanceIndexRoute
   '/admin/hr': typeof AdminHrIndexRoute
-  '/admin/inventory': typeof AdminInventoryIndexRoute
   '/admin/settings': typeof AdminSettingsIndexRoute
+  '/admin/user-management': typeof AdminUserManagementIndexRoute
+  '/admin/manufacturing/recipes/$recipeId': typeof AdminManufacturingRecipesRecipeIdRoute
+  '/admin/inventory/factory-floor': typeof AdminInventoryFactoryFloorIndexRoute
+  '/admin/inventory/warehouses': typeof AdminInventoryWarehousesIndexRoute
   '/admin/manufacturing/productions': typeof AdminManufacturingProductionsIndexRoute
   '/admin/manufacturing/recipes': typeof AdminManufacturingRecipesIndexRoute
   '/admin/sales/customers': typeof AdminSalesCustomersIndexRoute
@@ -194,8 +222,11 @@ export interface FileRoutesById {
   '/admin/dashboard/': typeof AdminDashboardIndexRoute
   '/admin/finance/': typeof AdminFinanceIndexRoute
   '/admin/hr/': typeof AdminHrIndexRoute
-  '/admin/inventory/': typeof AdminInventoryIndexRoute
   '/admin/settings/': typeof AdminSettingsIndexRoute
+  '/admin/user-management/': typeof AdminUserManagementIndexRoute
+  '/admin/manufacturing/recipes/$recipeId': typeof AdminManufacturingRecipesRecipeIdRoute
+  '/admin/inventory/factory-floor/': typeof AdminInventoryFactoryFloorIndexRoute
+  '/admin/inventory/warehouses/': typeof AdminInventoryWarehousesIndexRoute
   '/admin/manufacturing/productions/': typeof AdminManufacturingProductionsIndexRoute
   '/admin/manufacturing/recipes/': typeof AdminManufacturingRecipesIndexRoute
   '/admin/sales/customers/': typeof AdminSalesCustomersIndexRoute
@@ -217,8 +248,11 @@ export interface FileRouteTypes {
     | '/admin/dashboard/'
     | '/admin/finance/'
     | '/admin/hr/'
-    | '/admin/inventory/'
     | '/admin/settings/'
+    | '/admin/user-management/'
+    | '/admin/manufacturing/recipes/$recipeId'
+    | '/admin/inventory/factory-floor/'
+    | '/admin/inventory/warehouses/'
     | '/admin/manufacturing/productions/'
     | '/admin/manufacturing/recipes/'
     | '/admin/sales/customers/'
@@ -238,8 +272,11 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/finance'
     | '/admin/hr'
-    | '/admin/inventory'
     | '/admin/settings'
+    | '/admin/user-management'
+    | '/admin/manufacturing/recipes/$recipeId'
+    | '/admin/inventory/factory-floor'
+    | '/admin/inventory/warehouses'
     | '/admin/manufacturing/productions'
     | '/admin/manufacturing/recipes'
     | '/admin/sales/customers'
@@ -260,8 +297,11 @@ export interface FileRouteTypes {
     | '/admin/dashboard/'
     | '/admin/finance/'
     | '/admin/hr/'
-    | '/admin/inventory/'
     | '/admin/settings/'
+    | '/admin/user-management/'
+    | '/admin/manufacturing/recipes/$recipeId'
+    | '/admin/inventory/factory-floor/'
+    | '/admin/inventory/warehouses/'
     | '/admin/manufacturing/productions/'
     | '/admin/manufacturing/recipes/'
     | '/admin/sales/customers/'
@@ -314,18 +354,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvestorIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/user-management/': {
+      id: '/admin/user-management/'
+      path: '/user-management'
+      fullPath: '/admin/user-management/'
+      preLoaderRoute: typeof AdminUserManagementIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/settings/': {
       id: '/admin/settings/'
       path: '/settings'
       fullPath: '/admin/settings/'
       preLoaderRoute: typeof AdminSettingsIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/inventory/': {
-      id: '/admin/inventory/'
-      path: '/inventory'
-      fullPath: '/admin/inventory/'
-      preLoaderRoute: typeof AdminInventoryIndexRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/hr/': {
@@ -419,6 +459,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminManufacturingProductionsIndexRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/inventory/warehouses/': {
+      id: '/admin/inventory/warehouses/'
+      path: '/inventory/warehouses'
+      fullPath: '/admin/inventory/warehouses/'
+      preLoaderRoute: typeof AdminInventoryWarehousesIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/inventory/factory-floor/': {
+      id: '/admin/inventory/factory-floor/'
+      path: '/inventory/factory-floor'
+      fullPath: '/admin/inventory/factory-floor/'
+      preLoaderRoute: typeof AdminInventoryFactoryFloorIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/manufacturing/recipes/$recipeId': {
+      id: '/admin/manufacturing/recipes/$recipeId'
+      path: '/manufacturing/recipes/$recipeId'
+      fullPath: '/admin/manufacturing/recipes/$recipeId'
+      preLoaderRoute: typeof AdminManufacturingRecipesRecipeIdRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
   }
 }
 
@@ -446,8 +507,11 @@ interface AdminRouteRouteChildren {
   AdminDashboardIndexRoute: typeof AdminDashboardIndexRoute
   AdminFinanceIndexRoute: typeof AdminFinanceIndexRoute
   AdminHrIndexRoute: typeof AdminHrIndexRoute
-  AdminInventoryIndexRoute: typeof AdminInventoryIndexRoute
   AdminSettingsIndexRoute: typeof AdminSettingsIndexRoute
+  AdminUserManagementIndexRoute: typeof AdminUserManagementIndexRoute
+  AdminManufacturingRecipesRecipeIdRoute: typeof AdminManufacturingRecipesRecipeIdRoute
+  AdminInventoryFactoryFloorIndexRoute: typeof AdminInventoryFactoryFloorIndexRoute
+  AdminInventoryWarehousesIndexRoute: typeof AdminInventoryWarehousesIndexRoute
   AdminManufacturingProductionsIndexRoute: typeof AdminManufacturingProductionsIndexRoute
   AdminManufacturingRecipesIndexRoute: typeof AdminManufacturingRecipesIndexRoute
   AdminSalesCustomersIndexRoute: typeof AdminSalesCustomersIndexRoute
@@ -458,8 +522,12 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminDashboardIndexRoute: AdminDashboardIndexRoute,
   AdminFinanceIndexRoute: AdminFinanceIndexRoute,
   AdminHrIndexRoute: AdminHrIndexRoute,
-  AdminInventoryIndexRoute: AdminInventoryIndexRoute,
   AdminSettingsIndexRoute: AdminSettingsIndexRoute,
+  AdminUserManagementIndexRoute: AdminUserManagementIndexRoute,
+  AdminManufacturingRecipesRecipeIdRoute:
+    AdminManufacturingRecipesRecipeIdRoute,
+  AdminInventoryFactoryFloorIndexRoute: AdminInventoryFactoryFloorIndexRoute,
+  AdminInventoryWarehousesIndexRoute: AdminInventoryWarehousesIndexRoute,
   AdminManufacturingProductionsIndexRoute:
     AdminManufacturingProductionsIndexRoute,
   AdminManufacturingRecipesIndexRoute: AdminManufacturingRecipesIndexRoute,

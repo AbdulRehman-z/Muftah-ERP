@@ -8,21 +8,19 @@ import { auth } from "./auth";
  * Redirects non-admin users to investor page.
  * Adds session to middleware context for downstream access.
  */
-export const requireAdminMiddleware = createMiddleware().server(
-	async ({ next }) => {
-		const headers = getRequestHeaders();
-		const session = await auth.api.getSession({ headers });
-		if (!session) {
-			throw redirect({ to: "/login" });
-		}
+export const requireAdminMiddleware = createMiddleware()
+	.server(
+		async ({ next }) => {
+			const headers = getRequestHeaders();
+			const session = await auth.api.getSession({ headers });
 
-		if (session.user.role !== "super-admin") {
-			throw redirect({ to: "/investor" });
-		}
+			if (!session?.session || session.user.role !== "super-admin") {
+				return redirect({ to: "/login" });
+			}
 
-		return await next({ context: { session } });
-	},
-);
+			return await next({ context: { session } });
+		},
+	);
 
 /**
  * Middleware that only allows unauthenticated users.

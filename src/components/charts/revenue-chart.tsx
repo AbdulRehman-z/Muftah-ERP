@@ -2,8 +2,13 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
+interface ChartData {
+    name: string;
+    value: number;
+}
+
 interface RevenueChartProps {
-    data: any[]
+    data: ChartData[];
 }
 
 export function RevenueChart({ data }: RevenueChartProps) {

@@ -1,11 +1,11 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { AppSidebar } from "@/components/custom/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { authClient } from "@/lib/auth-client";
+import { requireAdminMiddleware } from "@/lib/middlewares";
 
 export const Route = createFileRoute("/admin")({
 	server: {
-		middleware: [],
+		middleware: [requireAdminMiddleware],
 	},
 	component: RouteComponent,
 });
@@ -18,5 +18,5 @@ function RouteComponent() {
 				<Outlet />
 			</SidebarInset>
 		</SidebarProvider>
-	);
+	)
 }

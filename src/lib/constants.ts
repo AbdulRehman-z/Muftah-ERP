@@ -1,4 +1,5 @@
 import {
+	ArrowRightLeftIcon,
 	Banknote,
 	Factory,
 	LayoutDashboard,
@@ -8,6 +9,7 @@ import {
 	Settings,
 	ShoppingCart,
 	Users,
+	WarehouseIcon,
 } from "lucide-react";
 
 export interface NavigationItem {
@@ -33,7 +35,7 @@ export const navigations: NavigationItem[] = [
 				url: "/admin/manufacturing/productions",
 			},
 			{
-				title: "Recipes / BOM",
+				title: "Recipes",
 				url: "/admin/manufacturing/recipes",
 			},
 		],
@@ -42,17 +44,18 @@ export const navigations: NavigationItem[] = [
 		title: "Inventory Management",
 		url: "/admin/inventory",
 		icon: PackageSearch,
-		// items: [
-		// 	{
-		// 		title: "Stoc",
-		// 		url: "/admin/inventory/dashboard",
-		// 	},
-		// 	// {
-		// 	// 	title: "Transfers",
-		// 	// 	url: "/admin/inventory/transfers",
-		// 	// 	icon: ArrowRightLeft,
-		// 	// },
-		// ],
+		items: [
+			{
+				title: "Warehouses",
+				url: "/admin/inventory/warehouses",
+				icon: WarehouseIcon
+			},
+			{
+				title: "Factory-Floor",
+				url: "/admin/inventory/factory-floor",
+				icon: ArrowRightLeftIcon,
+			},
+		],
 	},
 	{
 		title: "Sales",
@@ -94,5 +97,10 @@ export const navigations: NavigationItem[] = [
 		title: "Settings",
 		url: "/admin/settings",
 		icon: Settings,
+	},
+	{
+		title: "User Management",
+		url: "/admin/user-management",
+		icon: Users,
 	},
 ];

@@ -91,11 +91,22 @@ CREATE TABLE "wallets" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "employees" (
+CREATE TABLE "chemicals" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
-	"role" text NOT NULL,
-	"base_salary" numeric(10, 2) DEFAULT '0',
+	"unit" text DEFAULT 'kg' NOT NULL,
+	"cost_per_unit" numeric(10, 2) DEFAULT '0',
+	"minimum_stock_level" numeric(10, 2) DEFAULT '0',
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "finished_goods_stock" (
+	"id" text PRIMARY KEY NOT NULL,
+	"warehouse_id" text NOT NULL,
+	"recipe_id" text NOT NULL,
+	"quantity_cartons" integer DEFAULT 0 NOT NULL,
+	"quantity_containers" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -117,7 +128,7 @@ CREATE TABLE "inventory_audit_log" (
 CREATE TABLE "material_stock" (
 	"id" text PRIMARY KEY NOT NULL,
 	"warehouse_id" text NOT NULL,
-	"raw_material_id" text,
+	"chemical_id" text,
 	"packaging_material_id" text,
 	"quantity" numeric(12, 3) DEFAULT '0' NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -127,38 +138,23 @@ CREATE TABLE "material_stock" (
 CREATE TABLE "packaging_materials" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
-	"unit" text DEFAULT 'unit' NOT NULL,
+	"type" text DEFAULT 'primary' NOT NULL,
+	"capacity" numeric(10, 2),
+	"capacity_unit" text,
+	"cost_per_unit" numeric(10, 2) DEFAULT '0',
 	"minimum_stock_level" integer DEFAULT 0,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "payroll" (
+CREATE TABLE "production_materials_used" (
 	"id" text PRIMARY KEY NOT NULL,
-	"employee_id" text NOT NULL,
-	"month" integer NOT NULL,
-	"year" integer NOT NULL,
-	"base_salary" numeric(10, 2) NOT NULL,
-	"overtime_pay" numeric(10, 2) DEFAULT '0',
-	"deductions" numeric(10, 2) DEFAULT '0',
-	"total_paid" numeric(12, 2) NOT NULL,
-	"status" text DEFAULT 'paid' NOT NULL,
-	"wallet_id" text,
-	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "product_variants" (
-	"id" text PRIMARY KEY NOT NULL,
-	"product_id" text NOT NULL,
-	"name" text NOT NULL,
-	"packs_per_carton" integer DEFAULT 1 NOT NULL,
-	"weight_per_pack_kg" numeric(8, 3) NOT NULL,
-	"primary_raw_material_id" text,
-	"primary_packaging_material_id" text,
-	"stock_quantity_cartons" integer DEFAULT 0,
-	"retail_price" numeric(10, 2),
-	"hsn_code" text,
+	"production_run_id" text NOT NULL,
+	"material_type" text NOT NULL,
+	"material_id" text NOT NULL,
+	"quantity_used" numeric(12, 3) NOT NULL,
+	"cost_per_unit" numeric(10, 2) NOT NULL,
+	"total_cost" numeric(12, 2) NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -166,13 +162,22 @@ CREATE TABLE "product_variants" (
 CREATE TABLE "production_runs" (
 	"id" text PRIMARY KEY NOT NULL,
 	"batch_id" text NOT NULL,
-	"variant_id" text NOT NULL,
+	"recipe_id" text NOT NULL,
 	"warehouse_id" text NOT NULL,
 	"operator_id" text NOT NULL,
-	"cartons_produced" integer NOT NULL,
-	"total_packs_created" integer NOT NULL,
-	"total_liquid_deducted_kg" numeric(12, 3) NOT NULL,
-	"status" text DEFAULT 'completed' NOT NULL,
+	"batches_produced" integer NOT NULL,
+	"cartons_produced" integer DEFAULT 0,
+	"containers_produced" integer NOT NULL,
+	"loose_units_produced" integer DEFAULT 0,
+	"total_chemical_cost" numeric(12, 2) DEFAULT '0',
+	"total_packaging_cost" numeric(12, 2) DEFAULT '0',
+	"total_production_cost" numeric(12, 2) DEFAULT '0',
+	"cost_per_container" numeric(10, 4) DEFAULT '0',
+	"status" text DEFAULT 'scheduled' NOT NULL,
+	"scheduled_start_date" timestamp,
+	"actual_start_date" timestamp,
+	"actual_completion_date" timestamp,
+	"notes" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "production_runs_batch_id_unique" UNIQUE("batch_id")
@@ -182,15 +187,52 @@ CREATE TABLE "products" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"description" text,
+	"category" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "raw_materials" (
+CREATE TABLE "recipe_ingredients" (
 	"id" text PRIMARY KEY NOT NULL,
+	"recipe_id" text NOT NULL,
+	"chemical_id" text NOT NULL,
+	"quantity_per_batch" numeric(10, 3) NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "recipe_packaging" (
+	"id" text PRIMARY KEY NOT NULL,
+	"recipe_id" text NOT NULL,
+	"packaging_material_id" text NOT NULL,
+	"quantity_per_container" numeric(10, 3) NOT NULL,
+	"is_optional" boolean DEFAULT false,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "recipes" (
+	"id" text PRIMARY KEY NOT NULL,
+	"product_id" text NOT NULL,
 	"name" text NOT NULL,
-	"unit" text DEFAULT 'kg' NOT NULL,
-	"minimum_stock_level" numeric(10, 2) DEFAULT '0',
+	"batch_size" numeric(10, 2) NOT NULL,
+	"batch_unit" text DEFAULT 'liters' NOT NULL,
+	"target_units_per_batch" integer DEFAULT 0 NOT NULL,
+	"container_type" text NOT NULL,
+	"container_packaging_id" text NOT NULL,
+	"fill_amount" numeric(10, 3),
+	"fill_unit" text,
+	"containers_per_carton" integer DEFAULT 0,
+	"carton_packaging_id" text,
+	"estimated_cost_per_batch" numeric(12, 2),
+	"estimated_cost_per_container" numeric(10, 4),
+	"estimated_ingredients_cost" numeric(12, 2),
+	"estimated_packaging_cost" numeric(12, 2),
+	"min_batch_yield" numeric(5, 2),
+	"target_shelf_life" integer,
+	"notes" text,
+	"production_instructions" text,
+	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -204,6 +246,7 @@ CREATE TABLE "stock_transfers" (
 	"quantity" numeric(12, 3) NOT NULL,
 	"performed_by_id" text NOT NULL,
 	"status" text DEFAULT 'completed' NOT NULL,
+	"notes" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -211,7 +254,13 @@ CREATE TABLE "stock_transfers" (
 CREATE TABLE "warehouses" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
-	"location" text,
+	"address" text NOT NULL,
+	"city" text NOT NULL,
+	"state" text NOT NULL,
+	"type" text DEFAULT 'storage' NOT NULL,
+	"latitude" numeric(10, 8) NOT NULL,
+	"longitude" numeric(11, 8) NOT NULL,
+	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -230,7 +279,7 @@ CREATE TABLE "customers" (
 CREATE TABLE "invoice_items" (
 	"id" text PRIMARY KEY NOT NULL,
 	"invoice_id" text NOT NULL,
-	"variant_id" text NOT NULL,
+	"recipe_id" text NOT NULL,
 	"quantity_cartons" integer NOT NULL,
 	"unit_price" numeric(10, 2) NOT NULL,
 	"subtotal" numeric(12, 2) NOT NULL,
@@ -260,24 +309,29 @@ ALTER TABLE "expenses" ADD CONSTRAINT "expenses_wallet_id_wallets_id_fk" FOREIGN
 ALTER TABLE "expenses" ADD CONSTRAINT "expenses_performed_by_id_user_id_fk" FOREIGN KEY ("performed_by_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_wallet_id_wallets_id_fk" FOREIGN KEY ("wallet_id") REFERENCES "public"."wallets"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_performed_by_id_user_id_fk" FOREIGN KEY ("performed_by_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "finished_goods_stock" ADD CONSTRAINT "finished_goods_stock_warehouse_id_warehouses_id_fk" FOREIGN KEY ("warehouse_id") REFERENCES "public"."warehouses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "finished_goods_stock" ADD CONSTRAINT "finished_goods_stock_recipe_id_recipes_id_fk" FOREIGN KEY ("recipe_id") REFERENCES "public"."recipes"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "inventory_audit_log" ADD CONSTRAINT "inventory_audit_log_warehouse_id_warehouses_id_fk" FOREIGN KEY ("warehouse_id") REFERENCES "public"."warehouses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "inventory_audit_log" ADD CONSTRAINT "inventory_audit_log_performed_by_id_user_id_fk" FOREIGN KEY ("performed_by_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "material_stock" ADD CONSTRAINT "material_stock_warehouse_id_warehouses_id_fk" FOREIGN KEY ("warehouse_id") REFERENCES "public"."warehouses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "material_stock" ADD CONSTRAINT "material_stock_raw_material_id_raw_materials_id_fk" FOREIGN KEY ("raw_material_id") REFERENCES "public"."raw_materials"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "material_stock" ADD CONSTRAINT "material_stock_chemical_id_chemicals_id_fk" FOREIGN KEY ("chemical_id") REFERENCES "public"."chemicals"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "material_stock" ADD CONSTRAINT "material_stock_packaging_material_id_packaging_materials_id_fk" FOREIGN KEY ("packaging_material_id") REFERENCES "public"."packaging_materials"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "payroll" ADD CONSTRAINT "payroll_employee_id_employees_id_fk" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "payroll" ADD CONSTRAINT "payroll_wallet_id_wallets_id_fk" FOREIGN KEY ("wallet_id") REFERENCES "public"."wallets"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "product_variants" ADD CONSTRAINT "product_variants_product_id_products_id_fk" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "product_variants" ADD CONSTRAINT "product_variants_primary_raw_material_id_raw_materials_id_fk" FOREIGN KEY ("primary_raw_material_id") REFERENCES "public"."raw_materials"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "product_variants" ADD CONSTRAINT "product_variants_primary_packaging_material_id_packaging_materials_id_fk" FOREIGN KEY ("primary_packaging_material_id") REFERENCES "public"."packaging_materials"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "production_runs" ADD CONSTRAINT "production_runs_variant_id_product_variants_id_fk" FOREIGN KEY ("variant_id") REFERENCES "public"."product_variants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "production_materials_used" ADD CONSTRAINT "production_materials_used_production_run_id_production_runs_id_fk" FOREIGN KEY ("production_run_id") REFERENCES "public"."production_runs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "production_runs" ADD CONSTRAINT "production_runs_recipe_id_recipes_id_fk" FOREIGN KEY ("recipe_id") REFERENCES "public"."recipes"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "production_runs" ADD CONSTRAINT "production_runs_warehouse_id_warehouses_id_fk" FOREIGN KEY ("warehouse_id") REFERENCES "public"."warehouses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "production_runs" ADD CONSTRAINT "production_runs_operator_id_user_id_fk" FOREIGN KEY ("operator_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "recipe_ingredients" ADD CONSTRAINT "recipe_ingredients_recipe_id_recipes_id_fk" FOREIGN KEY ("recipe_id") REFERENCES "public"."recipes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "recipe_ingredients" ADD CONSTRAINT "recipe_ingredients_chemical_id_chemicals_id_fk" FOREIGN KEY ("chemical_id") REFERENCES "public"."chemicals"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "recipe_packaging" ADD CONSTRAINT "recipe_packaging_recipe_id_recipes_id_fk" FOREIGN KEY ("recipe_id") REFERENCES "public"."recipes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "recipe_packaging" ADD CONSTRAINT "recipe_packaging_packaging_material_id_packaging_materials_id_fk" FOREIGN KEY ("packaging_material_id") REFERENCES "public"."packaging_materials"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "recipes" ADD CONSTRAINT "recipes_product_id_products_id_fk" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "recipes" ADD CONSTRAINT "recipes_container_packaging_id_packaging_materials_id_fk" FOREIGN KEY ("container_packaging_id") REFERENCES "public"."packaging_materials"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "recipes" ADD CONSTRAINT "recipes_carton_packaging_id_packaging_materials_id_fk" FOREIGN KEY ("carton_packaging_id") REFERENCES "public"."packaging_materials"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stock_transfers" ADD CONSTRAINT "stock_transfers_from_warehouse_id_warehouses_id_fk" FOREIGN KEY ("from_warehouse_id") REFERENCES "public"."warehouses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stock_transfers" ADD CONSTRAINT "stock_transfers_to_warehouse_id_warehouses_id_fk" FOREIGN KEY ("to_warehouse_id") REFERENCES "public"."warehouses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stock_transfers" ADD CONSTRAINT "stock_transfers_performed_by_id_user_id_fk" FOREIGN KEY ("performed_by_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invoice_items" ADD CONSTRAINT "invoice_items_invoice_id_invoices_id_fk" FOREIGN KEY ("invoice_id") REFERENCES "public"."invoices"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "invoice_items" ADD CONSTRAINT "invoice_items_variant_id_product_variants_id_fk" FOREIGN KEY ("variant_id") REFERENCES "public"."product_variants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "invoice_items" ADD CONSTRAINT "invoice_items_recipe_id_recipes_id_fk" FOREIGN KEY ("recipe_id") REFERENCES "public"."recipes"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invoices" ADD CONSTRAINT "invoices_customer_id_customers_id_fk" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invoices" ADD CONSTRAINT "invoices_warehouse_id_warehouses_id_fk" FOREIGN KEY ("warehouse_id") REFERENCES "public"."warehouses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invoices" ADD CONSTRAINT "invoices_performed_by_id_user_id_fk" FOREIGN KEY ("performed_by_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -286,4 +340,9 @@ CREATE INDEX "session_userId_idx" ON "session" USING btree ("user_id");--> state
 CREATE INDEX "twoFactor_secret_idx" ON "two_factor" USING btree ("secret");--> statement-breakpoint
 CREATE INDEX "twoFactor_userId_idx" ON "two_factor" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "verification_identifier_idx" ON "verification" USING btree ("identifier");--> statement-breakpoint
-CREATE INDEX "stock_warehouse_idx" ON "material_stock" USING btree ("warehouse_id");
+CREATE INDEX "fg_warehouse_recipe_idx" ON "finished_goods_stock" USING btree ("warehouse_id","recipe_id");--> statement-breakpoint
+CREATE INDEX "audit_warehouse_idx" ON "inventory_audit_log" USING btree ("warehouse_id");--> statement-breakpoint
+CREATE INDEX "audit_date_idx" ON "inventory_audit_log" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "stock_warehouse_idx" ON "material_stock" USING btree ("warehouse_id");--> statement-breakpoint
+CREATE INDEX "ingredients_recipe_idx" ON "recipe_ingredients" USING btree ("recipe_id");--> statement-breakpoint
+CREATE INDEX "packaging_recipe_idx" ON "recipe_packaging" USING btree ("recipe_id");

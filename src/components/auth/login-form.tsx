@@ -32,7 +32,6 @@ import { EmailVerification } from "./email-verification";
 export const LoginForm = () => {
 	const navigate = useNavigate();
 	const [isPending, startTransition] = useTransition();
-	// const setAuth = useAuthStore((state) => state.setAuth);
 	const [showVerificationComponent, setShowVerificationComponent] =
 		useState(false);
 

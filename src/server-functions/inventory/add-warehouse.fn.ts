@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import z from "zod";
 import { db, warehouses } from "@/db";
 import { requireAdminMiddleware } from "@/lib/middlewares";
 import { addWarehouseSchema } from "@/lib/validators";
@@ -13,12 +12,14 @@ export const addWarehouseFn = createServerFn()
 				.insert(warehouses)
 				.values({
 					name: data.name,
-					address: data.address, // Your 'address' field
-					latitude: data.latitude.toString(), // Store as string for PG Decimal
+					address: data.address,
+					city: data.city,
+					state: data.state,
+					latitude: data.latitude.toString(),
 					longitude: data.longitude.toString(),
 				})
 				.returning();
-
+			console.log({ result });
 			return result;
 		} catch (error) {
 			console.error("DB Error:", error);

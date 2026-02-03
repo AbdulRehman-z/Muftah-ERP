@@ -29,6 +29,7 @@
     "@tanstack/react-start": "^1.145.0",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/router-plugin": "^1.144.0",
+    "@tanstack/zod-form-adapter": "^0.42.1",
     "@unpic/react": "^1.0.2",
     "@zxcvbn-ts/core": "^3.0.4",
     "@zxcvbn-ts/language-common": "^3.0.4",

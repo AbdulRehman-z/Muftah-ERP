@@ -6,21 +6,32 @@ import { addWarehouseSchema } from "@/lib/validators";
 import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
 import { Input } from "../ui/input";
 
-export const AddWarehouseForm = () => {
+type Props = {
+	onSuccess: () => void;
+};
+
+export const AddWarehouseForm = ({ onSuccess }: Props) => {
 	const mutate = useAddWarehouse();
 
 	const form = useForm({
 		defaultValues: {
 			name: "",
 			address: "",
+			city: "",
+			state: "",
 			latitude: "",
 			longitude: "",
 		},
 		validators: {
-			onChange: addWarehouseSchema,
+			onSubmit: addWarehouseSchema,
 		},
 		onSubmit: async ({ value }) => {
-			await mutate.mutateAsync({ data: value });
+			await mutate.mutateAsync(
+				{ data: value },
+				{
+					onSuccess: onSuccess,
+				},
+			);
 		},
 	});
 
@@ -71,6 +82,39 @@ export const AddWarehouseForm = () => {
 						</Field>
 					)}
 				</form.Field>
+
+				{/* City and State Row */}
+				<div className="grid grid-cols-2 gap-4">
+					<form.Field name="city">
+						{(field) => (
+							<Field>
+								<FieldLabel>City</FieldLabel>
+								<Input
+									placeholder="e.g. Karachi"
+									value={field.state.value}
+									onBlur={field.handleBlur}
+									onChange={(e) => field.handleChange(e.target.value)}
+								/>
+								<FieldError errors={field.state.meta.errors} />
+							</Field>
+						)}
+					</form.Field>
+
+					<form.Field name="state">
+						{(field) => (
+							<Field>
+								<FieldLabel>State / Province</FieldLabel>
+								<Input
+									placeholder="e.g. Sindh"
+									value={field.state.value}
+									onBlur={field.handleBlur}
+									onChange={(e) => field.handleChange(e.target.value)}
+								/>
+								<FieldError errors={field.state.meta.errors} />
+							</Field>
+						)}
+					</form.Field>
+				</div>
 
 				{/* Coordinates Row */}
 				<div className="grid grid-cols-2 gap-4">

@@ -19,22 +19,22 @@ export const auth = betterAuth({
 			user,
 		},
 	}),
-	// emailVerification: {
-	// 	autoSignInAfterVerification: true,
-	// 	sendOnSignIn: true,
-	// 	sendOnSignUp: true,
-	// 	sendVerificationEmail: async ({ url, user }) => {
-	// 		await sendEmail({
-	// 			email: user.email,
-	// 			html: () =>
-	// 				verificationEmailTemplate({
-	// 					url,
-	// 					user,
-	// 				}),
-	// 			subject: "Verify Your Email",
-	// 		});
-	// 	},
-	// },
+	emailVerification: {
+		autoSignInAfterVerification: true,
+		sendOnSignIn: true,
+		sendOnSignUp: true,
+		sendVerificationEmail: async ({ url, user }) => {
+			await sendEmail({
+				email: user.email,
+				html: () =>
+					verificationEmailTemplate({
+						url,
+						user,
+					}),
+				subject: "Verify Your Email",
+			});
+		},
+	},
 	emailAndPassword: {
 		autoSignIn: true,
 		requireEmailVerification: false,

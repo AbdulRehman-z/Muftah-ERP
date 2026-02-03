@@ -16,12 +16,11 @@ export const db = drizzle(process.env.DATABASE_URL!, { schema: schema });
 export const { account, session, twoFactor, user, verification } = authSchema;
 export const {
 	warehouses,
-	employees,
-	rawMaterials,
+	chemicals,
 	packagingMaterials,
 	materialStock,
+	finishedGoodsStock,
 	products,
-	productVariants,
 	productionRuns,
 	stockTransfers,
 	inventoryAuditLog,

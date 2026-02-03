@@ -49,14 +49,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<HeadContent />
 			</head>
 			<body>
-				<ThemeProvider
+				{/* <ThemeProvider
 					defaultTheme="light"
 					attribute="class"
 					enableColorScheme
-					enableSystem
-				>
-					{children}
-				</ThemeProvider>
+				// enableSystem
+				> */}
+				{children}
+				{/* </ThemeProvider> */}
 				<Toaster />
 				<TanStackDevtools
 					config={{

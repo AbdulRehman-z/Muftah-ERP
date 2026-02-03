@@ -2,8 +2,13 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
+interface ChartData {
+    name: string;
+    value: number;
+}
+
 interface ProductionChartProps {
-    data: any[]
+    data: ChartData[];
 }
 
 export function ProductionChart({ data }: ProductionChartProps) {

@@ -1,5 +1,5 @@
 {
-  "id": "63dd2ba0-2ce0-4df7-8723-cf06db28685c",
+  "id": "9c11f29c-0343-4b46-a70e-2335b4e0c7e2",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -717,8 +717,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.employees": {
-      "name": "employees",
+    "public.chemicals": {
+      "name": "chemicals",
       "schema": "",
       "columns": {
         "id": {
@@ -733,14 +733,22 @@
           "primaryKey": false,
           "notNull": true
         },
-        "role": {
-          "name": "role",
+        "unit": {
+          "name": "unit",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "'kg'"
         },
-        "base_salary": {
-          "name": "base_salary",
+        "cost_per_unit": {
+          "name": "cost_per_unit",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "minimum_stock_level": {
+          "name": "minimum_stock_level",
           "type": "numeric(10, 2)",
           "primaryKey": false,
           "notNull": false,
@@ -763,6 +771,114 @@
       },
       "indexes": {},
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.finished_goods_stock": {
+      "name": "finished_goods_stock",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "warehouse_id": {
+          "name": "warehouse_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recipe_id": {
+          "name": "recipe_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity_cartons": {
+          "name": "quantity_cartons",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "quantity_containers": {
+          "name": "quantity_containers",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "fg_warehouse_recipe_idx": {
+          "name": "fg_warehouse_recipe_idx",
+          "columns": [
+            {
+              "expression": "warehouse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "recipe_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "finished_goods_stock_warehouse_id_warehouses_id_fk": {
+          "name": "finished_goods_stock_warehouse_id_warehouses_id_fk",
+          "tableFrom": "finished_goods_stock",
+          "tableTo": "warehouses",
+          "columnsFrom": [
+            "warehouse_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "finished_goods_stock_recipe_id_recipes_id_fk": {
+          "name": "finished_goods_stock_recipe_id_recipes_id_fk",
+          "tableFrom": "finished_goods_stock",
+          "tableTo": "recipes",
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -842,7 +958,38 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "audit_warehouse_idx": {
+          "name": "audit_warehouse_idx",
+          "columns": [
+            {
+              "expression": "warehouse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "audit_date_idx": {
+          "name": "audit_date_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "inventory_audit_log_warehouse_id_warehouses_id_fk": {
           "name": "inventory_audit_log_warehouse_id_warehouses_id_fk",
@@ -893,8 +1040,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "raw_material_id": {
-          "name": "raw_material_id",
+        "chemical_id": {
+          "name": "chemical_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -958,12 +1105,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "material_stock_raw_material_id_raw_materials_id_fk": {
-          "name": "material_stock_raw_material_id_raw_materials_id_fk",
+        "material_stock_chemical_id_chemicals_id_fk": {
+          "name": "material_stock_chemical_id_chemicals_id_fk",
           "tableFrom": "material_stock",
-          "tableTo": "raw_materials",
+          "tableTo": "chemicals",
           "columnsFrom": [
-            "raw_material_id"
+            "chemical_id"
           ],
           "columnsTo": [
             "id"
@@ -1007,12 +1154,31 @@
           "primaryKey": false,
           "notNull": true
         },
-        "unit": {
-          "name": "unit",
+        "type": {
+          "name": "type",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'unit'"
+          "default": "'primary'"
+        },
+        "capacity": {
+          "name": "capacity",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "capacity_unit": {
+          "name": "capacity_unit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cost_per_unit": {
+          "name": "cost_per_unit",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
         },
         "minimum_stock_level": {
           "name": "minimum_stock_level",
@@ -1044,8 +1210,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.payroll": {
-      "name": "payroll",
+    "public.production_materials_used": {
+      "name": "production_materials_used",
       "schema": "",
       "columns": {
         "id": {
@@ -1054,63 +1220,42 @@
           "primaryKey": true,
           "notNull": true
         },
-        "employee_id": {
-          "name": "employee_id",
+        "production_run_id": {
+          "name": "production_run_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "month": {
-          "name": "month",
-          "type": "integer",
+        "material_type": {
+          "name": "material_type",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "year": {
-          "name": "year",
-          "type": "integer",
+        "material_id": {
+          "name": "material_id",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "base_salary": {
-          "name": "base_salary",
+        "quantity_used": {
+          "name": "quantity_used",
+          "type": "numeric(12, 3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cost_per_unit": {
+          "name": "cost_per_unit",
           "type": "numeric(10, 2)",
           "primaryKey": false,
           "notNull": true
         },
-        "overtime_pay": {
-          "name": "overtime_pay",
-          "type": "numeric(10, 2)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'0'"
-        },
-        "deductions": {
-          "name": "deductions",
-          "type": "numeric(10, 2)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'0'"
-        },
-        "total_paid": {
-          "name": "total_paid",
+        "total_cost": {
+          "name": "total_cost",
           "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": true
         },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'paid'"
-        },
-        "wallet_id": {
-          "name": "wallet_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -1128,159 +1273,17 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "payroll_employee_id_employees_id_fk": {
-          "name": "payroll_employee_id_employees_id_fk",
-          "tableFrom": "payroll",
-          "tableTo": "employees",
+        "production_materials_used_production_run_id_production_runs_id_fk": {
+          "name": "production_materials_used_production_run_id_production_runs_id_fk",
+          "tableFrom": "production_materials_used",
+          "tableTo": "production_runs",
           "columnsFrom": [
-            "employee_id"
+            "production_run_id"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "payroll_wallet_id_wallets_id_fk": {
-          "name": "payroll_wallet_id_wallets_id_fk",
-          "tableFrom": "payroll",
-          "tableTo": "wallets",
-          "columnsFrom": [
-            "wallet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.product_variants": {
-      "name": "product_variants",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "product_id": {
-          "name": "product_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "packs_per_carton": {
-          "name": "packs_per_carton",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "weight_per_pack_kg": {
-          "name": "weight_per_pack_kg",
-          "type": "numeric(8, 3)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "primary_raw_material_id": {
-          "name": "primary_raw_material_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "primary_packaging_material_id": {
-          "name": "primary_packaging_material_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "stock_quantity_cartons": {
-          "name": "stock_quantity_cartons",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "retail_price": {
-          "name": "retail_price",
-          "type": "numeric(10, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "hsn_code": {
-          "name": "hsn_code",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "product_variants_product_id_products_id_fk": {
-          "name": "product_variants_product_id_products_id_fk",
-          "tableFrom": "product_variants",
-          "tableTo": "products",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "product_variants_primary_raw_material_id_raw_materials_id_fk": {
-          "name": "product_variants_primary_raw_material_id_raw_materials_id_fk",
-          "tableFrom": "product_variants",
-          "tableTo": "raw_materials",
-          "columnsFrom": [
-            "primary_raw_material_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "product_variants_primary_packaging_material_id_packaging_materials_id_fk": {
-          "name": "product_variants_primary_packaging_material_id_packaging_materials_id_fk",
-          "tableFrom": "product_variants",
-          "tableTo": "packaging_materials",
-          "columnsFrom": [
-            "primary_packaging_material_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -1306,8 +1309,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "variant_id": {
-          "name": "variant_id",
+        "recipe_id": {
+          "name": "recipe_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -1324,30 +1327,90 @@
           "primaryKey": false,
           "notNull": true
         },
+        "batches_produced": {
+          "name": "batches_produced",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
         "cartons_produced": {
           "name": "cartons_produced",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false,
+          "default": 0
         },
-        "total_packs_created": {
-          "name": "total_packs_created",
+        "containers_produced": {
+          "name": "containers_produced",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
-        "total_liquid_deducted_kg": {
-          "name": "total_liquid_deducted_kg",
-          "type": "numeric(12, 3)",
+        "loose_units_produced": {
+          "name": "loose_units_produced",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false,
+          "default": 0
+        },
+        "total_chemical_cost": {
+          "name": "total_chemical_cost",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "total_packaging_cost": {
+          "name": "total_packaging_cost",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "total_production_cost": {
+          "name": "total_production_cost",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "cost_per_container": {
+          "name": "cost_per_container",
+          "type": "numeric(10, 4)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
         },
         "status": {
           "name": "status",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'completed'"
+          "default": "'scheduled'"
+        },
+        "scheduled_start_date": {
+          "name": "scheduled_start_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actual_start_date": {
+          "name": "actual_start_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actual_completion_date": {
+          "name": "actual_completion_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -1366,12 +1429,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "production_runs_variant_id_product_variants_id_fk": {
-          "name": "production_runs_variant_id_product_variants_id_fk",
+        "production_runs_recipe_id_recipes_id_fk": {
+          "name": "production_runs_recipe_id_recipes_id_fk",
           "tableFrom": "production_runs",
-          "tableTo": "product_variants",
+          "tableTo": "recipes",
           "columnsFrom": [
-            "variant_id"
+            "recipe_id"
           ],
           "columnsTo": [
             "id"
@@ -1442,6 +1505,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -1465,8 +1534,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.raw_materials": {
-      "name": "raw_materials",
+    "public.recipe_ingredients": {
+      "name": "recipe_ingredients",
       "schema": "",
       "columns": {
         "id": {
@@ -1475,25 +1544,324 @@
           "primaryKey": true,
           "notNull": true
         },
+        "recipe_id": {
+          "name": "recipe_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "chemical_id": {
+          "name": "chemical_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity_per_batch": {
+          "name": "quantity_per_batch",
+          "type": "numeric(10, 3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ingredients_recipe_idx": {
+          "name": "ingredients_recipe_idx",
+          "columns": [
+            {
+              "expression": "recipe_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "recipe_ingredients_recipe_id_recipes_id_fk": {
+          "name": "recipe_ingredients_recipe_id_recipes_id_fk",
+          "tableFrom": "recipe_ingredients",
+          "tableTo": "recipes",
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "recipe_ingredients_chemical_id_chemicals_id_fk": {
+          "name": "recipe_ingredients_chemical_id_chemicals_id_fk",
+          "tableFrom": "recipe_ingredients",
+          "tableTo": "chemicals",
+          "columnsFrom": [
+            "chemical_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.recipe_packaging": {
+      "name": "recipe_packaging",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "recipe_id": {
+          "name": "recipe_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "packaging_material_id": {
+          "name": "packaging_material_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity_per_container": {
+          "name": "quantity_per_container",
+          "type": "numeric(10, 3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_optional": {
+          "name": "is_optional",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "packaging_recipe_idx": {
+          "name": "packaging_recipe_idx",
+          "columns": [
+            {
+              "expression": "recipe_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "recipe_packaging_recipe_id_recipes_id_fk": {
+          "name": "recipe_packaging_recipe_id_recipes_id_fk",
+          "tableFrom": "recipe_packaging",
+          "tableTo": "recipes",
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "recipe_packaging_packaging_material_id_packaging_materials_id_fk": {
+          "name": "recipe_packaging_packaging_material_id_packaging_materials_id_fk",
+          "tableFrom": "recipe_packaging",
+          "tableTo": "packaging_materials",
+          "columnsFrom": [
+            "packaging_material_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.recipes": {
+      "name": "recipes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "product_id": {
+          "name": "product_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "name": {
           "name": "name",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "unit": {
-          "name": "unit",
+        "batch_size": {
+          "name": "batch_size",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "batch_unit": {
+          "name": "batch_unit",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'kg'"
+          "default": "'liters'"
         },
-        "minimum_stock_level": {
-          "name": "minimum_stock_level",
-          "type": "numeric(10, 2)",
+        "target_units_per_batch": {
+          "name": "target_units_per_batch",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "container_type": {
+          "name": "container_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "container_packaging_id": {
+          "name": "container_packaging_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fill_amount": {
+          "name": "fill_amount",
+          "type": "numeric(10, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fill_unit": {
+          "name": "fill_unit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "containers_per_carton": {
+          "name": "containers_per_carton",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
-          "default": "'0'"
+          "default": 0
+        },
+        "carton_packaging_id": {
+          "name": "carton_packaging_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estimated_cost_per_batch": {
+          "name": "estimated_cost_per_batch",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estimated_cost_per_container": {
+          "name": "estimated_cost_per_container",
+          "type": "numeric(10, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estimated_ingredients_cost": {
+          "name": "estimated_ingredients_cost",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estimated_packaging_cost": {
+          "name": "estimated_packaging_cost",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "min_batch_yield": {
+          "name": "min_batch_yield",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_shelf_life": {
+          "name": "target_shelf_life",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "production_instructions": {
+          "name": "production_instructions",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
         },
         "created_at": {
           "name": "created_at",
@@ -1511,7 +1879,47 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "recipes_product_id_products_id_fk": {
+          "name": "recipes_product_id_products_id_fk",
+          "tableFrom": "recipes",
+          "tableTo": "products",
+          "columnsFrom": [
+            "product_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "recipes_container_packaging_id_packaging_materials_id_fk": {
+          "name": "recipes_container_packaging_id_packaging_materials_id_fk",
+          "tableFrom": "recipes",
+          "tableTo": "packaging_materials",
+          "columnsFrom": [
+            "container_packaging_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "recipes_carton_packaging_id_packaging_materials_id_fk": {
+          "name": "recipes_carton_packaging_id_packaging_materials_id_fk",
+          "tableFrom": "recipes",
+          "tableTo": "packaging_materials",
+          "columnsFrom": [
+            "carton_packaging_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -1570,6 +1978,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'completed'"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -1650,11 +2064,49 @@
           "primaryKey": false,
           "notNull": true
         },
-        "location": {
-          "name": "location",
+        "address": {
+          "name": "address",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'storage'"
+        },
+        "latitude": {
+          "name": "latitude",
+          "type": "numeric(10, 8)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "longitude": {
+          "name": "longitude",
+          "type": "numeric(11, 8)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
         },
         "created_at": {
           "name": "created_at",
@@ -1758,8 +2210,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "variant_id": {
-          "name": "variant_id",
+        "recipe_id": {
+          "name": "recipe_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -1812,12 +2264,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "invoice_items_variant_id_product_variants_id_fk": {
-          "name": "invoice_items_variant_id_product_variants_id_fk",
+        "invoice_items_recipe_id_recipes_id_fk": {
+          "name": "invoice_items_recipe_id_recipes_id_fk",
           "tableFrom": "invoice_items",
-          "tableTo": "product_variants",
+          "tableTo": "recipes",
           "columnsFrom": [
-            "variant_id"
+            "recipe_id"
           ],
           "columnsTo": [
             "id"
