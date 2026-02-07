@@ -10,6 +10,7 @@ import {
     recipePackaging,
     chemicals,
     packagingMaterials,
+    warehouses,
 } from "@/db/schemas/inventory-schema";
 import { requireAdminMiddleware } from "@/lib/middlewares";
 import { eq, and, sql } from "drizzle-orm";
@@ -46,6 +47,15 @@ export const startProductionFn = createServerFn()
 
             if (!recipe) {
                 throw new Error("Recipe not found");
+            }
+
+            // 2.5 Find factory floor warehouse
+            const factoryFloor = await tx.query.warehouses.findFirst({
+                where: eq(warehouses.type, "factory_floor"),
+            });
+
+            if (!factoryFloor) {
+                throw new Error("Factory floor facility not found. Please create a facility with type 'factory_floor' first.");
             }
 
             const ingredients = await tx
@@ -137,14 +147,14 @@ export const startProductionFn = createServerFn()
                 });
             }
 
-            // 5. Validate stock availability
+            // 5. Validate stock availability (from Factory Floor)
             for (const item of materialsToDeduct) {
                 const [stock] = await tx
                     .select()
                     .from(materialStock)
                     .where(
                         and(
-                            eq(materialStock.warehouseId, productionRun.warehouseId),
+                            eq(materialStock.warehouseId, factoryFloor.id),
                             item.type === "chemical"
                                 ? eq(materialStock.chemicalId, item.materialId)
                                 : eq(materialStock.packagingMaterialId, item.materialId)
@@ -153,12 +163,12 @@ export const startProductionFn = createServerFn()
 
                 if (!stock || parseFloat(stock.quantity.toString()) < item.quantity) {
                     throw new Error(
-                        `Insufficient stock for "${item.materialName}". Available: ${stock ? parseFloat(stock.quantity.toString()).toFixed(0) : 0}, Required: ${item.quantity}`
+                        `Insufficient stock on Factory Floor for "${item.materialName}". Available: ${stock ? parseFloat(stock.quantity.toString()).toFixed(0) : 0}, Required: ${item.quantity}`
                     );
                 }
             }
 
-            // 6. Deduct materials from warehouse
+            // 6. Deduct materials from Factory Floor
             let totalChemicalCost = 0;
             let totalPackagingCost = 0;
 
@@ -179,7 +189,7 @@ export const startProductionFn = createServerFn()
                     })
                     .where(
                         and(
-                            eq(materialStock.warehouseId, productionRun.warehouseId),
+                            eq(materialStock.warehouseId, factoryFloor.id),
                             item.type === "chemical"
                                 ? eq(materialStock.chemicalId, item.materialId)
                                 : eq(materialStock.packagingMaterialId, item.materialId)
@@ -196,9 +206,9 @@ export const startProductionFn = createServerFn()
                     totalCost: totalCost.toString(),
                 });
 
-                // Create audit log
+                // Create audit log (on Factory Floor)
                 await tx.insert(inventoryAuditLog).values({
-                    warehouseId: productionRun.warehouseId,
+                    warehouseId: factoryFloor.id,
                     materialType: item.type,
                     materialId: item.materialId,
                     type: "debit",

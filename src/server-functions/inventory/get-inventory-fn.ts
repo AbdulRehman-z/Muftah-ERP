@@ -1,11 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
-import { db } from "@/db";
+import { db, warehouses } from "@/db";
 import { requireAdminMiddleware } from "@/lib/middlewares";
+import { eq } from "drizzle-orm";
 
 export const getInventoryFn = createServerFn()
 	.middleware([requireAdminMiddleware])
 	.handler(async () => {
-		const warehouses = await db.query.warehouses.findMany({
+		const result = await db.query.warehouses.findMany({
 			with: {
 				materialStock: {
 					with: {
@@ -25,5 +26,5 @@ export const getInventoryFn = createServerFn()
 			},
 		});
 
-		return warehouses;
+		return result;
 	});

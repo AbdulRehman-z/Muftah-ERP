@@ -10,6 +10,7 @@ type Props = {
         address: string;
         city: string;
         state: string;
+        type: "storage" | "factory_floor";
         latitude: string | number;
         longitude: string | number;
     };

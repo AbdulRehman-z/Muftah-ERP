@@ -11,6 +11,7 @@ export const useAddWarehouse = () => {
       // Invalidate all warehouse-related queries
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
       queryClient.invalidateQueries({ queryKey: ["warehouses"] });
+      queryClient.invalidateQueries({ queryKey: ["factory-floor"] });
     },
     onError: (error) => {
       toast.error(error.message || "Failed to add warehouse");

@@ -53,6 +53,46 @@ export const addChemicalSchema = z.object({
 	minimumStockLevel: z.string().min(1, "Minimum stock level is required"),
 	warehouseId: z.string().min(1, "Warehouse is required"),
 	quantity: z.string().min(1, "Quantity is required"),
+	supplierId: z.string().min(1, "Supplier is required"),
+	notes: z.string(),
+	paymentMethod: z.enum(["cash", "bank_transfer", "cheque", "pay_later"]),
+	paymentStatus: z.enum(["paid_full", "credit"]),
+	amountPaid: z.string(),
+	transactionId: z.string(),
+	bankName: z.string(),
+	paidBy: z.string(),
+}).refine((data) => {
+	if (data.paymentMethod !== "pay_later") {
+		return !!data.paidBy && data.paidBy.trim().length > 0;
+	}
+	return true;
+}, {
+	message: "Paid By is required",
+	path: ["paidBy"],
+}).refine((data) => {
+	if (["bank_transfer", "cheque"].includes(data.paymentMethod)) {
+		return !!data.bankName && data.bankName.length > 0;
+	}
+	return true;
+}, {
+	message: "Bank Name is required",
+	path: ["bankName"],
+}).refine((data) => {
+	if (["bank_transfer", "cheque"].includes(data.paymentMethod) && !data.transactionId) {
+		return false;
+	}
+	return true;
+}, {
+	message: "Transaction ID / Cheque Number is required",
+	path: ["transactionId"],
+}).refine((data) => {
+	if (data.paymentStatus === "credit" && data.paymentMethod !== "pay_later") {
+		return !!data.amountPaid && parseFloat(data.amountPaid) > 0;
+	}
+	return true;
+}, {
+	message: "Amount Paid is required for partial payments",
+	path: ["amountPaid"],
 });
 
 export const addPackagingMaterialSchema = z.object({
@@ -64,6 +104,46 @@ export const addPackagingMaterialSchema = z.object({
 	type: z.enum(["primary", "master"]),
 	capacity: z.string(),
 	capacityUnit: z.string(),
+	supplierId: z.string().min(1, "Supplier is required"),
+	notes: z.string(),
+	paymentMethod: z.enum(["cash", "bank_transfer", "cheque", "pay_later"]),
+	paymentStatus: z.enum(["paid_full", "credit"]),
+	amountPaid: z.string(),
+	transactionId: z.string(),
+	bankName: z.string(),
+	paidBy: z.string(),
+}).refine((data) => {
+	if (data.paymentMethod !== "pay_later") {
+		return !!data.paidBy && data.paidBy.trim().length > 0;
+	}
+	return true;
+}, {
+	message: "Paid By is required",
+	path: ["paidBy"],
+}).refine((data) => {
+	if (["bank_transfer", "cheque"].includes(data.paymentMethod)) {
+		return !!data.bankName && data.bankName.length > 0;
+	}
+	return true;
+}, {
+	message: "Bank Name is required",
+	path: ["bankName"],
+}).refine((data) => {
+	if (["bank_transfer", "cheque"].includes(data.paymentMethod) && !data.transactionId) {
+		return false;
+	}
+	return true;
+}, {
+	message: "Transaction ID / Cheque Number is required",
+	path: ["transactionId"],
+}).refine((data) => {
+	if (data.paymentStatus === "credit" && data.paymentMethod !== "pay_later") {
+		return !!data.amountPaid && parseFloat(data.amountPaid) > 0;
+	}
+	return true;
+}, {
+	message: "Amount Paid is required for partial payments",
+	path: ["amountPaid"],
 });
 
 export const addProductSchema = z.object({
@@ -92,6 +172,47 @@ export const addStockSchema = z.object({
 	materialType: z.enum(["chemical", "packaging"]),
 	materialId: z.string().min(1, "Material is required"),
 	quantity: z.string().min(1, "Quantity is required"),
+	supplierId: z.string().min(1, "Supplier is required"),
+	cost: z.string().min(1, "Cost is required"),
+	notes: z.string(),
+	paymentMethod: z.enum(["cash", "bank_transfer", "cheque", "pay_later"]),
+	paymentStatus: z.enum(["paid_full", "credit"]),
+	amountPaid: z.string(),
+	transactionId: z.string(),
+	bankName: z.string(),
+	paidBy: z.string(),
+}).refine((data) => {
+	if (data.paymentMethod !== "pay_later") {
+		return !!data.paidBy && data.paidBy.trim().length > 0;
+	}
+	return true;
+}, {
+	message: "Paid By is required",
+	path: ["paidBy"],
+}).refine((data) => {
+	if (["bank_transfer", "cheque"].includes(data.paymentMethod)) {
+		return !!data.bankName && data.bankName.length > 0;
+	}
+	return true;
+}, {
+	message: "Bank Name is required",
+	path: ["bankName"],
+}).refine((data) => {
+	if (["bank_transfer", "cheque"].includes(data.paymentMethod) && !data.transactionId) {
+		return false;
+	}
+	return true;
+}, {
+	message: "Transaction ID / Cheque Number is required",
+	path: ["transactionId"],
+}).refine((data) => {
+	if (data.paymentStatus === "credit" && data.paymentMethod !== "pay_later") {
+		return !!data.amountPaid && parseFloat(data.amountPaid) > 0;
+	}
+	return true;
+}, {
+	message: "Amount Paid is required for partial payments",
+	path: ["amountPaid"],
 });
 
 export const updateStockSchema = z.object({
@@ -107,7 +228,7 @@ export const transferStockSchema = z.object({
 	materialType: z.enum(["chemical", "packaging", "finished"]),
 	materialId: z.string().min(1, "Material is required"),
 	quantity: z.string().min(1, "Quantity is required"),
-	notes: z.string().optional(),
+	notes: z.string(),
 });
 
 // export const createProductionRunSchema = z.object({
@@ -123,7 +244,7 @@ export const createProductionRunSchema = z.object({
 	batchesProduced: z.number().int().min(1).default(1),
 	cartonsProduced: z.number().int().min(0),
 	looseUnitsProduced: z.number().int().min(0).default(0),
-	notes: z.string().optional(),
+	notes: z.string(),
 });
 
 export const deleteWarehouseSchema = z.object({

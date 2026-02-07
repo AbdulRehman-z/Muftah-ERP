@@ -59,6 +59,7 @@ export const addWarehouseSchema = z.object({
 	address: z.string().min(2, "Location/Address is required"),
 	city: z.string().min(1, "City is required"),
 	state: z.string().min(1, "State is required"),
+	type: z.enum(["storage", "factory_floor"]),
 	latitude: z
 		.string()
 		.refine((val) => !isNaN(Number(val)), "Must be a number")
@@ -94,3 +95,17 @@ export const changePasswordSchema = z
 		message: "New passwords do not match",
 		path: ["confirmPassword"],
 	});
+
+export const supplierSchema = z.object({
+	supplierName: z.string().min(2, "Name is required"),
+	supplierShopName: z.string().min(2, "Name is required"),
+	email: z.string().email().or(z.literal("")),
+	nationalId: z.string(),
+	phone: z.string(),
+	address: z.string(),
+	notes: z.string(),
+});
+
+export const updateSupplierSchema = supplierSchema.extend({
+	id: z.string().min(1),
+});

@@ -12,6 +12,9 @@ export const useAddStock = () => {
 			queryClient.invalidateQueries({ queryKey: ["inventory"] });
 			queryClient.invalidateQueries({ queryKey: ["factory-floor"] });
 			queryClient.invalidateQueries({ queryKey: ["materials"] });
+			queryClient.invalidateQueries({ queryKey: ["packaging-materials"] });
+			queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+			queryClient.invalidateQueries({ queryKey: ["supplier"] });
 		},
 		onError: (error) => {
 			toast.error(error.message || "Failed to add stock");

@@ -224,32 +224,34 @@ export const InitiateProductionForm = ({ onOpenChange, preselectedRecipe }: Prop
                                     <div className="border-t pt-2 space-y-1.5 text-sm">
                                         <div className="flex justify-between text-muted-foreground">
                                             <span>Chemical Cost</span>
-                                            <span className="font-medium text-foreground">Rs. {totalChemicalCost.toLocaleString(undefined, { minimumFractionDigits: 0 })}</span>
+                                            <span className="font-medium text-foreground">PKR {totalChemicalCost.toLocaleString(undefined, { minimumFractionDigits: 0 })}</span>
                                         </div>
                                         <div className="flex justify-between text-muted-foreground">
                                             <span>Packaging Cost</span>
-                                            <span>Rs. {totalPackagingCost.toLocaleString(undefined, { minimumFractionDigits: 0 })}</span>
+                                            <span>PKR {totalPackagingCost.toLocaleString(undefined, { minimumFractionDigits: 0 })}</span>
                                         </div>
                                         <div className="flex justify-between font-bold text-primary pt-1.5 border-t border-dashed">
                                             <span>Estimated Total</span>
-                                            <span className="text-lg">Rs. {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}</span>
+                                            <span className="text-lg">PKR {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                {insufficientStock.length > 0 && (
-                                    <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive">
-                                        <AlertCircle className="size-4" />
-                                        <AlertDescription>
-                                            <span className="font-bold block mb-1">Insufficient Stock Warning:</span>
-                                            <ul className="list-disc pl-4 text-xs space-y-1 font-medium">
-                                                {insufficientStock.map((err, i) => (
-                                                    <li key={i}>{err}</li>
-                                                ))}
-                                            </ul>
-                                        </AlertDescription>
-                                    </Alert>
-                                )}
+                                {
+                                    insufficientStock.length > 0 && (
+                                        <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive">
+                                            <AlertCircle className="size-4" />
+                                            <AlertDescription>
+                                                <span className="font-bold block mb-1">Insufficient Stock Warning:</span>
+                                                <ul className="list-disc pl-4 text-xs space-y-1 font-medium">
+                                                    {insufficientStock.map((err, i) => (
+                                                        <li key={i}>{err}</li>
+                                                    ))}
+                                                </ul>
+                                            </AlertDescription>
+                                        </Alert>
+                                    )
+                                }
                             </div>
                         );
                     }}
@@ -295,6 +297,6 @@ export const InitiateProductionForm = ({ onOpenChange, preselectedRecipe }: Prop
                     </Button>
                 </div>
             </FieldGroup>
-        </form>
+        </form >
     );
 };

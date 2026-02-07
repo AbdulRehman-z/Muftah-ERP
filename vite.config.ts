@@ -8,9 +8,19 @@ import { nitro } from 'nitro/vite'
 
 const config = defineConfig({
   plugins: [
-    devtools(),
+    devtools({
+      // Enhanced logs are enabled by default
+      enhancedLogs: {
+        enabled: true,
+      },
+      // Optional: Configure event bus for devtools communication
+      eventBusConfig: {
+        debug: true, // This will show debug logs in your terminal
+        enabled: true,
+
+      },
+    }),
     nitro(),
-    // this is the plugin that enables path aliases
     viteTsConfigPaths({
       projects: ['./tsconfig.json'],
     }),

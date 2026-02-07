@@ -10,6 +10,8 @@ export const useAddPackagingMaterial = () => {
             toast.success("Packaging material added successfully");
             queryClient.invalidateQueries({ queryKey: ["inventory"] });
             queryClient.invalidateQueries({ queryKey: ["low-stock-alerts"] });
+            queryClient.invalidateQueries({ queryKey: ["supplier"] });
+            queryClient.invalidateQueries({ queryKey: ["suppliers"] });
         },
         onError: (error) => {
             toast.error(error.message || "Failed to add packaging material");

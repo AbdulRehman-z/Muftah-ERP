@@ -25,9 +25,7 @@ import { ManageWarehouseStatusDialog } from "./manage-warehouse-status-dialog";
 import { EditWarehouseDialog } from "./edit-warehouse-dialog";
 import { WarehouseDetailsDialog } from "./warehouse-details-dialog";
 import { FinishedGoodsTable } from "./finished-goods-table";
-import { StockTable } from "./stock-table";
 import { TransferStockDialog } from "./transfer-stock-dialog";
-import { LowStockAlerts } from "./low-stocks-alert";
 import { TooltipWrapper } from "../custom/tooltip-wrapper";
 
 export const InventoryContainer = () => {
@@ -40,6 +38,7 @@ export const InventoryContainer = () => {
 	const { data: warehouses } = useSuspenseQuery({
 		queryKey: ["inventory"],
 		queryFn: getInventoryFn,
+		refetchInterval: 1000,
 	});
 
 	useEffect(() => {
@@ -56,42 +55,33 @@ export const InventoryContainer = () => {
 			<>
 				<GenericEmpty
 					icon={BoxesIcon}
-					title="Empty Inventory"
-					description="Nothing in the inventory yet, add facility(e.g. warehouse, factory-floor, etc.) and manage inventory."
-					ctaText="Add Facility"
+					title="Ready to store Stock?"
+					description="Add a warehouse facility to start managing your finished goods inventory."
+					ctaText="Add Warehouse"
 					onAddChange={setAddWarehouseOpen}
 				/>
 				<AddWarehouseDialog
 					onOpenChange={setAddWarehouseOpen}
 					open={isAddWarehouseOpen}
+					forcedType="storage"
 				/>
 			</>
 		);
 	}
 
-	// Aggregate or filter data based on warehouse selection
-	const chemicalsStock = warehouses.flatMap((w) =>
-		(selectedWarehouse === "all" || w.id === selectedWarehouse
-			? w.materialStock
-			: []
-		)
-			.filter((s) => s.chemical)
-			.map((s) => ({ ...s, warehouse: w })),
-	);
-	const packagingStock = warehouses.flatMap((w) =>
-		(selectedWarehouse === "all" || w.id === selectedWarehouse
-			? w.materialStock
-			: []
-		)
-			.filter((s) => s.packagingMaterial)
-			.map((s) => ({ ...s, warehouse: w })),
-	);
 
-	const finishedGoods = warehouses.flatMap((w) =>
+
+	// Filtered data: Finished Goods (Always from Storage Warehouses)
+	const storageWarehouses = warehouses.filter((w) => w.type === "storage");
+
+	const finishedGoods = storageWarehouses.flatMap((w) =>
 		(selectedWarehouse === "all" || w.id === selectedWarehouse
-			? w.finishedGoodsStock
+			? w.finishedGoodsStock || []
 			: []
-		).map((fg) => ({ ...fg, warehouse: w })),
+		).map((fg) => ({
+			...fg,
+			warehouse: { name: w.name, isActive: w.isActive }
+		})),
 	);
 
 	return (
@@ -108,7 +98,7 @@ export const InventoryContainer = () => {
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value="all">All Warehouses</SelectItem>
-							{warehouses.map((w) => (
+							{storageWarehouses.map((w) => (
 								<SelectItem key={w.id} value={w.id}>
 									<div className="flex items-center gap-2">
 										{w.name}
@@ -124,7 +114,7 @@ export const InventoryContainer = () => {
 
 					</Select>
 
-					{selectedWarehouse !== "all" && warehouses.length > 0 && (
+					{selectedWarehouse !== "all" && storageWarehouses.length > 0 && (
 						<div className="flex items-center gap-1">
 							<TooltipWrapper tooltipContent="View Warehouse Details">
 								<Button
@@ -159,7 +149,6 @@ export const InventoryContainer = () => {
 						</div>
 					)}
 
-					<LowStockAlerts />
 				</div>
 
 				<div className="flex gap-2">
@@ -184,7 +173,7 @@ export const InventoryContainer = () => {
 			</div>
 
 			{/* Stats Cards */}
-			<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 				<Card>
 					<CardHeader className="pb-2">
 						<CardTitle className="text-sm font-medium">
@@ -192,27 +181,10 @@ export const InventoryContainer = () => {
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold">{warehouses.length}</div>
+						<div className="text-2xl font-bold">{storageWarehouses.length}</div>
 					</CardContent>
 				</Card>
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium">Chemicals</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold">{chemicalsStock.length}</div>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium">
-							Packaging Materials
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold">{packagingStock.length}</div>
-					</CardContent>
-				</Card>
+
 				<Card>
 					<CardHeader className="pb-2">
 						<CardTitle className="text-sm font-medium">
@@ -226,34 +198,10 @@ export const InventoryContainer = () => {
 			</div>
 
 			{/* Stock Tables */}
-			<Tabs defaultValue="chemicals" className="w-full">
+			<Tabs defaultValue="finished" className="w-full">
 				<TabsList>
-					<TabsTrigger value="chemicals">Chemicals</TabsTrigger>
-					<TabsTrigger value="packaging">Packaging</TabsTrigger>
 					<TabsTrigger value="finished">Finished Goods</TabsTrigger>
 				</TabsList>
-
-				<TabsContent value="chemicals" className="mt-4">
-					<StockTable
-						data={chemicalsStock}
-						type="chemical"
-						warehouses={warehouses}
-						preselectedWarehouse={
-							selectedWarehouse === "all" ? undefined : selectedWarehouse
-						}
-					/>
-				</TabsContent>
-
-				<TabsContent value="packaging" className="mt-4">
-					<StockTable
-						data={packagingStock}
-						type="packaging"
-						warehouses={warehouses}
-						preselectedWarehouse={
-							selectedWarehouse === "all" ? undefined : selectedWarehouse
-						}
-					/>
-				</TabsContent>
 
 				<TabsContent value="finished" className="mt-4">
 					<FinishedGoodsTable
@@ -270,6 +218,7 @@ export const InventoryContainer = () => {
 			<AddWarehouseDialog
 				open={isAddWarehouseOpen}
 				onOpenChange={setAddWarehouseOpen}
+				forcedType="storage"
 			/>
 
 			<TransferStockDialog
@@ -279,18 +228,25 @@ export const InventoryContainer = () => {
 			/>
 
 			{selectedWarehouse !== "all" && (
-				<>
-					<EditWarehouseDialog
-						open={isEditWarehouseOpen}
-						onOpenChange={setEditWarehouseOpen}
-						warehouse={warehouses.find((w) => w.id === selectedWarehouse)!}
-					/>
-					<WarehouseDetailsDialog
-						open={isDetailsWarehouseOpen}
-						onOpenChange={setDetailsWarehouseOpen}
-						warehouse={warehouses.find((w) => w.id === selectedWarehouse)!}
-					/>
-				</>
+				(() => {
+					const activeWarehouse = warehouses.find((w) => w.id === selectedWarehouse);
+					if (!activeWarehouse) return null;
+
+					return (
+						<>
+							<EditWarehouseDialog
+								open={isEditWarehouseOpen}
+								onOpenChange={setEditWarehouseOpen}
+								warehouse={activeWarehouse as any}
+							/>
+							<WarehouseDetailsDialog
+								open={isDetailsWarehouseOpen}
+								onOpenChange={setDetailsWarehouseOpen}
+								warehouse={activeWarehouse as any}
+							/>
+						</>
+					);
+				})()
 			)}
 		</div >
 	);

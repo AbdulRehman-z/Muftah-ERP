@@ -1,0 +1,132 @@
+import { useNavigate } from "@tanstack/react-router";
+import { ColumnDef } from "@tanstack/react-table";
+import { Button } from "@/components/ui/button";
+import { Eye, Trash2 } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { deleteSupplierFn } from "@/server-functions/suppliers/delete-supplier-fn";
+import { toast } from "sonner";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { DataTable } from "@/components/ui/data-table";
+
+type Supplier = {
+    id: string;
+    supplierName: string;
+    supplierShopName: string | null;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
+    createdAt: Date;
+};
+
+type Props = {
+    data: Supplier[];
+};
+
+export const SuppliersTable = ({ data }: Props) => {
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
+
+    const deleteMutate = useMutation({
+        mutationFn: deleteSupplierFn,
+        onSuccess: () => {
+            toast.success("Supplier deleted");
+            queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+        },
+        onError: () => toast.error("Failed to delete supplier"),
+    });
+
+    const columns: ColumnDef<Supplier>[] = [
+        {
+            accessorKey: "id",
+            header: "System ID",
+            cell: ({ row }) => <span className="font-mono text-xs text-muted-foreground">{(row.getValue("id") as string).slice(-6)}</span>,
+        },
+        {
+            accessorKey: "supplierName",
+            header: "Supplier Name",
+            cell: ({ row }) => <span className="font-medium text-foreground">{row.getValue("supplierName")}</span>,
+        },
+        {
+            accessorKey: "supplierShopName",
+            header: "Shop Name",
+            cell: ({ row }) => row.getValue("supplierShopName") || "-",
+        },
+        {
+            id: "contactDetails",
+            header: "Contact Details",
+            cell: ({ row }) => {
+                const email = row.original.email;
+                const phone = row.original.phone;
+                return (
+                    <div className="flex flex-col text-sm">
+                        <span>{email || "-"}</span>
+                        <span className="text-muted-foreground text-xs">{phone || "-"}</span>
+                    </div>
+                );
+            },
+        },
+        {
+            id: "actions",
+            header: () => <div className="text-right">Actions</div>,
+            cell: ({ row }) => {
+                const supplier = row.original;
+                return (
+                    <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => navigate({ to: `/admin/suppliers/${supplier.id}` })}
+                        >
+                            <Eye className="size-4" />
+                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                                    <Trash2 className="size-4" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will permanently delete the supplier "{supplier.supplierName}".
+                                        This action requires that the supplier has no associated active transactions.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                        onClick={() => deleteMutate.mutate({ data: { id: supplier.id } })}
+                                    >
+                                        Delete
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                );
+            },
+        },
+    ];
+
+    return (
+        <DataTable
+            pageSize={20}
+            columns={columns}
+            data={data}
+            searchKey="supplierName"
+            searchPlaceholder="Filter suppliers..."
+        />
+    );
+};

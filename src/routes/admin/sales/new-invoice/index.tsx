@@ -320,7 +320,7 @@ function RouteComponent() {
 // 								Grand Total
 // 							</div>
 // 							<div className="text-3xl font-bold text-primary">
-// 								Rs. {totalAmount.toLocaleString()}
+// 								PKR {totalAmount.toLocaleString()}
 // 							</div>
 // 						</div>
 

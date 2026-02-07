@@ -113,7 +113,7 @@ export const CreateProductionRunDialog = ({
         }
     };
 
-    const factoryFloor = warehouses.find((w) => w.type === "factory_floor");
+
 
     return (
         <ResponsiveDialog
@@ -134,28 +134,33 @@ export const CreateProductionRunDialog = ({
                     <form.Field name="warehouseId">
                         {(field) => (
                             <Field>
-                                <FieldLabel>Production Warehouse</FieldLabel>
+                                <FieldLabel>Destination Warehouse</FieldLabel>
+                                <p className="text-[10px] text-muted-foreground mb-2">
+                                    Select the warehouse where finished goods will be stored after production.
+                                </p>
                                 <Select
                                     value={field.state.value}
                                     onValueChange={(value) => field.handleChange(value)}
                                 >
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select warehouse" />
+                                        <SelectValue placeholder="Select destination warehouse" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {warehouses.map((w) => (
-                                            <SelectItem key={w.id} value={w.id}>
-                                                {w.name}
-                                                {w.type === "factory_floor" ? " (Factory)" : ""}
-                                            </SelectItem>
-                                        ))}
+                                        {warehouses
+                                            .filter(w => w.type === "storage")
+                                            .map((w) => (
+                                                <SelectItem key={w.id} value={w.id}>
+                                                    {w.name}
+                                                </SelectItem>
+                                            ))}
                                     </SelectContent>
                                 </Select>
-                                {factoryFloor && !field.state.value && (
-                                    <p className="text-xs text-muted-foreground">
-                                        Tip: Select "{factoryFloor.name}" for production
+                                <div className="mt-2 p-2 rounded bg-amber-50/50 border border-amber-100 dark:bg-amber-900/10 dark:border-amber-900/20">
+                                    <p className="text-[10px] text-amber-700 dark:text-amber-400 font-medium flex items-center gap-1.5">
+                                        <Info className="size-3" />
+                                        Raw materials will be automatically drawn from the Factory Floor.
                                     </p>
-                                )}
+                                </div>
                                 <FieldError errors={field.state.meta.errors} />
                             </Field>
                         )}

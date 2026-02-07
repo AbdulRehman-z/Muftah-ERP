@@ -7,6 +7,7 @@ type Props = {
     onOpenChange: (open: boolean) => void;
     warehouses: Awaited<ReturnType<typeof getInventoryFn>>
     preselectedWarehouse: string | undefined
+    preselectedSupplierId?: string
 }
 
 
@@ -15,6 +16,7 @@ export const AddPackagingMaterialDialog = ({
     onOpenChange,
     warehouses,
     preselectedWarehouse,
+    preselectedSupplierId,
 }: Props) => {
 
     return (
@@ -24,7 +26,7 @@ export const AddPackagingMaterialDialog = ({
             open={open}
             onOpenChange={onOpenChange}
         >
-            <AddPackagingMaterialForm onSuccess={() => onOpenChange(false)} warehouses={warehouses} preselectedWarehouse={preselectedWarehouse} />
+            <AddPackagingMaterialForm onSuccess={() => onOpenChange(false)} warehouses={warehouses} preselectedWarehouse={preselectedWarehouse} preselectedSupplierId={preselectedSupplierId} />
         </ResponsiveDialog>
     );
 };

@@ -50,8 +50,8 @@ export const ResponsiveDialog = ({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="min-w-md">
 				<DialogHeader>
-					<DialogTitle>{title}</DialogTitle>
-					<DialogDescription>{description}</DialogDescription>
+					<DialogTitle className="font-semibold">{title}</DialogTitle>
+					<DialogDescription className="font-medium">{description}</DialogDescription>
 				</DialogHeader>
 				{children}
 			</DialogContent>

@@ -185,17 +185,14 @@ export const FinishedGoodsTable = ({ data, warehouses, preselectedWarehouse }: F
 
 	return (
 		<div className="space-y-6">
-			<div className="flex justify-between items-center bg-muted/30 p-4 rounded-lg border border-border/50">
+			<div className="flex justify-between items-center mb-6">
 				<div>
-					<h3 className="text-lg font-semibold tracking-tight">
-						Finished Goods Inventory
+					<h3 className="text-xl font-bold tracking-tight">
+						Finished Goods
 					</h3>
 					<p className="text-sm text-muted-foreground">
-						Manage and monitor your finished goods stock levels.
+						Manage and monitor your finished products ready for transfer.
 					</p>
-				</div>
-				<div>
-					{/* TODO: Some logic here */}
 				</div>
 			</div>
 

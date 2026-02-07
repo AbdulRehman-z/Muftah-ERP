@@ -108,7 +108,7 @@ function AdminDashboard() {
 		// 	<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 		// 		<KpiCard
 		// 			title="Total Revenue"
-		// 			value={`Rs. ${Number(finance.revenue).toLocaleString()}`}
+		// 					value={`PKR ${Number(finance.revenue).toLocaleString()}`}
 		// 			icon={<DollarSign className="size-5" />}
 		// 			trend="+12.5%"
 		// 			trendUp={true}
@@ -117,7 +117,7 @@ function AdminDashboard() {
 		// 		/>
 		// 		<KpiCard
 		// 			title="Net Profit"
-		// 			value={`Rs. ${Number(finance.netProfit).toLocaleString()}`}
+		// 					value={`PKR ${Number(finance.netProfit).toLocaleString()}`}
 		// 			icon={<TrendingUp className="size-5" />}
 		// 			trend="+4.3%"
 		// 			trendUp={true}
@@ -126,7 +126,7 @@ function AdminDashboard() {
 		// 		/>
 		// 		<KpiCard
 		// 			title="Inventory Value"
-		// 			value={`Rs. ${Number(valuation.inventoryValue).toLocaleString()}`}
+		// 					value={`PKR ${Number(valuation.inventoryValue).toLocaleString()}`}
 		// 			icon={<Layers className="size-5" />}
 		// 			trend="+1.2%"
 		// 			trendUp={true}

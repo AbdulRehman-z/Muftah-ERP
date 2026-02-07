@@ -13,6 +13,7 @@ export const updateWarehouseFn = createServerFn()
                 .update(warehouses)
                 .set({
                     name: data.name,
+                    type: data.type,
                     address: data.address,
                     city: data.city,
                     state: data.state,

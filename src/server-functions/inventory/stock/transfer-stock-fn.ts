@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { and, eq } from "drizzle-orm";
-import { db, inventoryAuditLog, materialStock, stockTransfers } from "@/db";
+import { db, inventoryAuditLog, materialStock, stockTransfers, warehouses } from "@/db";
 import { finishedGoodsStock } from "@/db/schemas/inventory-schema";
 import { requireAdminMiddleware } from "@/lib/middlewares";
 import { transferStockSchema } from "@/lib/validators/validators";
@@ -14,6 +14,23 @@ export const transferStockFn = createServerFn()
 		}
 
 		return await db.transaction(async (tx) => {
+			// Validate Destination Warehouse Type
+			const toWarehouse = await tx.query.warehouses.findFirst({
+				where: eq(warehouses.id, data.toWarehouseId)
+			});
+
+			if (!toWarehouse) throw new Error("Destination warehouse not found");
+
+			if (data.materialType === "chemical" || data.materialType === "packaging") {
+				if (toWarehouse.type !== "factory_floor") {
+					throw new Error("Raw materials (chemicals/packaging) can only be transferred to a Factory Floor facility.");
+				}
+			} else if (data.materialType === "finished") {
+				// Optional: Restrict Finished Goods? User said "Storage facilities are reserved for finished goods". 
+				// This implies Storage can ONLY hold FG. But does it mean FG can ONLY go to Storage?
+				// Probably FG can be anywhere, but Storage cannot hold Raw.
+				// Logic above covers Storage cannot hold Raw.
+			}
 			const qty = parseFloat(data.quantity);
 
 			if (data.materialType === "finished") {

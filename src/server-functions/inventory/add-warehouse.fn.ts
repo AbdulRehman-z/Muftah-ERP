@@ -12,6 +12,7 @@ export const addWarehouseFn = createServerFn()
 				.insert(warehouses)
 				.values({
 					name: data.name,
+					type: data.type,
 					address: data.address,
 					city: data.city,
 					state: data.state,

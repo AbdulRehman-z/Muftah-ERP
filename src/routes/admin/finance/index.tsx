@@ -110,7 +110,7 @@ function RouteComponent() {
 //                         </CardTitle>
 //                     </CardHeader>
 //                     <CardContent>
-//                         <div className="text-2xl font-bold text-green-600">Rs. {Number(summary.revenue).toLocaleString()}</div>
+//                         <div className="text-2xl font-bold text-green-600">PKR {Number(summary.revenue).toLocaleString()}</div>
 //                     </CardContent>
 //                 </Card>
 //                 <Card className="bg-red-500/5 border-red-500/20">
@@ -120,7 +120,7 @@ function RouteComponent() {
 //                         </CardTitle>
 //                     </CardHeader>
 //                     <CardContent>
-//                         <div className="text-2xl font-bold text-red-600">Rs. {Number(summary.expenses).toLocaleString()}</div>
+//                         <div className="text-2xl font-bold text-red-600">PKR {Number(summary.expenses).toLocaleString()}</div>
 //                     </CardContent>
 //                 </Card>
 //                 <Card className="bg-primary/5 border-primary/20">
@@ -130,8 +130,7 @@ function RouteComponent() {
 //                         </CardTitle>
 //                     </CardHeader>
 //                     <CardContent>
-//                         <div className={cn("text-2xl font-bold", summary.netProfit >= 0 ? "text-primary" : "text-destructive")}>
-//                             Rs. {Number(summary.netProfit).toLocaleString()}
+//                             PKR {Number(summary.netProfit).toLocaleString()}
 //                         </div>
 //                     </CardContent>
 //                 </Card>
@@ -162,7 +161,7 @@ function RouteComponent() {
 //                                             <Badge variant="outline" className="capitalize">{w.type}</Badge>
 //                                         </TableCell>
 //                                         <TableCell className="text-right font-mono font-bold">
-//                                             Rs. {Number(w.balance).toLocaleString()}
+//                                             PKR {Number(w.balance).toLocaleString()}
 //                                         </TableCell>
 //                                     </TableRow>
 //                                 ))}

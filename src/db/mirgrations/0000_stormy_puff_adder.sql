@@ -302,6 +302,56 @@ CREATE TABLE "invoices" (
 	CONSTRAINT "invoices_invoice_number_unique" UNIQUE("invoice_number")
 );
 --> statement-breakpoint
+CREATE TABLE "purchase_records" (
+	"id" text PRIMARY KEY NOT NULL,
+	"supplier_id" text NOT NULL,
+	"warehouse_id" text NOT NULL,
+	"material_type" text NOT NULL,
+	"chemical_id" text,
+	"packaging_material_id" text,
+	"quantity" numeric(12, 3) NOT NULL,
+	"cost" numeric(12, 2) NOT NULL,
+	"unit_cost" numeric(12, 2) NOT NULL,
+	"paid_amount" numeric(12, 2) DEFAULT '0' NOT NULL,
+	"purchase_date" timestamp DEFAULT now() NOT NULL,
+	"invoice_number" text,
+	"payment_method" text,
+	"bank_name" text,
+	"transaction_id" text,
+	"paid_by" text,
+	"notes" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "supplier_payments" (
+	"id" text PRIMARY KEY NOT NULL,
+	"supplier_id" text NOT NULL,
+	"amount" numeric(12, 2) NOT NULL,
+	"payment_date" timestamp DEFAULT now() NOT NULL,
+	"reference" text,
+	"method" text,
+	"bank_name" text,
+	"paid_by" text,
+	"notes" text,
+	"purchase_id" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "suppliers" (
+	"id" text PRIMARY KEY NOT NULL,
+	"supplier_name" text NOT NULL,
+	"supplier_shop_name" text,
+	"email" text,
+	"phone" text,
+	"national_id" text,
+	"address" text,
+	"notes" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "two_factor" ADD CONSTRAINT "two_factor_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -335,6 +385,12 @@ ALTER TABLE "invoice_items" ADD CONSTRAINT "invoice_items_recipe_id_recipes_id_f
 ALTER TABLE "invoices" ADD CONSTRAINT "invoices_customer_id_customers_id_fk" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invoices" ADD CONSTRAINT "invoices_warehouse_id_warehouses_id_fk" FOREIGN KEY ("warehouse_id") REFERENCES "public"."warehouses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invoices" ADD CONSTRAINT "invoices_performed_by_id_user_id_fk" FOREIGN KEY ("performed_by_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "purchase_records" ADD CONSTRAINT "purchase_records_supplier_id_suppliers_id_fk" FOREIGN KEY ("supplier_id") REFERENCES "public"."suppliers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "purchase_records" ADD CONSTRAINT "purchase_records_warehouse_id_warehouses_id_fk" FOREIGN KEY ("warehouse_id") REFERENCES "public"."warehouses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "purchase_records" ADD CONSTRAINT "purchase_records_chemical_id_chemicals_id_fk" FOREIGN KEY ("chemical_id") REFERENCES "public"."chemicals"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "purchase_records" ADD CONSTRAINT "purchase_records_packaging_material_id_packaging_materials_id_fk" FOREIGN KEY ("packaging_material_id") REFERENCES "public"."packaging_materials"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "supplier_payments" ADD CONSTRAINT "supplier_payments_supplier_id_suppliers_id_fk" FOREIGN KEY ("supplier_id") REFERENCES "public"."suppliers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "supplier_payments" ADD CONSTRAINT "supplier_payments_purchase_id_purchase_records_id_fk" FOREIGN KEY ("purchase_id") REFERENCES "public"."purchase_records"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "account_userId_idx" ON "account" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "session_userId_idx" ON "session" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "twoFactor_secret_idx" ON "two_factor" USING btree ("secret");--> statement-breakpoint
@@ -345,4 +401,9 @@ CREATE INDEX "audit_warehouse_idx" ON "inventory_audit_log" USING btree ("wareho
 CREATE INDEX "audit_date_idx" ON "inventory_audit_log" USING btree ("created_at");--> statement-breakpoint
 CREATE INDEX "stock_warehouse_idx" ON "material_stock" USING btree ("warehouse_id");--> statement-breakpoint
 CREATE INDEX "ingredients_recipe_idx" ON "recipe_ingredients" USING btree ("recipe_id");--> statement-breakpoint
-CREATE INDEX "packaging_recipe_idx" ON "recipe_packaging" USING btree ("recipe_id");
+CREATE INDEX "packaging_recipe_idx" ON "recipe_packaging" USING btree ("recipe_id");--> statement-breakpoint
+CREATE INDEX "purchase_supplier_idx" ON "purchase_records" USING btree ("supplier_id");--> statement-breakpoint
+CREATE INDEX "purchase_warehouse_idx" ON "purchase_records" USING btree ("warehouse_id");--> statement-breakpoint
+CREATE INDEX "purchase_date_idx" ON "purchase_records" USING btree ("purchase_date");--> statement-breakpoint
+CREATE INDEX "payment_supplier_idx" ON "supplier_payments" USING btree ("supplier_id");--> statement-breakpoint
+CREATE INDEX "payment_purchase_idx" ON "supplier_payments" USING btree ("purchase_id");

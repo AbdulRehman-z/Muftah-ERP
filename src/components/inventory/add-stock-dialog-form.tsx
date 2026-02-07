@@ -1,5 +1,5 @@
 import { Button } from "../ui/button";
-import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "../ui/field";
 import { Input } from "../ui/input";
 import {
     Select,
@@ -8,13 +8,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from "../ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Info, Factory } from "lucide-react";
 import { useForm } from "@tanstack/react-form";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAddStock } from "@/hooks/stock/use-add-stock";
 import { getMaterialsFn } from "@/server-functions/inventory/get-materials-fn";
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
+import { getSuppliersFn } from "@/server-functions/suppliers/get-suppliers-fn";
+import { addStockSchema } from "@/lib/validators/validators";
+import { Textarea } from "../ui/textarea";
+
 
 type Props = {
     onOpenChange: (open: boolean) => void
@@ -31,6 +35,11 @@ export const AddStockForm = ({ onOpenChange, onSuccess, preselectedWarehouse, wa
         queryFn: getMaterialsFn,
     });
 
+    const { data: suppliers } = useSuspenseQuery({
+        queryKey: ["suppliers"],
+        queryFn: getSuppliersFn,
+    });
+
     const mutate = useAddStock();
 
     const form = useForm({
@@ -39,6 +48,17 @@ export const AddStockForm = ({ onOpenChange, onSuccess, preselectedWarehouse, wa
             materialType: "chemical" as "chemical" | "packaging",
             materialId: "",
             quantity: "",
+            supplierId: "",
+            cost: "",
+            notes: "",
+            paymentMethod: "cash" as "cash" | "bank_transfer" | "cheque" | "pay_later",
+            paymentStatus: "paid_full" as "paid_full" | "credit",
+            amountPaid: "",
+            transactionId: "",
+            bankName: "",
+        },
+        validators: {
+            onSubmit: addStockSchema,
         },
         onSubmit: async ({ value }) => {
             await mutate.mutateAsync(
@@ -54,7 +74,15 @@ export const AddStockForm = ({ onOpenChange, onSuccess, preselectedWarehouse, wa
     });
 
     const availableMaterials =
-        materialType === "chemical" ? materials.chemicals : materials.packagings;
+        materialType === "chemical" ? materials?.chemicals || [] : materials?.packagings || [];
+
+    // Filter warehouses: If adding materials, MUST be factory_floor
+    const availableWarehouses = useMemo(() => {
+        return warehouses.filter(w => w.type === "factory_floor");
+    }, [warehouses]);
+
+    // Check if preselected warehouse is valid
+    const isPreselectedInvalid = preselectedWarehouse && !availableWarehouses.find(w => w.id === preselectedWarehouse);
 
 
     return (
@@ -65,23 +93,34 @@ export const AddStockForm = ({ onOpenChange, onSuccess, preselectedWarehouse, wa
                 form.handleSubmit();
             }}
         >
+            {isPreselectedInvalid && (
+                <div className="p-3 rounded-lg bg-red-50 text-red-600 text-xs flex items-center gap-2">
+                    <Info className="size-4" />
+                    Selected facility is not a Factory Floor. Please select a Factory Floor to add raw materials.
+                </div>
+            )}
+
             <FieldGroup>
                 {/* Warehouse Selection */}
                 <form.Field name="warehouseId">
                     {(field) => (
                         <Field>
-                            <FieldLabel>Warehouse</FieldLabel>
+                            <FieldLabel>Facility (Factory Floor)</FieldLabel>
                             <Select
                                 value={field.state.value}
                                 onValueChange={(value) => field.handleChange(value)}
+                                disabled={!!preselectedWarehouse && !isPreselectedInvalid}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select warehouse" />
+                                    <SelectValue placeholder="Select facility" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {warehouses.map((w) => (
+                                    {availableWarehouses.map((w) => (
                                         <SelectItem key={w.id} value={w.id}>
-                                            {w.name}
+                                            <div className="flex items-center gap-2">
+                                                <Factory className="size-3.5 opacity-50" />
+                                                {w.name}
+                                            </div>
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -91,67 +130,282 @@ export const AddStockForm = ({ onOpenChange, onSuccess, preselectedWarehouse, wa
                     )}
                 </form.Field>
 
-                {/* Material Type */}
-                <form.Field name="materialType">
+                <div className="flex items-center gap-4">
+                    {/* Material Type */}
+                    <form.Field name="materialType">
+                        {(field) => (
+                            <Field className="flex-1">
+                                <FieldLabel>Material Type</FieldLabel>
+                                <Select
+                                    value={field.state.value}
+                                    onValueChange={(value: "chemical" | "packaging") => {
+                                        field.handleChange(value);
+                                        setMaterialType(value);
+                                        form.setFieldValue("materialId", "");
+                                    }}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="chemical">Chemical</SelectItem>
+                                        <SelectItem value="packaging">Packaging</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                        )}
+                    </form.Field>
+
+                    {/* Material Selection */}
+                    <form.Field name="materialId">
+                        {(field) => (
+                            <Field className="flex-2">
+                                <FieldLabel>Material</FieldLabel>
+                                <Select
+                                    value={field.state.value}
+                                    onValueChange={(value) => field.handleChange(value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select material" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {availableMaterials.map((m: any) => (
+                                            <SelectItem key={m.id} value={m.id}>
+                                                {m.name}
+                                                {materialType === "packaging" && m.capacity && (
+                                                    <span className="text-muted-foreground ml-1 text-[10px]">
+                                                        ({m.capacity}{m.capacityUnit})
+                                                    </span>
+                                                )}
+                                                {materialType === "chemical" && m.unit && (
+                                                    <span className="text-muted-foreground ml-1 text-[10px]">
+                                                        ({m.unit})
+                                                    </span>
+                                                )}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                        )}
+                    </form.Field>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    {/* Supplier Selection */}
+                    <form.Field name="supplierId">
+                        {(field) => (
+                            <Field>
+                                <FieldLabel>Supplier</FieldLabel>
+                                <Select
+                                    value={field.state.value}
+                                    onValueChange={(value) => field.handleChange(value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select supplier" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {suppliers?.map((s) => (
+                                            <SelectItem key={s.id} value={s.id}>
+                                                {s.supplierName}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                        )}
+                    </form.Field>
+
+                    {/* Quantity */}
+                    <form.Field name="quantity">
+                        {(field) => (
+                            <Field>
+                                <FieldLabel>Quantity</FieldLabel>
+                                <Input
+                                    type="number"
+                                    step="0.001"
+                                    placeholder="0.00"
+                                    value={field.state.value}
+                                    onChange={(e) => field.handleChange(e.target.value)}
+                                />
+                                <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                        )}
+                    </form.Field>
+                </div>
+
+                {/* Cost */}
+                <form.Field name="cost">
                     {(field) => (
                         <Field>
-                            <FieldLabel>Material Type</FieldLabel>
-                            <Select
-                                value={field.state.value}
-                                onValueChange={(value: "chemical" | "packaging") => {
-                                    field.handleChange(value);
-                                    setMaterialType(value);
-                                    form.setFieldValue("materialId", "");
-                                }}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="chemical">Chemical</SelectItem>
-                                    <SelectItem value="packaging">Packaging</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <FieldLabel>Total Cost</FieldLabel>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">PKR</span>
+                                <Input
+                                    className="pl-10"
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    value={field.state.value}
+                                    onChange={(e) => field.handleChange(e.target.value)}
+                                />
+                            </div>
                             <FieldError errors={field.state.meta.errors} />
                         </Field>
                     )}
                 </form.Field>
 
-                {/* Material Selection */}
-                <form.Field name="materialId">
-                    {(field) => (
-                        <Field>
-                            <FieldLabel>Material</FieldLabel>
-                            <Select
-                                value={field.state.value}
-                                onValueChange={(value) => field.handleChange(value)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select material" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {availableMaterials.map((m) => (
-                                        <SelectItem key={m.id} value={m.id}>
-                                            {m.name} ({m.unit})
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FieldError errors={field.state.meta.errors} />
-                        </Field>
-                    )}
-                </form.Field>
+                <div className="grid grid-cols-2 gap-4">
+                    <form.Field name="paymentMethod">
+                        {(field) => (
+                            <Field>
+                                <FieldLabel>Payment Method</FieldLabel>
+                                <Select
+                                    value={field.state.value}
+                                    onValueChange={(val: any) => {
+                                        field.handleChange(val)
+                                        if (val === "pay_later") {
+                                            form.setFieldValue("paymentStatus", "credit");
+                                            form.setFieldValue("amountPaid", "");
+                                        }
+                                    }}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select method" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="cash">Cash</SelectItem>
+                                        <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                                        <SelectItem value="cheque">Cheque</SelectItem>
+                                        <SelectItem value="pay_later">Pay Later</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                        )}
+                    </form.Field>
 
-                {/* Quantity */}
-                <form.Field name="quantity">
+                    <form.Subscribe
+                        selector={(state) => state.values.paymentMethod}
+                        children={(method) => (
+                            <form.Field name="paymentStatus">
+                                {(field) => (
+                                    <Field>
+                                        <FieldLabel>Payment Status</FieldLabel>
+                                        <Select
+                                            value={field.state.value}
+                                            onValueChange={(val: any) => field.handleChange(val)}
+                                            disabled={method === "pay_later"}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="paid_full">Paid Full</SelectItem>
+                                                <SelectItem value="credit">Credit / Partial</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FieldError errors={field.state.meta.errors} />
+                                    </Field>
+                                )}
+                            </form.Field>
+                        )}
+                    />
+
+                    <form.Subscribe
+                        selector={(state) => [state.values.paymentStatus, state.values.cost, state.values.amountPaid, state.values.paymentMethod]}
+                        children={([status, cost, paid, method]) => {
+                            // If pay_later, no amount input needed (implicitly 0 paid)
+                            if (method === "pay_later") return null;
+
+                            // If not credit (meaning paid full), no amount input needed (implicitly total)
+                            if (status !== "credit") return null;
+
+                            const total = parseFloat(cost || "0") || 0;
+                            const paidAmount = parseFloat(paid || "0") || 0;
+                            const remaining = total - paidAmount;
+
+                            return (
+                                <div className="col-span-2 space-y-2">
+                                    <form.Field name="amountPaid">
+                                        {(field) => (
+                                            <Field>
+                                                <FieldLabel>Amount Paid <span className="text-red-500">*</span></FieldLabel>
+                                                <Input
+                                                    type="number"
+                                                    placeholder="0.00"
+                                                    value={field.state.value || ""}
+                                                    onChange={(e) => field.handleChange(e.target.value)}
+                                                />
+                                                <FieldDescription>
+                                                    Total Cost: PKR {total.toLocaleString()}
+                                                </FieldDescription>
+                                                <FieldError errors={field.state.meta.errors} />
+                                            </Field>
+                                        )}
+                                    </form.Field>
+
+                                    <div className="text-sm font-medium border rounded-md p-3 bg-muted/30 flex justify-between items-center">
+                                        <span className="text-muted-foreground">Remaining Balance:</span>
+                                        <span className={remaining > 0 ? "text-red-500" : "text-green-600"}>
+                                            PKR {remaining.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        }}
+                    />
+
+                    <form.Subscribe
+                        selector={(state) => state.values.paymentMethod}
+                        children={(paymentMethod) => {
+                            if (paymentMethod !== "bank_transfer" && paymentMethod !== "cheque") return null;
+                            return (
+                                <div className="col-span-2 space-y-4">
+                                    <form.Field name="bankName">
+                                        {(field) => (
+                                            <Field>
+                                                <FieldLabel>Bank Name</FieldLabel>
+                                                <Input
+                                                    placeholder="e.g. HBL, Meezan, etc."
+                                                    value={field.state.value || ""}
+                                                    onChange={(e) => field.handleChange(e.target.value)}
+                                                />
+                                                <FieldError errors={field.state.meta.errors} />
+                                            </Field>
+                                        )}
+                                    </form.Field>
+
+                                    <form.Field name="transactionId">
+                                        {(field) => (
+                                            <Field>
+                                                <FieldLabel>{paymentMethod === "cheque" ? "Cheque Number" : "Transaction ID"}</FieldLabel>
+                                                <Input
+                                                    placeholder={paymentMethod === "cheque" ? "Enter cheque number" : "Enter transaction ID"}
+                                                    value={field.state.value || ""}
+                                                    onChange={(e) => field.handleChange(e.target.value)}
+                                                />
+                                                <FieldError errors={field.state.meta.errors} />
+                                            </Field>
+                                        )}
+                                    </form.Field>
+                                </div>
+                            );
+                        }}
+                    />
+                </div>
+
+                {/* Notes */}
+                <form.Field name="notes">
                     {(field) => (
                         <Field>
-                            <FieldLabel>Quantity</FieldLabel>
-                            <Input
-                                type="number"
-                                step="0.001"
-                                placeholder="Enter quantity"
-                                value={field.state.value}
+                            <FieldLabel>Notes (Optional)</FieldLabel>
+                            <Textarea
+                                placeholder="Any additional details..."
+                                value={field.state.value || ""}
                                 onChange={(e) => field.handleChange(e.target.value)}
                             />
                             <FieldError errors={field.state.meta.errors} />

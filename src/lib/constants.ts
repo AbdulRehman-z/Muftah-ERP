@@ -63,6 +63,11 @@ export const navigations: NavigationItem[] = [
 		],
 	},
 	{
+		title: "Suppliers",
+		url: "/admin/suppliers",
+		icon: UsersIcon,
+	},
+	{
 		title: "Sales",
 		url: "/admin/sales/new-invoice",
 		icon: ShoppingCart,

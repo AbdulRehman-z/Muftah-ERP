@@ -4,17 +4,23 @@ import { AddWarehouseForm } from "./add-warehouse-form";
 type Props = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	forcedType?: "storage" | "factory_floor";
 };
 
-export const AddWarehouseDialog = ({ open, onOpenChange }: Props) => {
+export const AddWarehouseDialog = ({ open, onOpenChange, forcedType }: Props) => {
+	const title = forcedType === "factory_floor" ? "Add Factory Floor" : forcedType === "storage" ? "Add Warehouse" : "Add Facility";
+	const description = forcedType === "factory_floor"
+		? "Create a new production facility to track chemicals and packaging materials."
+		: "Create a new storage location for finished goods and returns.";
+
 	return (
 		<ResponsiveDialog
-			title="Add Facility"
-			description="Add a new facility (e.g. warehouse, factory-floor, etc.) by entering its name and location."
+			title={title}
+			description={description}
 			open={open}
 			onOpenChange={onOpenChange}
 		>
-			<AddWarehouseForm onSuccess={() => onOpenChange(false)} />
+			<AddWarehouseForm onSuccess={() => onOpenChange(false)} forcedType={forcedType} />
 		</ResponsiveDialog>
 	);
 };

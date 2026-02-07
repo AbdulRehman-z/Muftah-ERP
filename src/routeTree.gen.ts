@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as OperatorIndexRouteImport } from './routes/operator/index'
 import { Route as InvestorIndexRouteImport } from './routes/investor/index'
 import { Route as AdminUserManagementIndexRouteImport } from './routes/admin/user-management/index'
+import { Route as AdminSuppliersIndexRouteImport } from './routes/admin/suppliers/index'
 import { Route as AdminSettingsIndexRouteImport } from './routes/admin/settings/index'
 import { Route as AdminHrIndexRouteImport } from './routes/admin/hr/index'
 import { Route as AdminFinanceIndexRouteImport } from './routes/admin/finance/index'
@@ -25,6 +26,7 @@ import { Route as AuthLayoutLoginIndexRouteImport } from './routes/_authLayout/l
 import { Route as AuthLayoutForgotPasswordIndexRouteImport } from './routes/_authLayout/forgot-password/index'
 import { Route as AuthLayout2FaIndexRouteImport } from './routes/_authLayout/2-fa/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AdminSuppliersSupplierIdRouteImport } from './routes/admin/suppliers/$supplierId'
 import { Route as AdminSalesNewInvoiceIndexRouteImport } from './routes/admin/sales/new-invoice/index'
 import { Route as AdminSalesCustomersIndexRouteImport } from './routes/admin/sales/customers/index'
 import { Route as AdminManufacturingRecipesIndexRouteImport } from './routes/admin/manufacturing/recipes/index'
@@ -63,6 +65,11 @@ const AdminUserManagementIndexRoute =
     path: '/user-management/',
     getParentRoute: () => AdminRouteRoute,
   } as any)
+const AdminSuppliersIndexRoute = AdminSuppliersIndexRouteImport.update({
+  id: '/suppliers/',
+  path: '/suppliers/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminSettingsIndexRoute = AdminSettingsIndexRouteImport.update({
   id: '/settings/',
   path: '/settings/',
@@ -115,6 +122,12 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminSuppliersSupplierIdRoute =
+  AdminSuppliersSupplierIdRouteImport.update({
+    id: '/suppliers/$supplierId',
+    path: '/suppliers/$supplierId',
+    getParentRoute: () => AdminRouteRoute,
+  } as any)
 const AdminSalesNewInvoiceIndexRoute =
   AdminSalesNewInvoiceIndexRouteImport.update({
     id: '/sales/new-invoice/',
@@ -163,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteRouteWithChildren
   '/investor/': typeof InvestorIndexRoute
   '/operator/': typeof OperatorIndexRoute
+  '/admin/suppliers/$supplierId': typeof AdminSuppliersSupplierIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/2-fa/': typeof AuthLayout2FaIndexRoute
   '/forgot-password/': typeof AuthLayoutForgotPasswordIndexRoute
@@ -173,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/admin/finance/': typeof AdminFinanceIndexRoute
   '/admin/hr/': typeof AdminHrIndexRoute
   '/admin/settings/': typeof AdminSettingsIndexRoute
+  '/admin/suppliers/': typeof AdminSuppliersIndexRoute
   '/admin/user-management/': typeof AdminUserManagementIndexRoute
   '/admin/manufacturing/recipes/$recipeId': typeof AdminManufacturingRecipesRecipeIdRoute
   '/admin/inventory/factory-floor/': typeof AdminInventoryFactoryFloorIndexRoute
@@ -187,6 +202,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRouteRouteWithChildren
   '/investor': typeof InvestorIndexRoute
   '/operator': typeof OperatorIndexRoute
+  '/admin/suppliers/$supplierId': typeof AdminSuppliersSupplierIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/2-fa': typeof AuthLayout2FaIndexRoute
   '/forgot-password': typeof AuthLayoutForgotPasswordIndexRoute
@@ -197,6 +213,7 @@ export interface FileRoutesByTo {
   '/admin/finance': typeof AdminFinanceIndexRoute
   '/admin/hr': typeof AdminHrIndexRoute
   '/admin/settings': typeof AdminSettingsIndexRoute
+  '/admin/suppliers': typeof AdminSuppliersIndexRoute
   '/admin/user-management': typeof AdminUserManagementIndexRoute
   '/admin/manufacturing/recipes/$recipeId': typeof AdminManufacturingRecipesRecipeIdRoute
   '/admin/inventory/factory-floor': typeof AdminInventoryFactoryFloorIndexRoute
@@ -213,6 +230,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteRouteWithChildren
   '/investor/': typeof InvestorIndexRoute
   '/operator/': typeof OperatorIndexRoute
+  '/admin/suppliers/$supplierId': typeof AdminSuppliersSupplierIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_authLayout/2-fa/': typeof AuthLayout2FaIndexRoute
   '/_authLayout/forgot-password/': typeof AuthLayoutForgotPasswordIndexRoute
@@ -223,6 +241,7 @@ export interface FileRoutesById {
   '/admin/finance/': typeof AdminFinanceIndexRoute
   '/admin/hr/': typeof AdminHrIndexRoute
   '/admin/settings/': typeof AdminSettingsIndexRoute
+  '/admin/suppliers/': typeof AdminSuppliersIndexRoute
   '/admin/user-management/': typeof AdminUserManagementIndexRoute
   '/admin/manufacturing/recipes/$recipeId': typeof AdminManufacturingRecipesRecipeIdRoute
   '/admin/inventory/factory-floor/': typeof AdminInventoryFactoryFloorIndexRoute
@@ -239,6 +258,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/investor/'
     | '/operator/'
+    | '/admin/suppliers/$supplierId'
     | '/api/auth/$'
     | '/2-fa/'
     | '/forgot-password/'
@@ -249,6 +269,7 @@ export interface FileRouteTypes {
     | '/admin/finance/'
     | '/admin/hr/'
     | '/admin/settings/'
+    | '/admin/suppliers/'
     | '/admin/user-management/'
     | '/admin/manufacturing/recipes/$recipeId'
     | '/admin/inventory/factory-floor/'
@@ -263,6 +284,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/investor'
     | '/operator'
+    | '/admin/suppliers/$supplierId'
     | '/api/auth/$'
     | '/2-fa'
     | '/forgot-password'
@@ -273,6 +295,7 @@ export interface FileRouteTypes {
     | '/admin/finance'
     | '/admin/hr'
     | '/admin/settings'
+    | '/admin/suppliers'
     | '/admin/user-management'
     | '/admin/manufacturing/recipes/$recipeId'
     | '/admin/inventory/factory-floor'
@@ -288,6 +311,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/investor/'
     | '/operator/'
+    | '/admin/suppliers/$supplierId'
     | '/api/auth/$'
     | '/_authLayout/2-fa/'
     | '/_authLayout/forgot-password/'
@@ -298,6 +322,7 @@ export interface FileRouteTypes {
     | '/admin/finance/'
     | '/admin/hr/'
     | '/admin/settings/'
+    | '/admin/suppliers/'
     | '/admin/user-management/'
     | '/admin/manufacturing/recipes/$recipeId'
     | '/admin/inventory/factory-floor/'
@@ -359,6 +384,13 @@ declare module '@tanstack/react-router' {
       path: '/user-management'
       fullPath: '/admin/user-management/'
       preLoaderRoute: typeof AdminUserManagementIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/suppliers/': {
+      id: '/admin/suppliers/'
+      path: '/suppliers'
+      fullPath: '/admin/suppliers/'
+      preLoaderRoute: typeof AdminSuppliersIndexRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/settings/': {
@@ -430,6 +462,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/suppliers/$supplierId': {
+      id: '/admin/suppliers/$supplierId'
+      path: '/suppliers/$supplierId'
+      fullPath: '/admin/suppliers/$supplierId'
+      preLoaderRoute: typeof AdminSuppliersSupplierIdRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
     '/admin/sales/new-invoice/': {
       id: '/admin/sales/new-invoice/'
@@ -504,10 +543,12 @@ const AuthLayoutRouteRouteWithChildren = AuthLayoutRouteRoute._addFileChildren(
 )
 
 interface AdminRouteRouteChildren {
+  AdminSuppliersSupplierIdRoute: typeof AdminSuppliersSupplierIdRoute
   AdminDashboardIndexRoute: typeof AdminDashboardIndexRoute
   AdminFinanceIndexRoute: typeof AdminFinanceIndexRoute
   AdminHrIndexRoute: typeof AdminHrIndexRoute
   AdminSettingsIndexRoute: typeof AdminSettingsIndexRoute
+  AdminSuppliersIndexRoute: typeof AdminSuppliersIndexRoute
   AdminUserManagementIndexRoute: typeof AdminUserManagementIndexRoute
   AdminManufacturingRecipesRecipeIdRoute: typeof AdminManufacturingRecipesRecipeIdRoute
   AdminInventoryFactoryFloorIndexRoute: typeof AdminInventoryFactoryFloorIndexRoute
@@ -519,10 +560,12 @@ interface AdminRouteRouteChildren {
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminSuppliersSupplierIdRoute: AdminSuppliersSupplierIdRoute,
   AdminDashboardIndexRoute: AdminDashboardIndexRoute,
   AdminFinanceIndexRoute: AdminFinanceIndexRoute,
   AdminHrIndexRoute: AdminHrIndexRoute,
   AdminSettingsIndexRoute: AdminSettingsIndexRoute,
+  AdminSuppliersIndexRoute: AdminSuppliersIndexRoute,
   AdminUserManagementIndexRoute: AdminUserManagementIndexRoute,
   AdminManufacturingRecipesRecipeIdRoute:
     AdminManufacturingRecipesRecipeIdRoute,

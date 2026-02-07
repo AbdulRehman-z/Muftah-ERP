@@ -156,7 +156,7 @@ function RouteComponent() {
 // 												<Badge variant="outline">{emp.role}</Badge>
 // 											</TableCell>
 // 											<TableCell className="text-right font-mono">
-// 												Rs. {Number(emp.baseSalary).toLocaleString()}
+// 												PKR {Number(emp.baseSalary).toLocaleString()}
 // 											</TableCell>
 // 											<TableCell>
 // 												<Button
@@ -204,7 +204,7 @@ function RouteComponent() {
 // 												)}
 // 											</TableCell>
 // 											<TableCell className="text-right font-bold">
-// 												Rs. {Number(record.totalPaid).toLocaleString()}
+// 												PKR {Number(record.totalPaid).toLocaleString()}
 // 											</TableCell>
 // 											<TableCell>
 // 												<Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none">
@@ -311,7 +311,7 @@ function RouteComponent() {
 // 										name="baseSalary"
 // 										render={({ field }) => (
 // 											<Field>
-// 												<FieldLabel>Base Salary (Rs.)</FieldLabel>
+// 												<FieldLabel>Base Salary (PKR)</FieldLabel>
 // 												<Input type="number" {...field} />
 // 											</Field>
 // 										)}
@@ -371,7 +371,7 @@ function RouteComponent() {
 // 										Net Amount to Pay
 // 									</div>
 // 									<div className="text-2xl font-black text-primary">
-// 										Rs. {netPay.toLocaleString()}
+// 										PKR {netPay.toLocaleString()}
 // 									</div>
 // 								</div>
 

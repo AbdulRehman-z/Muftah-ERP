@@ -49,7 +49,7 @@ export const ResponsiveSheet = ({
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent className="min-w-lg scroll-auto">
+			<SheetContent className="min-w-lg overflow-y-auto pb-5">
 				<SheetHeader>
 					<SheetTitle>{title}</SheetTitle>
 					<SheetDescription>{description}</SheetDescription>
