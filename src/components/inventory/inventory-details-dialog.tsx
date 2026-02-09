@@ -5,8 +5,14 @@ import {
     Info,
     History,
     CheckCircle2,
-    AlertCircle
+    AlertCircle,
+    User,
+    Phone,
+    Factory,
+    Truck,
+    ArrowRight
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import {
     Dialog,
@@ -18,6 +24,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import { getTransferHistoryFn } from "@/server-functions/inventory/stock/get-transfer-history-fn";
 
 type DetailsProps = {
     open: boolean;
@@ -39,9 +47,17 @@ export const InventoryDetailsDialog = ({ open, onOpenChange, type, item }: Detai
     const minLevel = isFinished ? 0 : parseFloat(material.minimumStockLevel?.toString() || "0");
     const isLow = !isFinished && currentQty < minLevel;
 
+    const materialId = isFinished ? item.recipe?.id : type === "chemical" ? item.chemical?.id : item.packagingMaterial?.id;
+
+    const { data: transferHistory } = useQuery({
+        queryKey: ["transfer-history", type, materialId],
+        queryFn: () => getTransferHistoryFn({ data: { materialType: type, materialId } }),
+        enabled: open && !!materialId,
+    });
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden border-none shadow-md">
+            <DialogContent className="min-w-3xl p-0 gap-0 overflow-hidden border-none shadow-md">
                 <div className="bg-primary/5 p-6 border-b border-primary/10">
                     <DialogHeader className="space-y-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -121,6 +137,138 @@ export const InventoryDetailsDialog = ({ open, onOpenChange, type, item }: Detai
                                 </CardContent>
                             </Card>
                         </div>
+
+                        {/* Transfer History Section */}
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
+                                <Truck className="size-3.5" />
+                                <span>Recent Movements</span>
+                            </div>
+
+                            {transferHistory && transferHistory.length > 0 ? (
+                                <div className="border rounded-2xl overflow-hidden bg-muted/10">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-muted/20 text-xs uppercase text-muted-foreground font-bold tracking-wider">
+                                            <tr>
+                                                <th className="px-4 py-3 text-left">Date</th>
+                                                <th className="px-4 py-3 text-left">Route</th>
+                                                <th className="px-4 py-3 text-right">Quantity</th>
+                                                <th className="px-4 py-3 text-right">By</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-muted/10">
+                                            {transferHistory.map((transfer) => (
+                                                <tr key={transfer.id} className="group hover:bg-muted/5 transition-colors">
+                                                    <td className="px-4 py-3 font-medium text-foreground">
+                                                        {format(new Date(transfer.createdAt), "MMM d, h:mm a")}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex items-center gap-2 text-xs">
+                                                            <span className={transfer.fromWarehouseId === item.warehouse.id ? "font-bold text-foreground" : "text-muted-foreground"}>
+                                                                {transfer.fromWarehouse.name}
+                                                            </span>
+                                                            <ArrowRight className="size-3 text-muted-foreground/50" />
+                                                            <span className={transfer.toWarehouseId === item.warehouse.id ? "font-bold text-foreground" : "text-muted-foreground"}>
+                                                                {transfer.toWarehouse.name}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-mono font-medium">
+                                                        {parseFloat(transfer.quantity).toFixed(isFinished ? 0 : 2)}
+                                                        <span className="text-[10px] text-muted-foreground ml-1">
+                                                            {isFinished ? "ctn" : material.unit || "units"}
+                                                        </span>
+                                                        {transfer.notes?.includes("loose units") && (
+                                                            <div className="text-[10px] text-amber-600 font-bold tracking-tight">
+                                                                + Loose Units
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right text-xs text-muted-foreground">
+                                                        {transfer.performedBy.name}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="p-8 border border-dashed rounded-2xl flex flex-col items-center justify-center text-center gap-2 bg-muted/5">
+                                    <Truck className="size-8 text-muted-foreground/20" />
+                                    <p className="text-sm font-medium text-muted-foreground">No transfer history found</p>
+                                    <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest">
+                                        Stock has not been moved between warehouses yet.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Supplier Information */}
+                        {!isFinished && material.lastSupplier ? (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
+                                    <Factory className="size-3.5" />
+                                    <span>Primary Supplier</span>
+                                </div>
+                                <div className="bg-muted/10 border rounded-2xl p-5 flex flex-col gap-3 relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                        <Factory className="size-24 -rotate-12" />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4 relative z-10">
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Supplier Name</p>
+                                            <p className="font-bold text-base text-foreground flex items-center gap-2">
+                                                {material.lastSupplier.supplierName}
+                                                <Link to="/admin/suppliers/$supplierId" params={{ supplierId: material.lastSupplier.id }}>
+                                                    <Badge variant="outline" className="ml-2 hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors text-[10px] uppercase tracking-widest h-5">
+                                                        View Profile
+                                                    </Badge>
+                                                </Link>
+                                            </p>
+                                        </div>
+
+                                        {material.lastSupplier.supplierShopName && (
+                                            <div className="space-y-1">
+                                                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Shop Name</p>
+                                                <p className="font-medium text-sm text-foreground">{material.lastSupplier.supplierShopName}</p>
+                                            </div>
+                                        )}
+
+                                        {material.lastSupplier.phone && (
+                                            <div className="space-y-1">
+                                                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Contact</p>
+                                                <div className="flex items-center gap-2 text-sm font-medium">
+                                                    <Phone className="size-3.5" />
+                                                    <span>{material.lastSupplier.phone}</span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Recent Activity</p>
+                                            <p className="text-xs text-muted-foreground italic">
+                                                Last supplied on {format(updatedAt, "MMM d, yyyy")}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            !isFinished && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-widest">
+                                        <Factory className="size-3.5" />
+                                        <span>Primary Supplier</span>
+                                    </div>
+                                    <div className="bg-muted/5 border border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center gap-2">
+                                        <Factory className="size-8 text-muted-foreground/30" />
+                                        <p className="text-sm font-medium text-muted-foreground">No supplier information recorded for this material.</p>
+                                        <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest">Supplier history will appear here after the first purchase.</p>
+                                    </div>
+                                </div>
+                            )
+                        )}
 
                         {/* Inventory Timeline */}
                         <div className="space-y-4">

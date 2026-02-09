@@ -3,9 +3,14 @@ import { Suspense } from "react";
 import { GenericLoader } from "@/components/custom/generic-loader";
 import { RecipesContainer } from "@/components/recipes/recipes-container";
 import { getRecipesFn } from "@/server-functions/inventory/recipes/get-recipe-fn";
-// import { getRecipesFn } from "@/server-functions/inventory/recepies/get-recipe-fn";
+import { z } from "zod";
+
+const recipeSearchSchema = z.object({
+	edit: z.string().optional(),
+});
 
 export const Route = createFileRoute("/admin/manufacturing/recipes/")({
+	validateSearch: (search) => recipeSearchSchema.parse(search),
 	loader: async ({ context }) => {
 		void context.queryClient.prefetchQuery({
 			queryKey: ["recipes"],

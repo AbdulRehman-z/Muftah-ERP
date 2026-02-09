@@ -10,6 +10,7 @@ import {
 	timestamp,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
+import { suppliers } from "./core-suppliers";
 
 const timestamps = {
 	createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -49,6 +50,11 @@ export const chemicals = pgTable("chemicals", {
 		precision: 10,
 		scale: 2,
 	}).default("0"),
+
+	packagingType: text("packaging_type"), // "Drum", "Bag", "Can"
+	packagingSize: text("packaging_size"), // "20kg", "200L"
+
+	lastSupplierId: text("last_supplier_id").references(() => suppliers.id),
 	...timestamps,
 });
 
@@ -58,7 +64,7 @@ export const packagingMaterials = pgTable("packaging_materials", {
 		.primaryKey()
 		.$defaultFn(() => createId()),
 	name: text("name").notNull(),
-	// Type: Primary (Bottle/Sachet) or Master (Carton) or Auxiliary (Cap/Label)
+	// Type: Primary (Bottle/Sachet) or Master (Carton) or Extra (Cap/Label)
 	type: text("type").notNull().default("primary"),
 
 	// Capacity:
@@ -69,10 +75,21 @@ export const packagingMaterials = pgTable("packaging_materials", {
 	// Unit for the capacity
 	capacityUnit: text("capacity_unit"), // "ml", "g", "units"
 
+	// Primary Packaging Specifics
+	weightPerPack: decimal("weight_per_pack", { precision: 10, scale: 3 }), // Weight of empty pack in grams? or content weight? User said "weight/pack e.g 6g" for primary.
+	pricePerKg: decimal("price_per_kg", { precision: 10, scale: 2 }), // Reference price
+
+	// Master Container Specifics
+	associatedStickerId: text("associated_sticker_id").references(
+		(): any => packagingMaterials.id,
+	),
+	stickerCost: decimal("sticker_cost", { precision: 10, scale: 2 }).default("0"),
+
 	costPerUnit: decimal("cost_per_unit", { precision: 10, scale: 2 }).default(
 		"0",
 	),
 	minimumStockLevel: integer("minimum_stock_level").default(0),
+	lastSupplierId: text("last_supplier_id").references(() => suppliers.id),
 	...timestamps,
 });
 
@@ -132,7 +149,7 @@ export const recipes = pgTable("recipes", {
 	targetUnitsPerBatch: integer("target_units_per_batch").notNull().default(0), // Target number of containers per batch
 
 	// Packaging Configuration
-	containerType: text("container_type").notNull(), // "bottle" | "sachet" | "bag"
+	containerType: text("container_type").notNull(), // "pack" | "bag"
 	containerPackagingId: text("container_packaging_id")
 		.notNull()
 		.references(() => packagingMaterials.id), // The bottle/sachet/bag to use
@@ -374,18 +391,26 @@ export const warehousesRelations = relations(warehouses, ({ many }) => ({
 	productionRuns: many(productionRuns),
 }));
 
-export const chemicalsRelations = relations(chemicals, ({ many }) => ({
+export const chemicalsRelations = relations(chemicals, ({ many, one }) => ({
 	stock: many(materialStock),
 	recipeIngredients: many(recipeIngredients),
+	lastSupplier: one(suppliers, {
+		fields: [chemicals.lastSupplierId],
+		references: [suppliers.id],
+	}),
 }));
 
 export const packagingMaterialsRelations = relations(
 	packagingMaterials,
-	({ many }) => ({
+	({ many, one }) => ({
 		stock: many(materialStock),
 		recipesAsContainer: many(recipes, { relationName: "containerPackaging" }),
 		recipesAsCarton: many(recipes, { relationName: "cartonPackaging" }),
 		recipePackaging: many(recipePackaging),
+		lastSupplier: one(suppliers, {
+			fields: [packagingMaterials.lastSupplierId],
+			references: [suppliers.id],
+		}),
 	}),
 );
 
@@ -496,6 +521,14 @@ export const productionMaterialsUsedRelations = relations(
 		productionRun: one(productionRuns, {
 			fields: [productionMaterialsUsed.productionRunId],
 			references: [productionRuns.id],
+		}),
+		chemical: one(chemicals, {
+			fields: [productionMaterialsUsed.materialId],
+			references: [chemicals.id],
+		}),
+		packagingMaterial: one(packagingMaterials, {
+			fields: [productionMaterialsUsed.materialId],
+			references: [packagingMaterials.id],
 		}),
 	}),
 );

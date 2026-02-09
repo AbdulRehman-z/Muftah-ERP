@@ -25,13 +25,10 @@ export const transferStockFn = createServerFn()
 				if (toWarehouse.type !== "factory_floor") {
 					throw new Error("Raw materials (chemicals/packaging) can only be transferred to a Factory Floor facility.");
 				}
-			} else if (data.materialType === "finished") {
-				// Optional: Restrict Finished Goods? User said "Storage facilities are reserved for finished goods". 
-				// This implies Storage can ONLY hold FG. But does it mean FG can ONLY go to Storage?
-				// Probably FG can be anywhere, but Storage cannot hold Raw.
-				// Logic above covers Storage cannot hold Raw.
 			}
-			const qty = parseFloat(data.quantity);
+
+			const qty = parseFloat(data.quantity) || 0;
+			const loose = parseFloat(data.looseUnits || "0") || 0;
 
 			if (data.materialType === "finished") {
 				// Handle finished goods transfer
@@ -42,8 +39,12 @@ export const transferStockFn = createServerFn()
 					),
 				});
 
-				if (!sourceStock || sourceStock.quantityCartons < qty) {
-					throw new Error("Insufficient finished goods stock");
+				if (!sourceStock) {
+					throw new Error("Source stock not found");
+				}
+
+				if (sourceStock.quantityCartons < qty || sourceStock.quantityContainers < loose) {
+					throw new Error(`Insufficient stock. Available: ${sourceStock.quantityCartons} cartons, ${sourceStock.quantityContainers} units.`);
 				}
 
 				// Deduct from source
@@ -51,6 +52,7 @@ export const transferStockFn = createServerFn()
 					.update(finishedGoodsStock)
 					.set({
 						quantityCartons: sourceStock.quantityCartons - qty,
+						quantityContainers: sourceStock.quantityContainers - loose,
 						updatedAt: new Date(),
 					})
 					.where(eq(finishedGoodsStock.id, sourceStock.id));
@@ -68,6 +70,7 @@ export const transferStockFn = createServerFn()
 						.update(finishedGoodsStock)
 						.set({
 							quantityCartons: destStock.quantityCartons + qty,
+							quantityContainers: destStock.quantityContainers + loose,
 							updatedAt: new Date(),
 						})
 						.where(eq(finishedGoodsStock.id, destStock.id));
@@ -76,6 +79,7 @@ export const transferStockFn = createServerFn()
 						warehouseId: data.toWarehouseId,
 						recipeId: data.materialId,
 						quantityCartons: qty,
+						quantityContainers: loose,
 					});
 				}
 			} else {
@@ -132,6 +136,9 @@ export const transferStockFn = createServerFn()
 			}
 
 			// Record transfer
+			const noteSuffix = loose > 0 ? ` (+ ${loose} loose units)` : "";
+			const transferNotes = (data.notes || "") + noteSuffix;
+
 			const [transfer] = await tx
 				.insert(stockTransfers)
 				.values({
@@ -139,9 +146,9 @@ export const transferStockFn = createServerFn()
 					toWarehouseId: data.toWarehouseId,
 					materialType: data.materialType,
 					materialId: data.materialId,
-					quantity: data.quantity,
+					quantity: data.quantity, // Records Cartons (or main qty)
 					performedById: context.session.user.id,
-					notes: data.notes,
+					notes: transferNotes.trim(),
 					status: "completed",
 				})
 				.returning();
@@ -154,7 +161,7 @@ export const transferStockFn = createServerFn()
 					materialId: data.materialId,
 					type: "debit",
 					amount: data.quantity,
-					reason: "Transfer Out",
+					reason: "Transfer Out" + noteSuffix,
 					performedById: context.session.user.id,
 					referenceId: transfer.id,
 				},
@@ -164,7 +171,7 @@ export const transferStockFn = createServerFn()
 					materialId: data.materialId,
 					type: "credit",
 					amount: data.quantity,
-					reason: "Transfer In",
+					reason: "Transfer In" + noteSuffix,
 					performedById: context.session.user.id,
 					referenceId: transfer.id,
 				},

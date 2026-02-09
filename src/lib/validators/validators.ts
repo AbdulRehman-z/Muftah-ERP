@@ -9,7 +9,7 @@ export const createRecipeSchema = z.object({
 	fillAmount: z.string().optional(), // Content per pack (e.g., "100" for 100g)
 	fillUnit: z.enum(["g", "kg", "ml", "L"]).optional(), // Unit for fill amount
 	targetUnitsPerBatch: z.number().int().min(0).default(0), // Target packs per batch (producedUnits)
-	containerType: z.enum(["bottle", "sachet", "bag"]),
+	containerType: z.literal("pack"),
 	containerPackagingId: z.string().min(1, "Container packaging is required"),
 	containersPerCarton: z.number().int().min(0).default(0), // 0 means no cartons
 	cartonPackagingId: z.string().optional(),
@@ -19,7 +19,7 @@ export const createRecipeSchema = z.object({
 	})),
 	additionalPackaging: z.array(z.object({
 		packagingMaterialId: z.string().min(1, "Packaging material is required"),
-		quantityPerContainer: z.number().int().min(1, "Quantity is required"),
+		quantityPerContainer: z.number().positive("Quantity must be a positive number"),
 	})).default([]),
 });
 
@@ -36,7 +36,7 @@ export const addRecipeIngredientSchema = z.object({
 export const addRecipePackagingSchema = z.object({
 	recipeId: z.string(),
 	packagingMaterialId: z.string(),
-	quantityPerContainer: z.number().int().min(1),
+	quantityPerContainer: z.number().positive(),
 });
 
 export const addWarehouseSchema = z.object({
@@ -54,6 +54,9 @@ export const addChemicalSchema = z.object({
 	warehouseId: z.string().min(1, "Warehouse is required"),
 	quantity: z.string().min(1, "Quantity is required"),
 	supplierId: z.string().min(1, "Supplier is required"),
+	// New Fields
+	packagingType: z.string(),
+	packagingSize: z.string(),
 	notes: z.string(),
 	paymentMethod: z.enum(["cash", "bank_transfer", "cheque", "pay_later"]),
 	paymentStatus: z.enum(["paid_full", "credit"]),
@@ -101,9 +104,14 @@ export const addPackagingMaterialSchema = z.object({
 	quantity: z.string().min(1, "Quantity is required"),
 	costPerUnit: z.string().min(1, "Cost per unit is required"),
 	minimumStockLevel: z.number().int().min(0),
-	type: z.enum(["primary", "master"]),
+	type: z.enum(["primary", "master", "sticker", "extra"]),
 	capacity: z.string(),
 	capacityUnit: z.string(),
+	// New Fields
+	weightPerPack: z.string(),
+	pricePerKg: z.string(),
+	associatedStickerId: z.string(),
+	stickerCost: z.string(),
 	supplierId: z.string().min(1, "Supplier is required"),
 	notes: z.string(),
 	paymentMethod: z.enum(["cash", "bank_transfer", "cheque", "pay_later"]),
@@ -227,8 +235,16 @@ export const transferStockSchema = z.object({
 	toWarehouseId: z.string().min(1, "Destination warehouse is required"),
 	materialType: z.enum(["chemical", "packaging", "finished"]),
 	materialId: z.string().min(1, "Material is required"),
-	quantity: z.string().min(1, "Quantity is required"),
-	notes: z.string(),
+	quantity: z.string().default("0"), // Cartons (for FG) or Amount (for others)
+	looseUnits: z.string().default("0").optional(), // Loose units (only for FG)
+	notes: z.string().optional(),
+}).refine((data) => {
+	const qty = parseFloat(data.quantity) || 0;
+	const loose = parseFloat(data.looseUnits || "0") || 0;
+	return qty > 0 || loose > 0;
+}, {
+	message: "At least one quantity (cartons or units) must be greater than 0",
+	path: ["quantity"], // Attach error to quantity field
 });
 
 // export const createProductionRunSchema = z.object({

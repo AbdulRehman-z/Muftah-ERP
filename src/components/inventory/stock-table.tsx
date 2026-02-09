@@ -41,6 +41,12 @@ type StockItem = {
 		costPerUnit: string | number | null;
 		createdAt: string | Date;
 		updatedAt: string | Date;
+		lastSupplier?: {
+			id: string;
+			supplierName: string;
+			supplierShopName?: string | null;
+			phone?: string | null;
+		} | null;
 	} | null;
 	packagingMaterial?: {
 		id: string;
@@ -54,6 +60,12 @@ type StockItem = {
 		costPerUnit: string | number | null;
 		createdAt: string | Date;
 		updatedAt: string | Date;
+		lastSupplier?: {
+			id: string;
+			supplierName: string;
+			supplierShopName?: string | null;
+			phone?: string | null;
+		} | null;
 	} | null;
 };
 
@@ -134,7 +146,7 @@ export const StockTable = ({
 							onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
 							className="-ml-4 h-8 text-[10px] font-bold uppercase tracking-widest hover:bg-transparent"
 						>
-							Quantity
+							Current Stock
 							<ArrowUpDown className="ml-2 h-3 w-3" />
 						</Button>
 					)
@@ -159,6 +171,18 @@ export const StockTable = ({
 					return (
 						<span className="text-xs font-medium text-foreground opacity-90">
 							PKR {parseFloat(material?.costPerUnit?.toString() || "0").toFixed(2)}
+						</span>
+					)
+				}
+			},
+			{
+				id: "supplier",
+				header: "SUPPLIER",
+				cell: ({ row }) => {
+					const material = isChemical ? row.original.chemical : row.original.packagingMaterial;
+					return (
+						<span className="text-xs font-medium text-muted-foreground truncate">
+							{material?.lastSupplier?.supplierName || "N/A"}
 						</span>
 					)
 				}
@@ -341,6 +365,7 @@ export const StockTable = ({
 			</div>
 
 			<DataTable
+				pageSize={5}
 				columns={columns}
 				data={data}
 				searchKey="name"

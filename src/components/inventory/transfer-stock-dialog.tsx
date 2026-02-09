@@ -25,16 +25,24 @@ interface TransferStockDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	warehouses: Warehouse[];
+	defaultValues?: {
+		fromWarehouseId?: string;
+		toWarehouseId?: string;
+		materialType?: "chemical" | "packaging" | "finished";
+		materialId?: string;
+		quantity?: string;
+	};
 }
 
 export const TransferStockDialog = ({
 	open,
 	onOpenChange,
 	warehouses,
+	defaultValues,
 }: TransferStockDialogProps) => {
 	const [materialType, setMaterialType] = useState<
 		"chemical" | "packaging" | "finished"
-	>("chemical");
+	>(defaultValues?.materialType || "chemical");
 
 	const { data: materials } = useSuspenseQuery({
 		queryKey: ["materials"],
@@ -50,11 +58,12 @@ export const TransferStockDialog = ({
 
 	const form = useForm({
 		defaultValues: {
-			fromWarehouseId: "",
-			toWarehouseId: "",
-			materialType: "chemical" as "chemical" | "packaging" | "finished",
-			materialId: "",
-			quantity: "",
+			fromWarehouseId: defaultValues?.fromWarehouseId || "",
+			toWarehouseId: defaultValues?.toWarehouseId || "",
+			materialType: defaultValues?.materialType || "chemical",
+			materialId: defaultValues?.materialId || "",
+			quantity: defaultValues?.quantity || "0",
+			looseUnits: "0",
 			notes: "",
 		},
 		onSubmit: async ({ value }) => {
@@ -212,24 +221,44 @@ export const TransferStockDialog = ({
 						)}
 					</form.Field>
 
-					{/* Quantity */}
-					<form.Field name="quantity">
-						{(field) => (
-							<Field>
-								<FieldLabel>
-									Quantity {materialType === "finished" && "(Cartons)"}
-								</FieldLabel>
-								<Input
-									type="number"
-									step={materialType === "finished" ? "1" : "0.001"}
-									placeholder="Enter quantity"
-									value={field.state.value}
-									onChange={(e) => field.handleChange(e.target.value)}
-								/>
-								<FieldError errors={field.state.meta.errors} />
-							</Field>
+					{/* Quantity Section */}
+					<div className="flex gap-4">
+						<form.Field name="quantity">
+							{(field) => (
+								<Field className="flex-1">
+									<FieldLabel>
+										{materialType === "finished" ? "Cartons" : "Quantity"}
+									</FieldLabel>
+									<Input
+										type="number"
+										step={materialType === "finished" ? "1" : "0.001"}
+										placeholder={materialType === "finished" ? "0" : "Enter quantity"}
+										value={field.state.value}
+										onChange={(e) => field.handleChange(e.target.value)}
+									/>
+									<FieldError errors={field.state.meta.errors} />
+								</Field>
+							)}
+						</form.Field>
+
+						{materialType === "finished" && (
+							<form.Field name="looseUnits">
+								{(field) => (
+									<Field className="flex-1">
+										<FieldLabel>Loose Units (Packs)</FieldLabel>
+										<Input
+											type="number"
+											step="1"
+											placeholder="0"
+											value={field.state.value}
+											onChange={(e) => field.handleChange(e.target.value)}
+										/>
+										<FieldError errors={field.state.meta.errors} />
+									</Field>
+								)}
+							</form.Field>
 						)}
-					</form.Field>
+					</div>
 
 					{/* Notes */}
 					<form.Field name="notes">

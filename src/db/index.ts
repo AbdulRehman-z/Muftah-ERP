@@ -3,6 +3,7 @@ import * as authSchema from "./schemas/auth-schema";
 import * as financeSchema from "./schemas/finance-schema";
 import * as inventorySchema from "./schemas/inventory-schema";
 import * as salesSchema from "./schemas/sales-schema";
+import * as coreSuppliers from "./schemas/core-suppliers";
 import * as supplierSchema from "./schemas/supplier-schema";
 
 const schema = {
@@ -11,6 +12,7 @@ const schema = {
 	...salesSchema,
 	...financeSchema,
 	...supplierSchema,
+	...coreSuppliers,
 };
 
 export const db = drizzle(process.env.DATABASE_URL!, { schema: schema });
@@ -26,7 +28,9 @@ export const {
 	productionRuns,
 	stockTransfers,
 	inventoryAuditLog,
+	productionMaterialsUsed,
 } = inventorySchema;
 export const { customers, invoices, invoiceItems } = salesSchema;
 export const { wallets, expenses, transactions } = financeSchema;
-export const { suppliers, supplierPayments, purchaseRecords } = supplierSchema;
+export const { supplierPayments, purchaseRecords } = supplierSchema;
+export const { suppliers } = coreSuppliers;

@@ -23,7 +23,7 @@ type Props = {
 
 export const AddPackagingMaterialForm = ({ onSuccess, warehouses, preselectedWarehouse, preselectedSupplierId }: Props) => {
     const mutate = useAddPackagingMaterial();
-    const [activeType, setActiveType] = useState<"primary" | "master">("primary");
+    const [activeType, setActiveType] = useState<"primary" | "master" | "sticker">("primary");
 
     const { data: suppliers } = useSuspenseQuery({
         queryKey: ["suppliers"],
@@ -42,9 +42,13 @@ export const AddPackagingMaterialForm = ({ onSuccess, warehouses, preselectedWar
             quantity: "",
             costPerUnit: "",
             minimumStockLevel: 0,
-            type: "primary" as "primary" | "master",
+            type: "primary" as "primary" | "master" | "sticker" | "extra",
             capacity: "",
             capacityUnit: "",
+            weightPerPack: "",
+            pricePerKg: "",
+            associatedStickerId: "",
+            stickerCost: "",
             supplierId: preselectedSupplierId || "",
             notes: "",
             paymentMethod: "cash" as "cash" | "bank_transfer" | "cheque" | "pay_later",
@@ -68,43 +72,48 @@ export const AddPackagingMaterialForm = ({ onSuccess, warehouses, preselectedWar
     const isPreselectedInvalid = preselectedWarehouse && !availableWarehouses.find(w => w.id === preselectedWarehouse);
 
     return (
-        <div className="space-y-4 max-w-md">
+        <div className="space-y-4 max-w-xl mx-auto">
             {/* Type Switcher */}
-            <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-lg border">
-                <button
+            <div className="grid grid-cols-3 gap-2 p-1 bg-muted rounded-lg border">
+                <Button
                     type="button"
+                    size={"lg"}
                     onClick={() => {
                         setActiveType("primary");
                         form.setFieldValue("type", "primary");
                         form.setFieldValue("capacityUnit", "ml");
                     }}
-                    className={cn(
-                        "flex items-center justify-center gap-2 py-2 text-sm font-semibold rounded-md transition-all duration-200",
-                        activeType === "primary"
-                            ? "bg-background shadow-sm text-primary ring-1 ring-black/5"
-                            : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
-                    )}
+                    variant={activeType === "primary" ? "default" : "outline"}
                 >
-                    <Package className={cn("size-4", activeType === "primary" ? "text-primary" : "text-muted-foreground")} />
-                    Primary (Unit)
-                </button>
-                <button
+                    <Package className={cn("size-3.5", activeType === "primary" ? "text-white" : "text-muted-foreground")} />
+                    Packing (Bag)
+                </Button>
+                <Button
+                    size={"lg"}
                     type="button"
                     onClick={() => {
                         setActiveType("master");
                         form.setFieldValue("type", "master");
                         form.setFieldValue("capacityUnit", "units");
                     }}
-                    className={cn(
-                        "flex items-center justify-center gap-2 py-2 text-sm font-semibold rounded-md transition-all duration-200",
-                        activeType === "master"
-                            ? "bg-background shadow-sm text-primary ring-1 ring-black/5"
-                            : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
-                    )}
+                    variant={activeType === "master" ? "default" : "outline"}
                 >
-                    <Box className={cn("size-4", activeType === "master" ? "text-primary" : "text-muted-foreground")} />
-                    Master (Carton)
-                </button>
+                    <Box className={cn("size-3.5", activeType === "master" ? "text-white" : "text-muted-foreground")} />
+                    Plastic (Bucket)
+                </Button>
+                <Button
+                    size={"lg"}
+                    type="button"
+                    onClick={() => {
+                        setActiveType("sticker");
+                        form.setFieldValue("type", "sticker");
+                        form.setFieldValue("capacityUnit", "pcs");
+                    }}
+                    variant={activeType === "sticker" ? "default" : "outline"}
+                >
+                    <Info className={cn("size-3.5", activeType === "sticker" ? "text-white" : "text-muted-foreground")} />
+                    Sticker
+                </Button>
             </div>
 
             <form
@@ -138,7 +147,7 @@ export const AddPackagingMaterialForm = ({ onSuccess, warehouses, preselectedWar
                                     value={field.state.value}
                                     onBlur={field.handleBlur}
                                     onChange={(e) => field.handleChange(e.target.value)}
-                                    placeholder={activeType === 'primary' ? "e.g. 500ml Clear Bottle" : "e.g. 24x 500ml Carton"}
+                                    placeholder={activeType === 'primary' ? "e.g. 100g Pack" : activeType === 'master' ? "e.g. 10kg Bucket" : "e.g. 10kg Bucket Sticker"}
                                 />
                                 <FieldError errors={field.state.meta.errors} />
                             </Field>
@@ -171,64 +180,155 @@ export const AddPackagingMaterialForm = ({ onSuccess, warehouses, preselectedWar
                         </form.Field>
                     )}
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <form.Field name="capacity">
-                            {(field) => (
-                                <Field>
-                                    <FieldLabel>
-                                        {activeType === 'primary' ? "Fill Capacity" : "Units per Carton"}
-                                    </FieldLabel>
-                                    <Input
-                                        type="number"
-                                        value={field.state.value || ""}
-                                        onChange={(e) => field.handleChange(e.target.value)}
-                                        placeholder={activeType === 'primary' ? "e.g. 500" : "e.g. 24"}
-                                    />
-                                    <FieldDescription>
-                                        {activeType === 'primary' ? "Net content volume." : "Units inside one box."}
-                                    </FieldDescription>
-                                    <FieldError errors={field.state.meta.errors} />
-                                </Field>
-                            )}
-                        </form.Field>
-
-                        <form.Field name="capacityUnit">
-                            {(field) => (
-                                <Field>
-                                    <FieldLabel>
-                                        {activeType === 'primary' ? "Unit" : "Inner Item Content"}
-                                    </FieldLabel>
-                                    {activeType === 'primary' ? (
-                                        <Select
-                                            value={field.state.value || "ml"}
-                                            onValueChange={(val) => field.handleChange(val)}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Unit" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="ml">ml (Volume)</SelectItem>
-                                                <SelectItem value="L">L (Volume)</SelectItem>
-                                                <SelectItem value="g">g (Mass)</SelectItem>
-                                                <SelectItem value="kg">kg (Mass)</SelectItem>
-                                                <SelectItem value="pcs">Pieces</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    ) : (
+                    {activeType !== 'sticker' && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <form.Field name="capacity">
+                                {(field) => (
+                                    <Field>
+                                        <FieldLabel>
+                                            {activeType === 'primary' ? "Fill Capacity" : "Units per Bucket"}
+                                        </FieldLabel>
                                         <Input
+                                            type="number"
                                             value={field.state.value || ""}
                                             onChange={(e) => field.handleChange(e.target.value)}
-                                            placeholder="e.g. 500ml Bottles"
+                                            placeholder={activeType === 'primary' ? "e.g. 500" : "e.g. 24"}
                                         />
-                                    )}
-                                    <FieldDescription>
-                                        {activeType === 'primary' ? "Volume/Mass unit." : "What is inside the box?"}
-                                    </FieldDescription>
-                                    <FieldError errors={field.state.meta.errors} />
-                                </Field>
-                            )}
-                        </form.Field>
-                    </div>
+                                        <FieldDescription>
+                                            {activeType === 'primary' ? "Net content volume." : "Units inside one bucket."}
+                                        </FieldDescription>
+                                        <FieldError errors={field.state.meta.errors} />
+                                    </Field>
+                                )}
+                            </form.Field>
+
+                            <form.Field name="capacityUnit">
+                                {(field) => (
+                                    <Field>
+                                        <FieldLabel>
+                                            {activeType === 'primary' ? "Unit" : "Inner Item Content"}
+                                        </FieldLabel>
+                                        {activeType === 'primary' ? (
+                                            <Select
+                                                value={field.state.value || "ml"}
+                                                onValueChange={(val) => field.handleChange(val)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Unit" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="ml">ml (Volume)</SelectItem>
+                                                    <SelectItem value="L">L (Volume)</SelectItem>
+                                                    <SelectItem value="g">g (Mass)</SelectItem>
+                                                    <SelectItem value="kg">kg (Mass)</SelectItem>
+                                                    <SelectItem value="pcs">Pieces</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        ) : (
+                                            <Input
+                                                value={field.state.value || ""}
+                                                onChange={(e) => field.handleChange(e.target.value)}
+                                                placeholder="e.g. 1kg Bags"
+                                            />
+                                        )}
+                                        <FieldDescription>
+                                            {activeType === 'primary' ? "Volume/Mass unit." : "What is inside the bucket?"}
+                                        </FieldDescription>
+                                        <FieldError errors={field.state.meta.errors} />
+                                    </Field>
+                                )}
+                            </form.Field>
+                        </div>
+                    )}
+
+                    {activeType === 'primary' && (
+                        <div className="grid grid-cols-2 gap-4 border p-3 rounded-lg bg-muted/20">
+                            <form.Field name="weightPerPack">
+                                {(field) => (
+                                    <Field>
+                                        <FieldLabel>Weight / Pack (g)</FieldLabel>
+                                        <Input
+                                            type="number"
+                                            value={field.state.value || ""}
+                                            onChange={(e) => field.handleChange(e.target.value)}
+                                            placeholder="e.g. 6.5"
+                                        />
+                                        <FieldDescription>Weight of the empty bottle/wrapper.</FieldDescription>
+                                        <FieldError errors={field.state.meta.errors} />
+                                    </Field>
+                                )}
+                            </form.Field>
+                            <form.Field name="pricePerKg">
+                                {(field) => (
+                                    <Field>
+                                        <FieldLabel>Material Price / Kg (PKR)</FieldLabel>
+                                        <Input
+                                            type="number"
+                                            value={field.state.value || ""}
+                                            onChange={(e) => field.handleChange(e.target.value)}
+                                            placeholder="e.g. 980"
+                                        />
+                                        <FieldDescription>Purchase price per kg of the material (e.g., wrapper/film cost).</FieldDescription>
+                                        <FieldError errors={field.state.meta.errors} />
+                                    </Field>
+                                )}
+                            </form.Field>
+                        </div>
+                    )}
+
+                    <form.Subscribe
+                        selector={(state) => [state.values.weightPerPack, state.values.pricePerKg, state.values.type]}
+                        children={([weight, price, type]) => {
+                            if (type !== 'primary') return null;
+                            if (!weight || !price) return null;
+
+                            const w = parseFloat(weight || "0");
+                            const p = parseFloat(price || "0");
+
+                            if (w > 0 && p > 0) {
+                                const exactCost = (p * (w / 1000));
+                                const roundedCost = Math.round(exactCost);
+
+                                return (
+                                    <div className="flex flex-col gap-3 bg-primary/5 p-4 rounded-xl border border-primary/10 shadow-sm animate-in fade-in slide-in-from-top-2">
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-0.5">
+                                                <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">The Golden Formula</div>
+                                                <div className="text-sm font-medium text-primary">
+                                                    {w}g × {p} PKR/kg = <span className="text-lg font-bold">PKR {exactCost.toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-8 text-xs font-semibold px-4 hover:bg-primary hover:text-primary-foreground transition-all"
+                                                    onClick={() => form.setFieldValue("costPerUnit", exactCost.toFixed(4))}
+                                                >
+                                                    Apply Exact
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    className="h-8 text-xs font-semibold px-4 shadow-md transition-all active:scale-95"
+                                                    onClick={() => form.setFieldValue("costPerUnit", roundedCost.toString())}
+                                                >
+                                                    Apply Rounded ({roundedCost})
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground italic border-t pt-2 border-primary/5">
+                                            Matches the spreadsheet logic: {w}g is {(w / 1000).toFixed(3)}kg. Total = {(w / 1000).toFixed(3)} × {p} = {exactCost.toFixed(2)}.
+                                        </p>
+                                    </div>
+                                )
+                            }
+                            return null;
+                        }}
+                    />
+
+
 
                     <div className="grid grid-cols-2 gap-4">
                         <form.Field name="quantity">

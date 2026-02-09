@@ -29,21 +29,52 @@ export const addPackagingMaterialFn = createServerFn()
             let finalMaterial;
 
             if (existing) {
-                // Update existing material details
-                const [updated] = await tx
-                    .update(packagingMaterials)
-                    .set({
-                        costPerUnit: data.costPerUnit,
-                        minimumStockLevel: data.minimumStockLevel,
-                        updatedAt: new Date(),
-                        type: data.type,
-                        capacity: data.capacity === "" ? null : data.capacity,
-                        capacityUnit: data.capacityUnit === "" ? null : data.capacityUnit,
-                    })
-                    .where(eq(packagingMaterials.id, existing.id))
-                    .returning();
+                // Check if price matches
+                const existingPrice = parseFloat(existing.costPerUnit || "0");
+                const newPrice = parseFloat(data.costPerUnit);
 
-                finalMaterial = updated;
+                // If price matches (allow small tolerance) -> Merge
+                if (Math.abs(existingPrice - newPrice) < 0.01) {
+                    const [updated] = await tx
+                        .update(packagingMaterials)
+                        .set({
+                            minimumStockLevel: data.minimumStockLevel,
+                            updatedAt: new Date(),
+                            type: data.type,
+                            capacity: data.capacity === "" ? null : data.capacity,
+                            capacityUnit: data.capacityUnit === "" ? null : data.capacityUnit,
+                            lastSupplierId: data.supplierId,
+                        })
+                        .where(eq(packagingMaterials.id, existing.id))
+                        .returning();
+                    finalMaterial = updated;
+                } else {
+                    // Price differs -> Create new material with suffix
+                    const similar = await tx.query.packagingMaterials.findMany({
+                        where: (m, { sql }) => sql`LOWER(${m.name}) LIKE LOWER(${data.name || ""} || '%')`,
+                    });
+
+                    const suffix = similar.length;
+                    const newName = `${data.name}-${suffix}`;
+
+                    const [newMaterial] = await tx
+                        .insert(packagingMaterials)
+                        .values({
+                            name: newName,
+                            costPerUnit: data.costPerUnit,
+                            minimumStockLevel: data.minimumStockLevel,
+                            type: data.type,
+                            capacity: data.capacity === "" ? null : data.capacity,
+                            capacityUnit: data.capacityUnit === "" ? null : data.capacityUnit,
+                            weightPerPack: data.weightPerPack ? data.weightPerPack.toString() : null,
+                            pricePerKg: data.pricePerKg ? data.pricePerKg.toString() : null,
+                            associatedStickerId: data.associatedStickerId || null,
+                            stickerCost: data.stickerCost ? data.stickerCost.toString() : "0",
+                            lastSupplierId: data.supplierId,
+                        })
+                        .returning();
+                    finalMaterial = newMaterial;
+                }
             } else {
                 // 1. Create the packaging material
                 const [newMaterial] = await tx
@@ -55,6 +86,11 @@ export const addPackagingMaterialFn = createServerFn()
                         type: data.type,
                         capacity: data.capacity === "" ? null : data.capacity,
                         capacityUnit: data.capacityUnit === "" ? null : data.capacityUnit,
+                        weightPerPack: data.weightPerPack ? data.weightPerPack.toString() : null,
+                        pricePerKg: data.pricePerKg ? data.pricePerKg.toString() : null,
+                        associatedStickerId: data.associatedStickerId || null,
+                        stickerCost: data.stickerCost ? data.stickerCost.toString() : "0",
+                        lastSupplierId: data.supplierId,
                     })
                     .returning();
                 finalMaterial = newMaterial;

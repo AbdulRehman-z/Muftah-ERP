@@ -1,12 +1,11 @@
-
 import { createFileRoute } from "@tanstack/react-router";
 import { getRecipeFn } from "@/server-functions/inventory/recipes/get-single-recipe-fn";
-import { CreateRecipeForm } from "@/components/recipes/create-recipe-from";
+import { RecipeDetailView } from "@/components/recipes/recipe-detail-view";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/manufacturing/recipes/$recipeId")({
     loader: async ({ context: { queryClient }, params: { recipeId } }) => {
-        void queryClient.ensureQueryData({
+        return queryClient.ensureQueryData({
             queryKey: ["recipe", recipeId],
             queryFn: () => getRecipeFn({ data: { id: recipeId } }),
         });
@@ -18,13 +17,12 @@ export const Route = createFileRoute("/admin/manufacturing/recipes/$recipeId")({
 
 function RecipeDetailComponent() {
     const recipe = Route.useLoaderData();
-    // Re-use the form component for viewing/editing.
-    // Ideally pass a "readOnly" prop, but for now Edit Mode is fine.
-    // The user can just use this as the "Detailed Version".
+
     return (
-        <CreateRecipeForm
-            onOpenChange={() => window.history.back()}
-            initialRecipe={recipe}
-        />
+        <main className="min-h-screen p-8">
+            <div className="max-w-7xl mx-auto">
+                <RecipeDetailView recipe={recipe as any} />
+            </div>
+        </main>
     );
 }

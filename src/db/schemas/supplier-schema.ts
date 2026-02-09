@@ -12,6 +12,7 @@ import {
     chemicals,
     packagingMaterials,
 } from "./inventory-schema";
+import { suppliers } from "./core-suppliers";
 
 const timestamps = {
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -21,20 +22,7 @@ const timestamps = {
         .notNull(),
 };
 
-// --- SUPPLIERS ---
-export const suppliers = pgTable("suppliers", {
-    id: text("id")
-        .primaryKey()
-        .$defaultFn(() => createId()),
-    supplierName: text("supplier_name").notNull(),
-    supplierShopName: text("supplier_shop_name"),
-    email: text("email"),
-    phone: text("phone"),
-    nationalId: text("national_id"),
-    address: text("address"),
-    notes: text("notes"),
-    ...timestamps,
-});
+
 
 // --- SUPPLIER PAYMENTS ---
 export const supplierPayments = pgTable(

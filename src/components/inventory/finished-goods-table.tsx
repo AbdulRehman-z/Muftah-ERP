@@ -1,5 +1,4 @@
-
-import { BoxesIcon, Eye, Warehouse, ArrowUpDown } from "lucide-react";
+import { BoxesIcon, Eye, Warehouse, ArrowUpDown, ArrowRightLeft } from "lucide-react";
 import { format } from "date-fns";
 import { InventoryDetailsDialog } from "./inventory-details-dialog";
 import { useState, useMemo } from "react";
@@ -9,6 +8,7 @@ import { GenericEmpty } from "../custom/empty";
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
 import { DataTable } from "../ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
+import { TransferStockDialog } from "./transfer-stock-dialog";
 
 type FinishedGood = {
 	id: string;
@@ -17,6 +17,7 @@ type FinishedGood = {
 	createdAt: string | Date;
 	updatedAt: string | Date;
 	warehouse: {
+		id: string; // Ensure ID is available
 		name: string;
 		isActive: boolean;
 	};
@@ -42,6 +43,7 @@ interface FinishedGoodsTableProps {
 
 export const FinishedGoodsTable = ({ data, warehouses, preselectedWarehouse }: FinishedGoodsTableProps) => {
 	const [detailsOpen, setDetailsOpen] = useState(false);
+	const [transferOpen, setTransferOpen] = useState(false);
 	const [selectedItem, setSelectedItem] = useState<FinishedGood | null>(null);
 
 	const columns = useMemo<ColumnDef<FinishedGood>[]>(() => [
@@ -125,14 +127,14 @@ export const FinishedGoodsTable = ({ data, warehouses, preselectedWarehouse }: F
 
 				if (totalUnits <= 0) {
 					return (
-						<Badge variant="destructive" className="h-5 text-[10px] uppercase tracking-tighter bg-red-600 hover:bg-red-700">
+						<Badge variant="destructive">
 							Out of Stock
 						</Badge>
 					);
 				}
 
 				return (
-					<Badge variant="outline" className="h-5 text-[10px] uppercase font-bold tracking-widest bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-50">
+					<Badge variant="outline" className="bg-emerald-50 text-emerald-600">
 						Healthy
 					</Badge>
 				);
@@ -151,11 +153,24 @@ export const FinishedGoodsTable = ({ data, warehouses, preselectedWarehouse }: F
 		{
 			id: "actions",
 			cell: ({ row }) => (
-				<div className="flex justify-end">
+				<div className="flex justify-end gap-1">
+					<Button
+						variant="ghost"
+						size="icon"
+						className="size-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
+						title="Transfer Stock"
+						onClick={() => {
+							setSelectedItem(row.original);
+							setTransferOpen(true);
+						}}
+					>
+						<ArrowRightLeft className="size-3.5" />
+					</Button>
 					<Button
 						variant="ghost"
 						size="icon"
 						className="size-8 text-primary hover:bg-primary/5 hover:text-primary"
+						title="View Details"
 						onClick={() => {
 							setSelectedItem(row.original);
 							setDetailsOpen(true);
@@ -197,6 +212,7 @@ export const FinishedGoodsTable = ({ data, warehouses, preselectedWarehouse }: F
 			</div>
 
 			<DataTable
+				pageSize={5}
 				columns={columns}
 				data={data}
 				searchKey="product"
@@ -210,6 +226,21 @@ export const FinishedGoodsTable = ({ data, warehouses, preselectedWarehouse }: F
 					onOpenChange={setDetailsOpen}
 					type="finished"
 					item={selectedItem}
+				/>
+			)}
+
+			{/* Transfer Dialog */}
+			{selectedItem && transferOpen && (
+				<TransferStockDialog
+					open={transferOpen}
+					onOpenChange={setTransferOpen}
+					warehouses={warehouses}
+					defaultValues={{
+						fromWarehouseId: selectedItem.warehouse.id || preselectedWarehouse,
+						materialType: "finished",
+						materialId: selectedItem.recipe.id,
+						quantity: selectedItem.quantityCartons > 0 ? selectedItem.quantityCartons.toString() : "",
+					}}
 				/>
 			)}
 		</div>

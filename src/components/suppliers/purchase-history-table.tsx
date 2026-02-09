@@ -249,7 +249,7 @@ export const PurchaseHistoryTable = ({ data, setSelectedItem, setDetailsOpen, se
             data={filteredData}
             searchKey="material"
             searchPlaceholder="Filter purchases..."
-            pageSize={8}
+            pageSize={5}
         />
     );
 };

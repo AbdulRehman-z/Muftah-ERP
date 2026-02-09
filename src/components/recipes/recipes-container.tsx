@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { FlaskConical, PackageIcon, PlusIcon } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getRecipesFn } from "@/server-functions/inventory/recipes/get-recipe-fn";
 import { getProductsFn } from "@/server-functions/inventory/get-products-fn";
 import { GenericEmpty } from "../custom/empty";
@@ -11,10 +11,15 @@ import { CreateRecipeForm } from "./create-recipe-from";
 import { AddProductDialog } from "./add-product-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { ProductsTable } from "./products-table";
+import { getRouteApi } from "@tanstack/react-router";
+
+const route = getRouteApi("/admin/manufacturing/recipes/");
 
 type Recipe = Awaited<ReturnType<typeof getRecipesFn>>[number];
 
 export const RecipesContainer = () => {
+	const search = route.useSearch();
+	const navigate = route.useNavigate();
 	const [activeTab, setActiveTab] = useState("recipes");
 	const [isCreating, setIsCreating] = useState(false);
 	const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
@@ -25,6 +30,15 @@ export const RecipesContainer = () => {
 		queryKey: ["recipes"],
 		queryFn: getRecipesFn,
 	});
+
+	useEffect(() => {
+		if (search.edit) {
+			const recipe = recipes.find(r => r.id === search.edit);
+			if (recipe) {
+				setEditingRecipe(recipe);
+			}
+		}
+	}, [search.edit, recipes]);
 
 	const { data: products } = useSuspenseQuery({
 		queryKey: ["products"],
@@ -64,6 +78,7 @@ export const RecipesContainer = () => {
 							if (!open) {
 								setIsCreating(false);
 								setEditingRecipe(null);
+								navigate({ to: ".", search: (prev) => ({ ...prev, edit: undefined }) });
 							}
 						}}
 						initialRecipe={editingRecipe || undefined}

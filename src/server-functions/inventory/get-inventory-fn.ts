@@ -10,8 +10,16 @@ export const getInventoryFn = createServerFn()
 			with: {
 				materialStock: {
 					with: {
-						chemical: true,
-						packagingMaterial: true,
+						chemical: {
+							with: {
+								lastSupplier: true,
+							},
+						},
+						packagingMaterial: {
+							with: {
+								lastSupplier: true,
+							},
+						},
 					},
 				},
 				finishedGoodsStock: {

@@ -56,6 +56,7 @@ export const AddStockForm = ({ onOpenChange, onSuccess, preselectedWarehouse, wa
             amountPaid: "",
             transactionId: "",
             bankName: "",
+            paidBy: "",
         },
         validators: {
             onSubmit: addStockSchema,

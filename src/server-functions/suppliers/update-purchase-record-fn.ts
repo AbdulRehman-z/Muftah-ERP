@@ -35,9 +35,12 @@ export const updatePurchaseRecordFn = createServerFn()
                 throw new Error("Purchase record not found");
             }
 
-            const oldQty = parseFloat(existingRecord.quantity);
-            const newQty = parseFloat(data.quantity);
-            const qtyDiff = newQty - oldQty;
+            let qtyDiff = 0;
+            if (data.quantity) {
+                const oldQty = parseFloat(existingRecord.quantity);
+                const newQty = parseFloat(data.quantity);
+                qtyDiff = newQty - oldQty;
+            }
 
             // 2. Update Stock if quantity changed
             if (qtyDiff !== 0) {

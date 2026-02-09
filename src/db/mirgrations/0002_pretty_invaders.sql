@@ -1,0 +1,4 @@
+ALTER TABLE "chemicals" ADD COLUMN "last_supplier_id" text;--> statement-breakpoint
+ALTER TABLE "packaging_materials" ADD COLUMN "last_supplier_id" text;--> statement-breakpoint
+ALTER TABLE "chemicals" ADD CONSTRAINT "chemicals_last_supplier_id_suppliers_id_fk" FOREIGN KEY ("last_supplier_id") REFERENCES "public"."suppliers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "packaging_materials" ADD CONSTRAINT "packaging_materials_last_supplier_id_suppliers_id_fk" FOREIGN KEY ("last_supplier_id") REFERENCES "public"."suppliers"("id") ON DELETE no action ON UPDATE no action;

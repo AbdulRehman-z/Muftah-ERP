@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { and, eq } from "drizzle-orm";
-import { db, inventoryAuditLog, materialStock, warehouses, purchaseRecords, supplierPayments } from "@/db";
+import { db, inventoryAuditLog, materialStock, warehouses, purchaseRecords, supplierPayments, chemicals, packagingMaterials } from "@/db";
 import { requireAdminMiddleware } from "@/lib/middlewares";
 import { addStockSchema } from "@/lib/validators/validators";
 
@@ -107,6 +107,17 @@ export const addStockFn = createServerFn()
 					paidBy: data.paidBy,
 					notes: data.paymentStatus === "credit" ? "Partial payment for stock purchase" : "Full payment for stock purchase",
 				});
+			}
+
+			// Update the material's last supplier ID
+			if (data.materialType === "chemical") {
+				await tx.update(chemicals)
+					.set({ lastSupplierId: data.supplierId, updatedAt: new Date() })
+					.where(eq(chemicals.id, data.materialId));
+			} else {
+				await tx.update(packagingMaterials)
+					.set({ lastSupplierId: data.supplierId, updatedAt: new Date() })
+					.where(eq(packagingMaterials.id, data.materialId));
 			}
 
 			// Audit log

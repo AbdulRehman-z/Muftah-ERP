@@ -15,6 +15,7 @@ export const addSupplierFn = createServerFn()
                     supplierShopName: data.supplierShopName,
                     email: data.email || null,
                     phone: data.phone,
+                    nationalId: data.nationalId,
                     address: data.address,
                     notes: data.notes,
                 })

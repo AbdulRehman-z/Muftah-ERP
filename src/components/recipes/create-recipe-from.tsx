@@ -14,6 +14,7 @@ import {
     RefreshCw,
     Scale,
     ArrowRight,
+    ListPlusIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "../ui/field";
@@ -92,6 +93,7 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
 
     // UI-only state to handle "Cartons Count" logic
     const [cartonsCount, setCartonsCount] = useState<number>(0);
+    const [tempPkgUnit, setTempPkgUnit] = useState<"per_unit" | "per_carton">("per_unit");
 
     const form = useForm({
         defaultValues: {
@@ -101,7 +103,7 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
             batchUnit: (initialRecipe?.batchUnit as "kg" | "liters") || "liters",
             fillAmount: initialRecipe?.fillAmount ? formatNumber(initialRecipe.fillAmount) : "",
             fillUnit: (initialRecipe?.fillUnit as "g" | "kg" | "ml" | "L") || (initialRecipe?.batchUnit === "kg" ? "g" : "ml"),
-            containerType: (initialRecipe?.containerType as "bottle" | "sachet" | "bag") || "bottle",
+            containerType: (initialRecipe?.containerType as "pack") || "pack",
             containerPackagingId: initialRecipe?.containerPackagingId || "",
             containersPerCarton: initialRecipe?.containersPerCarton || 0,
             cartonPackagingId: initialRecipe?.cartonPackagingId || "",
@@ -194,10 +196,21 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
             if (values.containersPerCarton !== cap) {
                 form.setFieldValue("containersPerCarton", cap);
             }
-        } else if (cartonsCount === 0) {
-            form.setFieldValue("containersPerCarton", 0);
         }
     }, [cartonsCount, values.producedUnits, form, selectedCarton]);
+
+    // Auto-fill additional material quantity based on cartons count for stickers
+    useEffect(() => {
+        if (!tempPackagingId) return;
+        const mat = materials.packagings.find(p => p.id === tempPackagingId);
+        if (mat?.type === 'sticker') {
+            setTempPkgQty("1");
+            setTempPkgUnit("per_carton");
+        } else if (tempPkgQty === "" || tempPkgQty === "0") {
+            setTempPkgQty("1");
+            setTempPkgUnit("per_unit");
+        }
+    }, [tempPackagingId, materials.packagings, cartonsCount]);
 
     // Auto-populate Primary Container details
     useEffect(() => {
@@ -368,9 +381,14 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
 
     const handleAddAdditionalPackaging = () => {
         if (!tempPackagingId || !tempPkgQty) return;
+        const qty = parseFloat(tempPkgQty);
+        const finalQty = tempPkgUnit === "per_carton"
+            ? (qty * cartonsCount) / (values.producedUnits || 1)
+            : qty;
+
         const validationResult = additionalPackagingItemSchema.safeParse({
             packagingMaterialId: tempPackagingId,
-            quantityPerContainer: parseInt(tempPkgQty),
+            quantityPerContainer: finalQty,
         });
         if (!validationResult.success) {
             toast.error(validationResult.error.issues[0].message);
@@ -693,9 +711,8 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                                                             </div>
                                                         </div>
                                                         <Button
-                                                            variant="ghost"
+                                                            variant="destructive"
                                                             size="icon"
-                                                            className="h-9 w-9 text-muted-foreground hover:text-destructive"
                                                             onClick={() => handleRemoveIngredient(idx)}
                                                         >
                                                             <Trash2 className="size-4" />
@@ -721,107 +738,123 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                                 <CardContent className="pt-6 space-y-6">
 
                                     {/* Primary Container */}
-                                    <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/30 dark:bg-blue-950/10 dark:border-blue-900/50">
+                                    <div className="p-4 rounded-xl border">
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="flex items-center gap-2">
-                                                <div className="size-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">1</div>
-                                                <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100">Primary Container</h4>
+                                                <div className="size-6 rounded-full flex items-center justify-center text-xs font-bold">1</div>
+                                                <h4 className="text-sm font-semibold">Primary Container</h4>
                                             </div>
                                             {selectedContainer && (
-                                                <div className="text-[10px] text-blue-700 bg-blue-100/50 px-2 py-1 rounded border border-blue-200">
+                                                <div className="text-[10px] px-2 py-1 rounded border">
                                                     Price: {selectedContainer.costPerUnit} | Stock: {getStockStatus(selectedContainer.id, 'packaging', 0).current.toLocaleString()}
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="grid grid-cols-[1fr_120px_100px_auto] gap-2 items-end">
+                                        <div className="space-y-5">
+                                            {/* Material Selection */}
                                             <form.Field name="containerPackagingId">
                                                 {(field) => (
-                                                    <div className="space-y-1.5">
-                                                        <span className="text-xs font-medium text-muted-foreground uppercase">Material</span>
-                                                        <Select value={field.state.value} onValueChange={field.handleChange}>
-                                                            <SelectTrigger className={cn("bg-background h-10", field.state.meta.errors.length && "border-destructive")}><SelectValue placeholder="Select Container" /></SelectTrigger>
-                                                            <SelectContent>
-                                                                {primaryPackagings.map(p => (
-                                                                    <SelectItem key={p.id} value={p.id}>
-                                                                        {p.name} {p.capacity ? `(${p.capacity}${p.capacityUnit})` : ''}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </div>
-                                                )}
-                                            </form.Field>
+                                                    <div className="space-y-2">
+                                                        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-1">Primary Material</span>
+                                                        <div className="flex gap-2">
+                                                            <Select value={field.state.value} onValueChange={field.handleChange}>
+                                                                <SelectTrigger className={cn("", field.state.meta.errors.length && "border-destructive")}>
+                                                                    <SelectValue placeholder="Select primary container material..." />
+                                                                </SelectTrigger>
+                                                                <SelectContent className="max-h-[300px]">
+                                                                    {primaryPackagings.map(p => (
+                                                                        <SelectItem key={p.id} value={p.id} className="py-2.5">
+                                                                            <div className="flex flex-col">
+                                                                                <span className="font-semibold text-sm">{p.name}</span>
+                                                                                {p.capacity && (
+                                                                                    <span className="text-muted-foreground text-[10px]">Capacity: {parseInt(p.capacity).toFixed(0)}{p.capacityUnit}</span>
+                                                                                )}
+                                                                            </div>
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                            {values.containerPackagingId && (
+                                                                <Button
+                                                                    variant="destructive"
+                                                                    size="icon"
 
-                                            <form.Field name="fillAmount">
-                                                {(field) => (
-                                                    <div className="space-y-1.5">
-                                                        <span className="text-xs font-medium text-muted-foreground uppercase">Fill Amount</span>
-                                                        <Input
-                                                            {...field.state}
-                                                            value={field.state.value}
-                                                            onChange={e => field.handleChange(e.target.value)}
-                                                            className={cn(
-                                                                "h-10 font-bold text-center",
-                                                                selectedContainer?.capacity ? "bg-muted/50 opacity-80" : "bg-background"
+                                                                    onClick={() => {
+                                                                        form.setFieldValue("containerPackagingId", "");
+                                                                    }}
+                                                                >
+                                                                    <Trash2 className="size-4" />
+                                                                </Button>
                                                             )}
-                                                            placeholder="e.g. 500"
-                                                            step="0.01"
-                                                            readOnly={!!selectedContainer?.capacity}
-                                                            disabled={!selectedContainer || !!selectedContainer.capacity}
-                                                        />
+                                                        </div>
                                                     </div>
                                                 )}
                                             </form.Field>
 
-                                            <form.Field name="fillUnit">
-                                                {(field) => (
-                                                    <div className="space-y-1.5">
-                                                        <span className="text-xs font-medium text-muted-foreground uppercase">Unit</span>
-                                                        <Select
-                                                            value={field.state.value}
-                                                            onValueChange={(val) => field.handleChange(val as "ml" | "L" | "g" | "kg")}
-                                                            disabled={!selectedContainer || !!selectedContainer.capacityUnit}
-                                                        >
-                                                            <SelectTrigger className={cn(
-                                                                "h-10",
-                                                                selectedContainer?.capacityUnit ? "bg-muted/50 opacity-80" : "bg-background"
-                                                            )}>
-                                                                <SelectValue />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="ml">ml</SelectItem>
-                                                                <SelectItem value="L">L</SelectItem>
-                                                                <SelectItem value="g">g</SelectItem>
-                                                                <SelectItem value="kg">kg</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </div>
-                                                )}
-                                            </form.Field>
+                                            {/* Fill Configuration */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <form.Field name="fillAmount">
+                                                    {(field) => (
+                                                        <div className="space-y-2">
+                                                            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-1">Fill Amount Per Unit</span>
+                                                            <div className="relative">
+                                                                <Input
+                                                                    {...field.state}
+                                                                    value={field.state.value}
+                                                                    onChange={e => field.handleChange(e.target.value)}
+                                                                    className={cn(
+                                                                        selectedContainer?.capacity ? "bg-muted/50 text-muted-foreground" : "bg-background"
+                                                                    )}
+                                                                    placeholder="0.00"
+                                                                    step="0.01"
+                                                                    readOnly={!!selectedContainer?.capacity}
+                                                                    disabled={!selectedContainer || !!selectedContainer.capacity}
+                                                                />
+                                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground uppercase pointer-events-none">
+                                                                    Amount
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </form.Field>
 
-                                            {values.containerPackagingId && (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-10 w-10 text-muted-foreground hover:text-destructive mb-0.5"
-                                                    onClick={() => {
-                                                        form.setFieldValue("containerPackagingId", "");
-                                                    }}
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </Button>
-                                            )}
+                                                <form.Field name="fillUnit">
+                                                    {(field) => (
+                                                        <div className="space-y-2">
+                                                            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-1">Measurement Unit</span>
+                                                            <Select
+                                                                value={field.state.value}
+                                                                onValueChange={(val) => field.handleChange(val as "ml" | "L" | "g" | "kg")}
+                                                                disabled={!selectedContainer || !!selectedContainer.capacityUnit}
+                                                            >
+                                                                <SelectTrigger className={cn(
+                                                                    selectedContainer?.capacityUnit ? "bg-muted/50 text-muted-foreground" : "bg-background"
+                                                                )}>
+                                                                    <SelectValue />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="ml" className="py-2.5">ml (Milliliters)</SelectItem>
+                                                                    <SelectItem value="L" className="py-2.5">L (Liters)</SelectItem>
+                                                                    <SelectItem value="g" className="py-2.5">g (Grams)</SelectItem>
+                                                                    <SelectItem value="kg" className="py-2.5">kg (Kilograms)</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                    )}
+                                                </form.Field>
+                                            </div>
                                         </div>
 
                                         {/* Primary Container Quantity Edit */}
-                                        <div className="mt-2 flex items-center justify-between gap-4 border-t border-blue-200/50 pt-2">
-                                            <span className="text-xs text-blue-800 opacity-80">
+                                        <div className="mt-2 flex items-center justify-between gap-4 border-t pt-2">
+                                            <span className="text-xs text-primary opacity-80">
                                                 Container capacity matches fill amount?
                                             </span>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-xs font-bold text-blue-800 uppercase">Qty Needed:</span>
+                                                <span className="text-xs font-bold text-primary uppercase">Qty Needed:</span>
                                                 <Input
-                                                    className="w-20 h-7 text-xs font-bold text-right bg-white border-blue-200"
+                                                    type="number"
+                                                    className="w-20 h-7 text-xs font-bold"
                                                     value={values.producedUnits || ""}
                                                     onChange={e => {
                                                         const val = parseInt(e.target.value);
@@ -838,14 +871,14 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                                     </div>
 
                                     {/* Master Carton */}
-                                    <div className="p-4 rounded-xl border border-amber-100 bg-amber-50/30 dark:bg-amber-950/10 dark:border-amber-900/50">
+                                    <div className="p-4 rounded-xl border ">
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="flex items-center gap-2">
-                                                <div className="size-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold">2</div>
-                                                <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100">Master Carton (Optional)</h4>
+                                                <div className="size-6 rounded-full flex items-center justify-center text-xs font-bold">2</div>
+                                                <h4 className="text-sm font-semibold">Master Carton (Optional)</h4>
                                             </div>
                                             {selectedCarton && (
-                                                <div className="text-[10px] text-amber-800 bg-amber-100/50 px-2 py-1 rounded border border-amber-200">
+                                                <div className="text-[10px] px-2 py-1 rounded border">
                                                     Price: {selectedCarton.costPerUnit} | Stock: {getStockStatus(selectedCarton.id, 'packaging', 0).current.toLocaleString()}
                                                 </div>
                                             )}
@@ -885,9 +918,8 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
 
                                             {values.cartonPackagingId && values.cartonPackagingId !== "_none" && (
                                                 <Button
-                                                    variant="ghost"
+                                                    variant="destructive"
                                                     size="icon"
-                                                    className="h-10 w-10 text-muted-foreground hover:text-destructive mb-0.5"
                                                     onClick={() => {
                                                         form.setFieldValue("cartonPackagingId", "");
                                                         setCartonsCount(0);
@@ -930,7 +962,7 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
 
                                         {/* Helper Text for Capacity */}
                                         {selectedCarton?.capacity ? (
-                                            <div className="mt-2 text-xs text-amber-800 text-right opacity-80 flex items-center justify-end gap-1">
+                                            <div className="mt-2 text-xs text-right opacity-80 flex items-center justify-end gap-1 text-primary">
                                                 <CheckCircle2 className="size-3" />
                                                 <span>Perfect fit: {formatNumber(selectedCarton.capacity)} units per carton</span>
                                             </div>
@@ -943,75 +975,122 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                                         )}
                                     </div>
 
-                                    {/* Additional Materials */}
-                                    <div className="space-y-3 pt-2">
-                                        <div className="flex items-center justify-between">
-                                            <h4 className="text-xs font-bold uppercase text-muted-foreground">Additional Materials</h4>
+                                    {/* 4. Additional Materials */}
+                                    <div className="space-y-3 pt-6 border-t">
+                                        <div className="flex items-center justify-between pb-2">
+                                            <h4 className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-2">
+                                                <ListPlusIcon className="size-4" />
+                                                Additional Materials
+                                            </h4>
                                         </div>
 
                                         {/* Add Row */}
-                                        <div className="flex gap-2">
+                                        <div className="flex gap-2 p-3 bg-muted/30 rounded-lg border border-border/50">
                                             <Select value={tempPackagingId} onValueChange={setTempPackagingId}>
-                                                <SelectTrigger className="flex-1 h-9">
-                                                    <SelectValue placeholder="Add Cap, Label, Sticker..." />
+                                                <SelectTrigger className="flex-1 bg-background h-10">
+                                                    <SelectValue placeholder="Add Sticker or Extra..." />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {materials.packagings
-                                                        .filter(p => !p.type || p.type === 'primary') // Show generic/primary items here mainly
+                                                        .filter(p => !p.type || p.type === 'sticker' || p.type === 'extra')
                                                         .filter(p => p.id !== values.containerPackagingId && p.id !== values.cartonPackagingId)
                                                         .filter(p => !values.additionalPackaging.some(ap => ap.packagingMaterialId === p.id))
-                                                        .map(p => (
-                                                            <SelectItem key={p.id} value={p.id}>
-                                                                {p.name} <span className="text-muted-foreground opacity-70 ml-2">(PKR {p.costPerUnit})</span>
-                                                            </SelectItem>
-                                                        ))
+                                                        .map(p => {
+                                                            const stock = getStockStatus(p.id, 'packaging', 0);
+                                                            return (
+                                                                <SelectItem key={p.id} value={p.id}>
+                                                                    <div className="flex items-center justify-between w-full gap-4">
+                                                                        <span>{p.name}</span>
+                                                                        <span className={cn(
+                                                                            "text-[10px] tabular-nums",
+                                                                            stock.current <= (p.minimumStockLevel || 0) ? "text-destructive font-bold" : "text-muted-foreground"
+                                                                        )}>
+                                                                            Stock: {stock.current}
+                                                                        </span>
+                                                                    </div>
+                                                                </SelectItem>
+                                                            );
+                                                        })
                                                     }
                                                 </SelectContent>
                                             </Select>
-                                            <div className="relative w-20">
+
+                                            <div className="relative w-32">
                                                 <Input
-                                                    placeholder="1"
+                                                    placeholder="Qty"
                                                     type="number"
-                                                    className="h-9 pr-6 font-bold"
+                                                    step="any"
+                                                    className="w-full h-10 pr-8 bg-background font-bold text-lg"
                                                     value={tempPkgQty}
                                                     onChange={e => setTempPkgQty(e.target.value)}
+                                                    onKeyDown={e => e.key === "Enter" && handleAddAdditionalPackaging()}
                                                 />
-                                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">/u</span>
+                                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">
+                                                    {tempPkgUnit === "per_carton" ? "/c" : "/u"}
+                                                </span>
                                             </div>
-                                            <Button size="sm" onClick={handleAddAdditionalPackaging} className="h-9">Add</Button>
+
+                                            <Button
+                                                onClick={handleAddAdditionalPackaging}
+                                                size="icon"
+                                                className="shrink-0 h-10 w-10"
+                                                disabled={!tempPackagingId || !tempPkgQty}
+                                            >
+                                                <Plus className="size-5" />
+                                            </Button>
                                         </div>
 
                                         {/* List */}
                                         <div className="space-y-2">
                                             {values.additionalPackaging.map((pkg, idx) => {
                                                 const material = materials.packagings.find(m => m.id === pkg.packagingMaterialId);
+                                                const totalNeeded = pkg.quantityPerContainer * (values.producedUnits || 0);
+                                                const stock = getStockStatus(pkg.packagingMaterialId, 'packaging', totalNeeded);
+
                                                 return (
-                                                    <div key={idx} className="flex items-center justify-between p-2 bg-muted/20 border rounded-md text-sm">
-                                                        <div className="flex items-center gap-2">
-                                                            <Package className="size-3.5 text-muted-foreground" />
-                                                            <span>{material?.name}</span>
+                                                    <div key={idx} className="group flex items-start gap-3 p-3 rounded-lg border hover:border-primary/30 hover:bg-muted/40 transition-all">
+                                                        <div className="flex-1 space-y-1">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="font-medium text-sm">{material?.name}</span>
+                                                                <span className="text-xs text-muted-foreground font-mono">
+                                                                    PKR {material?.costPerUnit}/u
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-[10px] text-muted-foreground pt-1 flex items-center gap-1">
+                                                                <span>Stock: {stock.current.toLocaleString()}</span>
+                                                                <ArrowRight className="size-3 opacity-50" />
+                                                                <span className={cn("font-mono text-[10px]", stock.remaining < 0 ? "text-destructive font-bold" : "text-emerald-600")}>
+                                                                    Rem: {stock.remaining.toLocaleString()}
+                                                                </span>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="flex items-center border rounded bg-background">
+
+                                                        <div className="flex items-center gap-1">
+                                                            <div className="relative">
                                                                 <Input
-                                                                    className="w-12 h-7 border-none text-center p-0 focus-visible:ring-0 font-bold"
-                                                                    value={pkg.quantityPerContainer}
-                                                                    onChange={e => {
-                                                                        const val = parseInt(e.target.value) || 0;
+                                                                    type="number"
+                                                                    step="any"
+                                                                    className="w-24 h-9 text-right pr-12 text-base font-bold text-primary"
+                                                                    value={((pkg.quantityPerContainer || 0) * (values.producedUnits || 0)) || ""}
+                                                                    onChange={(e) => {
+                                                                        const val = parseFloat(e.target.value) || 0;
+                                                                        const producedUnits = values.producedUnits || 1;
+                                                                        const perUnit = val / producedUnits;
                                                                         const newPkg = [...values.additionalPackaging];
-                                                                        newPkg[idx] = { ...newPkg[idx], quantityPerContainer: val };
+                                                                        newPkg[idx] = { ...newPkg[idx], quantityPerContainer: perUnit };
                                                                         form.setFieldValue("additionalPackaging", newPkg);
                                                                     }}
                                                                 />
-                                                                <span className="text-[10px] text-muted-foreground pr-2 border-l pl-2 bg-muted/10 h-full flex items-center">/unit</span>
+                                                                <div className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">
+                                                                    Total
+                                                                </div>
                                                             </div>
                                                             <Button
-                                                                variant="ghost"
+                                                                variant="destructive"
                                                                 size="icon"
-                                                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
                                                                 onClick={() => handleRemoveAdditionalPackaging(idx)}
                                                             >
-                                                                <Trash2 className="size-3.5" />
+                                                                <Trash2 className="size-4" />
                                                             </Button>
                                                         </div>
                                                     </div>
@@ -1096,7 +1175,7 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                                         <div className="flex justify-between items-center text-sm">
                                             <div className="flex items-center gap-2">
                                                 <div className="size-3 rounded-full bg-amber-500" />
-                                                <span>Master Cartons ({cartonsCalculation.boxesNeeded} boxes)</span>
+                                                <span>Master Cartons ({cartonsCalculation.boxesNeeded} Buckets)</span>
                                             </div>
                                             <span className="font-mono">{cartonsCalculation.cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                         </div>
@@ -1143,9 +1222,9 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
 
                         </div>
 
-                    </div>
-                </div>
-            </ScrollArea>
-        </div>
+                    </div >
+                </div >
+            </ScrollArea >
+        </div >
     );
 };

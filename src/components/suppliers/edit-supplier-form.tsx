@@ -1,47 +1,59 @@
 import { useForm } from "@tanstack/react-form";
-import { z } from "zod";
-
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { addSupplierFn } from "@/server-functions/suppliers/add-supplier-fn";
-import { supplierSchema } from "@/lib/validators";
+import { updateSupplierFn } from "@/server-functions/suppliers/update-supplier-fn";
+import { updateSupplierSchema } from "@/lib/validators";
 import { Textarea } from "../ui/textarea";
 
+type Supplier = {
+    id: string;
+    supplierName: string;
+    supplierShopName: string | null;
+    email: string | null;
+    nationalId: string | null;
+    phone: string | null;
+    address: string | null;
+    notes: string | null;
+};
+
 type Props = {
+    supplier: Supplier;
     onSuccess: () => void;
 };
 
-export const AddSupplierForm = ({ onSuccess }: Props) => {
+export const EditSupplierForm = ({ supplier, onSuccess }: Props) => {
     const queryClient = useQueryClient();
 
     const mutate = useMutation({
-        mutationFn: addSupplierFn,
+        mutationFn: updateSupplierFn,
         onSuccess: () => {
-            toast.success("Supplier added successfully");
+            toast.success("Supplier updated successfully");
             queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+            queryClient.invalidateQueries({ queryKey: ["supplier", supplier.id] });
             onSuccess();
         },
         onError: (error) => {
-            toast.error(error.message || "Failed to add supplier");
+            toast.error(error.message || "Failed to update supplier");
         },
     });
 
     const form = useForm({
         defaultValues: {
-            supplierName: "",
-            supplierShopName: "",
-            email: "",
-            nationalId: "",
-            phone: "",
-            address: "",
-            notes: "",
-        } as z.infer<typeof supplierSchema>,
+            id: supplier.id,
+            supplierName: supplier.supplierName,
+            supplierShopName: supplier.supplierShopName || "",
+            email: supplier.email || "",
+            nationalId: supplier.nationalId || "",
+            phone: supplier.phone || "",
+            address: supplier.address || "",
+            notes: supplier.notes || "",
+        },
         validators: {
-            onSubmit: supplierSchema,
+            onSubmit: updateSupplierSchema,
         },
         onSubmit: async ({ value }) => {
             await mutate.mutateAsync({ data: value });
@@ -68,7 +80,6 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
                                     onBlur={field.handleBlur}
                                     onChange={(e) => field.handleChange(e.target.value)}
                                 />
-                                <FieldDescription>Enter the name of the supplier</FieldDescription>
                                 <FieldError errors={field.state.meta.errors} />
                             </Field>
                         )}
@@ -83,13 +94,10 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
                                     onBlur={field.handleBlur}
                                     onChange={(e) => field.handleChange(e.target.value)}
                                 />
-                                <FieldDescription>Enter the name of the supplier's shop</FieldDescription>
                                 <FieldError errors={field.state.meta.errors} />
-
                             </Field>
                         )}
                     </form.Field>
-
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -103,7 +111,6 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
                                     onBlur={field.handleBlur}
                                     onChange={(e) => field.handleChange(e.target.value)}
                                 />
-                                <FieldDescription>Enter the email of the supplier</FieldDescription>
                                 <FieldError errors={field.state.meta.errors} />
                             </Field>
                         )}
@@ -119,12 +126,10 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
                                     onBlur={field.handleBlur}
                                     onChange={(e) => field.handleChange(e.target.value)}
                                 />
-                                <FieldDescription>Enter the national ID of the supplier</FieldDescription>
                                 <FieldError errors={field.state.meta.errors} />
                             </Field>
                         )}
                     </form.Field>
-
 
                     <form.Field name="phone" >
                         {(field) => (
@@ -135,7 +140,6 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
                                     onBlur={field.handleBlur}
                                     onChange={(e) => field.handleChange(e.target.value)}
                                 />
-                                <FieldDescription>Enter the phone number of the supplier</FieldDescription>
                                 <FieldError errors={field.state.meta.errors} />
                             </Field>
                         )}
@@ -151,7 +155,6 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
                                 onBlur={field.handleBlur}
                                 onChange={(e) => field.handleChange(e.target.value)}
                             />
-                            <FieldDescription>Enter the address of the supplier</FieldDescription>
                             <FieldError errors={field.state.meta.errors} />
                         </Field>
                     )}
@@ -166,12 +169,10 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
                                 onBlur={field.handleBlur}
                                 onChange={(e) => field.handleChange(e.target.value)}
                             />
-                            <FieldDescription>Enter any notes about the supplier</FieldDescription>
                             <FieldError errors={field.state.meta.errors} />
                         </Field>
                     )}
                 </form.Field>
-
 
                 <Button
                     type="submit"
@@ -181,7 +182,7 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
                     {form.state.isSubmitting ? (
                         <Loader2 className="mr-2 size-4 animate-spin" />
                     ) : (
-                        "Add Supplier"
+                        "Update Supplier"
                     )}
                 </Button>
             </FieldGroup>

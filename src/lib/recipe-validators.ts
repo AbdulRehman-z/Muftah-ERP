@@ -10,8 +10,7 @@ export const ingredientSelectionSchema = z.object({
 export const additionalPackagingItemSchema = z.object({
     packagingMaterialId: z.string().min(1, "Please select packaging material"),
     quantityPerContainer: z.number()
-        .min(1, "Quantity must be at least 1")
-        .int("Quantity must be a whole number"),
+        .positive("Quantity must be a positive number"),
 });
 
 export const createRecipeSchema = z.object({
@@ -31,7 +30,7 @@ export const createRecipeSchema = z.object({
             "Fill amount must be a positive number"
         ),
     fillUnit: z.enum(["g", "kg", "ml", "L"]).catch("ml"),
-    containerType: z.enum(["bottle", "sachet", "bag"]).catch("bottle"),
+    containerType: z.literal("pack").catch("pack"),
     containerPackagingId: z.string().min(1, "Please select container packaging"),
     containersPerCarton: z.number()
         .int("Must be a whole number")

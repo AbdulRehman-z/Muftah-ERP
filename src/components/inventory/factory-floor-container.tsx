@@ -9,11 +9,24 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { StockTable } from "./stock-table";
 import { FinishedGoodsTable } from "./finished-goods-table";
 import { LowStockAlerts } from "./low-stocks-alert";
+import { ConsumptionTable } from "./consumption-table";
+import { getConsumptionHistoryFn } from "@/server-functions/inventory/factory-floor/get-consumption-history-fn";
+import { getWarehousesFn } from "@/server-functions/inventory/get-warehouses-fn";
 
 export const FactoryFloorContainer = () => {
     const { data: factoryFloor } = useSuspenseQuery({
         queryKey: ["factory-floor"],
         queryFn: getFactoryFloorStockFn,
+    });
+
+    const { data: allWarehouses } = useSuspenseQuery({
+        queryKey: ["warehouses"],
+        queryFn: getWarehousesFn,
+    });
+
+    const { data: consumptionHistory } = useSuspenseQuery({
+        queryKey: ["consumption-history"],
+        queryFn: getConsumptionHistoryFn,
     });
 
     const [activeTab, setActiveTab] = useState("raw");
@@ -38,12 +51,27 @@ export const FactoryFloorContainer = () => {
         );
     }
 
-    const rawMaterials = factoryFloor.materialStock.filter(
-        (s) => s.chemicalId !== null,
-    );
-    const packagingMaterials = factoryFloor.materialStock.filter(
-        (s) => s.packagingMaterialId !== null,
-    );
+    const rawMaterials = factoryFloor.materialStock
+        .filter((s) => s.chemicalId !== null)
+        .map(s => ({
+            ...s,
+            warehouse: { name: factoryFloor.name, isActive: factoryFloor.isActive }
+        }));
+
+    const packagingMaterials = factoryFloor.materialStock
+        .filter((s) => s.packagingMaterialId !== null && s.packagingMaterial?.type !== 'sticker')
+        .map(s => ({
+            ...s,
+            warehouse: { name: factoryFloor.name, isActive: factoryFloor.isActive }
+        }));
+
+    const stickers = factoryFloor.materialStock
+        .filter((s) => s.packagingMaterialId !== null && s.packagingMaterial?.type === 'sticker')
+        .map(s => ({
+            ...s,
+            warehouse: { name: factoryFloor.name, isActive: factoryFloor.isActive }
+        }));
+
     const finishedGoods = factoryFloor.finishedGoodsStock.map(fg => ({
         ...fg,
         warehouse: { name: factoryFloor.name, isActive: factoryFloor.isActive }
@@ -52,6 +80,9 @@ export const FactoryFloorContainer = () => {
     const showRaw = activeTab === "raw";
     const showPackaging = activeTab === "packaging";
     const showFinished = activeTab === "finished";
+
+    const showStickers = activeTab === "stickers";
+    const showConsumption = activeTab === "consumption";
 
     return (
         <div className="space-y-6">
@@ -114,9 +145,19 @@ export const FactoryFloorContainer = () => {
                             Packaging
                         </TabsTrigger>
                         <TabsTrigger
+                            value="stickers"
+                        >
+                            Stickers
+                        </TabsTrigger>
+                        <TabsTrigger
                             value="finished"
                         >
                             Finished Goods
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="consumption"
+                        >
+                            Consumption
                         </TabsTrigger>
                     </TabsList>
                 </Tabs>
@@ -125,42 +166,70 @@ export const FactoryFloorContainer = () => {
                 </div>
             </div>
 
-            {/* Chemicals Section */}
-            {showRaw && (
-                <div className="space-y-4">
-                    <StockTable
-                        data={rawMaterials as any}
-                        type="chemical"
-                        warehouses={[factoryFloor] as any}
+            {/* Finished Goods Table */}
+            {
+                showFinished && (
+                    <FinishedGoodsTable
+                        data={finishedGoods as any}
+                        warehouses={allWarehouses as any}
                         preselectedWarehouse={factoryFloor.id}
-                        hideAddButton={true}
-                        hideActions={true}
                     />
-                </div>
-            )}
+                )
+            }
+
+            {/* Chemicals Section */}
+            {
+                showRaw && (
+                    <div className="space-y-4">
+                        <StockTable
+                            data={rawMaterials as any}
+                            type="chemical"
+                            warehouses={allWarehouses as any}
+                            preselectedWarehouse={factoryFloor.id}
+                            hideAddButton={true}
+                            hideActions={true}
+                        />
+                    </div>
+                )
+            }
 
             {/* Packaging Materials Section */}
-            {showPackaging && (
-                <div className="space-y-4">
-                    <StockTable
-                        data={packagingMaterials as any}
-                        type="packaging"
-                        warehouses={[factoryFloor] as any}
-                        preselectedWarehouse={factoryFloor.id}
-                        hideAddButton={true}
-                        hideActions={true}
-                    />
-                </div>
-            )}
+            {
+                showPackaging && (
+                    <div className="space-y-4">
+                        <StockTable
+                            data={packagingMaterials as any}
+                            type="packaging"
+                            warehouses={allWarehouses as any}
+                            preselectedWarehouse={factoryFloor.id}
+                            hideAddButton={true}
+                            hideActions={true}
+                        />
+                    </div>
+                )
+            }
 
-            {/* Finished Goods Table */}
-            {showFinished && (
-                <FinishedGoodsTable
-                    data={finishedGoods as any}
-                    warehouses={[factoryFloor] as any}
-                    preselectedWarehouse={factoryFloor.id}
-                />
-            )}
-        </div>
+            {/* Stickers Section */}
+            {
+                showStickers && (
+                    <div className="space-y-4">
+                        <StockTable
+                            data={stickers as any}
+                            type="packaging"
+                            warehouses={allWarehouses as any}
+                            preselectedWarehouse={factoryFloor.id}
+                            hideAddButton={true}
+                            hideActions={true}
+                        />
+                    </div>
+                )
+            }
+            {/* Consumption Table */}
+            {
+                showConsumption && (
+                    <ConsumptionTable data={consumptionHistory as any} />
+                )
+            }
+        </div >
     );
 };

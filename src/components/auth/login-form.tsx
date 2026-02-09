@@ -164,9 +164,7 @@ export const LoginForm = () => {
 													onChange={(e) => field.handleChange(e.target.value)}
 													aria-invalid={isInvalid}
 													placeholder="••••••••"
-												>
-													<PasswordInputStrengthChecker />
-												</PasswordInput>
+												/>
 												{isInvalid && <FieldError errors={errors} />}
 											</Field>
 										);

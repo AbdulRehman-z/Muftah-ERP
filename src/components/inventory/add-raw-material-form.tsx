@@ -39,6 +39,8 @@ export const AddRawMaterialForm = ({ onSuccess, warehouses, preselectedWarehouse
             name: "",
             warehouseId: preselectedWarehouse || availableWarehouses[0]?.id || "",
             quantity: "",
+            packagingType: "",
+            packagingSize: "",
             costPerUnit: "",
             unit: "kg" as "kg" | "liters",
             minimumStockLevel: "0",
@@ -128,6 +130,44 @@ export const AddRawMaterialForm = ({ onSuccess, warehouses, preselectedWarehouse
                         )}
                     </form.Field>
                 )}
+
+                <div className="grid grid-cols-2 gap-4">
+                    <form.Field name="packagingType">
+                        {(field) => (
+                            <Field>
+                                <FieldLabel>Packaging Type</FieldLabel>
+                                <Select
+                                    value={field.state.value || ""}
+                                    onValueChange={(val) => field.handleChange(val)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Drum">Drum</SelectItem>
+                                        <SelectItem value="Bag">Bag</SelectItem>
+                                        <SelectItem value="Can">Can</SelectItem>
+                                        <SelectItem value="Box">Box</SelectItem>
+                                        <SelectItem value="Other">Other</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                        )}
+                    </form.Field>
+
+                    <form.Field name="packagingSize">
+                        {(field) => (
+                            <Field>
+                                <FieldLabel>Packaging Size</FieldLabel>
+                                <Input
+                                    placeholder="e.g. 25kg, 200L"
+                                    value={field.state.value || ""}
+                                    onChange={(e) => field.handleChange(e.target.value)}
+                                />
+                            </Field>
+                        )}
+                    </form.Field>
+                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <form.Field name="quantity">

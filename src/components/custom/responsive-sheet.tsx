@@ -1,12 +1,6 @@
 import type { ReactNode } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "../ui/dialog";
+
 import {
 	Drawer,
 	DrawerContent,
@@ -49,7 +43,7 @@ export const ResponsiveSheet = ({
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent className="min-w-lg overflow-y-auto pb-5">
+			<SheetContent className="min-w-[600px] overflow-y-auto pb-5">
 				<SheetHeader>
 					<SheetTitle>{title}</SheetTitle>
 					<SheetDescription>{description}</SheetDescription>

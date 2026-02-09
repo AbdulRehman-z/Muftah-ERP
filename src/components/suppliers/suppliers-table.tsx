@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { Eye, Trash2 } from "lucide-react";
+import { Eye, Trash2, Pencil } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteSupplierFn } from "@/server-functions/suppliers/delete-supplier-fn";
 import { toast } from "sonner";
@@ -17,6 +17,8 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { DataTable } from "@/components/ui/data-table";
+import { useState } from "react";
+import { EditSupplierDialog } from "./edit-supplier-dialog";
 
 type Supplier = {
     id: string;
@@ -24,7 +26,9 @@ type Supplier = {
     supplierShopName: string | null;
     email: string | null;
     phone: string | null;
+    nationalId: string | null;
     address: string | null;
+    notes: string | null;
     createdAt: Date;
 };
 
@@ -35,6 +39,7 @@ type Props = {
 export const SuppliersTable = ({ data }: Props) => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
 
     const deleteMutate = useMutation({
         mutationFn: deleteSupplierFn,
@@ -46,20 +51,25 @@ export const SuppliersTable = ({ data }: Props) => {
     });
 
     const columns: ColumnDef<Supplier>[] = [
-        {
-            accessorKey: "id",
-            header: "System ID",
-            cell: ({ row }) => <span className="font-mono text-xs text-muted-foreground">{(row.getValue("id") as string).slice(-6)}</span>,
-        },
+        // {
+        //     accessorKey: "id",
+        //     header: "System ID",
+        //     cell: ({ row }) => <span className="font-mono text-xs text-muted-foreground">{(row.getValue("id") as string).slice(-6)}</span>,
+        // },
         {
             accessorKey: "supplierName",
             header: "Supplier Name",
-            cell: ({ row }) => <span className="font-medium text-foreground">{row.getValue("supplierName")}</span>,
+            cell: ({ row }) => <span className="font-medium text-foreground">{row.original.supplierName}</span>,
         },
         {
             accessorKey: "supplierShopName",
             header: "Shop Name",
-            cell: ({ row }) => row.getValue("supplierShopName") || "-",
+            cell: ({ row }) => <span className="font-mono text-xs">{row.original.supplierShopName || "-"}</span>,
+        },
+        {
+            accessorKey: "nationalId",
+            header: "National ID",
+            cell: ({ row }) => <span className="font-mono text-xs">{row.original.nationalId || "-"}</span>,
         },
         {
             id: "contactDetails",
@@ -88,6 +98,14 @@ export const SuppliersTable = ({ data }: Props) => {
                             onClick={() => navigate({ to: `/admin/suppliers/${supplier.id}` })}
                         >
                             <Eye className="size-4" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-primary hover:text-primary hover:bg-primary/10"
+                            onClick={() => setEditingSupplier(supplier)}
+                        >
+                            <Pencil className="size-4" />
                         </Button>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -121,12 +139,23 @@ export const SuppliersTable = ({ data }: Props) => {
     ];
 
     return (
-        <DataTable
-            pageSize={20}
-            columns={columns}
-            data={data}
-            searchKey="supplierName"
-            searchPlaceholder="Filter suppliers..."
-        />
+        <>
+            <DataTable
+                pageSize={20}
+                columns={columns}
+                data={data}
+                searchKey="supplierName"
+                searchPlaceholder="Filter suppliers..."
+            />
+            {
+                editingSupplier && (
+                    <EditSupplierDialog
+                        open={!!editingSupplier}
+                        onOpenChange={(open) => !open && setEditingSupplier(null)}
+                        supplier={editingSupplier}
+                    />
+                )
+            }
+        </>
     );
 };

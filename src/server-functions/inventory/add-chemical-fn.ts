@@ -29,18 +29,49 @@ export const addRawMaterialFn = createServerFn()
             let finalMaterial;
 
             if (existing) {
-                // Update existing material details (cost, min stock)
-                const [updated] = await tx
-                    .update(chemicals)
-                    .set({
-                        costPerUnit: data.costPerUnit,
-                        minimumStockLevel: data.minimumStockLevel,
-                        updatedAt: new Date(),
-                    })
-                    .where(eq(chemicals.id, existing.id))
-                    .returning();
+                // Check if price matches (allow small tolerance for float comparison)
+                const existingPrice = parseFloat(existing.costPerUnit || "0");
+                const newPrice = parseFloat(data.costPerUnit);
 
-                finalMaterial = updated;
+                // If price matches (same material, same cost) -> Merge
+                if (Math.abs(existingPrice - newPrice) < 0.01) {
+                    const [updated] = await tx
+                        .update(chemicals)
+                        .set({
+                            minimumStockLevel: data.minimumStockLevel,
+                            lastSupplierId: data.supplierId,
+                            updatedAt: new Date(),
+                        })
+                        .where(eq(chemicals.id, existing.id))
+                        .returning();
+                    finalMaterial = updated;
+                } else {
+                    // Price differs -> Create new material with suffix name
+                    // Check how many variations exist to append correct suffix
+                    const similar = await tx.query.chemicals.findMany({
+                        where: (m, { sql }) => sql`LOWER(${m.name}) LIKE LOWER(${data.name || ""} || '%')`,
+                    });
+
+                    // Simple logic: append "-new" or count. 
+                    // Better: "Zinc (PKR 150)" or "Zinc-1"
+                    // User suggested "Zinc-1".
+                    const suffix = similar.length;
+                    const newName = `${data.name}-${suffix}`;
+
+                    const [newMaterial] = await tx
+                        .insert(chemicals)
+                        .values({
+                            name: newName,
+                            unit: data.unit,
+                            costPerUnit: data.costPerUnit,
+                            minimumStockLevel: data.minimumStockLevel,
+                            packagingType: data.packagingType,
+                            packagingSize: data.packagingSize,
+                            lastSupplierId: data.supplierId,
+                        })
+                        .returning();
+                    finalMaterial = newMaterial;
+                }
             } else {
                 // 1. Create the raw material
                 const [newMaterial] = await tx
@@ -50,6 +81,9 @@ export const addRawMaterialFn = createServerFn()
                         unit: data.unit,
                         costPerUnit: data.costPerUnit,
                         minimumStockLevel: data.minimumStockLevel,
+                        packagingType: data.packagingType,
+                        packagingSize: data.packagingSize,
+                        lastSupplierId: data.supplierId,
                     })
                     .returning();
                 finalMaterial = newMaterial;

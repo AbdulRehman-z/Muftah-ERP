@@ -42,7 +42,7 @@ export const RecipeCard = ({ recipe, onEdit }: RecipeCardProps) => {
 
 	return (
 		<>
-			<Card className="hover:shadow-lg transition-shadow flex flex-col justify-between h-full group">
+			<Card className="hover:shadow-sm transition-shadow flex flex-col justify-between h-full group">
 				<div>
 					<CardHeader>
 						<div className="flex items-start justify-between">
@@ -119,9 +119,9 @@ export const RecipeCard = ({ recipe, onEdit }: RecipeCardProps) => {
 				<div className="p-4 pt-0 space-y-3">
 					<Button
 						onClick={() => setInitiateOpen(true)}
-						className="w-full bg-blue-600 hover:bg-blue-700 font-semibold shadow-md active:scale-95 transition-all"
+						className="w-full"
 					>
-						<PlayIcon className="size-4 mr-2 group-hover:fill-current" />
+						<PlayIcon className="size-4 mr-2" />
 						Initiate Production
 					</Button>
 
@@ -140,7 +140,7 @@ export const RecipeCard = ({ recipe, onEdit }: RecipeCardProps) => {
 							variant="outline"
 							size="sm"
 							className="flex-1"
-							onClick={() => navigate({ to: `/admin/recipes/${recipe.id}` })}
+							onClick={() => navigate({ to: `/admin/manufacturing/recipes/${recipe.id}` })}
 						>
 							<Eye className="size-4 mr-2" />
 							View
