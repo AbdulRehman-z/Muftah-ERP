@@ -81,6 +81,7 @@ export const PurchaseDetailsDialog = ({ open, onOpenChange, purchase }: Props) =
             onOpenChange={onOpenChange}
             title="Purchase Details"
             description={`Transaction ID: ${purchase.id}`}
+            className="sm:max-w-2xl"
         >
             <div className="space-y-4 py-2">
                 <div className="flex justify-between items-center">

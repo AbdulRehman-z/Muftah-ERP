@@ -34,7 +34,7 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
         defaultValues: {
             supplierName: "",
             supplierShopName: "",
-            email: "",
+            email: null,
             nationalId: "",
             phone: "",
             address: "",
@@ -96,10 +96,10 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
                     <form.Field name="email">
                         {(field) => (
                             <Field>
-                                <FieldLabel>Email</FieldLabel>
+                                <FieldLabel>Email (Optional)</FieldLabel>
                                 <Input
                                     type="email"
-                                    value={field.state.value}
+                                    value={field.state.value || ""}
                                     onBlur={field.handleBlur}
                                     onChange={(e) => field.handleChange(e.target.value)}
                                 />
@@ -160,7 +160,7 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
                 <form.Field name="notes">
                     {(field) => (
                         <Field>
-                            <FieldLabel>Notes</FieldLabel>
+                            <FieldLabel>Notes (Optional)</FieldLabel>
                             <Textarea
                                 value={field.state.value}
                                 onBlur={field.handleBlur}

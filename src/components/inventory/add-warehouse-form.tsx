@@ -6,6 +6,7 @@ import { addWarehouseSchema } from "@/lib/validators";
 import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { toast } from "sonner";
 
 type Props = {
 	onSuccess: () => void;
@@ -32,7 +33,10 @@ export const AddWarehouseForm = ({ onSuccess, forcedType }: Props) => {
 			await mutate.mutateAsync(
 				{ data: value },
 				{
-					onSuccess: onSuccess,
+					onSuccess: (data) => {
+						onSuccess();
+						toast.success(`${data.type} added successfully`);
+					},
 				},
 			);
 		},

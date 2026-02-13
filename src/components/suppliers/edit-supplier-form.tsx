@@ -1,4 +1,5 @@
 import { useForm } from "@tanstack/react-form";
+import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -51,7 +52,7 @@ export const EditSupplierForm = ({ supplier, onSuccess }: Props) => {
             phone: supplier.phone || "",
             address: supplier.address || "",
             notes: supplier.notes || "",
-        },
+        } as z.infer<typeof updateSupplierSchema>,
         validators: {
             onSubmit: updateSupplierSchema,
         },

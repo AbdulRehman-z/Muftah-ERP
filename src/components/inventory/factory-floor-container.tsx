@@ -1,4 +1,4 @@
-import { Package, Beaker, Box, Factory } from "lucide-react";
+import { Package, Beaker, Box, Factory, Wrench } from "lucide-react";
 import { useState } from "react";
 import { getFactoryFloorStockFn } from "@/server-functions/inventory/factory-floor/get-factory-floor-stocks-fn";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -12,11 +12,14 @@ import { LowStockAlerts } from "./low-stocks-alert";
 import { ConsumptionTable } from "./consumption-table";
 import { getConsumptionHistoryFn } from "@/server-functions/inventory/factory-floor/get-consumption-history-fn";
 import { getWarehousesFn } from "@/server-functions/inventory/get-warehouses-fn";
+import { AdjustStockDialog } from "./adjust-stock-dialog";
+import { Button } from "../ui/button";
 
 export const FactoryFloorContainer = () => {
     const { data: factoryFloor } = useSuspenseQuery({
         queryKey: ["factory-floor"],
         queryFn: getFactoryFloorStockFn,
+        refetchInterval: 50000,
     });
 
     const { data: allWarehouses } = useSuspenseQuery({
@@ -27,10 +30,21 @@ export const FactoryFloorContainer = () => {
     const { data: consumptionHistory } = useSuspenseQuery({
         queryKey: ["consumption-history"],
         queryFn: getConsumptionHistoryFn,
+        refetchInterval: 50000,
     });
 
     const [activeTab, setActiveTab] = useState("raw");
     const [isAddFactoryOpen, setAddFactoryOpen] = useState(false);
+
+    // Adjust Stock Dialog state
+    const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
+    const [adjustTarget, setAdjustTarget] = useState<{
+        materialType: "chemical" | "packaging";
+        materialId: string;
+        materialName: string;
+        currentStock: number;
+        unit: string;
+    } | null>(null);
 
     if (!factoryFloor) {
         return (
@@ -80,9 +94,22 @@ export const FactoryFloorContainer = () => {
     const showRaw = activeTab === "raw";
     const showPackaging = activeTab === "packaging";
     const showFinished = activeTab === "finished";
-
     const showStickers = activeTab === "stickers";
     const showConsumption = activeTab === "consumption";
+
+    const handleAdjustStock = (item: any, type: "chemical" | "packaging") => {
+        const material = type === "chemical" ? item.chemical : item.packagingMaterial;
+        if (!material) return;
+
+        setAdjustTarget({
+            materialType: type,
+            materialId: material.id,
+            materialName: material.name,
+            currentStock: parseFloat(item.quantity),
+            unit: type === "chemical" ? (material.unit || "kg") : "pcs",
+        });
+        setAdjustDialogOpen(true);
+    };
 
     return (
         <div className="space-y-6">
@@ -120,12 +147,13 @@ export const FactoryFloorContainer = () => {
                         <Box className="size-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">
+                        <div className="text-2xl font-bold flex items-baseline gap-1">
                             {finishedGoods.reduce((sum, fg) => sum + fg.quantityCartons, 0)}
+                            <span className="text-sm font-normal text-muted-foreground">Cartons</span>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            Cartons ready for transfer
-                        </p>
+                        <div className="text-xs text-muted-foreground mt-1">
+                            + {finishedGoods.reduce((sum, fg) => sum + fg.quantityContainers, 0)} Loose Units
+                        </div>
                     </CardContent>
                 </Card>
             </div>
@@ -134,29 +162,19 @@ export const FactoryFloorContainer = () => {
             <div className="flex items-center justify-between gap-4 border-b pb-4">
                 <Tabs defaultValue="raw" onValueChange={setActiveTab} className="w-fit">
                     <TabsList className="">
-                        <TabsTrigger
-                            value="raw"
-                        >
+                        <TabsTrigger value="raw">
                             Chemicals
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="packaging"
-                        >
+                        <TabsTrigger value="packaging">
                             Packaging
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="stickers"
-                        >
+                        <TabsTrigger value="stickers">
                             Stickers
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="finished"
-                        >
+                        <TabsTrigger value="finished">
                             Finished Goods
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="consumption"
-                        >
+                        <TabsTrigger value="consumption">
                             Consumption
                         </TabsTrigger>
                     </TabsList>
@@ -181,6 +199,20 @@ export const FactoryFloorContainer = () => {
             {
                 showRaw && (
                     <div className="space-y-4">
+                        <div className="flex justify-end">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs font-bold uppercase tracking-wide text-amber-700 border-amber-200 hover:bg-amber-50"
+                                onClick={() => {
+                                    // Show a selection - for now user clicks on a row
+                                }}
+                                disabled
+                            >
+                                <Wrench className="size-3 mr-1.5" />
+                                Select a row to adjust stock
+                            </Button>
+                        </div>
                         <StockTable
                             data={rawMaterials as any}
                             type="chemical"
@@ -188,6 +220,7 @@ export const FactoryFloorContainer = () => {
                             preselectedWarehouse={factoryFloor.id}
                             hideAddButton={true}
                             hideActions={true}
+                            onAdjustStock={(item) => handleAdjustStock(item, "chemical")}
                         />
                     </div>
                 )
@@ -204,6 +237,7 @@ export const FactoryFloorContainer = () => {
                             preselectedWarehouse={factoryFloor.id}
                             hideAddButton={true}
                             hideActions={true}
+                            onAdjustStock={(item) => handleAdjustStock(item, "packaging")}
                         />
                     </div>
                 )
@@ -220,6 +254,7 @@ export const FactoryFloorContainer = () => {
                             preselectedWarehouse={factoryFloor.id}
                             hideAddButton={true}
                             hideActions={true}
+                            onAdjustStock={(item) => handleAdjustStock(item, "packaging")}
                         />
                     </div>
                 )
@@ -230,6 +265,22 @@ export const FactoryFloorContainer = () => {
                     <ConsumptionTable data={consumptionHistory as any} />
                 )
             }
+
+            {/* Adjust Stock Dialog */}
+            {adjustTarget && (
+                <AdjustStockDialog
+                    open={adjustDialogOpen}
+                    onOpenChange={(open) => {
+                        setAdjustDialogOpen(open);
+                        if (!open) setAdjustTarget(null);
+                    }}
+                    materialType={adjustTarget.materialType}
+                    materialId={adjustTarget.materialId}
+                    materialName={adjustTarget.materialName}
+                    currentStock={adjustTarget.currentStock}
+                    unit={adjustTarget.unit}
+                />
+            )}
         </div >
     );
 };

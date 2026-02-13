@@ -7,9 +7,7 @@ import {
     inventoryAuditLog,
     recipes,
     recipeIngredients,
-    recipePackaging,
     chemicals,
-    packagingMaterials,
     warehouses,
 } from "@/db/schemas/inventory-schema";
 import { requireAdminMiddleware } from "@/lib/middlewares";
@@ -67,28 +65,7 @@ export const startProductionFn = createServerFn()
                 .leftJoin(chemicals, eq(recipeIngredients.chemicalId, chemicals.id))
                 .where(eq(recipeIngredients.recipeId, recipe.id));
 
-            const packaging = await tx
-                .select({
-                    packaging: recipePackaging,
-                    material: packagingMaterials,
-                })
-                .from(recipePackaging)
-                .leftJoin(packagingMaterials, eq(recipePackaging.packagingMaterialId, packagingMaterials.id))
-                .where(eq(recipePackaging.recipeId, recipe.id));
 
-            // 3. Get container and carton packaging
-            const [containerPkg] = await tx
-                .select()
-                .from(packagingMaterials)
-                .where(eq(packagingMaterials.id, recipe.containerPackagingId));
-
-            let cartonPkg = null;
-            if (recipe.cartonPackagingId) {
-                [cartonPkg] = await tx
-                    .select()
-                    .from(packagingMaterials)
-                    .where(eq(packagingMaterials.id, recipe.cartonPackagingId));
-            }
 
             // 4. Calculate total materials needed (based on batches produced)
             const batchesProduced = productionRun.batchesProduced;
@@ -113,39 +90,7 @@ export const startProductionFn = createServerFn()
                 });
             }
 
-            // Add containers
-            const containersNeeded = productionRun.containersProduced;
-            materialsToDeduct.push({
-                type: "packaging",
-                materialId: containerPkg.id,
-                materialName: containerPkg.name,
-                quantity: containersNeeded,
-                costPerUnit: parseFloat(containerPkg.costPerUnit?.toString() || "0"),
-            });
 
-            // Add cartons
-            if (cartonPkg && (productionRun.cartonsProduced || 0) > 0) {
-                materialsToDeduct.push({
-                    type: "packaging",
-                    materialId: cartonPkg.id,
-                    materialName: cartonPkg.name,
-                    quantity: productionRun.cartonsProduced || 0,
-                    costPerUnit: parseFloat(cartonPkg.costPerUnit?.toString() || "0"),
-                });
-            }
-
-            // Add additional packaging (caps, stickers, etc.)
-            for (const { packaging: pkg, material } of packaging) {
-                if (!material) continue;
-                const quantityNeeded = parseFloat(pkg.quantityPerContainer.toString()) * containersNeeded;
-                materialsToDeduct.push({
-                    type: "packaging",
-                    materialId: material.id,
-                    materialName: material.name,
-                    quantity: quantityNeeded,
-                    costPerUnit: parseFloat(material.costPerUnit?.toString() || "0"),
-                });
-            }
 
             // 5. Validate stock availability (from Factory Floor)
             for (const item of materialsToDeduct) {
@@ -221,10 +166,9 @@ export const startProductionFn = createServerFn()
 
             // 7. Update production run status
             const totalProductionCost = totalChemicalCost + totalPackagingCost;
-            const costPerContainer =
-                productionRun.containersProduced > 0
-                    ? totalProductionCost / productionRun.containersProduced
-                    : 0;
+
+            // Use the recipe's estimated cost per container for consistency
+            const costPerContainer = parseFloat(recipe.estimatedCostPerContainer || "0");
 
             await tx
                 .update(productionRuns)

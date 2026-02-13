@@ -289,6 +289,7 @@ export const productionRuns = pgTable("production_runs", {
 	batchesProduced: integer("batches_produced").notNull(), // Number of batches
 	cartonsProduced: integer("cartons_produced").default(0),
 	containersProduced: integer("containers_produced").notNull(),
+	completedUnits: integer("completed_units").default(0), // Track incremental progress
 	looseUnitsProduced: integer("loose_units_produced").default(0), // Containers not in cartons
 
 	// Costing

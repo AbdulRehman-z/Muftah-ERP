@@ -1,12 +1,16 @@
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
-import { ResponsiveDialog } from "../custom/responsive-dialog";
+import { ResponsiveSheet } from "../custom/responsive-sheet";
 import { AddStockForm } from "./add-stock-dialog-form";
+
+import { PurchaseRecord } from "@/components/suppliers/purchase-history-table";
 
 type Props = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	warehouses: Awaited<ReturnType<typeof getInventoryFn>>
 	preselectedWarehouse: string | undefined
+	itemToRestock?: PurchaseRecord | null
+	preselectedSupplierId?: string
 }
 
 
@@ -15,16 +19,26 @@ export const AddStockDialog = ({
 	onOpenChange,
 	warehouses,
 	preselectedWarehouse,
+	itemToRestock,
+	preselectedSupplierId
 }: Props) => {
 
 	return (
-		<ResponsiveDialog
-			title="Add Stock"
-			description="Add raw or packaging materials to warehouse inventory"
+		<ResponsiveSheet
+			title={itemToRestock ? "Restock Material" : "Add Stock"}
+			description={itemToRestock ? `Add more stock for ${itemToRestock.chemical?.name || itemToRestock.packagingMaterial?.name}` : "Add raw or packaging materials to warehouse inventory"}
 			open={open}
 			onOpenChange={onOpenChange}
+			className="min-w-[600px]"
 		>
-			<AddStockForm onOpenChange={onOpenChange} warehouses={warehouses} onSuccess={() => onOpenChange(true)} preselectedWarehouse={preselectedWarehouse} />
-		</ResponsiveDialog>
+			<AddStockForm
+				onOpenChange={onOpenChange}
+				warehouses={warehouses}
+				onSuccess={() => onOpenChange(false)}
+				preselectedWarehouse={preselectedWarehouse}
+				itemToRestock={itemToRestock}
+				preselectedSupplierId={preselectedSupplierId}
+			/>
+		</ResponsiveSheet>
 	);
 };

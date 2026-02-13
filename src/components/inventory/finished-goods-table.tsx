@@ -133,6 +133,14 @@ export const FinishedGoodsTable = ({ data, warehouses, preselectedWarehouse }: F
 					);
 				}
 
+				if (fg.quantityCartons < 10) {
+					return (
+						<Badge variant="destructive" className="bg-orange-100 text-orange-700 hover:bg-orange-200 border-orange-200">
+							Low Stock
+						</Badge>
+					);
+				}
+
 				return (
 					<Badge variant="outline" className="bg-emerald-50 text-emerald-600">
 						Healthy
@@ -214,7 +222,7 @@ export const FinishedGoodsTable = ({ data, warehouses, preselectedWarehouse }: F
 			<DataTable
 				pageSize={5}
 				columns={columns}
-				data={data}
+				data={data.filter(item => (item.quantityCartons * (item.recipe.containersPerCarton || 0)) + item.quantityContainers > 0)}
 				searchKey="product"
 				searchPlaceholder="Filter finished goods..."
 			/>

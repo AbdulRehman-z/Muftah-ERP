@@ -37,25 +37,7 @@ export const updateRecipeFn = createServerFn()
 
             // 3. Calculate costs
             const batchSize = parseFloat(data.batchSize);
-
-            // Calculate containers produced
-            const containerSize = `${containerPackaging.capacity}${containerPackaging.capacityUnit || ""}`;
-            const sizeMatch = containerSize.match(/(\d+\.?\d*)/);
-            const sizeValue = sizeMatch ? parseFloat(sizeMatch[1]) : 1;
-            const sizeUnit = containerSize.replace(sizeValue.toString(), "").toLowerCase();
-
-            let containerSizeInBatchUnit = sizeValue;
-            if (data.batchUnit === "liters") {
-                if (sizeUnit.includes("ml")) {
-                    containerSizeInBatchUnit = sizeValue / 1000;
-                }
-            } else if (data.batchUnit === "kg") {
-                if (sizeUnit.includes("g") && !sizeUnit.includes("kg")) {
-                    containerSizeInBatchUnit = sizeValue / 1000;
-                }
-            }
-
-            const containersProduced = Math.floor(batchSize / containerSizeInBatchUnit);
+            const targetUnits = data.targetUnitsPerBatch || 0;
 
             // Calculate ingredients cost
             const ingredientsCost = data.ingredients.reduce((total, ing) => {
@@ -68,12 +50,12 @@ export const updateRecipeFn = createServerFn()
 
             // Calculate packaging cost (containers)
             const containerCost = parseFloat(containerPackaging.costPerUnit?.toString() || "0");
-            const containersCost = containersProduced * containerCost;
+            const containersCost = targetUnits * containerCost;
 
             // Calculate cartons cost
             let cartonsCost = 0;
-            if (cartonPackaging && data.containersPerCarton > 0) {
-                const cartonsNeeded = Math.ceil(containersProduced / data.containersPerCarton);
+            if (cartonPackaging && data.containersPerCarton > 0 && targetUnits > 0) {
+                const cartonsNeeded = Math.ceil(targetUnits / data.containersPerCarton);
                 const cartonCost = parseFloat(cartonPackaging.costPerUnit?.toString() || "0");
                 cartonsCost = cartonsNeeded * cartonCost;
             }
@@ -91,14 +73,14 @@ export const updateRecipeFn = createServerFn()
                     const material = additionalPackagingData.find((m) => m.id === pkg.packagingMaterialId);
                     if (!material) return total;
                     const costPerUnit = parseFloat(material.costPerUnit?.toString() || "0");
-                    // Multiply by containers produced since it's per container
-                    return total + costPerUnit * pkg.quantityPerContainer * containersProduced;
+                    // Multiply by target units since it's per container
+                    return total + costPerUnit * pkg.quantityPerContainer * targetUnits;
                 }, 0);
             }
 
             const totalPackagingCost = containersCost + cartonsCost + additionalPackagingCost;
             const totalBatchCost = ingredientsCost + totalPackagingCost;
-            const costPerContainer = containersProduced > 0 ? totalBatchCost / containersProduced : 0;
+            const costPerContainer = targetUnits > 0 ? totalBatchCost / targetUnits : 0;
 
             // 4. Update the recipe
             const [recipe] = await tx
@@ -108,6 +90,9 @@ export const updateRecipeFn = createServerFn()
                     name: data.name,
                     batchSize: data.batchSize,
                     batchUnit: data.batchUnit,
+                    targetUnitsPerBatch: targetUnits,
+                    fillAmount: data.fillAmount || null,
+                    fillUnit: data.fillUnit || null,
                     containerType: data.containerType,
                     containerPackagingId: data.containerPackagingId,
                     containersPerCarton: data.containersPerCarton || 0,

@@ -77,6 +77,23 @@ export const ProductsTable = ({ products }: ProductsTableProps) => {
             ),
         },
         {
+            id: "costPerUnit",
+            header: "COST/UNIT",
+            cell: ({ row }) => {
+                const recipe = row.original.recipes?.[0]; // Show cost of the first/primary recipe
+                if (!recipe) return <span className="text-xs text-muted-foreground">-</span>;
+
+                return (
+                    <div className="flex flex-col">
+                        <span className="text-xs font-bold text-green-700">
+                            PKR {parseFloat(recipe.estimatedCostPerContainer || "0").toFixed(2)}
+                        </span>
+                        <span className="text-[9px] uppercase text-muted-foreground font-medium">Est. Cost</span>
+                    </div>
+                );
+            },
+        },
+        {
             id: "recipesCount",
             header: "RECIPES COUNT",
             cell: ({ row }) => {

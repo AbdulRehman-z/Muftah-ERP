@@ -1,7 +1,7 @@
 import { adminClient, twoFactorClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { toast } from "sonner";
-import { ac, admin, operator, superAdmin } from "./permissions";
+import { ac, admin, financeManager, operator, superAdmin } from "./permissions";
 
 export const authClient = createAuthClient({
 	baseURL: "http://localhost:3000",
@@ -22,12 +22,13 @@ export const authClient = createAuthClient({
 		}),
 		adminClient({
 			defaultRole: "super-admin",
-			adminRoles: ["super-admin", "admin", "operator"],
+			adminRoles: ["super-admin", "admin"],
 			ac,
 			roles: {
 				operator: operator,
 				"super-admin": superAdmin,
 				admin: admin,
+				"finance-manager": financeManager,
 			},
 		}),
 	],

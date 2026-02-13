@@ -9,35 +9,36 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AdminRouteRouteImport } from './routes/admin/route'
+import { Route as ProtectedRouteRouteImport } from './routes/_protected/route'
 import { Route as AuthLayoutRouteRouteImport } from './routes/_authLayout/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as OperatorIndexRouteImport } from './routes/operator/index'
 import { Route as InvestorIndexRouteImport } from './routes/investor/index'
-import { Route as AdminUserManagementIndexRouteImport } from './routes/admin/user-management/index'
-import { Route as AdminSuppliersIndexRouteImport } from './routes/admin/suppliers/index'
-import { Route as AdminSettingsIndexRouteImport } from './routes/admin/settings/index'
-import { Route as AdminHrIndexRouteImport } from './routes/admin/hr/index'
-import { Route as AdminFinanceIndexRouteImport } from './routes/admin/finance/index'
-import { Route as AdminDashboardIndexRouteImport } from './routes/admin/dashboard/index'
+import { Route as ProtectedUtilitiesIndexRouteImport } from './routes/_protected/utilities/index'
+import { Route as ProtectedUserManagementIndexRouteImport } from './routes/_protected/user-management/index'
+import { Route as ProtectedSuppliersIndexRouteImport } from './routes/_protected/suppliers/index'
+import { Route as ProtectedSettingsIndexRouteImport } from './routes/_protected/settings/index'
+import { Route as ProtectedOperatorIndexRouteImport } from './routes/_protected/operator/index'
+import { Route as ProtectedHrIndexRouteImport } from './routes/_protected/hr/index'
+import { Route as ProtectedDashboardIndexRouteImport } from './routes/_protected/dashboard/index'
 import { Route as AuthLayoutSignUpIndexRouteImport } from './routes/_authLayout/sign-up/index'
 import { Route as AuthLayoutResetPasswordIndexRouteImport } from './routes/_authLayout/reset-password/index'
 import { Route as AuthLayoutLoginIndexRouteImport } from './routes/_authLayout/login/index'
 import { Route as AuthLayoutForgotPasswordIndexRouteImport } from './routes/_authLayout/forgot-password/index'
 import { Route as AuthLayout2FaIndexRouteImport } from './routes/_authLayout/2-fa/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as AdminSuppliersSupplierIdRouteImport } from './routes/admin/suppliers/$supplierId'
-import { Route as AdminSalesNewInvoiceIndexRouteImport } from './routes/admin/sales/new-invoice/index'
-import { Route as AdminSalesCustomersIndexRouteImport } from './routes/admin/sales/customers/index'
-import { Route as AdminManufacturingRecipesIndexRouteImport } from './routes/admin/manufacturing/recipes/index'
-import { Route as AdminManufacturingProductionsIndexRouteImport } from './routes/admin/manufacturing/productions/index'
-import { Route as AdminInventoryWarehousesIndexRouteImport } from './routes/admin/inventory/warehouses/index'
-import { Route as AdminInventoryFactoryFloorIndexRouteImport } from './routes/admin/inventory/factory-floor/index'
-import { Route as AdminManufacturingRecipesRecipeIdRouteImport } from './routes/admin/manufacturing/recipes/$recipeId'
+import { Route as ProtectedSuppliersSupplierIdRouteImport } from './routes/_protected/suppliers/$supplierId'
+import { Route as ProtectedOperatorRunIdRouteImport } from './routes/_protected/operator/$runId'
+import { Route as ProtectedSalesNewInvoiceIndexRouteImport } from './routes/_protected/sales/new-invoice/index'
+import { Route as ProtectedSalesCustomersIndexRouteImport } from './routes/_protected/sales/customers/index'
+import { Route as ProtectedManufacturingRecipesIndexRouteImport } from './routes/_protected/manufacturing/recipes/index'
+import { Route as ProtectedManufacturingProductionsIndexRouteImport } from './routes/_protected/manufacturing/productions/index'
+import { Route as ProtectedInventoryWarehousesIndexRouteImport } from './routes/_protected/inventory/warehouses/index'
+import { Route as ProtectedInventoryFactoryFloorIndexRouteImport } from './routes/_protected/inventory/factory-floor/index'
+import { Route as ProtectedManufacturingRecipesRecipeIdRouteImport } from './routes/_protected/manufacturing/recipes/$recipeId'
+import { Route as ProtectedManufacturingProductionsRunIdRouteImport } from './routes/_protected/manufacturing/productions/$runId'
 
-const AdminRouteRoute = AdminRouteRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const ProtectedRouteRoute = ProtectedRouteRouteImport.update({
+  id: '/_protected',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthLayoutRouteRoute = AuthLayoutRouteRouteImport.update({
@@ -49,46 +50,46 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OperatorIndexRoute = OperatorIndexRouteImport.update({
-  id: '/operator/',
-  path: '/operator/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const InvestorIndexRoute = InvestorIndexRouteImport.update({
   id: '/investor/',
   path: '/investor/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminUserManagementIndexRoute =
-  AdminUserManagementIndexRouteImport.update({
+const ProtectedUtilitiesIndexRoute = ProtectedUtilitiesIndexRouteImport.update({
+  id: '/utilities/',
+  path: '/utilities/',
+  getParentRoute: () => ProtectedRouteRoute,
+} as any)
+const ProtectedUserManagementIndexRoute =
+  ProtectedUserManagementIndexRouteImport.update({
     id: '/user-management/',
     path: '/user-management/',
-    getParentRoute: () => AdminRouteRoute,
+    getParentRoute: () => ProtectedRouteRoute,
   } as any)
-const AdminSuppliersIndexRoute = AdminSuppliersIndexRouteImport.update({
+const ProtectedSuppliersIndexRoute = ProtectedSuppliersIndexRouteImport.update({
   id: '/suppliers/',
   path: '/suppliers/',
-  getParentRoute: () => AdminRouteRoute,
+  getParentRoute: () => ProtectedRouteRoute,
 } as any)
-const AdminSettingsIndexRoute = AdminSettingsIndexRouteImport.update({
+const ProtectedSettingsIndexRoute = ProtectedSettingsIndexRouteImport.update({
   id: '/settings/',
   path: '/settings/',
-  getParentRoute: () => AdminRouteRoute,
+  getParentRoute: () => ProtectedRouteRoute,
 } as any)
-const AdminHrIndexRoute = AdminHrIndexRouteImport.update({
+const ProtectedOperatorIndexRoute = ProtectedOperatorIndexRouteImport.update({
+  id: '/operator/',
+  path: '/operator/',
+  getParentRoute: () => ProtectedRouteRoute,
+} as any)
+const ProtectedHrIndexRoute = ProtectedHrIndexRouteImport.update({
   id: '/hr/',
   path: '/hr/',
-  getParentRoute: () => AdminRouteRoute,
+  getParentRoute: () => ProtectedRouteRoute,
 } as any)
-const AdminFinanceIndexRoute = AdminFinanceIndexRouteImport.update({
-  id: '/finance/',
-  path: '/finance/',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminDashboardIndexRoute = AdminDashboardIndexRouteImport.update({
+const ProtectedDashboardIndexRoute = ProtectedDashboardIndexRouteImport.update({
   id: '/dashboard/',
   path: '/dashboard/',
-  getParentRoute: () => AdminRouteRoute,
+  getParentRoute: () => ProtectedRouteRoute,
 } as any)
 const AuthLayoutSignUpIndexRoute = AuthLayoutSignUpIndexRouteImport.update({
   id: '/sign-up/',
@@ -122,233 +123,251 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminSuppliersSupplierIdRoute =
-  AdminSuppliersSupplierIdRouteImport.update({
+const ProtectedSuppliersSupplierIdRoute =
+  ProtectedSuppliersSupplierIdRouteImport.update({
     id: '/suppliers/$supplierId',
     path: '/suppliers/$supplierId',
-    getParentRoute: () => AdminRouteRoute,
+    getParentRoute: () => ProtectedRouteRoute,
   } as any)
-const AdminSalesNewInvoiceIndexRoute =
-  AdminSalesNewInvoiceIndexRouteImport.update({
+const ProtectedOperatorRunIdRoute = ProtectedOperatorRunIdRouteImport.update({
+  id: '/operator/$runId',
+  path: '/operator/$runId',
+  getParentRoute: () => ProtectedRouteRoute,
+} as any)
+const ProtectedSalesNewInvoiceIndexRoute =
+  ProtectedSalesNewInvoiceIndexRouteImport.update({
     id: '/sales/new-invoice/',
     path: '/sales/new-invoice/',
-    getParentRoute: () => AdminRouteRoute,
+    getParentRoute: () => ProtectedRouteRoute,
   } as any)
-const AdminSalesCustomersIndexRoute =
-  AdminSalesCustomersIndexRouteImport.update({
+const ProtectedSalesCustomersIndexRoute =
+  ProtectedSalesCustomersIndexRouteImport.update({
     id: '/sales/customers/',
     path: '/sales/customers/',
-    getParentRoute: () => AdminRouteRoute,
+    getParentRoute: () => ProtectedRouteRoute,
   } as any)
-const AdminManufacturingRecipesIndexRoute =
-  AdminManufacturingRecipesIndexRouteImport.update({
+const ProtectedManufacturingRecipesIndexRoute =
+  ProtectedManufacturingRecipesIndexRouteImport.update({
     id: '/manufacturing/recipes/',
     path: '/manufacturing/recipes/',
-    getParentRoute: () => AdminRouteRoute,
+    getParentRoute: () => ProtectedRouteRoute,
   } as any)
-const AdminManufacturingProductionsIndexRoute =
-  AdminManufacturingProductionsIndexRouteImport.update({
+const ProtectedManufacturingProductionsIndexRoute =
+  ProtectedManufacturingProductionsIndexRouteImport.update({
     id: '/manufacturing/productions/',
     path: '/manufacturing/productions/',
-    getParentRoute: () => AdminRouteRoute,
+    getParentRoute: () => ProtectedRouteRoute,
   } as any)
-const AdminInventoryWarehousesIndexRoute =
-  AdminInventoryWarehousesIndexRouteImport.update({
+const ProtectedInventoryWarehousesIndexRoute =
+  ProtectedInventoryWarehousesIndexRouteImport.update({
     id: '/inventory/warehouses/',
     path: '/inventory/warehouses/',
-    getParentRoute: () => AdminRouteRoute,
+    getParentRoute: () => ProtectedRouteRoute,
   } as any)
-const AdminInventoryFactoryFloorIndexRoute =
-  AdminInventoryFactoryFloorIndexRouteImport.update({
+const ProtectedInventoryFactoryFloorIndexRoute =
+  ProtectedInventoryFactoryFloorIndexRouteImport.update({
     id: '/inventory/factory-floor/',
     path: '/inventory/factory-floor/',
-    getParentRoute: () => AdminRouteRoute,
+    getParentRoute: () => ProtectedRouteRoute,
   } as any)
-const AdminManufacturingRecipesRecipeIdRoute =
-  AdminManufacturingRecipesRecipeIdRouteImport.update({
+const ProtectedManufacturingRecipesRecipeIdRoute =
+  ProtectedManufacturingRecipesRecipeIdRouteImport.update({
     id: '/manufacturing/recipes/$recipeId',
     path: '/manufacturing/recipes/$recipeId',
-    getParentRoute: () => AdminRouteRoute,
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
+const ProtectedManufacturingProductionsRunIdRoute =
+  ProtectedManufacturingProductionsRunIdRouteImport.update({
+    id: '/manufacturing/productions/$runId',
+    path: '/manufacturing/productions/$runId',
+    getParentRoute: () => ProtectedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteRouteWithChildren
   '/investor/': typeof InvestorIndexRoute
-  '/operator/': typeof OperatorIndexRoute
-  '/admin/suppliers/$supplierId': typeof AdminSuppliersSupplierIdRoute
+  '/operator/$runId': typeof ProtectedOperatorRunIdRoute
+  '/suppliers/$supplierId': typeof ProtectedSuppliersSupplierIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/2-fa/': typeof AuthLayout2FaIndexRoute
   '/forgot-password/': typeof AuthLayoutForgotPasswordIndexRoute
   '/login/': typeof AuthLayoutLoginIndexRoute
   '/reset-password/': typeof AuthLayoutResetPasswordIndexRoute
   '/sign-up/': typeof AuthLayoutSignUpIndexRoute
-  '/admin/dashboard/': typeof AdminDashboardIndexRoute
-  '/admin/finance/': typeof AdminFinanceIndexRoute
-  '/admin/hr/': typeof AdminHrIndexRoute
-  '/admin/settings/': typeof AdminSettingsIndexRoute
-  '/admin/suppliers/': typeof AdminSuppliersIndexRoute
-  '/admin/user-management/': typeof AdminUserManagementIndexRoute
-  '/admin/manufacturing/recipes/$recipeId': typeof AdminManufacturingRecipesRecipeIdRoute
-  '/admin/inventory/factory-floor/': typeof AdminInventoryFactoryFloorIndexRoute
-  '/admin/inventory/warehouses/': typeof AdminInventoryWarehousesIndexRoute
-  '/admin/manufacturing/productions/': typeof AdminManufacturingProductionsIndexRoute
-  '/admin/manufacturing/recipes/': typeof AdminManufacturingRecipesIndexRoute
-  '/admin/sales/customers/': typeof AdminSalesCustomersIndexRoute
-  '/admin/sales/new-invoice/': typeof AdminSalesNewInvoiceIndexRoute
+  '/dashboard/': typeof ProtectedDashboardIndexRoute
+  '/hr/': typeof ProtectedHrIndexRoute
+  '/operator/': typeof ProtectedOperatorIndexRoute
+  '/settings/': typeof ProtectedSettingsIndexRoute
+  '/suppliers/': typeof ProtectedSuppliersIndexRoute
+  '/user-management/': typeof ProtectedUserManagementIndexRoute
+  '/utilities/': typeof ProtectedUtilitiesIndexRoute
+  '/manufacturing/productions/$runId': typeof ProtectedManufacturingProductionsRunIdRoute
+  '/manufacturing/recipes/$recipeId': typeof ProtectedManufacturingRecipesRecipeIdRoute
+  '/inventory/factory-floor/': typeof ProtectedInventoryFactoryFloorIndexRoute
+  '/inventory/warehouses/': typeof ProtectedInventoryWarehousesIndexRoute
+  '/manufacturing/productions/': typeof ProtectedManufacturingProductionsIndexRoute
+  '/manufacturing/recipes/': typeof ProtectedManufacturingRecipesIndexRoute
+  '/sales/customers/': typeof ProtectedSalesCustomersIndexRoute
+  '/sales/new-invoice/': typeof ProtectedSalesNewInvoiceIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteRouteWithChildren
   '/investor': typeof InvestorIndexRoute
-  '/operator': typeof OperatorIndexRoute
-  '/admin/suppliers/$supplierId': typeof AdminSuppliersSupplierIdRoute
+  '/operator/$runId': typeof ProtectedOperatorRunIdRoute
+  '/suppliers/$supplierId': typeof ProtectedSuppliersSupplierIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/2-fa': typeof AuthLayout2FaIndexRoute
   '/forgot-password': typeof AuthLayoutForgotPasswordIndexRoute
   '/login': typeof AuthLayoutLoginIndexRoute
   '/reset-password': typeof AuthLayoutResetPasswordIndexRoute
   '/sign-up': typeof AuthLayoutSignUpIndexRoute
-  '/admin/dashboard': typeof AdminDashboardIndexRoute
-  '/admin/finance': typeof AdminFinanceIndexRoute
-  '/admin/hr': typeof AdminHrIndexRoute
-  '/admin/settings': typeof AdminSettingsIndexRoute
-  '/admin/suppliers': typeof AdminSuppliersIndexRoute
-  '/admin/user-management': typeof AdminUserManagementIndexRoute
-  '/admin/manufacturing/recipes/$recipeId': typeof AdminManufacturingRecipesRecipeIdRoute
-  '/admin/inventory/factory-floor': typeof AdminInventoryFactoryFloorIndexRoute
-  '/admin/inventory/warehouses': typeof AdminInventoryWarehousesIndexRoute
-  '/admin/manufacturing/productions': typeof AdminManufacturingProductionsIndexRoute
-  '/admin/manufacturing/recipes': typeof AdminManufacturingRecipesIndexRoute
-  '/admin/sales/customers': typeof AdminSalesCustomersIndexRoute
-  '/admin/sales/new-invoice': typeof AdminSalesNewInvoiceIndexRoute
+  '/dashboard': typeof ProtectedDashboardIndexRoute
+  '/hr': typeof ProtectedHrIndexRoute
+  '/operator': typeof ProtectedOperatorIndexRoute
+  '/settings': typeof ProtectedSettingsIndexRoute
+  '/suppliers': typeof ProtectedSuppliersIndexRoute
+  '/user-management': typeof ProtectedUserManagementIndexRoute
+  '/utilities': typeof ProtectedUtilitiesIndexRoute
+  '/manufacturing/productions/$runId': typeof ProtectedManufacturingProductionsRunIdRoute
+  '/manufacturing/recipes/$recipeId': typeof ProtectedManufacturingRecipesRecipeIdRoute
+  '/inventory/factory-floor': typeof ProtectedInventoryFactoryFloorIndexRoute
+  '/inventory/warehouses': typeof ProtectedInventoryWarehousesIndexRoute
+  '/manufacturing/productions': typeof ProtectedManufacturingProductionsIndexRoute
+  '/manufacturing/recipes': typeof ProtectedManufacturingRecipesIndexRoute
+  '/sales/customers': typeof ProtectedSalesCustomersIndexRoute
+  '/sales/new-invoice': typeof ProtectedSalesNewInvoiceIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authLayout': typeof AuthLayoutRouteRouteWithChildren
-  '/admin': typeof AdminRouteRouteWithChildren
+  '/_protected': typeof ProtectedRouteRouteWithChildren
   '/investor/': typeof InvestorIndexRoute
-  '/operator/': typeof OperatorIndexRoute
-  '/admin/suppliers/$supplierId': typeof AdminSuppliersSupplierIdRoute
+  '/_protected/operator/$runId': typeof ProtectedOperatorRunIdRoute
+  '/_protected/suppliers/$supplierId': typeof ProtectedSuppliersSupplierIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_authLayout/2-fa/': typeof AuthLayout2FaIndexRoute
   '/_authLayout/forgot-password/': typeof AuthLayoutForgotPasswordIndexRoute
   '/_authLayout/login/': typeof AuthLayoutLoginIndexRoute
   '/_authLayout/reset-password/': typeof AuthLayoutResetPasswordIndexRoute
   '/_authLayout/sign-up/': typeof AuthLayoutSignUpIndexRoute
-  '/admin/dashboard/': typeof AdminDashboardIndexRoute
-  '/admin/finance/': typeof AdminFinanceIndexRoute
-  '/admin/hr/': typeof AdminHrIndexRoute
-  '/admin/settings/': typeof AdminSettingsIndexRoute
-  '/admin/suppliers/': typeof AdminSuppliersIndexRoute
-  '/admin/user-management/': typeof AdminUserManagementIndexRoute
-  '/admin/manufacturing/recipes/$recipeId': typeof AdminManufacturingRecipesRecipeIdRoute
-  '/admin/inventory/factory-floor/': typeof AdminInventoryFactoryFloorIndexRoute
-  '/admin/inventory/warehouses/': typeof AdminInventoryWarehousesIndexRoute
-  '/admin/manufacturing/productions/': typeof AdminManufacturingProductionsIndexRoute
-  '/admin/manufacturing/recipes/': typeof AdminManufacturingRecipesIndexRoute
-  '/admin/sales/customers/': typeof AdminSalesCustomersIndexRoute
-  '/admin/sales/new-invoice/': typeof AdminSalesNewInvoiceIndexRoute
+  '/_protected/dashboard/': typeof ProtectedDashboardIndexRoute
+  '/_protected/hr/': typeof ProtectedHrIndexRoute
+  '/_protected/operator/': typeof ProtectedOperatorIndexRoute
+  '/_protected/settings/': typeof ProtectedSettingsIndexRoute
+  '/_protected/suppliers/': typeof ProtectedSuppliersIndexRoute
+  '/_protected/user-management/': typeof ProtectedUserManagementIndexRoute
+  '/_protected/utilities/': typeof ProtectedUtilitiesIndexRoute
+  '/_protected/manufacturing/productions/$runId': typeof ProtectedManufacturingProductionsRunIdRoute
+  '/_protected/manufacturing/recipes/$recipeId': typeof ProtectedManufacturingRecipesRecipeIdRoute
+  '/_protected/inventory/factory-floor/': typeof ProtectedInventoryFactoryFloorIndexRoute
+  '/_protected/inventory/warehouses/': typeof ProtectedInventoryWarehousesIndexRoute
+  '/_protected/manufacturing/productions/': typeof ProtectedManufacturingProductionsIndexRoute
+  '/_protected/manufacturing/recipes/': typeof ProtectedManufacturingRecipesIndexRoute
+  '/_protected/sales/customers/': typeof ProtectedSalesCustomersIndexRoute
+  '/_protected/sales/new-invoice/': typeof ProtectedSalesNewInvoiceIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/admin'
     | '/investor/'
-    | '/operator/'
-    | '/admin/suppliers/$supplierId'
+    | '/operator/$runId'
+    | '/suppliers/$supplierId'
     | '/api/auth/$'
     | '/2-fa/'
     | '/forgot-password/'
     | '/login/'
     | '/reset-password/'
     | '/sign-up/'
-    | '/admin/dashboard/'
-    | '/admin/finance/'
-    | '/admin/hr/'
-    | '/admin/settings/'
-    | '/admin/suppliers/'
-    | '/admin/user-management/'
-    | '/admin/manufacturing/recipes/$recipeId'
-    | '/admin/inventory/factory-floor/'
-    | '/admin/inventory/warehouses/'
-    | '/admin/manufacturing/productions/'
-    | '/admin/manufacturing/recipes/'
-    | '/admin/sales/customers/'
-    | '/admin/sales/new-invoice/'
+    | '/dashboard/'
+    | '/hr/'
+    | '/operator/'
+    | '/settings/'
+    | '/suppliers/'
+    | '/user-management/'
+    | '/utilities/'
+    | '/manufacturing/productions/$runId'
+    | '/manufacturing/recipes/$recipeId'
+    | '/inventory/factory-floor/'
+    | '/inventory/warehouses/'
+    | '/manufacturing/productions/'
+    | '/manufacturing/recipes/'
+    | '/sales/customers/'
+    | '/sales/new-invoice/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin'
     | '/investor'
-    | '/operator'
-    | '/admin/suppliers/$supplierId'
+    | '/operator/$runId'
+    | '/suppliers/$supplierId'
     | '/api/auth/$'
     | '/2-fa'
     | '/forgot-password'
     | '/login'
     | '/reset-password'
     | '/sign-up'
-    | '/admin/dashboard'
-    | '/admin/finance'
-    | '/admin/hr'
-    | '/admin/settings'
-    | '/admin/suppliers'
-    | '/admin/user-management'
-    | '/admin/manufacturing/recipes/$recipeId'
-    | '/admin/inventory/factory-floor'
-    | '/admin/inventory/warehouses'
-    | '/admin/manufacturing/productions'
-    | '/admin/manufacturing/recipes'
-    | '/admin/sales/customers'
-    | '/admin/sales/new-invoice'
+    | '/dashboard'
+    | '/hr'
+    | '/operator'
+    | '/settings'
+    | '/suppliers'
+    | '/user-management'
+    | '/utilities'
+    | '/manufacturing/productions/$runId'
+    | '/manufacturing/recipes/$recipeId'
+    | '/inventory/factory-floor'
+    | '/inventory/warehouses'
+    | '/manufacturing/productions'
+    | '/manufacturing/recipes'
+    | '/sales/customers'
+    | '/sales/new-invoice'
   id:
     | '__root__'
     | '/'
     | '/_authLayout'
-    | '/admin'
+    | '/_protected'
     | '/investor/'
-    | '/operator/'
-    | '/admin/suppliers/$supplierId'
+    | '/_protected/operator/$runId'
+    | '/_protected/suppliers/$supplierId'
     | '/api/auth/$'
     | '/_authLayout/2-fa/'
     | '/_authLayout/forgot-password/'
     | '/_authLayout/login/'
     | '/_authLayout/reset-password/'
     | '/_authLayout/sign-up/'
-    | '/admin/dashboard/'
-    | '/admin/finance/'
-    | '/admin/hr/'
-    | '/admin/settings/'
-    | '/admin/suppliers/'
-    | '/admin/user-management/'
-    | '/admin/manufacturing/recipes/$recipeId'
-    | '/admin/inventory/factory-floor/'
-    | '/admin/inventory/warehouses/'
-    | '/admin/manufacturing/productions/'
-    | '/admin/manufacturing/recipes/'
-    | '/admin/sales/customers/'
-    | '/admin/sales/new-invoice/'
+    | '/_protected/dashboard/'
+    | '/_protected/hr/'
+    | '/_protected/operator/'
+    | '/_protected/settings/'
+    | '/_protected/suppliers/'
+    | '/_protected/user-management/'
+    | '/_protected/utilities/'
+    | '/_protected/manufacturing/productions/$runId'
+    | '/_protected/manufacturing/recipes/$recipeId'
+    | '/_protected/inventory/factory-floor/'
+    | '/_protected/inventory/warehouses/'
+    | '/_protected/manufacturing/productions/'
+    | '/_protected/manufacturing/recipes/'
+    | '/_protected/sales/customers/'
+    | '/_protected/sales/new-invoice/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthLayoutRouteRoute: typeof AuthLayoutRouteRouteWithChildren
-  AdminRouteRoute: typeof AdminRouteRouteWithChildren
+  ProtectedRouteRoute: typeof ProtectedRouteRouteWithChildren
   InvestorIndexRoute: typeof InvestorIndexRoute
-  OperatorIndexRoute: typeof OperatorIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteRouteImport
+    '/_protected': {
+      id: '/_protected'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ProtectedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authLayout': {
@@ -365,13 +384,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/operator/': {
-      id: '/operator/'
-      path: '/operator'
-      fullPath: '/operator/'
-      preLoaderRoute: typeof OperatorIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/investor/': {
       id: '/investor/'
       path: '/investor'
@@ -379,47 +391,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvestorIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/user-management/': {
-      id: '/admin/user-management/'
+    '/_protected/utilities/': {
+      id: '/_protected/utilities/'
+      path: '/utilities'
+      fullPath: '/utilities/'
+      preLoaderRoute: typeof ProtectedUtilitiesIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/user-management/': {
+      id: '/_protected/user-management/'
       path: '/user-management'
-      fullPath: '/admin/user-management/'
-      preLoaderRoute: typeof AdminUserManagementIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
+      fullPath: '/user-management/'
+      preLoaderRoute: typeof ProtectedUserManagementIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
     }
-    '/admin/suppliers/': {
-      id: '/admin/suppliers/'
+    '/_protected/suppliers/': {
+      id: '/_protected/suppliers/'
       path: '/suppliers'
-      fullPath: '/admin/suppliers/'
-      preLoaderRoute: typeof AdminSuppliersIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
+      fullPath: '/suppliers/'
+      preLoaderRoute: typeof ProtectedSuppliersIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
     }
-    '/admin/settings/': {
-      id: '/admin/settings/'
+    '/_protected/settings/': {
+      id: '/_protected/settings/'
       path: '/settings'
-      fullPath: '/admin/settings/'
-      preLoaderRoute: typeof AdminSettingsIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
+      fullPath: '/settings/'
+      preLoaderRoute: typeof ProtectedSettingsIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
     }
-    '/admin/hr/': {
-      id: '/admin/hr/'
+    '/_protected/operator/': {
+      id: '/_protected/operator/'
+      path: '/operator'
+      fullPath: '/operator/'
+      preLoaderRoute: typeof ProtectedOperatorIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/hr/': {
+      id: '/_protected/hr/'
       path: '/hr'
-      fullPath: '/admin/hr/'
-      preLoaderRoute: typeof AdminHrIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
+      fullPath: '/hr/'
+      preLoaderRoute: typeof ProtectedHrIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
     }
-    '/admin/finance/': {
-      id: '/admin/finance/'
-      path: '/finance'
-      fullPath: '/admin/finance/'
-      preLoaderRoute: typeof AdminFinanceIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/dashboard/': {
-      id: '/admin/dashboard/'
+    '/_protected/dashboard/': {
+      id: '/_protected/dashboard/'
       path: '/dashboard'
-      fullPath: '/admin/dashboard/'
-      preLoaderRoute: typeof AdminDashboardIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof ProtectedDashboardIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
     }
     '/_authLayout/sign-up/': {
       id: '/_authLayout/sign-up/'
@@ -463,61 +482,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/suppliers/$supplierId': {
-      id: '/admin/suppliers/$supplierId'
+    '/_protected/suppliers/$supplierId': {
+      id: '/_protected/suppliers/$supplierId'
       path: '/suppliers/$supplierId'
-      fullPath: '/admin/suppliers/$supplierId'
-      preLoaderRoute: typeof AdminSuppliersSupplierIdRouteImport
-      parentRoute: typeof AdminRouteRoute
+      fullPath: '/suppliers/$supplierId'
+      preLoaderRoute: typeof ProtectedSuppliersSupplierIdRouteImport
+      parentRoute: typeof ProtectedRouteRoute
     }
-    '/admin/sales/new-invoice/': {
-      id: '/admin/sales/new-invoice/'
+    '/_protected/operator/$runId': {
+      id: '/_protected/operator/$runId'
+      path: '/operator/$runId'
+      fullPath: '/operator/$runId'
+      preLoaderRoute: typeof ProtectedOperatorRunIdRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/sales/new-invoice/': {
+      id: '/_protected/sales/new-invoice/'
       path: '/sales/new-invoice'
-      fullPath: '/admin/sales/new-invoice/'
-      preLoaderRoute: typeof AdminSalesNewInvoiceIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
+      fullPath: '/sales/new-invoice/'
+      preLoaderRoute: typeof ProtectedSalesNewInvoiceIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
     }
-    '/admin/sales/customers/': {
-      id: '/admin/sales/customers/'
+    '/_protected/sales/customers/': {
+      id: '/_protected/sales/customers/'
       path: '/sales/customers'
-      fullPath: '/admin/sales/customers/'
-      preLoaderRoute: typeof AdminSalesCustomersIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
+      fullPath: '/sales/customers/'
+      preLoaderRoute: typeof ProtectedSalesCustomersIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
     }
-    '/admin/manufacturing/recipes/': {
-      id: '/admin/manufacturing/recipes/'
+    '/_protected/manufacturing/recipes/': {
+      id: '/_protected/manufacturing/recipes/'
       path: '/manufacturing/recipes'
-      fullPath: '/admin/manufacturing/recipes/'
-      preLoaderRoute: typeof AdminManufacturingRecipesIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
+      fullPath: '/manufacturing/recipes/'
+      preLoaderRoute: typeof ProtectedManufacturingRecipesIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
     }
-    '/admin/manufacturing/productions/': {
-      id: '/admin/manufacturing/productions/'
+    '/_protected/manufacturing/productions/': {
+      id: '/_protected/manufacturing/productions/'
       path: '/manufacturing/productions'
-      fullPath: '/admin/manufacturing/productions/'
-      preLoaderRoute: typeof AdminManufacturingProductionsIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
+      fullPath: '/manufacturing/productions/'
+      preLoaderRoute: typeof ProtectedManufacturingProductionsIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
     }
-    '/admin/inventory/warehouses/': {
-      id: '/admin/inventory/warehouses/'
+    '/_protected/inventory/warehouses/': {
+      id: '/_protected/inventory/warehouses/'
       path: '/inventory/warehouses'
-      fullPath: '/admin/inventory/warehouses/'
-      preLoaderRoute: typeof AdminInventoryWarehousesIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
+      fullPath: '/inventory/warehouses/'
+      preLoaderRoute: typeof ProtectedInventoryWarehousesIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
     }
-    '/admin/inventory/factory-floor/': {
-      id: '/admin/inventory/factory-floor/'
+    '/_protected/inventory/factory-floor/': {
+      id: '/_protected/inventory/factory-floor/'
       path: '/inventory/factory-floor'
-      fullPath: '/admin/inventory/factory-floor/'
-      preLoaderRoute: typeof AdminInventoryFactoryFloorIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
+      fullPath: '/inventory/factory-floor/'
+      preLoaderRoute: typeof ProtectedInventoryFactoryFloorIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
     }
-    '/admin/manufacturing/recipes/$recipeId': {
-      id: '/admin/manufacturing/recipes/$recipeId'
+    '/_protected/manufacturing/recipes/$recipeId': {
+      id: '/_protected/manufacturing/recipes/$recipeId'
       path: '/manufacturing/recipes/$recipeId'
-      fullPath: '/admin/manufacturing/recipes/$recipeId'
-      preLoaderRoute: typeof AdminManufacturingRecipesRecipeIdRouteImport
-      parentRoute: typeof AdminRouteRoute
+      fullPath: '/manufacturing/recipes/$recipeId'
+      preLoaderRoute: typeof ProtectedManufacturingRecipesRecipeIdRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/manufacturing/productions/$runId': {
+      id: '/_protected/manufacturing/productions/$runId'
+      path: '/manufacturing/productions/$runId'
+      fullPath: '/manufacturing/productions/$runId'
+      preLoaderRoute: typeof ProtectedManufacturingProductionsRunIdRouteImport
+      parentRoute: typeof ProtectedRouteRoute
     }
   }
 }
@@ -542,52 +575,61 @@ const AuthLayoutRouteRouteWithChildren = AuthLayoutRouteRoute._addFileChildren(
   AuthLayoutRouteRouteChildren,
 )
 
-interface AdminRouteRouteChildren {
-  AdminSuppliersSupplierIdRoute: typeof AdminSuppliersSupplierIdRoute
-  AdminDashboardIndexRoute: typeof AdminDashboardIndexRoute
-  AdminFinanceIndexRoute: typeof AdminFinanceIndexRoute
-  AdminHrIndexRoute: typeof AdminHrIndexRoute
-  AdminSettingsIndexRoute: typeof AdminSettingsIndexRoute
-  AdminSuppliersIndexRoute: typeof AdminSuppliersIndexRoute
-  AdminUserManagementIndexRoute: typeof AdminUserManagementIndexRoute
-  AdminManufacturingRecipesRecipeIdRoute: typeof AdminManufacturingRecipesRecipeIdRoute
-  AdminInventoryFactoryFloorIndexRoute: typeof AdminInventoryFactoryFloorIndexRoute
-  AdminInventoryWarehousesIndexRoute: typeof AdminInventoryWarehousesIndexRoute
-  AdminManufacturingProductionsIndexRoute: typeof AdminManufacturingProductionsIndexRoute
-  AdminManufacturingRecipesIndexRoute: typeof AdminManufacturingRecipesIndexRoute
-  AdminSalesCustomersIndexRoute: typeof AdminSalesCustomersIndexRoute
-  AdminSalesNewInvoiceIndexRoute: typeof AdminSalesNewInvoiceIndexRoute
+interface ProtectedRouteRouteChildren {
+  ProtectedOperatorRunIdRoute: typeof ProtectedOperatorRunIdRoute
+  ProtectedSuppliersSupplierIdRoute: typeof ProtectedSuppliersSupplierIdRoute
+  ProtectedDashboardIndexRoute: typeof ProtectedDashboardIndexRoute
+  ProtectedHrIndexRoute: typeof ProtectedHrIndexRoute
+  ProtectedOperatorIndexRoute: typeof ProtectedOperatorIndexRoute
+  ProtectedSettingsIndexRoute: typeof ProtectedSettingsIndexRoute
+  ProtectedSuppliersIndexRoute: typeof ProtectedSuppliersIndexRoute
+  ProtectedUserManagementIndexRoute: typeof ProtectedUserManagementIndexRoute
+  ProtectedUtilitiesIndexRoute: typeof ProtectedUtilitiesIndexRoute
+  ProtectedManufacturingProductionsRunIdRoute: typeof ProtectedManufacturingProductionsRunIdRoute
+  ProtectedManufacturingRecipesRecipeIdRoute: typeof ProtectedManufacturingRecipesRecipeIdRoute
+  ProtectedInventoryFactoryFloorIndexRoute: typeof ProtectedInventoryFactoryFloorIndexRoute
+  ProtectedInventoryWarehousesIndexRoute: typeof ProtectedInventoryWarehousesIndexRoute
+  ProtectedManufacturingProductionsIndexRoute: typeof ProtectedManufacturingProductionsIndexRoute
+  ProtectedManufacturingRecipesIndexRoute: typeof ProtectedManufacturingRecipesIndexRoute
+  ProtectedSalesCustomersIndexRoute: typeof ProtectedSalesCustomersIndexRoute
+  ProtectedSalesNewInvoiceIndexRoute: typeof ProtectedSalesNewInvoiceIndexRoute
 }
 
-const AdminRouteRouteChildren: AdminRouteRouteChildren = {
-  AdminSuppliersSupplierIdRoute: AdminSuppliersSupplierIdRoute,
-  AdminDashboardIndexRoute: AdminDashboardIndexRoute,
-  AdminFinanceIndexRoute: AdminFinanceIndexRoute,
-  AdminHrIndexRoute: AdminHrIndexRoute,
-  AdminSettingsIndexRoute: AdminSettingsIndexRoute,
-  AdminSuppliersIndexRoute: AdminSuppliersIndexRoute,
-  AdminUserManagementIndexRoute: AdminUserManagementIndexRoute,
-  AdminManufacturingRecipesRecipeIdRoute:
-    AdminManufacturingRecipesRecipeIdRoute,
-  AdminInventoryFactoryFloorIndexRoute: AdminInventoryFactoryFloorIndexRoute,
-  AdminInventoryWarehousesIndexRoute: AdminInventoryWarehousesIndexRoute,
-  AdminManufacturingProductionsIndexRoute:
-    AdminManufacturingProductionsIndexRoute,
-  AdminManufacturingRecipesIndexRoute: AdminManufacturingRecipesIndexRoute,
-  AdminSalesCustomersIndexRoute: AdminSalesCustomersIndexRoute,
-  AdminSalesNewInvoiceIndexRoute: AdminSalesNewInvoiceIndexRoute,
+const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
+  ProtectedOperatorRunIdRoute: ProtectedOperatorRunIdRoute,
+  ProtectedSuppliersSupplierIdRoute: ProtectedSuppliersSupplierIdRoute,
+  ProtectedDashboardIndexRoute: ProtectedDashboardIndexRoute,
+  ProtectedHrIndexRoute: ProtectedHrIndexRoute,
+  ProtectedOperatorIndexRoute: ProtectedOperatorIndexRoute,
+  ProtectedSettingsIndexRoute: ProtectedSettingsIndexRoute,
+  ProtectedSuppliersIndexRoute: ProtectedSuppliersIndexRoute,
+  ProtectedUserManagementIndexRoute: ProtectedUserManagementIndexRoute,
+  ProtectedUtilitiesIndexRoute: ProtectedUtilitiesIndexRoute,
+  ProtectedManufacturingProductionsRunIdRoute:
+    ProtectedManufacturingProductionsRunIdRoute,
+  ProtectedManufacturingRecipesRecipeIdRoute:
+    ProtectedManufacturingRecipesRecipeIdRoute,
+  ProtectedInventoryFactoryFloorIndexRoute:
+    ProtectedInventoryFactoryFloorIndexRoute,
+  ProtectedInventoryWarehousesIndexRoute:
+    ProtectedInventoryWarehousesIndexRoute,
+  ProtectedManufacturingProductionsIndexRoute:
+    ProtectedManufacturingProductionsIndexRoute,
+  ProtectedManufacturingRecipesIndexRoute:
+    ProtectedManufacturingRecipesIndexRoute,
+  ProtectedSalesCustomersIndexRoute: ProtectedSalesCustomersIndexRoute,
+  ProtectedSalesNewInvoiceIndexRoute: ProtectedSalesNewInvoiceIndexRoute,
 }
 
-const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
-  AdminRouteRouteChildren,
+const ProtectedRouteRouteWithChildren = ProtectedRouteRoute._addFileChildren(
+  ProtectedRouteRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthLayoutRouteRoute: AuthLayoutRouteRouteWithChildren,
-  AdminRouteRoute: AdminRouteRouteWithChildren,
+  ProtectedRouteRoute: ProtectedRouteRouteWithChildren,
   InvestorIndexRoute: InvestorIndexRoute,
-  OperatorIndexRoute: OperatorIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

@@ -99,7 +99,7 @@ export const changePasswordSchema = z
 export const supplierSchema = z.object({
 	supplierName: z.string().min(2, "Name is required"),
 	supplierShopName: z.string().min(2, "Name is required"),
-	email: z.email("Invalid email").optional(),
+	email: z.email("Invalid email").nullable(),
 	nationalId: z.string().min(1, "National ID is required"),
 	phone: z.string().min(1, "Phone is required"),
 	address: z.string().min(1, "Address is required"),

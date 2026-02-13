@@ -1,8 +1,9 @@
 
 import { formatDistanceToNow } from "date-fns";
-import { Eye, Play, CheckCircle2, ArrowUpDown, NotebookPenIcon } from "lucide-react";
+import { Eye, Play, NotebookPenIcon, ArrowUpDown } from "lucide-react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
+import { Progress } from "../ui/progress";
 import { toast } from "sonner";
 import { useStartProduction } from "@/hooks/production/use-start-production";
 import { useCompleteProduction } from "@/hooks/production/use-complete-production";
@@ -19,8 +20,8 @@ import {
 } from "../ui/alert-dialog";
 import { DataTable } from "../ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
-import { useState, useMemo } from "react";
-import { ProductionDetailsDialog } from "./production-details-dialog";
+import { useMemo } from "react";
+import { Link } from "@tanstack/react-router";
 
 type ProductionRunsTableProps = {
 	runs: any[];
@@ -29,8 +30,6 @@ type ProductionRunsTableProps = {
 export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 	const startProduction = useStartProduction();
 	const completeProduction = useCompleteProduction();
-	const [selectedRun, setSelectedRun] = useState<any>(null);
-	const [detailsOpen, setDetailsOpen] = useState(false);
 
 	const getStatusBadge = (status: string) => {
 		switch (status) {
@@ -42,6 +41,8 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 				return <Badge variant="default" className="bg-green-600">Completed</Badge>;
 			case "cancelled":
 				return <Badge variant="destructive">Cancelled</Badge>;
+			case "failed":
+				return <Badge variant="destructive" className="bg-destructive/10">Failed</Badge>;
 			default:
 				return <Badge variant="outline">{status}</Badge>;
 		}
@@ -55,7 +56,7 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 					<Button
 						variant="ghost"
 						onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-						className="-ml-4 font-bold uppercase tracking-widest"
+						className="-ml-3 h-auto py-1 uppercase text-[10px] font-bold tracking-tight"
 					>
 						Batch ID
 						<ArrowUpDown className="ml-2 h-3 w-3" />
@@ -69,7 +70,7 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 		{
 			id: "recipe",
 			accessorFn: (row) => row.recipe.name, // For filtering
-			header: () => <span className="text-xs font-bold uppercase tracking-widest">Recipe</span>,
+			header: () => <span className="text-[10px] font-bold uppercase tracking-wide">Recipe</span>,
 			cell: ({ row }) => (
 				<div>
 					<p className="font-bold text-sm tracking-tight">{row.original.recipe.name}</p>
@@ -81,46 +82,88 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 		},
 		{
 			accessorKey: "status",
-			header: () => <span className="text-xs font-bold uppercase tracking-widest text-center block w-full">Status</span>,
+			header: () => <span className="text-[10px] font-bold uppercase tracking-tight text-center block w-full">Status</span>,
 			cell: ({ row }) => getStatusBadge(row.getValue("status"))
 		},
 		{
-			id: "output",
+			id: "progress",
+			header: () => <span className="text-[10px] font-bold uppercase tracking-wide text-center block w-full">Progress</span>,
+			cell: ({ row }) => {
+				const run = row.original;
+				const progress = run.containersProduced > 0
+					? ((run.completedUnits || 0) / run.containersProduced) * 100
+					: 0;
+
+				if (run.status !== 'in_progress') return <span className="text-xs text-muted-foreground text-center block">-</span>;
+
+				return (
+					<div className="w-[80px] space-y-1 mx-auto">
+						<Progress value={progress} className="h-1.5" />
+						<p className="text-[10px] text-center font-medium text-muted-foreground">
+							{Math.round(progress)}%
+						</p>
+					</div>
+				);
+			}
+		},
+		{
+			id: "target",
 			accessorKey: "containersProduced",
 			header: ({ column }) => (
 				<Button
 					variant="ghost"
 					onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-					className="-ml-4 font-bold uppercase tracking-widest"
+					className="-ml-3 h-auto py-1 uppercase text-[10px] font-bold tracking-wide"
 				>
-					Output
+					Target
 					<ArrowUpDown className="ml-2 h-3 w-3" />
 				</Button>
 			),
 			cell: ({ row }) => (
 				<div className="text-sm">
-					<p className="font-bold">{row.original.containersProduced} <span className="text-[10px] font-medium text-muted-foreground uppercase">Pack(s)</span></p>
-					{row.original.looseUnitsProduced > 0 && (
+					<p className="font-bold">{row.original.containersProduced} <span className="text-[10px] font-medium text-muted-foreground uppercase">Units</span></p>
+					{row.original.recipe.containersPerCarton > 0 && (
 						<p className="text-[10px] text-muted-foreground font-bold uppercase leading-none">
-							{row.original.cartonsProduced} cartons + {row.original.looseUnitsProduced} loose
-						</p>
-					)}
-					{row.original.looseUnitsProduced === 0 && row.original.cartonsProduced > 0 && (
-						<p className="text-[10px] text-muted-foreground font-bold uppercase leading-none">
-							{row.original.cartonsProduced} Cartons
+							{Math.floor(row.original.containersProduced / row.original.recipe.containersPerCarton)} Cartons
 						</p>
 					)}
 				</div>
 			)
 		},
 		{
+			id: "produced",
+			header: () => <span className="text-[10px] font-bold uppercase tracking-wide text-center block w-full">Produced</span>,
+			cell: ({ row }) => {
+				const run = row.original;
+				const produced = run.completedUnits || 0;
+				const perCarton = run.recipe.containersPerCarton || 0;
+				const cartons = perCarton > 0 ? Math.floor(produced / perCarton) : 0;
+				const loose = perCarton > 0 ? produced % perCarton : produced;
+
+				if (run.status === 'scheduled') return <span className="text-xs text-muted-foreground text-center block">-</span>;
+
+				return (
+					<div className="text-sm text-center">
+						<p className="font-bold text-green-700">{produced.toLocaleString()} <span className="text-[10px] font-medium text-green-600/70 uppercase">Units</span></p>
+						{perCarton > 0 && produced > 0 && (
+							<p className="text-[10px] text-muted-foreground font-bold uppercase leading-none">
+								{cartons > 0 ? `${cartons} Cartons ` : ''}
+								{loose > 0 ? `+ ${loose} Loose` : ''}
+							</p>
+						)}
+					</div>
+				);
+			}
+		},
+		{
 			id: "totalCost",
 			accessorKey: "totalProductionCost",
 			header: ({ column }) => (
 				<Button
+
 					variant="ghost"
 					onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-					className="-ml-4 font-bold uppercase tracking-widest"
+					className="-ml-3 h-auto py-1 uppercase text-[10px] font-bold tracking-wide"
 				>
 					Total Cost
 					<ArrowUpDown className="ml-2 h-3 w-3" />
@@ -146,9 +189,10 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 			accessorKey: "costPerContainer",
 			header: ({ column }) => (
 				<Button
+
 					variant="ghost"
 					onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-					className="-ml-4 font-bold uppercase tracking-widest"
+					className="-ml-3 h-auto py-1 uppercase text-[10px] font-bold tracking-wide"
 				>
 					Cost/Unit
 					<ArrowUpDown className="ml-2 h-3 w-3" />
@@ -164,9 +208,10 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 			accessorKey: "createdAt",
 			header: ({ column }) => (
 				<Button
+
 					variant="ghost"
 					onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-					className="-ml-4 font-bold uppercase tracking-widest"
+					className="-ml-3 h-auto py-1 uppercase text-[10px] font-bold tracking-wide"
 				>
 					Created
 					<ArrowUpDown className="ml-2 h-3 w-3" />
@@ -182,6 +227,7 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 		},
 		{
 			id: "actions",
+			header: () => <span className="text-[10px] font-bold uppercase tracking-wide text-center block w-full">Actions</span>,
 			cell: ({ row }) => {
 				const run = row.original;
 				return (
@@ -284,12 +330,11 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 							variant="ghost"
 							size="icon"
 							className="size-8 text-muted-foreground hover:text-primary transition-colors"
-							onClick={() => {
-								setSelectedRun(run);
-								setDetailsOpen(true);
-							}}
+							asChild
 						>
-							<Eye className="size-4" />
+							<Link to={`/manufacturing/productions/$runId`} params={{ runId: run.id }}>
+								<Eye className="size-4" />
+							</Link>
 						</Button>
 					</div>
 				);
@@ -298,18 +343,11 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 	], [startProduction, completeProduction]);
 
 	return (
-		<>
-			<DataTable
-				columns={columns}
-				data={runs}
-				showSearch={false}
-				pageSize={6}
-			/>
-			<ProductionDetailsDialog
-				open={detailsOpen}
-				onOpenChange={setDetailsOpen}
-				run={selectedRun}
-			/>
-		</>
+		<DataTable
+			columns={columns}
+			data={runs}
+			showSearch={false}
+			pageSize={6}
+		/>
 	);
 };

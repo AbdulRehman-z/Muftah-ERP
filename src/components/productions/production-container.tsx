@@ -20,6 +20,7 @@ export const ProductionRunsContainer = () => {
 	const { data: runs } = useSuspenseQuery({
 		queryKey: ["production-runs"],
 		queryFn: getProductionRunsFn,
+		refetchInterval: 5000,
 	});
 
 	if (runs.length === 0) {
@@ -110,7 +111,7 @@ export const ProductionRunsContainer = () => {
 			</div>
 
 			{/* Stats Cards */}
-			<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+			<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 				<Card>
 					<CardHeader className="pb-2">
 						<CardTitle className="text-sm font-medium">
@@ -154,24 +155,7 @@ export const ProductionRunsContainer = () => {
 						</div>
 					</CardContent>
 				</Card>
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium">
-							Avg Cost/Container
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold">
-							PKR{" "}
-							{(() => {
-								const completedRuns = filteredRuns.filter(r => r.status === 'completed');
-								const totalCost = completedRuns.reduce((sum, r) => sum + parseFloat(r.totalProductionCost || "0"), 0);
-								const totalContainers = completedRuns.reduce((sum, r) => sum + r.containersProduced, 0);
-								return totalContainers > 0 ? (totalCost / totalContainers).toFixed(2) : "0.00";
-							})()}
-						</div>
-					</CardContent>
-				</Card>
+
 			</div>
 
 			{/* Production Runs Table */}

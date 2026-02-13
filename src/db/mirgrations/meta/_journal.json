@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1770382534793,
-      "tag": "0000_stormy_puff_adder",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1770456252280,
-      "tag": "0001_neat_wolverine",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1770461637959,
-      "tag": "0002_pretty_invaders",
+      "when": 1770980062721,
+      "tag": "0000_happy_spencer_smythe",
       "breakpoints": true
     }
   ]

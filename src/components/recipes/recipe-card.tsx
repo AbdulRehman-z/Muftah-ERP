@@ -54,7 +54,7 @@ export const RecipeCard = ({ recipe, onEdit }: RecipeCardProps) => {
 									{recipe.product.name}
 								</p>
 							</div>
-							<Badge variant="outline">{recipe.fillAmount && recipe.fillUnit ? `${recipe.fillAmount}${recipe.fillUnit}` : recipe.containerPackaging?.name || "Loose"}</Badge>
+							<Badge variant="outline">{recipe.fillAmount && recipe.fillUnit ? `${parseInt(recipe.fillAmount).toFixed(0)}${recipe.fillUnit}/Unit` : recipe.containerPackaging?.name || "Loose"}</Badge>
 						</div>
 					</CardHeader>
 
@@ -140,7 +140,7 @@ export const RecipeCard = ({ recipe, onEdit }: RecipeCardProps) => {
 							variant="outline"
 							size="sm"
 							className="flex-1"
-							onClick={() => navigate({ to: `/admin/manufacturing/recipes/${recipe.id}` })}
+							onClick={() => navigate({ to: `/manufacturing/recipes/${recipe.id}` })}
 						>
 							<Eye className="size-4 mr-2" />
 							View

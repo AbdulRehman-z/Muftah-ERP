@@ -1,12 +1,12 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { twoFactor } from "better-auth/plugins";
-import { admin as adminPlugin } from "better-auth/plugins/admin";
+import { admin as adminPlugin } from "better-auth/plugins";
 import { account, db, session, user, verification } from "../db";
 import { resetPasswordTemplate } from "../email-templates/reset-password-template";
 import { verificationEmailTemplate } from "../email-templates/verify-email-template";
 import { sendEmail } from "./email-client";
-import { ac, admin, operator, superAdmin } from "./permissions";
+import { ac, admin, financeManager, operator, superAdmin } from "./permissions";
 
 export const auth = betterAuth({
 	database: drizzleAdapter(db, {
@@ -56,12 +56,13 @@ export const auth = betterAuth({
 		twoFactor(),
 		adminPlugin({
 			defaultRole: "super-admin",
-			adminRoles: ["super-admin", "admin", "operator"],
+			adminRoles: ["super-admin", "admin",],
 			ac,
 			roles: {
 				operator: operator,
 				"super-admin": superAdmin,
 				admin: admin,
+				"finance-manager": financeManager,
 			},
 		}),
 	],

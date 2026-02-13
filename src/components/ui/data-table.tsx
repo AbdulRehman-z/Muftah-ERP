@@ -44,6 +44,7 @@ interface DataTableProps<TData, TValue> {
     showViewOptions?: boolean
     showPagination?: boolean
     pageSize?: number
+    actions?: React.ReactNode
 }
 
 export function DataTable<TData, TValue>({
@@ -57,6 +58,7 @@ export function DataTable<TData, TValue>({
     showViewOptions = true,
     showPagination = true,
     pageSize = 10,
+    actions,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -91,49 +93,52 @@ export function DataTable<TData, TValue>({
         <div className="w-full">
             {(showSearch || showViewOptions) && (
                 <div className="flex items-center py-4 px-4 gap-2">
-                    {showSearch && searchKey && (
+                    {showSearch && (searchKey || onSearchChange) && (
                         <Input
                             placeholder={searchPlaceholder}
-                            value={searchValue ?? (table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
+                            value={searchValue ?? (searchKey ? table.getColumn(searchKey)?.getFilterValue() as string : "") ?? ""}
                             onChange={(event) => {
                                 if (onSearchChange) {
                                     onSearchChange(event.target.value)
-                                } else {
+                                } else if (searchKey) {
                                     table.getColumn(searchKey)?.setFilterValue(event.target.value)
                                 }
                             }}
                             className="max-w-xs h-9 bg-background border-muted-foreground/20 rounded-lg focus-visible:ring-primary/20 text-xs"
                         />
                     )}
-                    {showViewOptions && (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="ml-auto h-9 border-muted-foreground/20 rounded-lg text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:bg-muted/50 transition-all gap-2">
-                                    <SlidersHorizontal className="h-3.5 w-3.5" />
-                                    View
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-[180px] rounded-xl shadow-xl border-muted-foreground/10">
-                                {table
-                                    .getAllColumns()
-                                    .filter((column) => column.getCanHide())
-                                    .map((column) => {
-                                        return (
-                                            <DropdownMenuCheckboxItem
-                                                key={column.id}
-                                                className="capitalize rounded-lg m-1 font-medium text-xs py-2"
-                                                checked={column.getIsVisible()}
-                                                onCheckedChange={(value) =>
-                                                    column.toggleVisibility(!!value)
-                                                }
-                                            >
-                                                {column.id}
-                                            </DropdownMenuCheckboxItem>
-                                        )
-                                    })}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
+                    <div className="flex items-center gap-2 ml-auto">
+                        {actions}
+                        {showViewOptions && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="h-9 border-muted-foreground/20 rounded-lg text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:bg-muted/50 transition-all gap-2">
+                                        <SlidersHorizontal className="h-3.5 w-3.5" />
+                                        View
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-[180px] rounded-xl shadow-xl border-muted-foreground/10">
+                                    {table
+                                        .getAllColumns()
+                                        .filter((column) => column.getCanHide())
+                                        .map((column) => {
+                                            return (
+                                                <DropdownMenuCheckboxItem
+                                                    key={column.id}
+                                                    className="capitalize rounded-lg m-1 font-medium text-xs py-2"
+                                                    checked={column.getIsVisible()}
+                                                    onCheckedChange={(value) =>
+                                                        column.toggleVisibility(!!value)
+                                                    }
+                                                >
+                                                    {column.id}
+                                                </DropdownMenuCheckboxItem>
+                                            )
+                                        })}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
+                    </div>
                 </div>
             )}
             <div className="">
@@ -143,7 +148,7 @@ export function DataTable<TData, TValue>({
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => {
                                     return (
-                                        <TableHead key={header.id} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 py-4 h-auto border-y bg-muted/5">
+                                        <TableHead key={header.id} className="text-[9px]  uppercase tracking-wider text-muted-foreground/60 py-3 h-auto border-y bg-muted/10 border-border/50">
                                             {header.isPlaceholder
                                                 ? null
                                                 : flexRender(
@@ -161,10 +166,10 @@ export function DataTable<TData, TValue>({
                             table.getRowModel().rows.map((row) => (
                                 <TableRow
                                     key={row.id}
-                                    className="hover:bg-muted/20 border-border/40 transition-colors"
+                                    className="hover:bg-muted/10 border-border/20 transition-colors"
                                 >
                                     {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id}>
+                                        <TableCell key={cell.id} className="py-2.5">
                                             {flexRender(
                                                 cell.column.columnDef.cell,
                                                 cell.getContext()

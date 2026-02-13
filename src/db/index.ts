@@ -24,6 +24,7 @@ export const {
 	packagingMaterials,
 	materialStock,
 	finishedGoodsStock,
+	recipes,
 	products,
 	productionRuns,
 	stockTransfers,

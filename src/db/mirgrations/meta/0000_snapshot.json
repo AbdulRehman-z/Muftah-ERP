@@ -1,5 +1,5 @@
 {
-  "id": "daeada5d-9085-43cd-8dba-e13489391e89",
+  "id": "b1c1d11d-3040-46c6-8782-14a06b04d502",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -479,6 +479,81 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.suppliers": {
+      "name": "suppliers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "supplier_name": {
+          "name": "supplier_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "supplier_shop_name": {
+          "name": "supplier_shop_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "national_id": {
+          "name": "national_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.expenses": {
       "name": "expenses",
       "schema": "",
@@ -754,6 +829,24 @@
           "notNull": false,
           "default": "'0'"
         },
+        "packaging_type": {
+          "name": "packaging_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "packaging_size": {
+          "name": "packaging_size",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_supplier_id": {
+          "name": "last_supplier_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -770,7 +863,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "chemicals_last_supplier_id_suppliers_id_fk": {
+          "name": "chemicals_last_supplier_id_suppliers_id_fk",
+          "tableFrom": "chemicals",
+          "tableTo": "suppliers",
+          "columnsFrom": [
+            "last_supplier_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -1173,6 +1280,31 @@
           "primaryKey": false,
           "notNull": false
         },
+        "weight_per_pack": {
+          "name": "weight_per_pack",
+          "type": "numeric(10, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price_per_kg": {
+          "name": "price_per_kg",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "associated_sticker_id": {
+          "name": "associated_sticker_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sticker_cost": {
+          "name": "sticker_cost",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
         "cost_per_unit": {
           "name": "cost_per_unit",
           "type": "numeric(10, 2)",
@@ -1186,6 +1318,12 @@
           "primaryKey": false,
           "notNull": false,
           "default": 0
+        },
+        "last_supplier_id": {
+          "name": "last_supplier_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -1203,7 +1341,34 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "packaging_materials_associated_sticker_id_packaging_materials_id_fk": {
+          "name": "packaging_materials_associated_sticker_id_packaging_materials_id_fk",
+          "tableFrom": "packaging_materials",
+          "tableTo": "packaging_materials",
+          "columnsFrom": [
+            "associated_sticker_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "packaging_materials_last_supplier_id_suppliers_id_fk": {
+          "name": "packaging_materials_last_supplier_id_suppliers_id_fk",
+          "tableFrom": "packaging_materials",
+          "tableTo": "suppliers",
+          "columnsFrom": [
+            "last_supplier_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -1345,6 +1510,13 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true
+        },
+        "completed_units": {
+          "name": "completed_units",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
         },
         "loose_units_produced": {
           "name": "loose_units_produced",
@@ -2786,81 +2958,6 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.suppliers": {
-      "name": "suppliers",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "supplier_name": {
-          "name": "supplier_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "supplier_shop_name": {
-          "name": "supplier_shop_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "email": {
-          "name": "email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "phone": {
-          "name": "phone",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "national_id": {
-          "name": "national_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "address": {
-          "name": "address",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},

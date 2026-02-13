@@ -15,6 +15,7 @@ type Props = {
 	description: string;
 	ctaText?: string;
 	onAddChange?: (open: boolean) => void;
+	className?: string
 };
 
 export function GenericEmpty({
@@ -23,9 +24,10 @@ export function GenericEmpty({
 	description,
 	ctaText,
 	onAddChange,
+	className,
 }: Props) {
 	return (
-		<Empty className="flex-1 h-full flex flex-col items-center justify-center">
+		<Empty className={`flex-1 h-full flex flex-col items-center justify-center ${className}`}>
 			<EmptyHeader className="space-y-2">
 				<EmptyMedia variant="default">
 					<Icon className="size-10" />

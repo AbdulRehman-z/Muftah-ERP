@@ -75,11 +75,13 @@ export const getSupplierDetailsFn = createServerFn()
 
             if (p.chemicalId) {
                 const stocks = allStocks.filter(s => s.chemicalId === p.chemicalId);
-                stock = stocks.reduce((sum, s) => sum + parseFloat(s.quantity), 0);
+                const rawStock = stocks.reduce((sum, s) => sum + parseFloat(s.quantity), 0);
+                stock = Math.max(0, rawStock);
                 minStock = parseFloat(p.chemical?.minimumStockLevel || "0");
             } else if (p.packagingMaterialId) {
                 const stocks = allStocks.filter(s => s.packagingMaterialId === p.packagingMaterialId);
-                stock = stocks.reduce((sum, s) => sum + parseFloat(s.quantity), 0);
+                const rawStock = stocks.reduce((sum, s) => sum + parseFloat(s.quantity), 0);
+                stock = Math.max(0, rawStock);
                 minStock = parseFloat(p.packagingMaterial?.minimumStockLevel?.toString() || "0");
             }
 

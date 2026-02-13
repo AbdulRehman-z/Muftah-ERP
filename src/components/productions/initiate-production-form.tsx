@@ -76,7 +76,7 @@ export const InitiateProductionForm = ({ onOpenChange, preselectedRecipe }: Prop
 
     return (
         <form
-            className="space-y-6 max-w-md"
+            className="space-y-6"
             onSubmit={(e) => {
                 e.preventDefault();
                 form.handleSubmit();
@@ -130,11 +130,12 @@ export const InitiateProductionForm = ({ onOpenChange, preselectedRecipe }: Prop
 
                         // 1. Chemicals Calculation
                         currentRecipe.ingredients.forEach(ing => {
+                            if (!ing.chemical) return;
                             const requiredQty = Number(ing.quantityPerBatch || 0) * batches;
                             const costPerUnit = Number(ing.chemical.costPerUnit || 0);
                             totalChemicalCost += requiredQty * costPerUnit;
 
-                            const stockItem = warehouse.materialStock.find(s =>
+                            const stockItem = (warehouse.materialStock || []).find(s =>
                                 (s.chemicalId === ing.chemicalId) || (s.chemical?.id === ing.chemicalId)
                             );
                             const available = Number(stockItem?.quantity || 0);
@@ -152,20 +153,21 @@ export const InitiateProductionForm = ({ onOpenChange, preselectedRecipe }: Prop
                         if (currentRecipe.containerPackaging) {
                             const required = totalContainers;
                             totalPackagingCost += required * Number(currentRecipe.containerPackaging.costPerUnit || 0);
-                            const stock = warehouse.materialStock.find(s => s.packagingMaterialId === currentRecipe.containerPackagingId);
+                            const stock = (warehouse.materialStock || []).find(s => s.packagingMaterialId === currentRecipe.containerPackagingId);
                             if (Number(stock?.quantity || 0) < required) insufficientStock.push(`${currentRecipe.containerPackaging.name} (Need ${required}, Have ${Number(stock?.quantity || 0).toFixed(0)})`);
                         }
 
                         if (currentRecipe.cartonPackaging && totalCartons > 0) {
                             totalPackagingCost += totalCartons * Number(currentRecipe.cartonPackaging.costPerUnit || 0);
-                            const stock = warehouse.materialStock.find(s => s.packagingMaterialId === currentRecipe.cartonPackagingId);
+                            const stock = (warehouse.materialStock || []).find(s => s.packagingMaterialId === currentRecipe.cartonPackagingId);
                             if (Number(stock?.quantity || 0) < totalCartons) insufficientStock.push(`${currentRecipe.cartonPackaging.name} (Need ${totalCartons}, Have ${Number(stock?.quantity || 0).toFixed(0)})`);
                         }
 
                         currentRecipe.packaging.forEach(pkg => {
+                            if (!pkg.packagingMaterial) return;
                             const required = (Number(pkg.quantityPerContainer) || 0) * totalContainers;
                             totalPackagingCost += required * Number(pkg.packagingMaterial.costPerUnit || 0);
-                            const stock = warehouse.materialStock.find(s => s.packagingMaterialId === pkg.packagingMaterialId);
+                            const stock = (warehouse.materialStock || []).find(s => s.packagingMaterialId === pkg.packagingMaterialId);
                             if (Number(stock?.quantity || 0) < required) insufficientStock.push(`${pkg.packagingMaterial.name} (Need ${required}, Have ${Number(stock?.quantity || 0).toFixed(0)})`);
                         });
 

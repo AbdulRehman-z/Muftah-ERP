@@ -21,6 +21,7 @@ type ResponsiveDialogProps = {
 	children: ReactNode;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	className?: string;
 };
 
 export const ResponsiveDialog = ({
@@ -29,6 +30,7 @@ export const ResponsiveDialog = ({
 	children,
 	open,
 	onOpenChange,
+	className,
 }: ResponsiveDialogProps) => {
 	const isMobile = useIsMobile();
 
@@ -48,7 +50,7 @@ export const ResponsiveDialog = ({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="min-w-md">
+			<DialogContent className={className}>
 				<DialogHeader>
 					<DialogTitle className="font-semibold">{title}</DialogTitle>
 					<DialogDescription className="font-medium">{description}</DialogDescription>

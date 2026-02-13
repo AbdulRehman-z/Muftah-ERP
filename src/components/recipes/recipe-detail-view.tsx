@@ -78,7 +78,7 @@ export const RecipeDetailView = ({ recipe }: Props) => {
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => navigate({ to: "/admin/manufacturing/recipes" })}
+                        onClick={() => navigate({ to: "/manufacturing/recipes" })}
                         className="rounded-full"
                     >
                         <ChevronLeft className="size-5" />
@@ -100,7 +100,7 @@ export const RecipeDetailView = ({ recipe }: Props) => {
                 <div className="flex items-center gap-3">
                     <Button
                         variant="outline"
-                        onClick={() => navigate({ to: "/admin/manufacturing/recipes", search: { edit: recipe.id } as any })}
+                        onClick={() => navigate({ to: "/manufacturing/recipes", search: { edit: recipe.id } as any })}
                     >
                         <Edit className="size-4 mr-2" />
                         Edit Recipe

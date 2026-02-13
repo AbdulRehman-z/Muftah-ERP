@@ -19,18 +19,10 @@ import {
 import { DataTable } from "@/components/ui/data-table";
 import { useState } from "react";
 import { EditSupplierDialog } from "./edit-supplier-dialog";
+import { getSuppliersFn } from "@/server-functions/suppliers/get-suppliers-fn";
 
-type Supplier = {
-    id: string;
-    supplierName: string;
-    supplierShopName: string | null;
-    email: string | null;
-    phone: string | null;
-    nationalId: string | null;
-    address: string | null;
-    notes: string | null;
-    createdAt: Date;
-};
+
+type Supplier = Awaited<ReturnType<typeof getSuppliersFn>>[0];
 
 type Props = {
     data: Supplier[];
@@ -95,7 +87,7 @@ export const SuppliersTable = ({ data }: Props) => {
                         <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => navigate({ to: `/admin/suppliers/${supplier.id}` })}
+                            onClick={() => navigate({ to: `/suppliers/${supplier.id}` })}
                         >
                             <Eye className="size-4" />
                         </Button>

@@ -1,6 +1,7 @@
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
 import { ResponsiveDialog } from "../custom/responsive-dialog";
 import { AddRawMaterialForm } from "./add-raw-material-form";
+import { ResponsiveSheet } from "../custom/responsive-sheet";
 
 type Props = {
     open: boolean;
@@ -20,14 +21,15 @@ export const AddRawMaterialDialog = ({
 }: Props) => {
 
     return (
-        <ResponsiveDialog
+        <ResponsiveSheet
             title="Add Chemical"
-            description="Add Chemicals to warehouse inventory"
+            description="Add Chemicals to factory floor"
             open={open}
             onOpenChange={onOpenChange}
+            className="sm:max-w-2xl"
         >
             <AddRawMaterialForm onSuccess={() => onOpenChange(false)} warehouses={warehouses} preselectedWarehouse={preselectedWarehouse} preselectedSupplierId={preselectedSupplierId} />
-        </ResponsiveDialog>
+        </ResponsiveSheet>
     );
 };
 

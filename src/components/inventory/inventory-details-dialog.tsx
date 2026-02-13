@@ -114,7 +114,7 @@ export const InventoryDetailsDialog = ({ open, onOpenChange, type, item }: Detai
                                     <div className="flex flex-col gap-1">
                                         <div className="flex items-center gap-1.5">
                                             <span className="text-3xl font-black text-foreground leading-none tracking-tighter">
-                                                {isFinished ? parseFloat(material.estimatedCostPerContainer).toFixed(0) : parseFloat(material.costPerUnit).toFixed(0)}
+                                                {isFinished ? parseFloat(material.estimatedCostPerContainer).toFixed(2) : parseFloat(material.costPerUnit).toFixed(2)}
                                             </span>
                                         </div>
                                         <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-md border border-primary/20 uppercase tracking-widest w-fit">PKR</span>
@@ -220,7 +220,7 @@ export const InventoryDetailsDialog = ({ open, onOpenChange, type, item }: Detai
                                             <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Supplier Name</p>
                                             <p className="font-bold text-base text-foreground flex items-center gap-2">
                                                 {material.lastSupplier.supplierName}
-                                                <Link to="/admin/suppliers/$supplierId" params={{ supplierId: material.lastSupplier.id }}>
+                                                <Link to="/suppliers/$supplierId" params={{ supplierId: material.lastSupplier.id }}>
                                                     <Badge variant="outline" className="ml-2 hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors text-[10px] uppercase tracking-widest h-5">
                                                         View Profile
                                                     </Badge>

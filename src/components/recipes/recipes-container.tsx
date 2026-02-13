@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { ProductsTable } from "./products-table";
 import { getRouteApi } from "@tanstack/react-router";
 
-const route = getRouteApi("/admin/manufacturing/recipes/");
+const route = getRouteApi("/_protected/manufacturing/recipes/");
 
 type Recipe = Awaited<ReturnType<typeof getRecipesFn>>[number];
 
@@ -49,29 +49,6 @@ export const RecipesContainer = () => {
 	if (isCreating || editingRecipe) {
 		return (
 			<div className="animate-in fade-in slide-in-from-bottom-4 duration-500 h-full flex flex-col">
-				{/* <div className="flex items-center justify-between mb-8">
-					<div className="space-y-1">
-						<h2 className="text-3xl font-black tracking-tight text-foreground">
-							{editingRecipe ? "Edit Formulation" : "New Recipe Specifications"}
-						</h2>
-						<p className="text-muted-foreground font-medium">
-							{editingRecipe
-								? `Updating ${editingRecipe.name} parameters.`
-								: "Configure ingredients, packaging, and scale targets."}
-						</p>
-					</div>
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => {
-							setIsCreating(false);
-							setEditingRecipe(null);
-						}}
-						className="rounded-xl font-black uppercase text-[10px] tracking-widest border-border/50 hover:bg-muted/50 transition-all"
-					>
-						Cancel & Return
-					</Button>
-				</div> */}
 				<div className="flex-1 min-h-0">
 					<CreateRecipeForm
 						onOpenChange={(open) => {

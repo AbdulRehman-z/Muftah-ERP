@@ -7,7 +7,7 @@ export const useAddWarehouse = () => {
   return useMutation({
     mutationFn: addWarehouseFn,
     onSuccess: () => {
-      toast.success("Warehouse added successfully");
+      // toast.success("Warehouse added successfully");
       // Invalidate all warehouse-related queries
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
       queryClient.invalidateQueries({ queryKey: ["warehouses"] });

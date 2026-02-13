@@ -1,5 +1,5 @@
 
-import { FlaskConicalIcon, PackageIcon, Pencil, Plus, Trash2, Eye, ArrowUpDown } from "lucide-react";
+import { FlaskConicalIcon, PackageIcon, Pencil, Plus, Trash2, Eye, ArrowUpDown, Wrench } from "lucide-react";
 import { format } from "date-fns";
 import { InventoryDetailsDialog } from "./inventory-details-dialog";
 import { Badge } from "../ui/badge";
@@ -76,6 +76,7 @@ type StockTableProps = {
 	preselectedWarehouse: string | undefined;
 	hideAddButton?: boolean;
 	hideActions?: boolean;
+	onAdjustStock?: (item: StockItem) => void;
 };
 
 export const StockTable = ({
@@ -85,6 +86,7 @@ export const StockTable = ({
 	preselectedWarehouse,
 	hideAddButton = false,
 	hideActions = false,
+	onAdjustStock,
 }: StockTableProps) => {
 	const [createDialogOpen, setCreateDialogOpen] = useState(false);
 	const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -287,13 +289,24 @@ export const StockTable = ({
 						>
 							<Eye className="size-3.5" />
 						</Button>
+						{onAdjustStock && (
+							<Button
+								variant="ghost"
+								size="icon"
+								className="size-7 text-amber-600 hover:bg-amber-50 hover:text-amber-700 rounded-md transition-colors"
+								onClick={() => onAdjustStock(row.original)}
+								title="Manual Stock Adjustment"
+							>
+								<Wrench className="size-3.5" />
+							</Button>
+						)}
 					</div>
 				)
 			});
 		}
 
 		return baseColumns;
-	}, [isChemical, type, hideActions]);
+	}, [isChemical, type, hideActions, onAdjustStock]);
 
 	const closeEditDialog = (open: boolean) => {
 		setEditDialogOpen(open);

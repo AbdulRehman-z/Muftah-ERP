@@ -25,7 +25,6 @@ import {
 } from "../ui/field";
 import {
 	PasswordInput,
-	PasswordInputStrengthChecker,
 } from "../ui/password-input";
 import { EmailVerification } from "./email-verification";
 
@@ -34,6 +33,7 @@ export const LoginForm = () => {
 	const [isPending, startTransition] = useTransition();
 	const [showVerificationComponent, setShowVerificationComponent] =
 		useState(false);
+	const [userRole, setUserRole] = useState<string | null>(null);
 
 	const form = useForm({
 		defaultValues: {
@@ -52,10 +52,22 @@ export const LoginForm = () => {
 					},
 					{
 						onSuccess: (context) => {
+							console.log("Login success context:", context.data);
+							const role = context.data.user.role;
+							console.log("User role:", role);
+							setUserRole(role);
 							if (context.data.twoFactorRedirect) {
 								navigate({ to: "/2-fa" });
 							} else {
-								navigate({ to: "/admin/dashboard" });
+								console.log("Navigating based on role:", role);
+								if (role === "operator") {
+									console.log("Redirecting to /operator");
+									navigate({ to: "/operator" });
+								} else if (role === "utilities") {
+									navigate({ to: "/utilities" });
+								} else {
+									navigate({ to: "/dashboard" });
+								}
 							}
 						},
 						onError: (ctx) => {
@@ -143,19 +155,21 @@ export const LoginForm = () => {
 													>
 														Password
 													</FieldLabel>
-													<Link
-														className={buttonVariants({
-															className:
-																"h-auto p-0 text-sm underline hover:text-primary",
-															variant: "link",
-														})}
-														to="/forgot-password"
-													>
-														Forgot password?
-													</Link>
+													{(!userRole || !['operator', 'finance-manager'].includes(userRole)) && (
+														<Link
+															className={buttonVariants({
+																className:
+																	"h-auto p-0 text-sm underline hover:text-primary",
+																variant: "link",
+															})}
+															to="/forgot-password"
+														>
+															Forgot password?
+														</Link>
+													)}
 												</div>
 												<PasswordInput
-													className="h-12!"
+													className="h-11!"
 													disabled={isPending}
 													id={field.name}
 													name={field.name}

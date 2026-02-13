@@ -6,7 +6,7 @@ import {
     inventoryAuditLog,
     recipes,
 } from "@/db/schemas/inventory-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireAuthMiddleware } from "@/lib/middlewares";
 import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -15,7 +15,7 @@ const completeProductionSchema = z.object({
 });
 
 export const completeProductionFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireAuthMiddleware])
     .inputValidator(completeProductionSchema)
     .handler(async ({ data, context }) => {
         return await db.transaction(async (tx) => {
@@ -30,6 +30,16 @@ export const completeProductionFn = createServerFn()
             }
 
             if (productionRun.status !== "in_progress") {
+                if (productionRun.status === "completed") {
+                    // Already completed (possibly auto-completed by logProgress)
+                    return {
+                        success: true,
+                        productionRun: {
+                            ...productionRun,
+                            status: "completed" as const,
+                        },
+                    };
+                }
                 throw new Error("Production run must be in progress to complete");
             }
 
@@ -43,55 +53,79 @@ export const completeProductionFn = createServerFn()
                 throw new Error("Recipe not found");
             }
 
-            // 3. Create or update finished goods stock in warehouse
-            // Check if there's already a finished goods entry for this recipe in this warehouse
-            const [existingStock] = await tx
-                .select()
-                .from(finishedGoodsStock)
-                .where(
-                    and(
-                        eq(finishedGoodsStock.warehouseId, productionRun.warehouseId),
-                        eq(finishedGoodsStock.recipeId, productionRun.recipeId)
-                    )
-                );
+            // 3. Calculate Final Output (Cartons vs Loose) based on ACTUAL production
+            const totalUnitsProduced = productionRun.completedUnits || 0;
+            const itemsPerCarton = recipe.containersPerCarton || 0;
 
-            if (existingStock) {
-                // Update existing stock
-                await tx
-                    .update(finishedGoodsStock)
-                    .set({
-                        quantityCartons: sql`${finishedGoodsStock.quantityCartons} + ${productionRun.cartonsProduced || 0}`,
-                        quantityContainers: sql`${finishedGoodsStock.quantityContainers} + ${productionRun.looseUnitsProduced || 0}`,
-                    })
-                    .where(eq(finishedGoodsStock.id, existingStock.id));
-            } else {
-                // Create new stock entry
-                await tx.insert(finishedGoodsStock).values({
-                    warehouseId: productionRun.warehouseId,
-                    recipeId: productionRun.recipeId,
-                    quantityCartons: productionRun.cartonsProduced || 0,
-                    quantityContainers: productionRun.looseUnitsProduced || 0,
-                });
+            let finalCartons = 0;
+            let finalLoose = totalUnitsProduced;
+
+            // Calculate carton split if applicable
+            if (itemsPerCarton > 0 && recipe.cartonPackagingId) {
+                finalCartons = Math.floor(totalUnitsProduced / itemsPerCarton);
+                finalLoose = totalUnitsProduced % itemsPerCarton;
             }
 
-            // 4. Create audit log for finished goods
+            // 4. Stock Reconciliation (Cartonization)
+            // Since logProductionProgressFn adds purely to 'quantityContainers' (loose units),
+            // we now need to 'convert' the appropriate amount of loose units into cartons in the stock.
+            // We do NOT add new stock here, as it was added incrementally. We just transform it.
+
+            if (finalCartons > 0) {
+                const unitsToDeductFromLoose = finalCartons * itemsPerCarton;
+
+                const [existingStock] = await tx
+                    .select()
+                    .from(finishedGoodsStock)
+                    .where(
+                        and(
+                            eq(finishedGoodsStock.warehouseId, productionRun.warehouseId),
+                            eq(finishedGoodsStock.recipeId, productionRun.recipeId)
+                        )
+                    );
+
+                if (existingStock) {
+                    await tx
+                        .update(finishedGoodsStock)
+                        .set({
+                            quantityCartons: sql`${finishedGoodsStock.quantityCartons} + ${finalCartons}`,
+                            quantityContainers: sql`${finishedGoodsStock.quantityContainers} - ${unitsToDeductFromLoose}`,
+                            updatedAt: new Date(),
+                        })
+                        .where(eq(finishedGoodsStock.id, existingStock.id));
+                } else {
+                    // This is an edge case: Logged progress but no stock record found? 
+                    // Should be impossible if log fn works, but safe fallback:
+                    await tx.insert(finishedGoodsStock).values({
+                        warehouseId: productionRun.warehouseId,
+                        recipeId: productionRun.recipeId,
+                        quantityCartons: finalCartons,
+                        quantityContainers: finalLoose, // We set the final state directly
+                    });
+                }
+            }
+
+            // 5. Create audit log for completion (status change only, materials already logged)
             await tx.insert(inventoryAuditLog).values({
                 warehouseId: productionRun.warehouseId,
                 materialType: "finished",
                 materialId: productionRun.recipeId,
-                type: "credit",
-                amount: productionRun.containersProduced.toString(),
-                reason: `Production run ${productionRun.batchId} completed`,
+                type: "credit", // Techinically just a transformation/finalization
+                amount: totalUnitsProduced.toString(),
+                reason: `Production run ${productionRun.batchId} completed. ${finalCartons} Cartons, ${finalLoose} Loose.`,
                 performedById: context.session.user.id,
                 referenceId: productionRun.id,
             });
 
-            // 5. Update production run status
+            // 6. Update production run status with ACTUALS
             await tx
                 .update(productionRuns)
                 .set({
                     status: "completed",
                     actualCompletionDate: new Date(),
+                    cartonsProduced: finalCartons,
+                    looseUnitsProduced: finalLoose,
+                    // Note: containersProduced remains as the TARGET
                 })
                 .where(eq(productionRuns.id, productionRun.id));
 
@@ -101,6 +135,8 @@ export const completeProductionFn = createServerFn()
                     ...productionRun,
                     status: "completed" as const,
                     actualCompletionDate: new Date(),
+                    cartonsProduced: finalCartons,
+                    looseUnitsProduced: finalLoose,
                 },
             };
         });

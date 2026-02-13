@@ -50,7 +50,7 @@ export const EmailVerification = ({ email }: Props) => {
 
 			await authClient.sendVerificationEmail({
 				email: email,
-				callbackURL: "http://localhost:3000/admin/dashboard",
+				callbackURL: "http://localhost:3000/dashboard",
 			});
 
 			toast.success("Verification email sent!", {

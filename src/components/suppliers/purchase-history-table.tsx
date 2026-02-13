@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "../ui/button";
-import { EyeIcon, PencilIcon, Trash2Icon, BanknoteIcon, MoreHorizontal, AlertTriangle } from "lucide-react";
+import { EyeIcon, PencilIcon, Trash2Icon, BanknoteIcon, MoreHorizontal, AlertTriangle, ShoppingCart } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -53,10 +53,11 @@ type Props = {
     setEditDialogOpen: (open: boolean) => void;
     setDeleteDialogOpen: (open: boolean) => void;
     onRecordPayment: (item: PurchaseRecord) => void;
+    onRestock?: (item: PurchaseRecord) => void;
     dateRange?: { from?: Date; to?: Date };
 };
 
-export const PurchaseHistoryTable = ({ data, setSelectedItem, setDetailsOpen, setEditDialogOpen, setDeleteDialogOpen, onRecordPayment, dateRange }: Props) => {
+export const PurchaseHistoryTable = ({ data, setSelectedItem, setDetailsOpen, setEditDialogOpen, setDeleteDialogOpen, onRecordPayment, onRestock, dateRange }: Props) => {
 
     // Filter data based on date range
     const filteredData = data.filter((record) => {
@@ -192,7 +193,18 @@ export const PurchaseHistoryTable = ({ data, setSelectedItem, setDetailsOpen, se
                 const remaining = total - paid;
 
                 return (
-                    <div className="flex justify-end">
+                    <div className="flex justify-end items-center gap-2">
+                        {onRestock && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 gap-1.5 text-xs font-medium border-dashed"
+                                onClick={() => onRestock(record)}
+                            >
+                                <ShoppingCart className="size-3.5" />
+                                Buy Again
+                            </Button>
+                        )}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="h-8 w-8 p-0">

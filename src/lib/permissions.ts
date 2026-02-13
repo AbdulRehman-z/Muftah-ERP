@@ -9,6 +9,7 @@ const statement = {
 		"impersonate",
 		"delete",
 		"set-password",
+		"update",
 	],
 	session: ["list", "revoke", "delete"],
 } as const;
@@ -24,6 +25,7 @@ export const superAdmin = ac.newRole({
 		"impersonate",
 		"delete",
 		"set-password",
+		"update",
 	],
 	session: ["list", "revoke", "delete"],
 });
@@ -34,6 +36,11 @@ export const admin = ac.newRole({
 });
 
 export const operator = ac.newRole({
+	user: [],
+	session: [],
+});
+
+export const financeManager = ac.newRole({
 	user: [],
 	session: [],
 });

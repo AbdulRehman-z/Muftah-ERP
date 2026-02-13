@@ -68,7 +68,7 @@ export const AddRawMaterialForm = ({ onSuccess, warehouses, preselectedWarehouse
 
     return (
         <form
-            className="space-y-4 max-w-md"
+            className="space-y-4 w-full"
             onSubmit={(e) => {
                 e.preventDefault();
                 e.stopPropagation();

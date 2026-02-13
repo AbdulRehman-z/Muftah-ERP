@@ -1,5 +1,6 @@
+import { useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { CheckCircle2, Play, AlertTriangle, Package2, ClipboardList, Info, Loader2Icon, CheckCircle2Icon } from "lucide-react";
+import { CheckCircle2, Play, AlertTriangle, Package2, ClipboardList, Info, Loader2Icon, CheckCircle2Icon, Settings } from "lucide-react";
 import { getProductionRunsFn } from "@/server-functions/inventory/production/get-production-run-fn";
 import { GenericEmpty } from "../custom/empty";
 import { Button } from "../ui/button";
@@ -20,11 +21,13 @@ import {
 } from "../ui/alert-dialog";
 
 export const OperatorInterface = () => {
+	const navigate = useNavigate();
 	const completeProduction = useCompleteProduction();
 
 	const { data: allRuns } = useSuspenseQuery({
 		queryKey: ["production-runs"],
 		queryFn: getProductionRunsFn,
+		refetchInterval: 5000,
 	});
 
 	// Filter for runs that are currently active (In Progress)
@@ -45,7 +48,7 @@ export const OperatorInterface = () => {
 	return (
 		<div className="grid gap-6">
 			{activeRuns.map((run) => (
-				<Card key={run.id} className="overflow-hidden border-border/50 shadow-md hover:shadow-lg transition-shadow">
+				<Card key={run.id} className="overflow-hidden border-border/50 hover:shadow-md transition-shadow">
 					<div className="h-1.5 bg-blue-600 w-full" />
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 						<div className="space-y-1">
@@ -101,7 +104,17 @@ export const OperatorInterface = () => {
 							</div>
 						</div>
 
-						<div className="flex justify-end">
+						<div className="flex justify-end gap-3">
+							<Button
+								variant="outline"
+								size="lg"
+								className="h-12 px-6 border-blue-200 hover:bg-blue-50 text-blue-700"
+								onClick={() => navigate({ to: `/operator/${run.id}` })}
+							>
+								<Settings className="mr-2 size-4" />
+								Manage Production Run
+							</Button>
+
 							<AlertDialog>
 								<AlertDialogTrigger asChild>
 									<Button

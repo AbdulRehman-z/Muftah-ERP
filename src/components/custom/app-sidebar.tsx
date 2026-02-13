@@ -14,11 +14,12 @@ import {
 	SidebarMenuSub,
 	SidebarMenuSubButton,
 	SidebarMenuSubItem,
-	useSidebar,
 } from "@/components/ui/sidebar";
 import { type NavigationItem, navigations } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { NavUser } from "./nav-user";
+import { authClient } from "@/lib/auth-client";
+import { ScrollArea } from "../ui/scroll-area";
 
 /**
  * Checks if the current path matches or is contained within a navigation item's path
@@ -109,7 +110,7 @@ const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
 							: "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
 					)}
 				>
-					<Link to={item.url} preload="render" className="flex items-center w-full group-data-[collapsible=icon]:justify-center">
+					<Link to={item.url} className="flex items-center w-full group-data-[collapsible=icon]:justify-center">
 						{isActive && (
 							<div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full shadow-[0_0_12px_rgba(var(--primary),0.8)] group-data-[collapsible=icon]:h-4 group-data-[collapsible=icon]:w-0.5" />
 						)}
@@ -204,7 +205,43 @@ export const AppSidebar = () => {
 	const pathname = router.location.pathname;
 	const [searchQuery, setSearchQuery] = useState("");
 
-	const filteredNavigations = filterNavItems(navigations, searchQuery);
+	const { data: session, isPending } = authClient.useSession();
+	const userRole = session?.user?.role;
+
+	if (isPending) {
+		return (
+			<Sidebar collapsible="icon" variant="floating">
+				<SidebarHeader>
+					<div className="h-12 w-full animate-pulse bg-sidebar-accent/10 rounded-lg" />
+				</SidebarHeader>
+				<SidebarContent>
+					<div className="space-y-2 p-2">
+						{[1, 2, 3, 4, 5].map((i) => (
+							<div key={i} className="h-10 w-full animate-pulse bg-sidebar-accent/5 rounded-lg" />
+						))}
+					</div>
+				</SidebarContent>
+			</Sidebar>
+		);
+	}
+
+	let visibleNavigations = navigations;
+
+	if (userRole === "finance-manager") {
+		visibleNavigations = navigations.filter((item) =>
+			["Sales", "Finance"].includes(item.title),
+		);
+	} else if (userRole === "operator") {
+		visibleNavigations = navigations.filter((item) =>
+			["Operator Interface"].includes(item.title),
+		);
+	} else if (userRole === "admin") {
+		visibleNavigations = navigations.filter(
+			(item) => !["User Management", "Settings"].includes(item.title),
+		);
+	}
+
+	const filteredNavigations = filterNavItems(visibleNavigations, searchQuery);
 	const hasSearchQuery = searchQuery.trim().length > 0;
 
 	return (
@@ -217,7 +254,7 @@ export const AppSidebar = () => {
 							asChild
 							className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
 						>
-							<Link to="/admin/dashboard" className="flex items-center w-full group-data-[collapsible=icon]:justify-center">
+							<Link to="/dashboard" className="flex items-center w-full group-data-[collapsible=icon]:justify-center">
 								<div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
 									<ZapIcon className="size-5" />
 								</div>
@@ -230,44 +267,48 @@ export const AppSidebar = () => {
 					</SidebarMenuItem>
 				</SidebarMenu>
 
-				<div className="px-2 py-2 group-data-[collapsible=icon]:hidden">
-					<div className="relative">
-						<Search className="absolute left-2 top-2.5 size-4 text-muted-foreground" />
-						<Input
-							type="search"
-							placeholder="Search navigation..."
-							className="h-9 w-full bg-background pl-8"
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-						/>
+				{userRole !== "operator" && (
+					<div className="px-2 py-2 group-data-[collapsible=icon]:hidden">
+						<div className="relative group/search">
+							<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/50 transition-colors group-focus-within/search:text-primary" />
+							<Input
+								type="search"
+								placeholder="Quick find..."
+								className="h-9 w-full bg-muted/40 border-muted-foreground/10 pl-9 transition-all focus:bg-background focus:ring-1 focus:ring-primary/20"
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+							/>
+						</div>
 					</div>
-				</div>
+				)}
 			</SidebarHeader>
 
-			<SidebarContent>
-				<SidebarGroup>
-					<SidebarMenu>
-						{filteredNavigations.length > 0 ? (
-							filteredNavigations.map((item) => (
-								<NavItem
-									key={item.title}
-									item={item}
-									pathname={pathname}
-									searchActive={hasSearchQuery}
-								/>
-							))
-						) : (
-							<div className="px-2 py-8 text-center">
-								<p className="text-sm text-muted-foreground">
-									No results found
-								</p>
-								<p className="mt-1 text-xs text-muted-foreground">
-									Try a different search term
-								</p>
-							</div>
-						)}
-					</SidebarMenu>
-				</SidebarGroup>
+			<SidebarContent className="overflow-hidden">
+				<ScrollArea className="h-full">
+					<SidebarGroup>
+						<SidebarMenu>
+							{filteredNavigations.length > 0 ? (
+								filteredNavigations.map((item) => (
+									<NavItem
+										key={item.title}
+										item={item}
+										pathname={pathname}
+										searchActive={hasSearchQuery}
+									/>
+								))
+							) : (
+								<div className="px-2 py-8 text-center">
+									<p className="text-sm text-muted-foreground">
+										No results found
+									</p>
+									<p className="mt-1 text-xs text-muted-foreground">
+										Try a different search term
+									</p>
+								</div>
+							)}
+						</SidebarMenu>
+					</SidebarGroup>
+				</ScrollArea>
 			</SidebarContent>
 
 			<SidebarFooter>

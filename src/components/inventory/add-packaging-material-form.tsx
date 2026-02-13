@@ -72,7 +72,7 @@ export const AddPackagingMaterialForm = ({ onSuccess, warehouses, preselectedWar
     const isPreselectedInvalid = preselectedWarehouse && !availableWarehouses.find(w => w.id === preselectedWarehouse);
 
     return (
-        <div className="space-y-4 max-w-xl mx-auto">
+        <div className="space-y-4 w-full">
             {/* Type Switcher */}
             <div className="grid grid-cols-3 gap-2 p-1 bg-muted rounded-lg border">
                 <Button
