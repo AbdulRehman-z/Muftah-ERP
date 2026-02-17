@@ -46,7 +46,7 @@ export const getProductionRunsFn = createServerFn()
 				operator: true,
 				materialsUsed: true,
 			},
-			limit: data?.runId ? 1 : 100,
+			limit: data?.runId ? 1 : 10,
 		});
 
 		// Fetch all materials to map names

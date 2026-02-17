@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { Phone, Mail, MapPin, Building2, Calendar, Package, User, Plus, Beaker, BoxIcon, WalletCards, CreditCard, Banknote, ShoppingCart, XIcon, CardSimIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { AddRawMaterialDialog } from "@/components/inventory/add-raw-material-dialog";
+import { AddRawMaterialDialog } from "@/components/inventory/add-raw-material-sheet";
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
 
 import { PurchaseHistoryTable, PurchaseRecord } from "@/components/suppliers/purchase-history-table";

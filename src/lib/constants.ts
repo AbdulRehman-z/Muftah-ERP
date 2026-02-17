@@ -12,7 +12,6 @@ import {
 	Settings,
 	ShoppingCart,
 	ToolCaseIcon,
-	UserCog,
 	UserCogIcon,
 	Users,
 	UsersIcon,
@@ -97,6 +96,23 @@ export const navigations: NavigationItem[] = [
 		title: "HR & Payroll",
 		url: "/hr",
 		icon: Users,
+		items: [
+			{
+				title: "Employees",
+				url: "/hr/employees",
+				icon: UsersIcon
+			},
+			{
+				title: "Attendance",
+				url: "/hr/attendance",
+				icon: ClipboardListIcon
+			},
+			{
+				title: "Payroll",
+				url: "/hr/payroll",
+				icon: Banknote
+			},
+		],
 	},
 	{
 		title: "Operator Interface",

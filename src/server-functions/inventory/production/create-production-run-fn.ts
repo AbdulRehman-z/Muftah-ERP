@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { createRecipeSchema } from "@/lib/validators/validators";
 import { requireAdminMiddleware } from "@/lib/middlewares";
 import { productionRuns, recipes, recipeIngredients, packagingMaterials, chemicals } from "@/db/schemas/inventory-schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, desc } from "drizzle-orm";
 import { z } from "zod";
 
 const createProductionRunSchema = z.object({
@@ -92,7 +92,22 @@ export const createProductionRunFn = createServerFn()
 			}
 
 			// 5. Generate batch ID
-			const batchId = `BATCH-${Date.now()}`;
+			const [lastRun] = await tx
+				.select({ batchId: productionRuns.batchId })
+				.from(productionRuns)
+				.orderBy(desc(productionRuns.createdAt))
+				.limit(1);
+
+			let batchId = "PR1000";
+
+			if (lastRun && lastRun.batchId) {
+				const match = lastRun.batchId.match(/^([A-Za-z]+)(\d+)$/);
+				if (match) {
+					const prefix = match[1];
+					const number = parseInt(match[2], 10);
+					batchId = `${prefix}${number + 1}`;
+				}
+			}
 
 			// 6. Create production run
 			const [productionRun] = await tx

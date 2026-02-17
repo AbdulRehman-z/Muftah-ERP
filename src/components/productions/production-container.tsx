@@ -10,6 +10,7 @@ import { ProductionRunsTable } from "./production-runs-table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { isToday, isThisMonth, subDays, isAfter, startOfDay, parseISO } from "date-fns";
 import { InitiateProductionSheet } from "./initiate-production-sheet";
+import { useProductionRunsSync } from "@/hooks/production/use-production-runs-sync";
 
 export const ProductionRunsContainer = () => {
 	const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
@@ -20,8 +21,10 @@ export const ProductionRunsContainer = () => {
 	const { data: runs } = useSuspenseQuery({
 		queryKey: ["production-runs"],
 		queryFn: getProductionRunsFn,
-		refetchInterval: 5000,
 	});
+
+	// Smart polling
+	useProductionRunsSync();
 
 	if (runs.length === 0) {
 		return (

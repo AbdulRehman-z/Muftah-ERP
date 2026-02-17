@@ -24,6 +24,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 import {
     Table,
     TableBody,
@@ -45,6 +46,7 @@ interface DataTableProps<TData, TValue> {
     showPagination?: boolean
     pageSize?: number
     actions?: React.ReactNode
+    className?: string
 }
 
 export function DataTable<TData, TValue>({
@@ -59,6 +61,7 @@ export function DataTable<TData, TValue>({
     showPagination = true,
     pageSize = 10,
     actions,
+    className,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -90,7 +93,7 @@ export function DataTable<TData, TValue>({
     // shadcn default is often 10.
 
     return (
-        <div className="w-full">
+        <div className={cn("w-full", className)}>
             {(showSearch || showViewOptions) && (
                 <div className="flex items-center py-4 px-4 gap-2">
                     {showSearch && (searchKey || onSearchChange) && (

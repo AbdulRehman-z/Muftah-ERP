@@ -6,7 +6,7 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { GenericEmpty } from "../custom/empty";
 import { useState, useMemo } from "react";
-import { AddRawMaterialDialog } from "./add-raw-material-dialog";
+import { AddRawMaterialDialog } from "./add-raw-material-sheet";
 import { AddPackagingMaterialDialog } from "./add-packaging-material-dialog";
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
 import { useDeleteMaterial } from "@/hooks/inventory/use-material-actions";

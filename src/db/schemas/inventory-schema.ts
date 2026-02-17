@@ -318,7 +318,9 @@ export const productionRuns = pgTable("production_runs", {
 
 	notes: text("notes"),
 	...timestamps,
-});
+}, (table) => ({
+	updatedAtIndex: index("production_runs_updated_at_idx").on(table.updatedAt),
+}));
 
 // --- PRODUCTION RUN MATERIALS USED (Audit) ---
 export const productionMaterialsUsed = pgTable("production_materials_used", {

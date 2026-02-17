@@ -34,8 +34,12 @@ import { Route as ProtectedManufacturingRecipesIndexRouteImport } from './routes
 import { Route as ProtectedManufacturingProductionsIndexRouteImport } from './routes/_protected/manufacturing/productions/index'
 import { Route as ProtectedInventoryWarehousesIndexRouteImport } from './routes/_protected/inventory/warehouses/index'
 import { Route as ProtectedInventoryFactoryFloorIndexRouteImport } from './routes/_protected/inventory/factory-floor/index'
+import { Route as ProtectedHrEmployeesIndexRouteImport } from './routes/_protected/hr/employees/index'
+import { Route as ProtectedHrAttendanceIndexRouteImport } from './routes/_protected/hr/attendance/index'
 import { Route as ProtectedManufacturingRecipesRecipeIdRouteImport } from './routes/_protected/manufacturing/recipes/$recipeId'
 import { Route as ProtectedManufacturingProductionsRunIdRouteImport } from './routes/_protected/manufacturing/productions/$runId'
+import { Route as ProtectedHrEmployeesEmployeeIdRouteImport } from './routes/_protected/hr/employees/$employeeId'
+import { Route as ProtectedHrAttendanceEmployeeIdRouteImport } from './routes/_protected/hr/attendance/$employeeId'
 
 const ProtectedRouteRoute = ProtectedRouteRouteImport.update({
   id: '/_protected',
@@ -170,6 +174,18 @@ const ProtectedInventoryFactoryFloorIndexRoute =
     path: '/inventory/factory-floor/',
     getParentRoute: () => ProtectedRouteRoute,
   } as any)
+const ProtectedHrEmployeesIndexRoute =
+  ProtectedHrEmployeesIndexRouteImport.update({
+    id: '/hr/employees/',
+    path: '/hr/employees/',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
+const ProtectedHrAttendanceIndexRoute =
+  ProtectedHrAttendanceIndexRouteImport.update({
+    id: '/hr/attendance/',
+    path: '/hr/attendance/',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
 const ProtectedManufacturingRecipesRecipeIdRoute =
   ProtectedManufacturingRecipesRecipeIdRouteImport.update({
     id: '/manufacturing/recipes/$recipeId',
@@ -180,6 +196,18 @@ const ProtectedManufacturingProductionsRunIdRoute =
   ProtectedManufacturingProductionsRunIdRouteImport.update({
     id: '/manufacturing/productions/$runId',
     path: '/manufacturing/productions/$runId',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
+const ProtectedHrEmployeesEmployeeIdRoute =
+  ProtectedHrEmployeesEmployeeIdRouteImport.update({
+    id: '/hr/employees/$employeeId',
+    path: '/hr/employees/$employeeId',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
+const ProtectedHrAttendanceEmployeeIdRoute =
+  ProtectedHrAttendanceEmployeeIdRouteImport.update({
+    id: '/hr/attendance/$employeeId',
+    path: '/hr/attendance/$employeeId',
     getParentRoute: () => ProtectedRouteRoute,
   } as any)
 
@@ -201,8 +229,12 @@ export interface FileRoutesByFullPath {
   '/suppliers/': typeof ProtectedSuppliersIndexRoute
   '/user-management/': typeof ProtectedUserManagementIndexRoute
   '/utilities/': typeof ProtectedUtilitiesIndexRoute
+  '/hr/attendance/$employeeId': typeof ProtectedHrAttendanceEmployeeIdRoute
+  '/hr/employees/$employeeId': typeof ProtectedHrEmployeesEmployeeIdRoute
   '/manufacturing/productions/$runId': typeof ProtectedManufacturingProductionsRunIdRoute
   '/manufacturing/recipes/$recipeId': typeof ProtectedManufacturingRecipesRecipeIdRoute
+  '/hr/attendance/': typeof ProtectedHrAttendanceIndexRoute
+  '/hr/employees/': typeof ProtectedHrEmployeesIndexRoute
   '/inventory/factory-floor/': typeof ProtectedInventoryFactoryFloorIndexRoute
   '/inventory/warehouses/': typeof ProtectedInventoryWarehousesIndexRoute
   '/manufacturing/productions/': typeof ProtectedManufacturingProductionsIndexRoute
@@ -228,8 +260,12 @@ export interface FileRoutesByTo {
   '/suppliers': typeof ProtectedSuppliersIndexRoute
   '/user-management': typeof ProtectedUserManagementIndexRoute
   '/utilities': typeof ProtectedUtilitiesIndexRoute
+  '/hr/attendance/$employeeId': typeof ProtectedHrAttendanceEmployeeIdRoute
+  '/hr/employees/$employeeId': typeof ProtectedHrEmployeesEmployeeIdRoute
   '/manufacturing/productions/$runId': typeof ProtectedManufacturingProductionsRunIdRoute
   '/manufacturing/recipes/$recipeId': typeof ProtectedManufacturingRecipesRecipeIdRoute
+  '/hr/attendance': typeof ProtectedHrAttendanceIndexRoute
+  '/hr/employees': typeof ProtectedHrEmployeesIndexRoute
   '/inventory/factory-floor': typeof ProtectedInventoryFactoryFloorIndexRoute
   '/inventory/warehouses': typeof ProtectedInventoryWarehousesIndexRoute
   '/manufacturing/productions': typeof ProtectedManufacturingProductionsIndexRoute
@@ -258,8 +294,12 @@ export interface FileRoutesById {
   '/_protected/suppliers/': typeof ProtectedSuppliersIndexRoute
   '/_protected/user-management/': typeof ProtectedUserManagementIndexRoute
   '/_protected/utilities/': typeof ProtectedUtilitiesIndexRoute
+  '/_protected/hr/attendance/$employeeId': typeof ProtectedHrAttendanceEmployeeIdRoute
+  '/_protected/hr/employees/$employeeId': typeof ProtectedHrEmployeesEmployeeIdRoute
   '/_protected/manufacturing/productions/$runId': typeof ProtectedManufacturingProductionsRunIdRoute
   '/_protected/manufacturing/recipes/$recipeId': typeof ProtectedManufacturingRecipesRecipeIdRoute
+  '/_protected/hr/attendance/': typeof ProtectedHrAttendanceIndexRoute
+  '/_protected/hr/employees/': typeof ProtectedHrEmployeesIndexRoute
   '/_protected/inventory/factory-floor/': typeof ProtectedInventoryFactoryFloorIndexRoute
   '/_protected/inventory/warehouses/': typeof ProtectedInventoryWarehousesIndexRoute
   '/_protected/manufacturing/productions/': typeof ProtectedManufacturingProductionsIndexRoute
@@ -287,8 +327,12 @@ export interface FileRouteTypes {
     | '/suppliers/'
     | '/user-management/'
     | '/utilities/'
+    | '/hr/attendance/$employeeId'
+    | '/hr/employees/$employeeId'
     | '/manufacturing/productions/$runId'
     | '/manufacturing/recipes/$recipeId'
+    | '/hr/attendance/'
+    | '/hr/employees/'
     | '/inventory/factory-floor/'
     | '/inventory/warehouses/'
     | '/manufacturing/productions/'
@@ -314,8 +358,12 @@ export interface FileRouteTypes {
     | '/suppliers'
     | '/user-management'
     | '/utilities'
+    | '/hr/attendance/$employeeId'
+    | '/hr/employees/$employeeId'
     | '/manufacturing/productions/$runId'
     | '/manufacturing/recipes/$recipeId'
+    | '/hr/attendance'
+    | '/hr/employees'
     | '/inventory/factory-floor'
     | '/inventory/warehouses'
     | '/manufacturing/productions'
@@ -343,8 +391,12 @@ export interface FileRouteTypes {
     | '/_protected/suppliers/'
     | '/_protected/user-management/'
     | '/_protected/utilities/'
+    | '/_protected/hr/attendance/$employeeId'
+    | '/_protected/hr/employees/$employeeId'
     | '/_protected/manufacturing/productions/$runId'
     | '/_protected/manufacturing/recipes/$recipeId'
+    | '/_protected/hr/attendance/'
+    | '/_protected/hr/employees/'
     | '/_protected/inventory/factory-floor/'
     | '/_protected/inventory/warehouses/'
     | '/_protected/manufacturing/productions/'
@@ -538,6 +590,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedInventoryFactoryFloorIndexRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
+    '/_protected/hr/employees/': {
+      id: '/_protected/hr/employees/'
+      path: '/hr/employees'
+      fullPath: '/hr/employees/'
+      preLoaderRoute: typeof ProtectedHrEmployeesIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/hr/attendance/': {
+      id: '/_protected/hr/attendance/'
+      path: '/hr/attendance'
+      fullPath: '/hr/attendance/'
+      preLoaderRoute: typeof ProtectedHrAttendanceIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
     '/_protected/manufacturing/recipes/$recipeId': {
       id: '/_protected/manufacturing/recipes/$recipeId'
       path: '/manufacturing/recipes/$recipeId'
@@ -550,6 +616,20 @@ declare module '@tanstack/react-router' {
       path: '/manufacturing/productions/$runId'
       fullPath: '/manufacturing/productions/$runId'
       preLoaderRoute: typeof ProtectedManufacturingProductionsRunIdRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/hr/employees/$employeeId': {
+      id: '/_protected/hr/employees/$employeeId'
+      path: '/hr/employees/$employeeId'
+      fullPath: '/hr/employees/$employeeId'
+      preLoaderRoute: typeof ProtectedHrEmployeesEmployeeIdRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/hr/attendance/$employeeId': {
+      id: '/_protected/hr/attendance/$employeeId'
+      path: '/hr/attendance/$employeeId'
+      fullPath: '/hr/attendance/$employeeId'
+      preLoaderRoute: typeof ProtectedHrAttendanceEmployeeIdRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
   }
@@ -585,8 +665,12 @@ interface ProtectedRouteRouteChildren {
   ProtectedSuppliersIndexRoute: typeof ProtectedSuppliersIndexRoute
   ProtectedUserManagementIndexRoute: typeof ProtectedUserManagementIndexRoute
   ProtectedUtilitiesIndexRoute: typeof ProtectedUtilitiesIndexRoute
+  ProtectedHrAttendanceEmployeeIdRoute: typeof ProtectedHrAttendanceEmployeeIdRoute
+  ProtectedHrEmployeesEmployeeIdRoute: typeof ProtectedHrEmployeesEmployeeIdRoute
   ProtectedManufacturingProductionsRunIdRoute: typeof ProtectedManufacturingProductionsRunIdRoute
   ProtectedManufacturingRecipesRecipeIdRoute: typeof ProtectedManufacturingRecipesRecipeIdRoute
+  ProtectedHrAttendanceIndexRoute: typeof ProtectedHrAttendanceIndexRoute
+  ProtectedHrEmployeesIndexRoute: typeof ProtectedHrEmployeesIndexRoute
   ProtectedInventoryFactoryFloorIndexRoute: typeof ProtectedInventoryFactoryFloorIndexRoute
   ProtectedInventoryWarehousesIndexRoute: typeof ProtectedInventoryWarehousesIndexRoute
   ProtectedManufacturingProductionsIndexRoute: typeof ProtectedManufacturingProductionsIndexRoute
@@ -605,10 +689,14 @@ const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
   ProtectedSuppliersIndexRoute: ProtectedSuppliersIndexRoute,
   ProtectedUserManagementIndexRoute: ProtectedUserManagementIndexRoute,
   ProtectedUtilitiesIndexRoute: ProtectedUtilitiesIndexRoute,
+  ProtectedHrAttendanceEmployeeIdRoute: ProtectedHrAttendanceEmployeeIdRoute,
+  ProtectedHrEmployeesEmployeeIdRoute: ProtectedHrEmployeesEmployeeIdRoute,
   ProtectedManufacturingProductionsRunIdRoute:
     ProtectedManufacturingProductionsRunIdRoute,
   ProtectedManufacturingRecipesRecipeIdRoute:
     ProtectedManufacturingRecipesRecipeIdRoute,
+  ProtectedHrAttendanceIndexRoute: ProtectedHrAttendanceIndexRoute,
+  ProtectedHrEmployeesIndexRoute: ProtectedHrEmployeesIndexRoute,
   ProtectedInventoryFactoryFloorIndexRoute:
     ProtectedInventoryFactoryFloorIndexRoute,
   ProtectedInventoryWarehousesIndexRoute:

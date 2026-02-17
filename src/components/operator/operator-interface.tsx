@@ -19,6 +19,7 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "../ui/alert-dialog";
+import { useProductionRunsSync } from "@/hooks/production/use-production-runs-sync";
 
 export const OperatorInterface = () => {
 	const navigate = useNavigate();
@@ -27,8 +28,10 @@ export const OperatorInterface = () => {
 	const { data: allRuns } = useSuspenseQuery({
 		queryKey: ["production-runs"],
 		queryFn: getProductionRunsFn,
-		refetchInterval: 5000,
 	});
+
+	// Smart polling
+	useProductionRunsSync();
 
 	// Filter for runs that are currently active (In Progress)
 	const activeRuns = allRuns.filter(run => run.status === 'in_progress');

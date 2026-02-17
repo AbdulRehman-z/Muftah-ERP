@@ -43,11 +43,6 @@ export const SuppliersTable = ({ data }: Props) => {
     });
 
     const columns: ColumnDef<Supplier>[] = [
-        // {
-        //     accessorKey: "id",
-        //     header: "System ID",
-        //     cell: ({ row }) => <span className="font-mono text-xs text-muted-foreground">{(row.getValue("id") as string).slice(-6)}</span>,
-        // },
         {
             accessorKey: "supplierName",
             header: "Supplier Name",
