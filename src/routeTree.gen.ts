@@ -34,12 +34,14 @@ import { Route as ProtectedManufacturingRecipesIndexRouteImport } from './routes
 import { Route as ProtectedManufacturingProductionsIndexRouteImport } from './routes/_protected/manufacturing/productions/index'
 import { Route as ProtectedInventoryWarehousesIndexRouteImport } from './routes/_protected/inventory/warehouses/index'
 import { Route as ProtectedInventoryFactoryFloorIndexRouteImport } from './routes/_protected/inventory/factory-floor/index'
+import { Route as ProtectedHrPayrollIndexRouteImport } from './routes/_protected/hr/payroll/index'
 import { Route as ProtectedHrEmployeesIndexRouteImport } from './routes/_protected/hr/employees/index'
 import { Route as ProtectedHrAttendanceIndexRouteImport } from './routes/_protected/hr/attendance/index'
 import { Route as ProtectedManufacturingRecipesRecipeIdRouteImport } from './routes/_protected/manufacturing/recipes/$recipeId'
 import { Route as ProtectedManufacturingProductionsRunIdRouteImport } from './routes/_protected/manufacturing/productions/$runId'
 import { Route as ProtectedHrEmployeesEmployeeIdRouteImport } from './routes/_protected/hr/employees/$employeeId'
 import { Route as ProtectedHrAttendanceEmployeeIdRouteImport } from './routes/_protected/hr/attendance/$employeeId'
+import { Route as ProtectedHrPayrollEmployeeEmployeeIdRouteImport } from './routes/_protected/hr/payroll/employee/$employeeId'
 
 const ProtectedRouteRoute = ProtectedRouteRouteImport.update({
   id: '/_protected',
@@ -174,6 +176,11 @@ const ProtectedInventoryFactoryFloorIndexRoute =
     path: '/inventory/factory-floor/',
     getParentRoute: () => ProtectedRouteRoute,
   } as any)
+const ProtectedHrPayrollIndexRoute = ProtectedHrPayrollIndexRouteImport.update({
+  id: '/hr/payroll/',
+  path: '/hr/payroll/',
+  getParentRoute: () => ProtectedRouteRoute,
+} as any)
 const ProtectedHrEmployeesIndexRoute =
   ProtectedHrEmployeesIndexRouteImport.update({
     id: '/hr/employees/',
@@ -210,6 +217,12 @@ const ProtectedHrAttendanceEmployeeIdRoute =
     path: '/hr/attendance/$employeeId',
     getParentRoute: () => ProtectedRouteRoute,
   } as any)
+const ProtectedHrPayrollEmployeeEmployeeIdRoute =
+  ProtectedHrPayrollEmployeeEmployeeIdRouteImport.update({
+    id: '/hr/payroll/employee/$employeeId',
+    path: '/hr/payroll/employee/$employeeId',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -235,12 +248,14 @@ export interface FileRoutesByFullPath {
   '/manufacturing/recipes/$recipeId': typeof ProtectedManufacturingRecipesRecipeIdRoute
   '/hr/attendance/': typeof ProtectedHrAttendanceIndexRoute
   '/hr/employees/': typeof ProtectedHrEmployeesIndexRoute
+  '/hr/payroll/': typeof ProtectedHrPayrollIndexRoute
   '/inventory/factory-floor/': typeof ProtectedInventoryFactoryFloorIndexRoute
   '/inventory/warehouses/': typeof ProtectedInventoryWarehousesIndexRoute
   '/manufacturing/productions/': typeof ProtectedManufacturingProductionsIndexRoute
   '/manufacturing/recipes/': typeof ProtectedManufacturingRecipesIndexRoute
   '/sales/customers/': typeof ProtectedSalesCustomersIndexRoute
   '/sales/new-invoice/': typeof ProtectedSalesNewInvoiceIndexRoute
+  '/hr/payroll/employee/$employeeId': typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -266,12 +281,14 @@ export interface FileRoutesByTo {
   '/manufacturing/recipes/$recipeId': typeof ProtectedManufacturingRecipesRecipeIdRoute
   '/hr/attendance': typeof ProtectedHrAttendanceIndexRoute
   '/hr/employees': typeof ProtectedHrEmployeesIndexRoute
+  '/hr/payroll': typeof ProtectedHrPayrollIndexRoute
   '/inventory/factory-floor': typeof ProtectedInventoryFactoryFloorIndexRoute
   '/inventory/warehouses': typeof ProtectedInventoryWarehousesIndexRoute
   '/manufacturing/productions': typeof ProtectedManufacturingProductionsIndexRoute
   '/manufacturing/recipes': typeof ProtectedManufacturingRecipesIndexRoute
   '/sales/customers': typeof ProtectedSalesCustomersIndexRoute
   '/sales/new-invoice': typeof ProtectedSalesNewInvoiceIndexRoute
+  '/hr/payroll/employee/$employeeId': typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -300,12 +317,14 @@ export interface FileRoutesById {
   '/_protected/manufacturing/recipes/$recipeId': typeof ProtectedManufacturingRecipesRecipeIdRoute
   '/_protected/hr/attendance/': typeof ProtectedHrAttendanceIndexRoute
   '/_protected/hr/employees/': typeof ProtectedHrEmployeesIndexRoute
+  '/_protected/hr/payroll/': typeof ProtectedHrPayrollIndexRoute
   '/_protected/inventory/factory-floor/': typeof ProtectedInventoryFactoryFloorIndexRoute
   '/_protected/inventory/warehouses/': typeof ProtectedInventoryWarehousesIndexRoute
   '/_protected/manufacturing/productions/': typeof ProtectedManufacturingProductionsIndexRoute
   '/_protected/manufacturing/recipes/': typeof ProtectedManufacturingRecipesIndexRoute
   '/_protected/sales/customers/': typeof ProtectedSalesCustomersIndexRoute
   '/_protected/sales/new-invoice/': typeof ProtectedSalesNewInvoiceIndexRoute
+  '/_protected/hr/payroll/employee/$employeeId': typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -333,12 +352,14 @@ export interface FileRouteTypes {
     | '/manufacturing/recipes/$recipeId'
     | '/hr/attendance/'
     | '/hr/employees/'
+    | '/hr/payroll/'
     | '/inventory/factory-floor/'
     | '/inventory/warehouses/'
     | '/manufacturing/productions/'
     | '/manufacturing/recipes/'
     | '/sales/customers/'
     | '/sales/new-invoice/'
+    | '/hr/payroll/employee/$employeeId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -364,12 +385,14 @@ export interface FileRouteTypes {
     | '/manufacturing/recipes/$recipeId'
     | '/hr/attendance'
     | '/hr/employees'
+    | '/hr/payroll'
     | '/inventory/factory-floor'
     | '/inventory/warehouses'
     | '/manufacturing/productions'
     | '/manufacturing/recipes'
     | '/sales/customers'
     | '/sales/new-invoice'
+    | '/hr/payroll/employee/$employeeId'
   id:
     | '__root__'
     | '/'
@@ -397,12 +420,14 @@ export interface FileRouteTypes {
     | '/_protected/manufacturing/recipes/$recipeId'
     | '/_protected/hr/attendance/'
     | '/_protected/hr/employees/'
+    | '/_protected/hr/payroll/'
     | '/_protected/inventory/factory-floor/'
     | '/_protected/inventory/warehouses/'
     | '/_protected/manufacturing/productions/'
     | '/_protected/manufacturing/recipes/'
     | '/_protected/sales/customers/'
     | '/_protected/sales/new-invoice/'
+    | '/_protected/hr/payroll/employee/$employeeId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -590,6 +615,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedInventoryFactoryFloorIndexRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
+    '/_protected/hr/payroll/': {
+      id: '/_protected/hr/payroll/'
+      path: '/hr/payroll'
+      fullPath: '/hr/payroll/'
+      preLoaderRoute: typeof ProtectedHrPayrollIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
     '/_protected/hr/employees/': {
       id: '/_protected/hr/employees/'
       path: '/hr/employees'
@@ -632,6 +664,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedHrAttendanceEmployeeIdRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
+    '/_protected/hr/payroll/employee/$employeeId': {
+      id: '/_protected/hr/payroll/employee/$employeeId'
+      path: '/hr/payroll/employee/$employeeId'
+      fullPath: '/hr/payroll/employee/$employeeId'
+      preLoaderRoute: typeof ProtectedHrPayrollEmployeeEmployeeIdRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
   }
 }
 
@@ -671,12 +710,14 @@ interface ProtectedRouteRouteChildren {
   ProtectedManufacturingRecipesRecipeIdRoute: typeof ProtectedManufacturingRecipesRecipeIdRoute
   ProtectedHrAttendanceIndexRoute: typeof ProtectedHrAttendanceIndexRoute
   ProtectedHrEmployeesIndexRoute: typeof ProtectedHrEmployeesIndexRoute
+  ProtectedHrPayrollIndexRoute: typeof ProtectedHrPayrollIndexRoute
   ProtectedInventoryFactoryFloorIndexRoute: typeof ProtectedInventoryFactoryFloorIndexRoute
   ProtectedInventoryWarehousesIndexRoute: typeof ProtectedInventoryWarehousesIndexRoute
   ProtectedManufacturingProductionsIndexRoute: typeof ProtectedManufacturingProductionsIndexRoute
   ProtectedManufacturingRecipesIndexRoute: typeof ProtectedManufacturingRecipesIndexRoute
   ProtectedSalesCustomersIndexRoute: typeof ProtectedSalesCustomersIndexRoute
   ProtectedSalesNewInvoiceIndexRoute: typeof ProtectedSalesNewInvoiceIndexRoute
+  ProtectedHrPayrollEmployeeEmployeeIdRoute: typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
 }
 
 const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
@@ -697,6 +738,7 @@ const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
     ProtectedManufacturingRecipesRecipeIdRoute,
   ProtectedHrAttendanceIndexRoute: ProtectedHrAttendanceIndexRoute,
   ProtectedHrEmployeesIndexRoute: ProtectedHrEmployeesIndexRoute,
+  ProtectedHrPayrollIndexRoute: ProtectedHrPayrollIndexRoute,
   ProtectedInventoryFactoryFloorIndexRoute:
     ProtectedInventoryFactoryFloorIndexRoute,
   ProtectedInventoryWarehousesIndexRoute:
@@ -707,6 +749,8 @@ const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
     ProtectedManufacturingRecipesIndexRoute,
   ProtectedSalesCustomersIndexRoute: ProtectedSalesCustomersIndexRoute,
   ProtectedSalesNewInvoiceIndexRoute: ProtectedSalesNewInvoiceIndexRoute,
+  ProtectedHrPayrollEmployeeEmployeeIdRoute:
+    ProtectedHrPayrollEmployeeEmployeeIdRoute,
 }
 
 const ProtectedRouteRouteWithChildren = ProtectedRouteRoute._addFileChildren(

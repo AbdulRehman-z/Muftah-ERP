@@ -167,7 +167,7 @@ const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
 			</SidebarMenuButton>
 
 			{hasChildren && isOpen && (
-				<SidebarMenuSub className="border-l-[1px] border-primary/10 ml-5 pl-1.5 space-y-0.5 my-1">
+				<SidebarMenuSub className="border-l border-primary/10 ml-5 pl-1.5 space-y-0.5 my-1">
 					{item.items!.map((child) => (
 						<SidebarMenuSubItem key={child.title}>
 							<SidebarMenuSubButton

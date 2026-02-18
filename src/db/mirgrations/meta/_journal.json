@@ -22,6 +22,20 @@
       "when": 1771228489257,
       "tag": "0002_lumpy_doorman",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1771324604291,
+      "tag": "0003_dear_gamma_corps",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1771329974068,
+      "tag": "0004_confused_edwin_jarvis",
+      "breakpoints": true
     }
   ]
 }

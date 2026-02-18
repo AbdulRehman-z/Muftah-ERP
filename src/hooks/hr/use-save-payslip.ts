@@ -1,0 +1,35 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { saveEmployeePayslipFn } from "@/server-functions/hr/payroll/dashboard-fn";
+import { toast } from "sonner";
+
+type SavePayslipInput = {
+    employeeId: string;
+    month: string;
+    deductionConfig: {
+        manualDeductions: { description: string; amount: number }[];
+        deductConveyanceOnLeave: boolean;
+    };
+    additionalAmounts: {
+        bonusAmount: number;
+        incentiveAmount: number;
+        taxDeduction: number;
+        advanceDeduction: number;
+    };
+}
+
+export function useSavePayslip(onSuccess?: () => void) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (data: SavePayslipInput) => saveEmployeePayslipFn({ data }),
+        onSuccess: () => {
+            toast.success("Payslip Generated Successfully");
+            queryClient.invalidateQueries({ queryKey: ["payrolls"] }); // Updated to match payrolls key
+            queryClient.invalidateQueries({ queryKey: ["payroll-dashboard"] });
+            onSuccess?.();
+        },
+        onError: (err) => {
+            toast.error("Failed to generate payslip", { description: err.message });
+        },
+    });
+}

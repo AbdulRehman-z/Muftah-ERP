@@ -1,0 +1,114 @@
+import { createServerFn } from "@tanstack/react-start";
+import { db } from "@/db";
+import { payslips } from "@/db/schemas/hr-schema";
+import { requireAdminMiddleware } from "@/lib/middlewares";
+import { z } from "zod";
+import { eq } from "drizzle-orm";
+import { generateEmployeePayslipCore } from "./core";
+
+/**
+ * Generate payslip for a single employee
+ */
+export const generateEmployeePayslipFn = createServerFn()
+    .middleware([requireAdminMiddleware])
+    .inputValidator(z.object({
+        employeeId: z.string(),
+        payrollId: z.string(),
+        payrollPeriod: z.object({
+            month: z.string(), // YYYY-MM-DD
+            startDate: z.string(), // YYYY-MM-DD
+            endDate: z.string(), // YYYY-MM-DD
+        }),
+        deductionConfig: z.object({
+            manualDeductions: z.array(z.object({
+                description: z.string(),
+                amount: z.number(),
+            })),
+            deductConveyanceOnLeave: z.boolean(),
+        }).optional(),
+        additionalAmounts: z.object({
+            overtimeAmount: z.number().optional(),
+            nightShiftAllowance: z.number().optional(),
+            incentiveAmount: z.number().optional(),
+            bonusAmount: z.number().optional(),
+            advanceDeduction: z.number().optional(),
+            taxDeduction: z.number().optional(),
+        }).optional(),
+    }))
+    .handler(async ({ data }) => {
+        return generateEmployeePayslipCore(data);
+    });
+
+/**
+ * Get payslip by ID with full details
+ */
+export const getPayslipByIdFn = createServerFn()
+    .middleware([requireAdminMiddleware])
+    .inputValidator(z.object({ payslipId: z.string() }))
+    .handler(async ({ data }) => {
+        const payslip = await db.query.payslips.findFirst({
+            where: eq(payslips.id, data.payslipId),
+            with: {
+                employee: true,
+                payroll: true,
+            },
+        });
+
+        if (!payslip) {
+            throw new Error(`Payslip with ID ${data.payslipId} not found`);
+        }
+
+        return payslip;
+    });
+
+/**
+ * Get all payslips for a payroll
+ */
+export const getPayslipsByPayrollFn = createServerFn()
+    .middleware([requireAdminMiddleware])
+    .inputValidator(z.object({ payrollId: z.string() }))
+    .handler(async ({ data }) => {
+        return await db.query.payslips.findMany({
+            where: eq(payslips.payrollId, data.payrollId),
+            with: {
+                employee: {
+                    columns: {
+                        id: true,
+                        employeeCode: true,
+                        firstName: true,
+                        lastName: true,
+                        designation: true,
+                    },
+                },
+            },
+            orderBy: (payslips, { asc }) => [asc(payslips.createdAt)],
+        });
+    });
+
+/**
+ * Get employee's payslip history
+ */
+export const getEmployeePayslipHistoryFn = createServerFn()
+    .middleware([requireAdminMiddleware])
+    .inputValidator(z.object({
+        employeeId: z.string(),
+        limit: z.number().optional().default(12),
+    }))
+    .handler(async ({ data }) => {
+        return await db.query.payslips.findMany({
+            where: eq(payslips.employeeId, data.employeeId),
+            with: {
+                payroll: {
+                    columns: {
+                        id: true,
+                        month: true,
+                        startDate: true,
+                        endDate: true,
+                        status: true,
+                    },
+                },
+            },
+            orderBy: (payslips, { desc }) => [desc(payslips.createdAt)],
+            limit: data.limit,
+        });
+    });

@@ -37,4 +37,4 @@ export const { customers, invoices, invoiceItems } = salesSchema;
 export const { wallets, expenses, transactions } = financeSchema;
 export const { supplierPayments, purchaseRecords } = supplierSchema;
 export const { suppliers } = coreSuppliers;
-export const { employees, attendance, payrollRuns, payslips } = hrSchema;
+export const { employees, attendance, payrolls, payslips } = hrSchema;

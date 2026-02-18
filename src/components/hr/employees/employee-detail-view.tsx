@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { getEmployeeFn } from "@/server-functions/hr/employees/get-employee-fn";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -21,12 +21,9 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { GenericLoader } from "@/components/custom/generic-loader";
 
-type Employee = Awaited<ReturnType<typeof getEmployeeFn>>;
-
-interface Props {
-    employee: Employee;
-}
 
 const statusStyles = {
     active: { label: "Active", class: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 font-bold" },
@@ -35,11 +32,25 @@ const statusStyles = {
     resigned: { label: "Resigned", class: "bg-amber-500/15 text-amber-700 border-amber-500/30 font-bold" },
 };
 
-export const EmployeeDetailView = ({ employee }: Props) => {
+export const EmployeeDetailView = () => {
     const navigate = useNavigate();
     const [editOpen, setEditOpen] = useState(false);
     const deleteMutate = useDeleteEmployee();
+    const { employeeId } = useParams({ from: '/_protected/hr/employees/$employeeId' });
+    const { data: employee } = useSuspenseQuery({
+        queryKey: ['employee', employeeId],
+        queryFn: () => getEmployeeFn({ data: { id: employeeId } }),
+        staleTime: 2 * 60 * 1000,
+    });
 
+    if (!employee) {
+        return <div className="flex items-center justify-center h-screen">
+            <GenericLoader
+                title="Loading Employee"
+                description="Please wait while we load the employee details."
+            />
+        </div>
+    }
     // Helper to sum up allowances for display
     const totalAllowances = [
         employee.houseRentAllowance,

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { getSuppliersFn } from "@/server-functions/suppliers/get-suppliers-fn";
 import { Suspense } from "react";
 import { Separator } from "@/components/ui/separator";
-import { SupplierContainer } from "@/components/suppliers/suspense-containers";
+import { SupplierContainer } from "@/components/suppliers/suppliers-container";
 import { GenericLoader } from "@/components/custom/generic-loader";
 import { requireAdminMiddleware } from "@/lib/middlewares";
 

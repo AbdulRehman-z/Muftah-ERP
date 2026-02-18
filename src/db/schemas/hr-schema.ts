@@ -74,6 +74,10 @@ export const employees = pgTable("employees", {
     employmentType: employmentTypeEnum("employment_type").default("full_time").notNull(),
     joiningDate: date("joining_date").notNull(),
 
+    // Payment Info
+    bankName: text("bank_name"),
+    bankAccountNumber: text("bank_account_number"),
+
     // Compensation Structure (Snapshot/Current)
     basicSalary: decimal("basic_salary", { precision: 12, scale: 2 }).notNull().default("0"),
     houseRentAllowance: decimal("house_rent_allowance", { precision: 12, scale: 2 }).default("0"),
@@ -90,6 +94,14 @@ export const employees = pgTable("employees", {
     // Duty Rules
     standardDutyHours: integer("standard_duty_hours").default(8).notNull(), // 8 or 12
     isOperator: boolean("is_operator").default(false).notNull(), // Determines attendance logic (split shift vs single)
+
+    // Base Calculation Field
+    standardSalary: decimal("standard_salary", { precision: 12, scale: 2 }).default("0"),
+
+    // Leave & Attendance Tracking
+    annualLeaveBalance: integer("annual_leave_balance").default(30), // Days remaining
+    sickLeaveBalance: integer("sick_leave_balance").default(10),
+    casualLeaveBalance: integer("casual_leave_balance").default(5),
 
     ...timestamps,
 });
@@ -130,8 +142,8 @@ export const attendance = pgTable("attendance", {
 }));
 
 
-// --- PAYROLL RUNS ---
-export const payrollRuns = pgTable("payroll_runs", {
+// --- PAYROLLS ---
+export const payrolls = pgTable("payrolls", {
     id: text("id")
         .primaryKey()
         .$defaultFn(() => createId()),
@@ -154,9 +166,9 @@ export const payslips = pgTable("payslips", {
     id: text("id")
         .primaryKey()
         .$defaultFn(() => createId()),
-    payrollRunId: text("payroll_run_id")
+    payrollId: text("payroll_id")
         .notNull()
-        .references(() => payrollRuns.id),
+        .references(() => payrolls.id),
     employeeId: text("employee_id")
         .notNull()
         .references(() => employees.id),
@@ -216,18 +228,18 @@ export const attendanceRelations = relations(attendance, ({ one }) => ({
     }),
 }));
 
-export const payrollRunRelations = relations(payrollRuns, ({ many, one }) => ({
+export const payrollRelations = relations(payrolls, ({ many, one }) => ({
     payslips: many(payslips),
     processor: one(user, {
-        fields: [payrollRuns.processedBy],
+        fields: [payrolls.processedBy],
         references: [user.id],
     }),
 }));
 
 export const payslipRelations = relations(payslips, ({ one }) => ({
-    payrollRun: one(payrollRuns, {
-        fields: [payslips.payrollRunId],
-        references: [payrollRuns.id],
+    payroll: one(payrolls, {
+        fields: [payslips.payrollId],
+        references: [payrolls.id],
     }),
     employee: one(employees, {
         fields: [payslips.employeeId],
