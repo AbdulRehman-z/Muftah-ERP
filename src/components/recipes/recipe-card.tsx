@@ -42,7 +42,7 @@ export const RecipeCard = ({ recipe, onEdit }: RecipeCardProps) => {
 
 	return (
 		<>
-			<Card className="hover:shadow-sm transition-shadow flex flex-col justify-between h-full group">
+			<Card className="hover: transition-shadow flex flex-col justify-between h-full group">
 				<div>
 					<CardHeader>
 						<div className="flex items-start justify-between">

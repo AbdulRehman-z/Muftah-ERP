@@ -97,8 +97,8 @@ export const RecipesContainer = () => {
 				{/* Fixed Header Section - prevents layout shift */}
 				<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 min-h-[44px]">
 					<TabsList className="bg-muted/50 p-1 rounded-xl h-11 shrink-0">
-						<TabsTrigger value="recipes" className="rounded-lg px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm font-bold transition-all">Recipes</TabsTrigger>
-						<TabsTrigger value="products" className="rounded-lg px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm font-bold transition-all">Products</TabsTrigger>
+						<TabsTrigger value="recipes" className="rounded-lg px-6 data-[state=active]:bg-background data-[state=active]: font-bold transition-all">Recipes</TabsTrigger>
+						<TabsTrigger value="products" className="rounded-lg px-6 data-[state=active]:bg-background data-[state=active]: font-bold transition-all">Products</TabsTrigger>
 					</TabsList>
 
 					<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:ml-auto">
@@ -119,7 +119,7 @@ export const RecipesContainer = () => {
 								</div>
 								<Button
 									onClick={() => setIsCreating(true)}
-								// className="h-11 rounded-xl font-black uppercase tracking-widest text-[11px] gap-2 shadow-lg shadow-primary/10 transition-all active:scale-95 shrink-0"
+								// className="h-11 rounded-xl font-black uppercase tracking-widest text-[11px] gap-2  shadow-primary/10 transition-all active:scale-95 shrink-0"
 								>
 									<PlusIcon className="size-4" />
 									Create Recipe

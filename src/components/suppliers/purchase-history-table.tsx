@@ -42,6 +42,8 @@ export type PurchaseRecord = {
     } | null;
     paidBy?: string | null;
     notes?: string | null;
+    invoiceNumber?: string | null;
+    transactionId?: string | null;
     // ... possibly other fields, use partial if uncertain, but we control the input
     lastPayment?: any; // For dialog
 };

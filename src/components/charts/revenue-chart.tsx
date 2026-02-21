@@ -23,7 +23,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
     ]
 
     return (
-        <Card className="col-span-1 lg:col-span-8 shadow-sm border-slate-200 dark:border-slate-800">
+        <Card className="col-span-1 lg:col-span-8  border-slate-200 dark:border-slate-800">
             <CardHeader>
                 <CardTitle>Revenue Overview</CardTitle>
                 <CardDescription>

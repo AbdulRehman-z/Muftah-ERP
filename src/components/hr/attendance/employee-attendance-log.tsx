@@ -65,13 +65,13 @@ export const EmployeeAttendanceLog = ({ employeeId: propId, month, startDate: pr
             {/* Header / Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
                 {showHeader && (
-                    <div className="md:col-span-6 lg:col-span-5 relative group overflow-hidden rounded-2xl border bg-white shadow-sm transition-all hover:shadow-md">
+                    <div className="md:col-span-6 lg:col-span-5 relative group overflow-hidden rounded-2xl border bg-white  transition-all hover:">
                         <div className="absolute top-0 right-0 p-8 opacity-[0.03] scale-150 rotate-12 transition-transform group-hover:scale-[1.7] group-hover:rotate-0">
                             <User size={120} />
                         </div>
                         <div className="relative p-6 flex flex-col sm:flex-row items-center sm:items-start gap-5">
                             <div className="shrink-0 h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner border border-primary/20">
-                                <User size={40} className="drop-shadow-sm" />
+                                <User size={40} className="drop-" />
                             </div>
                             <div className="flex-1 text-center sm:text-left space-y-2">
                                 <div>
@@ -103,7 +103,7 @@ export const EmployeeAttendanceLog = ({ employeeId: propId, month, startDate: pr
                 )}
 
                 <div className={`grid grid-cols-2 lg:grid-cols-3 gap-5 ${showHeader ? "md:col-span-6 lg:col-span-7" : "md:col-span-12"}`}>
-                    <div className="relative overflow-hidden rounded-2xl border bg-emerald-50/30 p-5 shadow-sm transition-all hover:shadow-md group">
+                    <div className="relative overflow-hidden rounded-2xl border bg-emerald-50/30 p-5  transition-all hover: group">
                         <div className="absolute -bottom-6 -right-6 text-emerald-200/40 rotate-12 transition-transform group-hover:scale-110">
                             <Clock size={80} />
                         </div>
@@ -120,7 +120,7 @@ export const EmployeeAttendanceLog = ({ employeeId: propId, month, startDate: pr
                         </div>
                     </div>
 
-                    <div className="relative overflow-hidden rounded-2xl border bg-amber-50/30 p-5 shadow-sm transition-all hover:shadow-md group">
+                    <div className="relative overflow-hidden rounded-2xl border bg-amber-50/30 p-5  transition-all hover: group">
                         <div className="absolute -bottom-6 -right-6 text-amber-200/40 rotate-12 transition-transform group-hover:scale-110">
                             <CalendarClock size={80} />
                         </div>
@@ -137,7 +137,7 @@ export const EmployeeAttendanceLog = ({ employeeId: propId, month, startDate: pr
                         </div>
                     </div>
 
-                    <div className="relative overflow-hidden rounded-2xl border bg-rose-50/30 p-5 shadow-sm transition-all hover:shadow-md group col-span-2 lg:col-span-1">
+                    <div className="relative overflow-hidden rounded-2xl border bg-rose-50/30 p-5  transition-all hover: group col-span-2 lg:col-span-1">
                         <div className="absolute -bottom-6 -right-6 text-rose-200/40 rotate-12 transition-transform group-hover:scale-110">
                             <Clock size={80} />
                         </div>
@@ -157,7 +157,7 @@ export const EmployeeAttendanceLog = ({ employeeId: propId, month, startDate: pr
             </div>
 
             {/* Attendance Table */}
-            <Card className="border shadow-sm overflow-hidden">
+            <Card className="border  overflow-hidden">
                 <Table>
                     <TableHeader className="bg-muted/50">
                         <TableRow>

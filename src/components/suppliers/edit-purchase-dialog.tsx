@@ -3,7 +3,7 @@ import { ResponsiveDialog } from "@/components/custom/responsive-dialog";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Field, FieldError, FieldLabel, FieldDescription } from "@/components/ui/field";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
@@ -22,6 +22,8 @@ type Props = {
         transactionId?: string | null;
         invoiceNumber?: string | null;
         paymentMethod?: string | null;
+        paymentStatus?: string | null;
+        paidBy?: string | null;
         materialType: string;
         chemical?: {
             id: string;
@@ -56,15 +58,21 @@ export const EditPurchaseDialog = ({ open, onOpenChange, purchase }: Props) => {
 
     const form = useForm({
         defaultValues: {
+            // Core purchase fields
             quantity: purchase?.quantity || "",
             cost: purchase?.cost || "",
-            notes: purchase?.notes || "",
-            transactionId: purchase?.transactionId || "",
-            invoiceNumber: purchase?.invoiceNumber || "",
+            // Material metadata
             materialName: "",
             capacity: "",
             capacityUnit: "",
             minStock: "",
+            // Payment fields
+            paymentMethod: purchase?.paymentMethod || "cash",
+            invoiceNumber: purchase?.invoiceNumber || "",
+            transactionId: purchase?.transactionId || "",
+            paidBy: purchase?.paidBy || "",
+            // Notes
+            notes: purchase?.notes || "",
         },
         onSubmit: async ({ value }) => {
             if (!purchase) return;
@@ -80,6 +88,8 @@ export const EditPurchaseDialog = ({ open, onOpenChange, purchase }: Props) => {
                     capacity: value.capacity,
                     capacityUnit: value.capacityUnit,
                     minStock: value.minStock,
+                    paidBy: value.paidBy,
+                    paymentMethod: value.paymentMethod,
                 }
             });
         },
@@ -93,6 +103,8 @@ export const EditPurchaseDialog = ({ open, onOpenChange, purchase }: Props) => {
             form.setFieldValue("notes", purchase.notes || "");
             form.setFieldValue("transactionId", purchase.transactionId || "");
             form.setFieldValue("invoiceNumber", purchase.invoiceNumber || "");
+            form.setFieldValue("paymentMethod", purchase.paymentMethod || "cash");
+            form.setFieldValue("paidBy", purchase.paidBy || "");
 
             if (purchase.materialType === "packaging" && purchase.packagingMaterial) {
                 form.setFieldValue("materialName", purchase.packagingMaterial.name);
@@ -109,10 +121,10 @@ export const EditPurchaseDialog = ({ open, onOpenChange, purchase }: Props) => {
     if (!purchase) return null;
 
     const itemName = purchase.chemical?.name || purchase.packagingMaterial?.name || "Unknown Item";
-    const paymentMethod = purchase.paymentMethod;
+    const paymentMethod = form.state.values.paymentMethod;
     const isChemical = purchase.materialType === "chemical";
     const isPackaging = purchase.materialType === "packaging";
-    const pkgType = purchase.packagingMaterial?.type; // "primary" or "master"
+    const pkgType = purchase.packagingMaterial?.type;
 
     return (
         <ResponsiveDialog
@@ -129,42 +141,155 @@ export const EditPurchaseDialog = ({ open, onOpenChange, purchase }: Props) => {
                 }}
                 className="space-y-4"
             >
-                {/* --- CHEMICAL FIELDS --- */}
-                {isChemical && (
-                    <>
-                        <form.Field name="invoiceNumber">
+                {/* ─── CORE PURCHASE FIELDS (always shown) ─── */}
+                <div className="grid grid-cols-2 gap-4">
+                    <form.Field name="quantity">
+                        {(field) => (
+                            <Field>
+                                <FieldLabel>
+                                    Quantity ({isChemical ? (purchase.chemical?.unit || "units") : "Bags/Units"})
+                                </FieldLabel>
+                                <Input
+                                    type="number"
+                                    step="any"
+                                    value={field.state.value || ""}
+                                    onChange={(e) => field.handleChange(e.target.value)}
+                                    placeholder="e.g. 500"
+                                />
+                                <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                        )}
+                    </form.Field>
+
+                    <form.Field name="cost">
+                        {(field) => (
+                            <Field>
+                                <FieldLabel>Total Cost (PKR)</FieldLabel>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">PKR</span>
+                                    <Input
+                                        className="pl-10"
+                                        type="number"
+                                        step="0.01"
+                                        value={field.state.value || ""}
+                                        onChange={(e) => field.handleChange(e.target.value)}
+                                        placeholder="0.00"
+                                    />
+                                </div>
+                                <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                        )}
+                    </form.Field>
+                </div>
+
+                {/* ─── PAYMENT FIELDS ─── */}
+                <div className="grid grid-cols-2 gap-4">
+                    <form.Field name="paymentMethod">
+                        {(field) => (
+                            <Field>
+                                <FieldLabel>Payment Method</FieldLabel>
+                                <Select
+                                    value={field.state.value || "cash"}
+                                    onValueChange={(val) => field.handleChange(val)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select method" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="cash">Cash</SelectItem>
+                                        <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                                        <SelectItem value="cheque">Cheque</SelectItem>
+                                        <SelectItem value="pay_later">Pay Later</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                        )}
+                    </form.Field>
+
+                    {paymentMethod !== "pay_later" && (
+                        <form.Field name="paidBy">
                             {(field) => (
                                 <Field>
-                                    <FieldLabel>Name / Invoice Number</FieldLabel>
+                                    <FieldLabel>Paid By</FieldLabel>
                                     <Input
                                         value={field.state.value || ""}
                                         onChange={(e) => field.handleChange(e.target.value)}
-                                        placeholder="e.g. INV-123 or Name of record"
+                                        placeholder="e.g. John Doe"
+                                    />
+                                    <FieldError errors={field.state.meta.errors} />
+                                </Field>
+                            )}
+                        </form.Field>
+                    )}
+                </div>
+
+                {/* Invoice / Transaction */}
+                <form.Field name="invoiceNumber">
+                    {(field) => (
+                        <Field>
+                            <FieldLabel>Invoice / Reference Number</FieldLabel>
+                            <Input
+                                value={field.state.value || ""}
+                                onChange={(e) => field.handleChange(e.target.value)}
+                                placeholder="e.g. INV-123"
+                            />
+                            <FieldError errors={field.state.meta.errors} />
+                        </Field>
+                    )}
+                </form.Field>
+
+                {(paymentMethod === "bank_transfer" || paymentMethod === "cheque") && (
+                    <form.Field name="transactionId">
+                        {(field) => (
+                            <Field>
+                                <FieldLabel>{paymentMethod === "cheque" ? "Cheque Number" : "Transaction ID"}</FieldLabel>
+                                <Input
+                                    value={field.state.value || ""}
+                                    onChange={(e) => field.handleChange(e.target.value)}
+                                    placeholder={paymentMethod === "cheque" ? "e.g. 123456" : "e.g. Bank Tx ID"}
+                                />
+                                <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                        )}
+                    </form.Field>
+                )}
+
+                {/* ─── CHEMICAL MATERIAL METADATA ─── */}
+                {isChemical && (
+                    <>
+                        <form.Field name="materialName">
+                            {(field) => (
+                                <Field>
+                                    <FieldLabel>Chemical Name</FieldLabel>
+                                    <Input
+                                        value={field.state.value || ""}
+                                        onChange={(e) => field.handleChange(e.target.value)}
+                                        placeholder="Chemical name"
                                     />
                                     <FieldError errors={field.state.meta.errors} />
                                 </Field>
                             )}
                         </form.Field>
 
-                        {paymentMethod !== "cash" && paymentMethod !== "pay_later" && (
-                            <form.Field name="transactionId">
-                                {(field) => (
-                                    <Field>
-                                        <FieldLabel>{paymentMethod === "cheque" ? "Cheque Number" : "Transaction ID"}</FieldLabel>
-                                        <Input
-                                            value={field.state.value || ""}
-                                            onChange={(e) => field.handleChange(e.target.value)}
-                                            placeholder={paymentMethod === "cheque" ? "e.g. 123456" : "e.g. Bank Tx ID"}
-                                        />
-                                        <FieldError errors={field.state.meta.errors} />
-                                    </Field>
-                                )}
-                            </form.Field>
-                        )}
+                        <form.Field name="minStock">
+                            {(field) => (
+                                <Field>
+                                    <FieldLabel>Min Stock Alert ({purchase.chemical?.unit})</FieldLabel>
+                                    <Input
+                                        type="number"
+                                        value={field.state.value || ""}
+                                        onChange={(e) => field.handleChange(e.target.value)}
+                                        placeholder="e.g. 50"
+                                    />
+                                    <FieldError errors={field.state.meta.errors} />
+                                </Field>
+                            )}
+                        </form.Field>
                     </>
                 )}
 
-                {/* --- PACKAGING FIELDS --- */}
+                {/* ─── PACKAGING MATERIAL METADATA ─── */}
                 {isPackaging && (
                     <>
                         <form.Field name="materialName">
@@ -185,7 +310,7 @@ export const EditPurchaseDialog = ({ open, onOpenChange, purchase }: Props) => {
                             <form.Field name="capacity">
                                 {(field) => (
                                     <Field>
-                                        <FieldLabel>{pkgType === "master" ? "Units Per Carton" : "Fill capacity"}</FieldLabel>
+                                        <FieldLabel>{pkgType === "master" ? "Units Per Carton" : "Fill Capacity"}</FieldLabel>
                                         <Input
                                             type="number"
                                             value={field.state.value || ""}
@@ -233,7 +358,7 @@ export const EditPurchaseDialog = ({ open, onOpenChange, purchase }: Props) => {
                         <form.Field name="minStock">
                             {(field) => (
                                 <Field>
-                                    <FieldLabel>{pkgType === "master" ? "Min Stock Alert" : "Min stock"}</FieldLabel>
+                                    <FieldLabel>{pkgType === "master" ? "Min Stock Alert" : "Min Stock"}</FieldLabel>
                                     <Input
                                         type="number"
                                         value={field.state.value || ""}
@@ -247,6 +372,7 @@ export const EditPurchaseDialog = ({ open, onOpenChange, purchase }: Props) => {
                     </>
                 )}
 
+                {/* ─── NOTES ─── */}
                 <form.Field name="notes">
                     {(field) => (
                         <Field>

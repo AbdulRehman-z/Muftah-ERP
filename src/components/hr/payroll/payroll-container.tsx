@@ -1,19 +1,19 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getMonthlyPayrollTableFn } from "@/server-functions/hr/payroll/dashboard-fn";
-import { format } from "date-fns";
+import { format, startOfMonth } from "date-fns";
 import { useState, useMemo } from "react";
+import { DatePicker } from "@/components/custom/date-picker";
 import {
     ColumnDef,
     useReactTable,
     getCoreRowModel,
-    getPaginationRowModel,
     getFilteredRowModel,
     flexRender
 } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { SalaryCalculatorSheet } from "@/components/hr/payroll/salary-calculator-sheet";
 import { Calculator, Search, Eye, Edit, UserIcon, CheckCircle2, Clock } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -39,8 +39,11 @@ export type EmployeePayrollRow = {
 };
 
 export function PayrollContainer() {
-    const [month, setMonth] = useState(format(new Date(), "yyyy-MM"));
+    // Default to today
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+    const month = format(selectedDate, "yyyy-MM");
     const [pageIndex, setPageIndex] = useState(0);
+
     const limit = 7;
     const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
     const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
@@ -78,7 +81,7 @@ export function PayrollContainer() {
             header: "Employee",
             cell: ({ row }) => (
                 <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9 border-2 border-background shadow-sm">
+                    <Avatar className="h-9 w-9 border-2 border-background ">
                         <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">
                             {row.original.firstName[0]}{row.original.lastName[0]}
                         </AvatarFallback>
@@ -206,17 +209,18 @@ export function PayrollContainer() {
                         className="pl-10 h-11 bg-card shadow-xs border-muted-foreground/20 rounded-xl"
                     />
                 </div>
-                <div className="flex items-center gap-2 bg-card p-1 rounded-xl border border-muted-foreground/10 shadow-xs">
-                    <Input
-                        type="month"
-                        value={month}
-                        onChange={(e) => {
-                            setMonth(e.target.value);
+                <DatePicker
+                    date={selectedDate}
+                    onChange={(date) => {
+                        if (date) {
+                            setSelectedDate(date);
                             setPageIndex(0);
-                        }}
-                        className="h-9 border-none bg-transparent font-bold ring-0! focus:ring-0!"
-                    />
-                </div>
+                        }
+                    }}
+                    placeholder="Select month"
+                    className="w-[180px]"
+                    formatStr="MMMM yyyy"
+                />
             </div>
 
             {/* KPI Cards */}
@@ -250,7 +254,7 @@ export function PayrollContainer() {
             </div>
 
             {/* Table */}
-            <div className="border border-muted-foreground/10 rounded-2xl bg-card shadow-sm overflow-hidden">
+            <div className="border border-muted-foreground/10 rounded-2xl bg-card  overflow-hidden">
                 <div className="overflow-x-auto">
                     <Table>
                         <TableHeader className="bg-muted/30">
@@ -334,7 +338,7 @@ export function PayrollContainer() {
 
 function KPICard({ title, value, subtext, icon: Icon, color = "text-foreground" }: { title: string; value: string; subtext: string; icon: any, color?: string }) {
     return (
-        <Card className="border-muted-foreground/10 shadow-xs hover:shadow-md transition-shadow overflow-hidden group">
+        <Card>
             <CardContent className="p-0">
                 <div className="p-6 relative">
                     <div className="flex justify-between items-start mb-4">

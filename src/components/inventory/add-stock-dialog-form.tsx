@@ -101,62 +101,66 @@ export const AddStockForm = ({ onOpenChange, onSuccess, preselectedWarehouse, wa
         return materials.packagings.find((p: any) => p.id === form.state.values.materialId);
     }, [form.state.values.materialId, materials, materialType]);
 
-    // Initialize unit costs from previous purchase if available
+    // Initialize unit costs from previous purchase if available.
+    // We guard with activeMaterial being truthy so the reverse calc waits until
+    // the material data is resolved — prevents wrong pricePerKg from null weight.
     useEffect(() => {
-        if (itemToRestock) {
-            // Attempt to reverse calculate unit cost if not explicitly stored
-            const totalCost = parseFloat(itemToRestock.cost);
-            const qty = parseFloat(itemToRestock.quantity);
-            if (qty > 0 && totalCost > 0) {
-                const calculatedUnitCost = totalCost / qty;
-                // Ideally we'd know if it was per kg or per unit, simplified here:
+        if (!itemToRestock || !activeMaterial) return;
 
-                if (materialType === "packaging" && (activeMaterial as any)?.type === "primary") {
-                    // For primary packaging, reverse the formula: Cost = (Weight/1000) * PricePerKg * Qty
-                    // PricePerKg = Cost / ( (Weight/1000) * Qty )
-                    const weight = parseFloat((activeMaterial as any).weightPerPack || "0");
-                    if (weight > 0) {
-                        const derivedPricePerKg = totalCost / ((weight / 1000) * qty);
-                        setPricePerKg(derivedPricePerKg.toFixed(2));
-                    }
-                } else {
-                    setPricePerUnit(calculatedUnitCost.toFixed(2));
-                }
+        const totalCost = parseFloat(itemToRestock.cost);
+        const qty = parseFloat(itemToRestock.quantity);
+        if (qty <= 0 || totalCost <= 0) return;
+
+        if (materialType === "packaging" && (activeMaterial as any)?.type === "primary") {
+            // Reverse formula: Cost = (Weight/1000) * PricePerKg * Qty
+            // => PricePerKg = Cost / ((Weight/1000) * Qty)
+            const weight = parseFloat((activeMaterial as any).weightPerPack || "0");
+            if (weight > 0) {
+                const derivedPricePerKg = totalCost / ((weight / 1000) * qty);
+                setPricePerKg(derivedPricePerKg.toFixed(2));
+            } else {
+                // Fallback: cost / qty as unit price
+                setPricePerUnit((totalCost / qty).toFixed(2));
             }
+        } else {
+            setPricePerUnit((totalCost / qty).toFixed(2));
         }
-    }, [itemToRestock, activeMaterial, materialType]);
+        // Run once when activeMaterial becomes available (not on every qty change)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeMaterial?.id, itemToRestock?.id]);
 
 
     // Live Cost Calculation Effect
+    // Always updates the cost field — including setting it to "0" when qty=0 or
+    // no price is entered, so stale values from previous entries don't persist.
     useEffect(() => {
         const qty = parseFloat(form.state.values.quantity || "0");
-        if (qty <= 0) return;
 
         let total = 0;
 
-        if (materialType === "chemical") {
-            const price = parseFloat(pricePerUnit || "0");
-            total = price * qty;
-        } else if (materialType === "packaging" && activeMaterial) {
-            const pkg = activeMaterial as any;
-            if (pkg.type === "primary") {
-                const weight = parseFloat(pkg.weightPerPack || "0");
-                const price = parseFloat(pricePerKg || "0");
-                if (weight > 0) {
-                    // Formula: (Weight/1000) * PricePerKg * Qty
-                    const unitCost = price * (weight / 1000);
-                    total = unitCost * qty;
-                }
-            } else {
-                // Master / Sticker / Others -> Simple Unit Price
+        if (qty > 0) {
+            if (materialType === "chemical") {
                 const price = parseFloat(pricePerUnit || "0");
                 total = price * qty;
+            } else if (materialType === "packaging" && activeMaterial) {
+                const pkg = activeMaterial as any;
+                if (pkg.type === "primary") {
+                    const weight = parseFloat(pkg.weightPerPack || "0");
+                    const price = parseFloat(pricePerKg || "0");
+                    if (weight > 0 && price > 0) {
+                        // Formula: (Weight/1000) * PricePerKg * Qty
+                        total = price * (weight / 1000) * qty;
+                    }
+                } else {
+                    // Master / Sticker / Others -> Simple Unit Price
+                    const price = parseFloat(pricePerUnit || "0");
+                    total = price * qty;
+                }
             }
         }
 
-        if (total > 0) {
-            form.setFieldValue("cost", Math.round(total).toString());
-        }
+        // Always sync cost — even "0" so the field never shows a stale value
+        form.setFieldValue("cost", total > 0 ? Math.round(total).toString() : "");
     }, [form.state.values.quantity, pricePerUnit, pricePerKg, materialType, activeMaterial]);
 
 

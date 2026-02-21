@@ -90,7 +90,7 @@ export const LoginForm = () => {
 			{showVerificationComponent ? (
 				<EmailVerification email={form.getFieldValue("email")} />
 			) : (
-				<Card className="border-0 shadow-none">
+				<Card className="border-0 ">
 					<CardHeader className="text-center space-y-2 pb-6">
 						<CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
 						<CardDescription className="text-sm text-muted-foreground">

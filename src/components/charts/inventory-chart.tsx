@@ -21,7 +21,7 @@ export function InventoryPieChart({ data }: InventoryChartProps) {
     ]
 
     return (
-        <Card className="col-span-1 lg:col-span-4 shadow-sm border-slate-200 dark:border-slate-800">
+        <Card className="col-span-1 lg:col-span-4  border-slate-200 dark:border-slate-800">
             <CardHeader>
                 <CardTitle>Inventory Composition</CardTitle>
                 <CardDescription>

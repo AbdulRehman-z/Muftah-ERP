@@ -43,7 +43,7 @@ const ActionsCell = ({ user, onAction }: ActionsProps) => {
           <MoreHorizontal className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl border-muted-foreground/10 shadow-2xl">
+      <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl border-muted-foreground/10 ">
         <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/70">
           User Management
         </DropdownMenuLabel>
@@ -109,7 +109,7 @@ export const columns = (
         const user = row.original;
         return (
           <div className="flex items-center gap-3 py-1">
-            <Avatar className="h-8 w-8 border border-muted-foreground/5 shadow-sm">
+            <Avatar className="h-8 w-8 border border-muted-foreground/5 ">
               <AvatarImage src={user.image || ""} alt={user.name} />
               <AvatarFallback className="bg-muted text-muted-foreground text-[10px] font-bold">
                 {user.name.charAt(0).toUpperCase()}

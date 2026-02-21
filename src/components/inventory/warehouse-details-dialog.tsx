@@ -45,7 +45,7 @@ export const WarehouseDetailsDialog = ({ open, onOpenChange, warehouse }: Props)
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden border-none shadow-2xl">
+            <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden border-none ">
                 <div className="bg-primary/5 p-6 border-b border-primary/10">
                     <DialogHeader className="space-y-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -132,7 +132,7 @@ export const WarehouseDetailsDialog = ({ open, onOpenChange, warehouse }: Props)
                                 <Navigation2 className="size-3.5" />
                                 <span>Logistics Destination</span>
                             </div>
-                            <Card className="bg-muted/10 border-none shadow-none">
+                            <Card className="bg-muted/10 border-none ">
                                 <CardContent className="p-4">
                                     <p className="text-sm font-semibold leading-relaxed text-foreground/80 italic">
                                         "{warehouse.address}"
@@ -146,7 +146,7 @@ export const WarehouseDetailsDialog = ({ open, onOpenChange, warehouse }: Props)
                 <div className="p-4 bg-muted/30 border-t flex justify-end">
                     <button
                         onClick={() => onOpenChange(false)}
-                        className="px-6 py-2 bg-foreground text-background font-bold rounded-xl text-sm transition-all hover:opacity-90 active:scale-95 shadow-lg"
+                        className="px-6 py-2 bg-foreground text-background font-bold rounded-xl text-sm transition-all hover:opacity-90 active:scale-95 "
                     >
                         Dismiss Audit
                     </button>

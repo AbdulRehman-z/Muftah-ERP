@@ -290,7 +290,7 @@ export const AddPackagingMaterialForm = ({ onSuccess, warehouses, preselectedWar
                                 const roundedCost = Math.round(exactCost);
 
                                 return (
-                                    <div className="flex flex-col gap-3 bg-primary/5 p-4 rounded-xl border border-primary/10 shadow-sm animate-in fade-in slide-in-from-top-2">
+                                    <div className="flex flex-col gap-3 bg-primary/5 p-4 rounded-xl border border-primary/10  animate-in fade-in slide-in-from-top-2">
                                         <div className="flex items-center justify-between">
                                             <div className="space-y-0.5">
                                                 <div className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">The Golden Formula</div>
@@ -311,7 +311,7 @@ export const AddPackagingMaterialForm = ({ onSuccess, warehouses, preselectedWar
                                                 <Button
                                                     type="button"
                                                     size="sm"
-                                                    className="h-8 text-xs font-semibold px-4 shadow-md transition-all active:scale-95"
+                                                    className="h-8 text-xs font-semibold px-4  transition-all active:scale-95"
                                                     onClick={() => form.setFieldValue("costPerUnit", roundedCost.toString())}
                                                 >
                                                     Apply Rounded ({roundedCost})

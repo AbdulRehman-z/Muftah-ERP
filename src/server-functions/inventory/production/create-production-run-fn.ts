@@ -98,7 +98,7 @@ export const createProductionRunFn = createServerFn()
 				.orderBy(desc(productionRuns.createdAt))
 				.limit(1);
 
-			let batchId = "PR1000";
+			let batchId = "AB1000";
 
 			if (lastRun && lastRun.batchId) {
 				const match = lastRun.batchId.match(/^([A-Za-z]+)(\d+)$/);

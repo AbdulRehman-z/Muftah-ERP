@@ -60,7 +60,7 @@ export const ForgotPasswordForm = () => {
 
 	return (
 		<FormWrapper>
-			<Card className="border-0 shadow-none">
+			<Card className="border-0 ">
 				<CardHeader className="text-center space-y-2 pb-6">
 					<CardTitle className="text-2xl font-semibold">
 						{isSent ? "Check your email" : "Forgot password?"}

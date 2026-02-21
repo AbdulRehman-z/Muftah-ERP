@@ -51,7 +51,7 @@ export function NavUser() {
 		<SidebarMenu className="gap-2">
 			<SidebarMenuItem>
 				<div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-muted/20 border border-muted-foreground/5 mb-1 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:border-0 transition-all duration-300">
-					<Avatar className="h-9 w-9 border-2 border-background shadow-sm rounded-xl shrink-0">
+					<Avatar className="h-9 w-9 border-2 border-background  rounded-xl shrink-0">
 						<AvatarImage src={user.image || ""} alt={user.name} />
 						<AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
 							{user.name.charAt(0).toUpperCase()}

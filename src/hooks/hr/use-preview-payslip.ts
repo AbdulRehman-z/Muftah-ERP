@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { previewEmployeePayslipFn } from "@/server-functions/hr/payroll/dashboard-fn";
 
 interface PreviewPayslipInput {
@@ -10,6 +10,7 @@ interface PreviewPayslipInput {
         incentiveAmount: number;
         taxDeduction: number;
         advanceDeduction: number;
+        overtimeMultiplier: number;
     };
 }
 
@@ -18,5 +19,6 @@ export function usePreviewPayslip(input: PreviewPayslipInput, enabled: boolean) 
         queryKey: ["payslip-preview", input.employeeId, input.month, input.manualDeductions, input.additionalAmounts],
         queryFn: () => previewEmployeePayslipFn({ data: input }),
         enabled: enabled && !!input.employeeId,
+        placeholderData: keepPreviousData,
     });
 }

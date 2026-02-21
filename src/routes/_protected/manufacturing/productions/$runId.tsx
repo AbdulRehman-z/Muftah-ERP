@@ -172,7 +172,7 @@ function ProductionRunDetailsPage() {
                     {/* Top Stats Row */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         {/* Costs Stats */}
-                        <Card className="md:col-span-2 bg-gradient-to-br from-primary/5 via-background to-background border-primary/10 shadow-sm relative overflow-hidden">
+                        <Card className="md:col-span-2 bg-gradient-to-br from-primary/5 via-background to-background border-primary/10  relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-4 opacity-[0.03]">
                                 <Calculator className="size-32 -mr-8 -mt-8" />
                             </div>
@@ -209,7 +209,7 @@ function ProductionRunDetailsPage() {
                         </Card>
 
                         {/* Yield Stats */}
-                        <Card className="bg-background/50 border shadow-sm">
+                        <Card className="bg-background/50 border ">
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                                     <BarChart3 className="size-4" />
@@ -238,7 +238,7 @@ function ProductionRunDetailsPage() {
                         </Card>
 
                         {/* Timing */}
-                        <Card className="bg-background/50 border shadow-sm">
+                        <Card className="bg-background/50 border ">
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                                     <Clock className="size-4" />
@@ -271,7 +271,7 @@ function ProductionRunDetailsPage() {
                                 </Badge>
                             </div>
 
-                            <Card className="shadow-sm border-border overflow-hidden">
+                            <Card className=" border-border overflow-hidden">
                                 <Table>
                                     <TableHeader className="bg-muted/50">
                                         <TableRow>

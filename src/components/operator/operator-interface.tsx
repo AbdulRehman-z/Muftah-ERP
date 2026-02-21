@@ -51,7 +51,7 @@ export const OperatorInterface = () => {
 	return (
 		<div className="grid gap-6">
 			{activeRuns.map((run) => (
-				<Card key={run.id} className="overflow-hidden border-border/50 hover:shadow-md transition-shadow">
+				<Card key={run.id} className="overflow-hidden border-border/50 hover: transition-shadow">
 					<div className="h-1.5 bg-blue-600 w-full" />
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 						<div className="space-y-1">

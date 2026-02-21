@@ -74,6 +74,7 @@ export type PayslipCalculation = {
     daysLeave: number;
     daysHalfDay: number;
     totalOvertimeHours: number;
+    totalUndertimeHours: number;
     nightShiftsCount: number;
 
     // Earnings
@@ -97,6 +98,21 @@ export type PayslipCalculation = {
     taxDeduction: number;
     manualDeductions: Array<{ description: string; amount: number }>;
     otherDeduction: number;
+    standardBreakdown: {
+        basicSalary: number;
+        houseRentAllowance: number;
+        utilitiesAllowance: number;
+        bikeMaintenanceAllowance: number;
+        mobileAllowance: number;
+        conveyanceAllowance: number;
+    };
+    calculationMeta: {
+        perDayBasic: number;
+        perHourBasic: number;
+        overtimeMultiplier: number;
+        overtimeRatePerHour: number;
+        standardDutyHours: number;
+    };
 
     // Totals
     grossSalary: number;
@@ -160,6 +176,7 @@ export function calculateAbsentDeductions(
 ): {
     absentDeduction: number;
     leaveDeduction: number;
+    totalUndertimeHours: number;
     adjustedEarnings: {
         basicSalary: number;
         houseRentAllowance: number;
@@ -191,6 +208,7 @@ export function calculateAbsentDeductions(
 
     let totalAbsentDeduction = 0;
     let totalLeaveDeduction = 0;
+    let totalUndertimeHours = 0;
 
     let basicAdjustment = 0;
     let houseRentAdjustment = 0;
@@ -233,6 +251,7 @@ export function calculateAbsentDeductions(
 
             totalAbsentDeduction += hourDeduction;
             basicAdjustment += hourDeduction;
+            totalUndertimeHours += shortHours;
         }
         else if (record.status === "leave") {
             // Unpaid leave: Deduct from Conveyance
@@ -244,6 +263,7 @@ export function calculateAbsentDeductions(
     return {
         absentDeduction: Math.round(totalAbsentDeduction),
         leaveDeduction: Math.round(totalLeaveDeduction),
+        totalUndertimeHours: +totalUndertimeHours.toFixed(2),
         adjustedEarnings: {
             basicSalary: Math.round(basicSalary - basicAdjustment),
             houseRentAllowance: Math.round(houseRent - houseRentAdjustment),
@@ -263,11 +283,12 @@ export function calculateOvertimePay(
     basicSalary: number,
     standardDutyHours: number,
     totalWorkingDays: number,
-    overtimeHours: number
+    overtimeHours: number,
+    multiplier: number = 1.5
 ): number {
     const perDayBasic = basicSalary / totalWorkingDays;
     const perHourBasic = perDayBasic / standardDutyHours;
-    const overtimeRate = perHourBasic * 1.5;
+    const overtimeRate = perHourBasic * multiplier;
 
     return Math.round(overtimeRate * overtimeHours);
 }
@@ -287,6 +308,7 @@ export function calculatePayslip(
         bonusAmount?: number;
         advanceDeduction?: number;
         taxDeduction?: number;
+        overtimeMultiplier?: number;
     } = {}
 ): PayslipCalculation {
     // Calculate working days
@@ -303,7 +325,7 @@ export function calculatePayslip(
     const nightShiftsCount = attendanceRecords.filter(r => r.isNightShift).length;
 
     // Calculate absent/leave deductions
-    const { absentDeduction, leaveDeduction, adjustedEarnings } = calculateAbsentDeductions(
+    const { absentDeduction, leaveDeduction, totalUndertimeHours, adjustedEarnings } = calculateAbsentDeductions(
         employee,
         attendanceRecords,
         totalWorkingDays
@@ -319,11 +341,18 @@ export function calculatePayslip(
             parseFloat(employee.basicSalary),
             employee.standardDutyHours,
             totalWorkingDays,
-            totalOvertimeHours
+            totalOvertimeHours,
+            additionalAmounts.overtimeMultiplier || 1.5
         );
     const nightShiftAllowance = additionalAmounts.nightShiftAllowance || 0;
     const incentiveAmount = additionalAmounts.incentiveAmount || 0;
     const bonusAmount = additionalAmounts.bonusAmount || 0;
+
+    // Intermediate rates for transparency
+    const stdDutyHours = employee.standardDutyHours || 8;
+    const perDayBasicRate = parseFloat(employee.basicSalary) / totalWorkingDays;
+    const perHourBasicRate = perDayBasicRate / stdDutyHours;
+    const usedMultiplier = additionalAmounts.overtimeMultiplier || 1.5;
 
     // Calculate gross salary
     const grossSalary =
@@ -375,6 +404,7 @@ export function calculatePayslip(
         daysLeave,
         daysHalfDay,
         totalOvertimeHours: +totalOvertimeHours.toFixed(2),
+        totalUndertimeHours,
         nightShiftsCount,
 
         basicSalary: adjustedEarnings.basicSalary,
@@ -400,6 +430,21 @@ export function calculatePayslip(
         grossSalary: Math.round(grossSalary),
         totalDeductions: Math.round(totalDeductions),
         netSalary: Math.round(netSalary),
+        standardBreakdown: {
+            basicSalary: parseFloat(employee.basicSalary),
+            houseRentAllowance: parseFloat(employee.houseRentAllowance),
+            utilitiesAllowance: parseFloat(employee.utilitiesAllowance),
+            bikeMaintenanceAllowance: parseFloat(employee.bikeMaintenanceAllowance),
+            mobileAllowance: parseFloat(employee.mobileAllowance),
+            conveyanceAllowance: parseFloat(employee.conveyanceAllowance),
+        },
+        calculationMeta: {
+            perDayBasic: +perDayBasicRate.toFixed(4),
+            perHourBasic: +perHourBasicRate.toFixed(4),
+            overtimeMultiplier: usedMultiplier,
+            overtimeRatePerHour: +(perHourBasicRate * usedMultiplier).toFixed(4),
+            standardDutyHours: stdDutyHours,
+        },
 
         remarks: "",
     };

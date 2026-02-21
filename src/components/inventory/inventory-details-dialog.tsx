@@ -57,7 +57,7 @@ export const InventoryDetailsDialog = ({ open, onOpenChange, type, item }: Detai
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="min-w-3xl p-0 gap-0 overflow-hidden border-none shadow-md">
+            <DialogContent className="min-w-3xl p-0 gap-0 overflow-hidden border-none ">
                 <div className="bg-primary/5 p-6 border-b border-primary/10">
                     <DialogHeader className="space-y-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -335,7 +335,7 @@ export const InventoryDetailsDialog = ({ open, onOpenChange, type, item }: Detai
                                             <td className="p-5 font-bold text-muted-foreground/80 bg-muted/20 text-xs uppercase tracking-widest">Locality</td>
                                             <td className="p-5">
                                                 <div className="flex items-center gap-3">
-                                                    <Badge className="bg-background text-foreground border-border px-3 py-1 font-bold text-xs tracking-tight shadow-sm">
+                                                    <Badge className="bg-background text-foreground border-border px-3 py-1 font-bold text-xs tracking-tight ">
                                                         {item.warehouse.name}
                                                     </Badge>
                                                     {!item.warehouse.isActive && (
@@ -354,7 +354,7 @@ export const InventoryDetailsDialog = ({ open, onOpenChange, type, item }: Detai
                 <div className="p-4 bg-muted/30 border-t flex justify-end">
                     <button
                         onClick={() => onOpenChange(false)}
-                        className="px-6 py-2 bg-foreground text-background font-bold rounded-xl text-sm transition-all hover:opacity-90 active:scale-95 shadow-sm"
+                        className="px-6 py-2 bg-foreground text-background font-bold rounded-xl text-sm transition-all hover:opacity-90 active:scale-95 "
                     >
                         Close Details
                     </button>

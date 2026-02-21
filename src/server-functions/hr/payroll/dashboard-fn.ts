@@ -151,6 +151,7 @@ export const previewEmployeePayslipFn = createServerFn()
             bonusAmount: z.number().optional(),
             advanceDeduction: z.number().optional(),
             taxDeduction: z.number().optional(),
+            overtimeMultiplier: z.number().optional(),
         }).optional(),
     }))
     .handler(async ({ data }) => {

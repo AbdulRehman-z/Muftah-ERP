@@ -52,7 +52,7 @@ export const UserSessionsList = ({ userId }: Props) => {
                     sessions.map((session: Session) => (
                         <div key={session.token} className="flex items-center justify-between p-3 border border-border/40 bg-muted/5 rounded-xl group transition-all hover:bg-muted/10">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-background border border-border/40 rounded-lg shadow-sm group-hover:border-primary/20 transition-colors">
+                                <div className="p-2 bg-background border border-border/40 rounded-lg  group-hover:border-primary/20 transition-colors">
                                     {getDeviceIcon(session.userAgent!)}
                                 </div>
                                 <div className="flex flex-col">

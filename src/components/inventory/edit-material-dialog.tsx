@@ -102,7 +102,7 @@ export const EditMaterialDialog = ({ open, onOpenChange, type, item }: Props) =>
                                             className={cn(
                                                 "flex items-center justify-center gap-2 py-2 text-sm font-semibold rounded-md transition-all duration-200",
                                                 field.state.value === "primary"
-                                                    ? "bg-background shadow-sm text-primary ring-1 ring-black/5"
+                                                    ? "bg-background  text-primary ring-1 ring-black/5"
                                                     : "text-muted-foreground hover:bg-background/50 hover:text-foreground",
                                                 material?.type?.toLowerCase() === "master" && "opacity-50 cursor-not-allowed"
                                             )}
@@ -122,7 +122,7 @@ export const EditMaterialDialog = ({ open, onOpenChange, type, item }: Props) =>
                                             className={cn(
                                                 "flex items-center justify-center gap-2 py-2 text-sm font-semibold rounded-md transition-all duration-200",
                                                 field.state.value === "master"
-                                                    ? "bg-background shadow-sm text-primary ring-1 ring-black/5"
+                                                    ? "bg-background  text-primary ring-1 ring-black/5"
                                                     : "text-muted-foreground hover:bg-background/50 hover:text-foreground",
                                                 material?.type?.toLowerCase() === "primary" && "opacity-50 cursor-not-allowed"
                                             )}

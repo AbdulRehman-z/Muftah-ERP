@@ -166,7 +166,7 @@ export const RecipeDetailView = ({ recipe }: Props) => {
                 {/* Main Content Area */}
                 <div className="lg:col-span-2 space-y-8">
                     {/* Chemical Formulation */}
-                    <Card className="overflow-hidden border-none shadow-sm ring-1 ring-border/50">
+                    <Card className="overflow-hidden border-none  ring-1 ring-border/50">
                         <CardHeader className="bg-muted/30 pb-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
@@ -215,7 +215,7 @@ export const RecipeDetailView = ({ recipe }: Props) => {
                     </Card>
 
                     {/* Packaging Details */}
-                    <Card className="overflow-hidden border-none shadow-sm ring-1 ring-border/50">
+                    <Card className="overflow-hidden border-none  ring-1 ring-border/50">
                         <CardHeader className="bg-muted/30 pb-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
@@ -318,7 +318,7 @@ export const RecipeDetailView = ({ recipe }: Props) => {
                 {/* Sidebar Info */}
                 <div className="space-y-6">
                     {/* Fast Info Card */}
-                    <Card className="border-none shadow-sm ring-1 ring-border/50 overflow-hidden">
+                    <Card className="border-none  ring-1 ring-border/50 overflow-hidden">
                         <CardHeader className="bg-primary/5 pb-4 border-b border-primary/10">
                             <CardTitle className="text-base flex items-center gap-2">
                                 <ClipboardList className="size-4 text-primary" />
@@ -346,7 +346,7 @@ export const RecipeDetailView = ({ recipe }: Props) => {
                     </Card>
 
                     {/* Quality/Notes Section */}
-                    <Card className="border-none shadow-sm ring-1 ring-border/50 ">
+                    <Card className="border-none  ring-1 ring-border/50 ">
                         <CardHeader className="pb-3">
                             <CardTitle className="text-sm font-bold flex items-center gap-2 text-primary">
                                 <Info className="size-4" />

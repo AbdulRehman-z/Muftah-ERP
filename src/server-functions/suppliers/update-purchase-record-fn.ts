@@ -13,12 +13,15 @@ const updatePurchaseSchema = z.object({
     notes: z.string().optional(),
     transactionId: z.string().optional().nullable(),
     invoiceNumber: z.string().optional().nullable(),
+    // Payment fields
+    paymentMethod: z.string().optional().nullable(),
+    paidBy: z.string().optional().nullable(),
     // Material fields
     materialName: z.string().optional(),
     capacity: z.string().optional(),
     capacityUnit: z.string().optional(),
     minStock: z.string().optional(),
-    unit: z.string().optional(), // for chemical if needed, though user didn't ask
+    unit: z.string().optional(),
 });
 
 export const updatePurchaseRecordFn = createServerFn()
@@ -95,6 +98,13 @@ export const updatePurchaseRecordFn = createServerFn()
                 transactionId: data.transactionId || null,
                 updatedAt: new Date(),
             };
+
+            if (data.paymentMethod) {
+                updateData.paymentMethod = data.paymentMethod;
+            }
+            if (data.paidBy !== undefined) {
+                updateData.paidBy = data.paidBy || null;
+            }
 
             if (data.quantity && data.cost) {
                 updateData.quantity = data.quantity;

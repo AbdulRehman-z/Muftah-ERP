@@ -15,20 +15,33 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-	AlertDialogTrigger,
 } from "../ui/alert-dialog";
 import { DataTable } from "../ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 
 type ProductionRunsTableProps = {
 	runs: any[];
 };
 
+/**
+ * Fix: AlertDialogs are controlled via lifted state outside of tanstack-table columns.
+ * Previously, the dialog was defined inside the column cell renderer inside useMemo.
+ * When background polling invalidates ["production-runs"] and the table re-renders,
+ * the column useMemo re-computed, unmounting and remounting the AlertDialogContent —
+ * which caused the dialog to close itself every ~3 seconds.
+ *
+ * The fix is to keep ONE AlertDialog per action type outside the table,
+ * and only pass the target run id into it via state.
+ */
 export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 	const startProduction = useStartProduction();
 	const completeProduction = useCompleteProduction();
+
+	// Lifted dialog state — prevents re-renders from closing open dialogs
+	const [startDialogRunId, setStartDialogRunId] = useState<string | null>(null);
+	const [finishDialogRunId, setFinishDialogRunId] = useState<string | null>(null);
 
 	const getStatusBadge = (status: string) => {
 		switch (status) {
@@ -68,7 +81,7 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 		},
 		{
 			id: "recipe",
-			accessorFn: (row) => row.recipe.name, // For filtering
+			accessorFn: (row) => row.recipe.name,
 			header: () => <span className="text-[10px] font-bold uppercase tracking-wide">Recipe</span>,
 			cell: ({ row }) => (
 				<div>
@@ -159,7 +172,6 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 			accessorKey: "totalProductionCost",
 			header: ({ column }) => (
 				<Button
-
 					variant="ghost"
 					onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
 					className="-ml-3 h-auto py-1 uppercase text-[10px] font-bold tracking-wide"
@@ -188,7 +200,6 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 			accessorKey: "costPerContainer",
 			header: ({ column }) => (
 				<Button
-
 					variant="ghost"
 					onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
 					className="-ml-3 h-auto py-1 uppercase text-[10px] font-bold tracking-wide"
@@ -207,7 +218,6 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 			accessorKey: "createdAt",
 			header: ({ column }) => (
 				<Button
-
 					variant="ghost"
 					onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
 					className="-ml-3 h-auto py-1 uppercase text-[10px] font-bold tracking-wide"
@@ -232,97 +242,29 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 				return (
 					<div className="flex justify-end gap-2">
 						{run.status === "scheduled" && (
-							<AlertDialog>
-								<AlertDialogTrigger asChild>
-									<Button
-										variant="default"
-										size="sm"
-										className="h-8 text-[10px] font-black uppercase tracking-wider"
-										disabled={startProduction.isPending}
-									>
-										<Play className="size-3 mr-1.5" />
-										Start Run
-									</Button>
-								</AlertDialogTrigger>
-								<AlertDialogContent>
-									<AlertDialogHeader>
-										<AlertDialogTitle>Start Production?</AlertDialogTitle>
-										<AlertDialogDescription>
-											This will deduct Chemicals and packaging from the warehouse. This action cannot be easily undone. Are you sure?
-										</AlertDialogDescription>
-									</AlertDialogHeader>
-									<AlertDialogFooter>
-										<AlertDialogCancel>Cancel</AlertDialogCancel>
-										<AlertDialogAction
-											onClick={() =>
-												startProduction.mutate({
-													data: { productionRunId: run.id },
-												}, {
-													onSuccess: () => {
-														toast.success("Production Started", {
-															description: "Materials deducted. Status set to In Progress."
-														});
-													},
-													onError: (err) => {
-														toast.error("Failed to start production", {
-															description: err.message
-														});
-													}
-												})
-											}
-										>
-											Start Production
-										</AlertDialogAction>
-									</AlertDialogFooter>
-								</AlertDialogContent>
-							</AlertDialog>
+							<Button
+								variant="default"
+								size="sm"
+								className="h-8 text-[10px] font-black uppercase tracking-wider"
+								disabled={startProduction.isPending}
+								onClick={() => setStartDialogRunId(run.id)}
+							>
+								<Play className="size-3 mr-1.5" />
+								Start Run
+							</Button>
 						)}
 
 						{run.status === "in_progress" && (
-							<AlertDialog>
-								<AlertDialogTrigger asChild>
-									<Button
-										variant="default"
-										size="sm"
-										className="h-8 text-[10px] font-black uppercase tracking-wider bg-green-600 hover:bg-green-700"
-										disabled={completeProduction.isPending}
-									>
-										<NotebookPenIcon className="size-3 mr-1.5" />
-										Finish Run
-									</Button>
-								</AlertDialogTrigger>
-								<AlertDialogContent>
-									<AlertDialogHeader>
-										<AlertDialogTitle>Complete Production?</AlertDialogTitle>
-										<AlertDialogDescription>
-											This will create finished goods in the warehouse. You can transfer them to other warehouses afterwards.
-										</AlertDialogDescription>
-									</AlertDialogHeader>
-									<AlertDialogFooter>
-										<AlertDialogCancel>Cancel</AlertDialogCancel>
-										<AlertDialogAction
-											onClick={() =>
-												completeProduction.mutate({
-													data: { productionRunId: run.id },
-												}, {
-													onSuccess: () => {
-														toast.success("Production Completed", {
-															description: "Finished goods added to inventory."
-														});
-													},
-													onError: (err) => {
-														toast.error("Failed to complete production", {
-															description: err.message
-														});
-													}
-												})
-											}
-										>
-											Complete Production
-										</AlertDialogAction>
-									</AlertDialogFooter>
-								</AlertDialogContent>
-							</AlertDialog>
+							<Button
+								variant="default"
+								size="sm"
+								className="h-8 text-[10px] font-black uppercase tracking-wider bg-green-600 hover:bg-green-700"
+								disabled={completeProduction.isPending}
+								onClick={() => setFinishDialogRunId(run.id)}
+							>
+								<NotebookPenIcon className="size-3 mr-1.5" />
+								Finish Run
+							</Button>
 						)}
 
 						<Button
@@ -339,14 +281,90 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
 				);
 			}
 		}
-	], [startProduction, completeProduction]);
+	], [startProduction.isPending, completeProduction.isPending]);
 
 	return (
-		<DataTable
-			columns={columns}
-			data={runs}
-			showSearch={false}
-			pageSize={6}
-		/>
+		<>
+			<DataTable
+				columns={columns}
+				data={runs}
+				showSearch={false}
+				pageSize={6}
+			/>
+
+			{/* Start Run Confirmation Dialog — lifted outside table to survive re-renders */}
+			<AlertDialog open={!!startDialogRunId} onOpenChange={(open) => !open && setStartDialogRunId(null)}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Start Production?</AlertDialogTitle>
+						<AlertDialogDescription>
+							This will deduct Chemicals and packaging from the warehouse. This action cannot be easily undone. Are you sure?
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={() => {
+								if (!startDialogRunId) return;
+								startProduction.mutate({
+									data: { productionRunId: startDialogRunId },
+								}, {
+									onSuccess: () => {
+										toast.success("Production Started", {
+											description: "Materials deducted. Status set to In Progress.",
+										});
+										setStartDialogRunId(null);
+									},
+									onError: (err) => {
+										toast.error("Failed to start production", {
+											description: err.message
+										});
+									}
+								});
+							}}
+						>
+							Start Production
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			{/* Finish Run Confirmation Dialog — lifted outside table to survive re-renders */}
+			<AlertDialog open={!!finishDialogRunId} onOpenChange={(open) => !open && setFinishDialogRunId(null)}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Complete Production?</AlertDialogTitle>
+						<AlertDialogDescription>
+							This will create finished goods in the warehouse. You can transfer them to other warehouses afterwards.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={() => {
+								if (!finishDialogRunId) return;
+								completeProduction.mutate({
+									data: { productionRunId: finishDialogRunId },
+								}, {
+									onSuccess: () => {
+										toast.success("Production Completed", {
+											description: "Finished goods added to inventory.",
+										});
+										setFinishDialogRunId(null);
+									},
+									onError: (err) => {
+										toast.error("Failed to complete production", {
+											description: err.message
+										});
+									}
+								});
+							}}
+						>
+							Complete Production
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</>
 	);
 };

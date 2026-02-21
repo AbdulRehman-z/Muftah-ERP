@@ -57,7 +57,7 @@ export const ProductionDetailsDialog = ({ open, onOpenChange, run }: Props) => {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange} >
-            <DialogContent className="min-w-7xl max-h-[92vh] overflow-y-auto flex flex-col p-0 border-none shadow-2xl">
+            <DialogContent className="min-w-7xl max-h-[92vh] overflow-y-auto flex flex-col p-0 border-none ">
                 {/* Premium Header */}
                 <div className="relative bg-muted/30 p-8 pt-10 pb-6 border-b">
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pr-8">
@@ -76,7 +76,7 @@ export const ProductionDetailsDialog = ({ open, onOpenChange, run }: Props) => {
                         </div>
                         <div className="flex flex-col items-start md:items-end gap-3">
                             {getStatusBadge(run.status)}
-                            <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-wider bg-background/50 px-3 py-1.5 rounded-full border shadow-sm">
+                            <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-wider bg-background/50 px-3 py-1.5 rounded-full border ">
                                 <Calendar1Icon className="size-3" />
                                 Created {format(new Date(run.createdAt), "MMMM d, yyyy")}
                             </div>

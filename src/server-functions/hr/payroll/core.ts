@@ -20,6 +20,7 @@ export type GeneratePayslipInput = {
         bonusAmount?: number;
         advanceDeduction?: number;
         taxDeduction?: number;
+        overtimeMultiplier?: number;
     };
 };
 

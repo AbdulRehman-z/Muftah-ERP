@@ -471,7 +471,7 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                         <div className="space-y-6">
 
                             {/* 1. Basic Information & Mass Balance */}
-                            <Card className="shadow-sm border-border/60">
+                            <Card className=" border-border/60">
                                 <CardHeader className="bg-muted/30 pb-4">
                                     <div className="flex items-center justify-between">
                                         <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
@@ -621,7 +621,7 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                             </Card>
 
                             {/* 2. Ingredients */}
-                            <Card className="shadow-sm border-border/60">
+                            <Card className=" border-border/60">
                                 <CardHeader className="bg-muted/30 pb-4 flex flex-row items-center justify-between">
                                     <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                                         <FlaskConical className="size-4" />
@@ -726,7 +726,7 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                             </Card>
 
                             {/* 3. Packaging */}
-                            <Card className="shadow-sm border-border/60">
+                            <Card className=" border-border/60">
                                 <CardHeader className="bg-muted/30 pb-4">
                                     <div className="flex items-center justify-between">
                                         <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
@@ -1107,11 +1107,11 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                         <div className="space-y-6">
 
                             {/* Live Analysis Card */}
-                            <Card className="border-2 border-primary/10 shadow-lg shadow-primary/5 sticky top-24">
+                            <Card className="border-2 border-primary/10  shadow-primary/5 sticky top-24">
                                 <CardHeader className="bg-primary/5 pb-4 border-b border-primary/5">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <div className="p-2 bg-background rounded-lg border shadow-sm">
+                                            <div className="p-2 bg-background rounded-lg border ">
                                                 <Calculator className="size-5 text-primary" />
                                             </div>
                                             <div>

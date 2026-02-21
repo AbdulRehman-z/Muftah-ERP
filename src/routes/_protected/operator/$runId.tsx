@@ -243,7 +243,7 @@ function ProductionRunManagePage() {
             <div className="grid md:grid-cols-3 gap-6">
                 {/* Left Column: Progress & Logging */}
                 <div className="md:col-span-2 space-y-6">
-                    <Card className="border-border/50 shadow-sm relative overflow-hidden">
+                    <Card className="border-border/50  relative overflow-hidden">
                         <div className={`absolute top-0 left-0 w-1 h-full ${isCancelled ? "bg-red-500" : "bg-primary"}`} />
                         <CardHeader className="pb-2">
                             <CardTitle className="flex items-center gap-2 text-lg">
@@ -294,7 +294,7 @@ function ProductionRunManagePage() {
                         </CardContent>
                     </Card>
 
-                    <Card className="border-border/50 shadow-md">
+                    <Card className="border-border/50 ">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-lg">
                                 <Zap className="size-5 text-yellow-600" />
@@ -423,7 +423,7 @@ function CompletedRunSuccessView({ run, navigate }: { run: any, navigate: any })
     return (
         <div className="max-w-3xl mx-auto p-8 pt-12 space-y-8 animate-in fade-in duration-700">
             <div className="text-center space-y-4">
-                <div className="inline-flex items-center justify-center p-4 bg-emerald-100 text-emerald-600 rounded-full mb-4 shadow-sm ring-8 ring-emerald-50">
+                <div className="inline-flex items-center justify-center p-4 bg-emerald-100 text-emerald-600 rounded-full mb-4  ring-8 ring-emerald-50">
                     <PartyPopper className="size-10" />
                 </div>
                 <h1 className="text-4xl font-bold tracking-tight text-foreground">Production Completed!</h1>
@@ -439,7 +439,7 @@ function CompletedRunSuccessView({ run, navigate }: { run: any, navigate: any })
                 </div>
             </div>
 
-            <Card className="border-emerald-100 bg-gradient-to-br from-white to-emerald-50/20 shadow-lg">
+            <Card className="border-emerald-100 bg-gradient-to-br from-white to-emerald-50/20 ">
                 <CardContent className="p-8">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="text-center space-y-1">
@@ -476,7 +476,7 @@ function CompletedRunSuccessView({ run, navigate }: { run: any, navigate: any })
             </Card>
 
             <div className="grid md:grid-cols-2 gap-6">
-                <Card className="shadow-sm">
+                <Card className="">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-base flex items-center gap-2">
                             <TrendingUp className="size-4 text-muted-foreground" />
@@ -504,7 +504,7 @@ function CompletedRunSuccessView({ run, navigate }: { run: any, navigate: any })
                 </Card>
 
                 <div className="flex flex-col gap-4">
-                    <Card className="flex-1 flex flex-col justify-center items-center p-6 text-center shadow-sm">
+                    <Card className="flex-1 flex flex-col justify-center items-center p-6 text-center ">
                         <p className="text-muted-foreground mb-4">The production run has been finalized and stock has been updated automatically.</p>
                         <Button
                             onClick={() => navigate({ to: "/operator" })}

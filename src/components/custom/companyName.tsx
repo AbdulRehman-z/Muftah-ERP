@@ -21,7 +21,7 @@ export const CompanyName = () => {
 				{/* Logo and Company Name */}
 				<div className="space-y-8">
 					{/* Logo */}
-					<div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-primary-600 shadow-2xl shadow-purple-500/50">
+					<div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-primary-600  shadow-purple-500/50">
 						<Zap className="size-8 text-white" fill="currentColor" />
 					</div>
 
