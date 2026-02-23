@@ -1,41 +1,179 @@
-import { format } from "date-fns"
-import { Calendar as CalendarIcon } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
+import { useState } from "react";
+import { format, getYear, getMonth } from "date-fns";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 interface DatePickerProps {
-    date?: Date
-    onChange: (date?: Date) => void
-    placeholder?: string
-    className?: string
-    formatStr?: string
+    date?: Date;
+    onChange: (date?: Date) => void;
+    placeholder?: string;
+    className?: string;
+    /**
+     * When true, shows a month-grid picker instead of a full calendar.
+     * Useful for dashboard filters that operate on a monthly granularity.
+     */
+    monthOnly?: boolean;
+    formatStr?: string;
 }
 
-export function DatePicker({ date, onChange, placeholder = "Pick a date", className, formatStr = "PPP" }: DatePickerProps) {
+const MONTHS = [
+    "Jan", "Feb", "Mar", "Apr",
+    "May", "Jun", "Jul", "Aug",
+    "Sep", "Oct", "Nov", "Dec",
+];
+
+function MonthPicker({
+    date,
+    onChange,
+    onClose,
+}: {
+    date?: Date;
+    onChange: (date: Date) => void;
+    onClose: () => void;
+}) {
+    const today = new Date();
+    const [viewYear, setViewYear] = useState(date ? getYear(date) : getYear(today));
+
+    const selectedMonth = date ? getMonth(date) : -1;
+    const selectedYear = date ? getYear(date) : -1;
+
+    const isFuture = (monthIndex: number) => {
+        if (viewYear > getYear(today)) return true;
+        if (viewYear === getYear(today) && monthIndex > getMonth(today)) return true;
+        return false;
+    };
+
     return (
-        <Popover>
+        <div className="p-3 w-[220px]">
+            {/* Year navigation */}
+            <div className="flex items-center justify-between mb-3">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setViewYear((y) => y - 1)}
+                >
+                    <ChevronLeft className="size-3.5" />
+                </Button>
+                <span className="text-sm font-bold tabular-nums">{viewYear}</span>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setViewYear((y) => y + 1)}
+                    disabled={viewYear >= getYear(today)}
+                >
+                    <ChevronRight className="size-3.5" />
+                </Button>
+            </div>
+
+            {/* Month grid */}
+            <div className="grid grid-cols-3 gap-1">
+                {MONTHS.map((label, idx) => {
+                    const isSelected = selectedYear === viewYear && selectedMonth === idx;
+                    const disabled = isFuture(idx);
+
+                    return (
+                        <button
+                            key={label}
+                            disabled={disabled}
+                            onClick={() => {
+                                onChange(new Date(viewYear, idx, 1));
+                                onClose();
+                            }}
+                            className={cn(
+                                "rounded-md py-1.5 text-xs font-semibold transition-colors",
+                                isSelected
+                                    ? "bg-primary text-primary-foreground"
+                                    : "hover:bg-muted text-foreground",
+                                disabled && "opacity-30 cursor-not-allowed pointer-events-none"
+                            )}
+                        >
+                            {label}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+export function DatePicker({
+    date,
+    onChange,
+    placeholder = "Pick a date",
+    className,
+    monthOnly = false,
+    formatStr = "PPP",
+}: DatePickerProps) {
+    const [open, setOpen] = useState(false);
+
+    if (monthOnly) {
+        return (
+            <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                    <Button
+                        variant="outline"
+                        className={cn(
+                            "justify-start text-left font-normal gap-2",
+                            !date && "text-muted-foreground",
+                            className
+                        )}
+                    >
+                        <CalendarIcon className="size-3.5 shrink-0" />
+                        <span className="truncate">
+                            {date ? format(date, formatStr || "MMMM yyyy") : placeholder}
+                        </span>
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                    <MonthPicker
+                        date={date}
+                        onChange={(d) => onChange(d)}
+                        onClose={() => setOpen(false)}
+                    />
+                </PopoverContent>
+            </Popover>
+        );
+    }
+
+    // Full calendar fallback (kept for non-monthOnly usages)
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
                 <Button
                     variant="outline"
-                    data-empty={!date}
                     className={cn(
-                        "data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal",
+                        "justify-start text-left font-normal gap-2",
+                        !date && "text-muted-foreground",
                         className
                     )}
                 >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, formatStr) : <span>{placeholder}</span>}
+                    <CalendarIcon className="size-3.5 shrink-0" />
+                    <span className="truncate">
+                        {date ? format(date, formatStr) : placeholder}
+                    </span>
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={date} onSelect={onChange} initialFocus />
+                <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={(d: Date | undefined) => {
+                        onChange(d);
+                        if (d) setOpen(false);
+                    }}
+                    initialFocus
+                />
             </PopoverContent>
         </Popover>
-    )
+    );
 }

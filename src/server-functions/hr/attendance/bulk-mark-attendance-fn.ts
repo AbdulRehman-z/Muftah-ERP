@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
-import { attendance } from "@/db/schemas/hr-schema";
+import { attendance, employees } from "@/db/schemas/hr-schema";
 import { requireAdminMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 import { and, eq, inArray } from "drizzle-orm";
@@ -16,7 +16,20 @@ export const bulkMarkAttendanceFn = createServerFn()
     .handler(async ({ data }) => {
         const { employeeIds, date, status } = data;
 
-        // Fetch existing records for checking
+        // 1. Fetch employees to get their standardHours
+        const employeesList = await db.query.employees.findMany({
+            where: (table, { inArray }) => inArray(table.id, employeeIds),
+        });
+
+        const getDutyHours = (empId: string) => {
+            const employee = employeesList.find(e => e.id === empId);
+            const standard = employee?.standardDutyHours || 8;
+            if (status === "present") return standard.toFixed(2);
+            if (status === "half_day") return (standard / 2).toFixed(2);
+            return "0.00";
+        };
+
+        // 2. Fetch existing records for this date
         const existingRecords = await db.query.attendance.findMany({
             where: (table, { and, eq, inArray }) => and(
                 eq(table.date, date),
@@ -27,24 +40,30 @@ export const bulkMarkAttendanceFn = createServerFn()
         const existingEmployeeIds = existingRecords.map(r => r.employeeId);
         const newEmployeeIds = employeeIds.filter(id => !existingEmployeeIds.includes(id));
 
-        // Update existing
+        // 3. Update existing
         if (existingRecords.length > 0) {
-            await db.update(attendance)
-                .set({ status, updatedAt: new Date() })
-                .where(and(
-                    eq(attendance.date, date),
-                    inArray(attendance.employeeId, existingEmployeeIds)
-                ));
+            for (const record of existingRecords) {
+                await db.update(attendance)
+                    .set({
+                        status,
+                        dutyHours: getDutyHours(record.employeeId),
+                        updatedAt: new Date()
+                    })
+                    .where(and(
+                        eq(attendance.date, date),
+                        eq(attendance.employeeId, record.employeeId)
+                    ));
+            }
         }
 
-        // Insert new
+        // 4. Insert new
         if (newEmployeeIds.length > 0) {
             const newRecords = newEmployeeIds.map(id => ({
                 id: createId(),
                 employeeId: id,
                 date,
                 status,
-                dutyHours: "0.00",
+                dutyHours: getDutyHours(id),
                 overtimeHours: "0.00",
             }));
             await db.insert(attendance).values(newRecords);

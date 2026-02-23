@@ -8,6 +8,9 @@ import {
     ResponsiveContainer,
     Tooltip,
 } from "recharts";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { TrendingUp, TrendingDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ChartDataPoint {
     month: string;
@@ -18,6 +21,7 @@ interface ChartDataPoint {
 
 interface RevenueExpenseChartProps {
     data: ChartDataPoint[];
+    className?: string;
 }
 
 type TimeRange = "all" | "6m" | "3m";
@@ -28,273 +32,232 @@ const ranges: { value: TimeRange; label: string }[] = [
     { value: "all", label: "All" },
 ];
 
-const formatPKR = (value: number) => {
-    if (value >= 1_000_000) return `PKR ${(value / 1_000_000).toFixed(1)}M`;
-    if (value >= 1_000) return `PKR ${(value / 1_000).toFixed(0)}K`;
-    return `PKR ${value}`;
-};
+function formatPKR(value: number): string {
+    const sign = value < 0 ? "-" : "";
+    const abs = Math.abs(value);
+    if (abs >= 1_000_000) return `${sign}PKR ${(abs / 1_000_000).toFixed(1)}M`;
+    if (abs >= 1_000) return `${sign}PKR ${(abs / 1_000).toFixed(0)}K`;
+    return `${sign}PKR ${abs.toLocaleString()}`;
+}
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+function CustomTooltip({ active, payload, label }: any) {
     if (!active || !payload?.length) return null;
-    const revenue = payload.find((p: any) => p.dataKey === "revenue");
-    const expenses = payload.find((p: any) => p.dataKey === "expenses");
-    const profit = (revenue?.value ?? 0) - (expenses?.value ?? 0);
-    const isProfitable = profit >= 0;
+
+    const revenue = payload.find((p: any) => p.dataKey === "revenue")?.value ?? 0;
+    const expenses = payload.find((p: any) => p.dataKey === "expenses")?.value ?? 0;
+    const net = revenue - expenses;
+    const isProfit = net >= 0;
 
     return (
-        <div
-            style={{
-                background: "rgba(10,10,14,0.92)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: "12px",
-                padding: "14px 16px",
-                backdropFilter: "blur(12px)",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-                minWidth: "fit-content",
-                fontFamily: "'DM Sans', sans-serif",
-            }}
-        >
-            <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>
+        <div className="rounded-xl border border-border bg-popover  p-3 min-w-[168px] text-popover-foreground">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2.5">
                 {label}
             </p>
-            {revenue && (
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 24, marginBottom: 6 }}>
-                    <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>Revenue</span>
-                    <span style={{ color: "#e8f5e2", fontSize: 12, fontWeight: 700 }}>{formatPKR(revenue.value)}</span>
+            <div className="space-y-1.5 mb-2.5">
+                <div className="flex items-center justify-between gap-8">
+                    <div className="flex items-center gap-1.5">
+                        <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
+                        <span className="text-xs text-muted-foreground">Revenue</span>
+                    </div>
+                    <span className="text-xs font-bold tabular-nums">{formatPKR(revenue)}</span>
                 </div>
-            )}
-            {expenses && (
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 24, marginBottom: 10 }}>
-                    <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>Expenses</span>
-                    <span style={{ color: "#f5e2e2", fontSize: 12, fontWeight: 700 }}>{formatPKR(expenses.value)}</span>
+                <div className="flex items-center justify-between gap-8">
+                    <div className="flex items-center gap-1.5">
+                        <span className="size-2 rounded-full bg-rose-500 shrink-0" />
+                        <span className="text-xs text-muted-foreground">Expenses</span>
+                    </div>
+                    <span className="text-xs font-bold tabular-nums">{formatPKR(expenses)}</span>
                 </div>
-            )}
-            <div style={{ height: "1px", background: "rgba(255,255,255,0.07)", marginBottom: 10 }} />
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 24 }}>
-                <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>Net</span>
-                <span style={{
-                    fontSize: 12,
-                    fontWeight: 800,
-                    color: isProfitable ? "#a3e635" : "#fb7185",
-                }}>
-                    {isProfitable ? "+" : ""}{formatPKR(profit)}
+            </div>
+            <div className="h-px bg-border mb-2.5" />
+            <div className="flex items-center justify-between gap-8">
+                <span className="text-xs text-muted-foreground">Net</span>
+                <span className={cn(
+                    "text-xs font-black tabular-nums",
+                    isProfit
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-rose-600 dark:text-rose-400"
+                )}>
+                    {isProfit ? "+" : ""}{formatPKR(net)}
                 </span>
             </div>
         </div>
     );
-};
+}
 
-export function RevenueExpenseChart({ data }: RevenueExpenseChartProps) {
+export function RevenueExpenseChart({ data, className }: RevenueExpenseChartProps) {
     const [timeRange, setTimeRange] = useState<TimeRange>("all");
 
     const filteredData = useMemo(() => {
         if (timeRange === "all" || data.length === 0) return data;
-        const count = timeRange === "6m" ? 6 : 3;
-        return data.slice(-count);
+        return data.slice(-(timeRange === "6m" ? 6 : 3));
     }, [data, timeRange]);
 
     const totals = useMemo(() => {
-        const totalRevenue = filteredData.reduce((s, d) => s + d.revenue, 0);
-        const totalExpenses = filteredData.reduce((s, d) => s + d.expenses, 0);
-        const net = totalRevenue - totalExpenses;
-        const margin = totalRevenue > 0 ? ((net / totalRevenue) * 100).toFixed(1) : "0";
-        return { totalRevenue, totalExpenses, net, margin };
+        const rev = filteredData.reduce((s, d) => s + d.revenue, 0);
+        const exp = filteredData.reduce((s, d) => s + d.expenses, 0);
+        const net = rev - exp;
+        const margin = rev > 0 ? ((net / rev) * 100).toFixed(1) : "0.0";
+        return { rev, exp, net, margin };
     }, [filteredData]);
 
+    const isProfit = totals.net >= 0;
+
     return (
-        <div style={{
-            background: "linear-gradient(160deg, #0d0d12 0%, #111118 50%, #0c0c10 100%)",
-            borderRadius: "20px",
-            border: "1px solid rgba(255,255,255,0.06)",
-            // overflow: "hidden",
-            fontFamily: "'DM Sans', sans-serif",
-            boxShadow: "0 24px 64px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
-        }}>
+        <Card className={cn("border border-border/60 rounded-xl overflow-hidden", className)}>
             {/* Header */}
-            <div style={{
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                padding: "24px 28px 20px",
-                borderBottom: "1px solid rgba(255,255,255,0.05)",
-                flexWrap: "wrap",
-                gap: 16,
-            }}>
-                <div>
-                    <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>
-                        Financial Overview
-                    </p>
-                    <h2 style={{ color: "#f0f0f4", fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em", margin: 0 }}>
-                        Revenue vs Expenses
-                    </h2>
-                </div>
-
-                {/* Segmented control */}
-                <div style={{
-                    display: "flex",
-                    background: "rgba(255,255,255,0.05)",
-                    borderRadius: "10px",
-                    padding: "3px",
-                    gap: "2px",
-                }}>
-                    {ranges.map((r) => (
-                        <button
-                            key={r.value}
-                            onClick={() => setTimeRange(r.value)}
-                            style={{
-                                fontSize: 12,
-                                fontWeight: 700,
-                                padding: "6px 14px",
-                                borderRadius: "7px",
-                                border: "none",
-                                cursor: "pointer",
-                                transition: "all 0.15s ease",
-                                fontFamily: "'DM Sans', sans-serif",
-                                letterSpacing: "0.02em",
-                                background: timeRange === r.value
-                                    ? "rgba(255,255,255,0.1)"
-                                    : "transparent",
-                                color: timeRange === r.value
-                                    ? "#f0f0f4"
-                                    : "rgba(255,255,255,0.35)",
-                                boxShadow: timeRange === r.value
-                                    ? "0 1px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)"
-                                    : "none",
-                            }}
-                        >
-                            {r.label}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Stat pills */}
-            <div style={{
-                display: "flex",
-                gap: 10,
-                padding: "16px 28px",
-                flexWrap: "wrap",
-            }}>
-                {[
-                    { label: "Total Revenue", value: formatPKR(totals.totalRevenue), accent: "#a3e635", bg: "rgba(163,230,53,0.07)", dot: "#a3e635" },
-                    { label: "Total Expenses", value: formatPKR(totals.totalExpenses), accent: "#fb7185", bg: "rgba(251,113,133,0.07)", dot: "#fb7185" },
-                    { label: "Net Profit", value: `${totals.net >= 0 ? "+" : ""}${formatPKR(totals.net)}`, accent: totals.net >= 0 ? "#a3e635" : "#fb7185", bg: totals.net >= 0 ? "rgba(163,230,53,0.07)" : "rgba(251,113,133,0.07)", dot: totals.net >= 0 ? "#a3e635" : "#fb7185" },
-                    { label: "Margin", value: `${totals.margin}%`, accent: "#818cf8", bg: "rgba(129,140,248,0.07)", dot: "#818cf8" },
-                ].map((stat) => (
-                    <div key={stat.label} style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        background: stat.bg,
-                        border: `1px solid ${stat.accent}22`,
-                        borderRadius: "10px",
-                        padding: "9px 14px",
-                        flex: "1 1 auto",
-                        minWidth: 130,
-                    }}>
-                        <div style={{ width: 7, height: 7, borderRadius: "50%", background: stat.dot, flexShrink: 0 }} />
-                        <div>
-                            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", margin: 0, marginBottom: 2 }}>
-                                {stat.label}
-                            </p>
-                            <p style={{ color: stat.accent, fontSize: 14, fontWeight: 800, margin: 0, letterSpacing: "-0.01em" }}>
-                                {stat.value}
-                            </p>
-                        </div>
+            <CardHeader className="px-5 py-4 pb-3 border-b border-border/40 space-y-3">
+                {/* Top row: title + range control */}
+                <div className="flex items-center justify-between gap-3">
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground leading-none mb-1">
+                            Financial Overview
+                        </p>
+                        <h3 className="text-base font-black tracking-tight leading-none">
+                            Revenue vs Expenses
+                        </h3>
                     </div>
-                ))}
-            </div>
+
+                    {/* Segmented range picker */}
+                    <div className="flex items-center bg-muted rounded-lg p-1 gap-0.5 shrink-0">
+                        {ranges.map((r) => (
+                            <button
+                                key={r.value}
+                                onClick={() => setTimeRange(r.value)}
+                                className={cn(
+                                    "text-[11px] font-black px-3 h-6 rounded-md transition-all duration-150 tracking-wide",
+                                    timeRange === r.value
+                                        ? "bg-background text-foreground  ring-1 ring-border/40"
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                {r.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Stats row */}
+                <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-1.5">
+                        <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
+                        <span className="text-[10px] text-muted-foreground font-semibold">Revenue</span>
+                        <span className="text-xs font-black tabular-nums">{formatPKR(totals.rev)}</span>
+                    </div>
+                    <div className="h-3 w-px bg-border/60" />
+                    <div className="flex items-center gap-1.5">
+                        <span className="size-2 rounded-full bg-rose-500 shrink-0" />
+                        <span className="text-[10px] text-muted-foreground font-semibold">Expenses</span>
+                        <span className="text-xs font-black tabular-nums">{formatPKR(totals.exp)}</span>
+                    </div>
+                    <div className="h-3 w-px bg-border/60" />
+                    <div className={cn(
+                        "flex items-center gap-1 text-xs font-black",
+                        isProfit
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-rose-600 dark:text-rose-400"
+                    )}>
+                        {isProfit ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}
+                        <span className="tabular-nums">
+                            {isProfit ? "+" : ""}{formatPKR(totals.net)} · {totals.margin}% margin
+                        </span>
+                    </div>
+                </div>
+            </CardHeader>
 
             {/* Chart */}
-            <div style={{ padding: "4px 0 0" }}>
-                <ResponsiveContainer width="100%" height={260}>
-                    <AreaChart data={filteredData} margin={{ top: 10, right: 28, left: 0, bottom: 0 }}>
+            <CardContent className="p-0 pt-4 pb-3 px-2">
+                <ResponsiveContainer width="100%" height={230}>
+                    <AreaChart
+                        data={filteredData}
+                        margin={{ top: 4, right: 16, left: 0, bottom: 0 }}
+                    >
                         <defs>
-                            <linearGradient id="fillRevenue2" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#a3e635" stopOpacity={0.25} />
-                                <stop offset="100%" stopColor="#a3e635" stopOpacity={0} />
+                            <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#10b981" stopOpacity={0.15} />
+                                <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
                             </linearGradient>
-                            <linearGradient id="fillExpenses2" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#fb7185" stopOpacity={0.2} />
-                                <stop offset="100%" stopColor="#fb7185" stopOpacity={0} />
+                            <linearGradient id="gradExpenses" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.12} />
+                                <stop offset="100%" stopColor="#f43f5e" stopOpacity={0} />
                             </linearGradient>
                         </defs>
 
                         <CartesianGrid
                             vertical={false}
-                            stroke="rgba(255,255,255,0.05)"
-                            strokeDasharray="0"
+                            stroke="hsl(var(--border))"
+                            strokeOpacity={0.5}
+                            strokeDasharray="3 3"
                         />
 
                         <XAxis
                             dataKey="month"
                             tickLine={false}
                             axisLine={false}
-                            tickMargin={12}
-                            tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11, fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}
+                            tickMargin={10}
+                            tick={{
+                                fill: "hsl(var(--muted-foreground))",
+                                fontSize: 11,
+                                fontWeight: 600,
+                            }}
                         />
 
                         <YAxis
                             tickLine={false}
                             axisLine={false}
-                            tickMargin={8}
-                            width={72}
+                            tickMargin={6}
+                            width={64}
                             tickFormatter={formatPKR}
-                            tick={{ fill: "rgba(255,255,255,0.25)", fontSize: 10, fontWeight: 500, fontFamily: "'DM Sans', sans-serif" }}
+                            tick={{
+                                fill: "hsl(var(--muted-foreground))",
+                                fontSize: 10,
+                                fontWeight: 500,
+                            }}
                         />
 
                         <Tooltip
-                            cursor={{ stroke: "rgba(255,255,255,0.1)", strokeWidth: 1, strokeDasharray: "4 4" }}
+                            cursor={{
+                                stroke: "hsl(var(--border))",
+                                strokeWidth: 1,
+                                strokeDasharray: "4 4",
+                            }}
                             content={<CustomTooltip />}
                         />
 
                         <Area
                             type="monotone"
                             dataKey="expenses"
-                            stroke="#fb7185"
+                            stroke="#f43f5e"
                             strokeWidth={1.5}
-                            fill="url(#fillExpenses2)"
+                            fill="url(#gradExpenses)"
                             dot={false}
-                            activeDot={{ r: 4, fill: "#fb7185", strokeWidth: 0 }}
+                            activeDot={{ r: 3.5, fill: "#f43f5e", strokeWidth: 0 }}
                         />
                         <Area
                             type="monotone"
                             dataKey="revenue"
-                            stroke="#a3e635"
+                            stroke="#10b981"
                             strokeWidth={2}
-                            fill="url(#fillRevenue2)"
+                            fill="url(#gradRevenue)"
                             dot={false}
-                            activeDot={{ r: 4, fill: "#a3e635", strokeWidth: 0 }}
+                            activeDot={{ r: 3.5, fill: "#10b981", strokeWidth: 0 }}
                         />
                     </AreaChart>
                 </ResponsiveContainer>
-            </div>
 
-            {/* Legend */}
-            <div style={{
-                display: "flex",
-                gap: 20,
-                padding: "12px 28px 20px",
-                borderTop: "1px solid rgba(255,255,255,0.05)",
-                justifyContent: "flex-end",
-            }}>
-                {[
-                    { color: "#a3e635", label: "Revenue" },
-                    { color: "#fb7185", label: "Expenses" },
-                ].map((item) => (
-                    <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                        <div style={{
-                            width: 24,
-                            height: 2,
-                            borderRadius: 2,
-                            background: item.color,
-                        }} />
-                        <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 600, letterSpacing: "0.04em" }}>
-                            {item.label}
-                        </span>
-                    </div>
-                ))}
-            </div>
-        </div>
+                {/* Legend */}
+                <div className="flex items-center justify-end gap-4 px-4 pt-1">
+                    {[
+                        { color: "bg-emerald-500", label: "Revenue" },
+                        { color: "bg-rose-500", label: "Expenses" },
+                    ].map((item) => (
+                        <div key={item.label} className="flex items-center gap-1.5">
+                            <div className={cn("w-5 h-0.5 rounded-full", item.color)} />
+                            <span className="text-[10px] font-semibold text-muted-foreground">{item.label}</span>
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
     );
 }

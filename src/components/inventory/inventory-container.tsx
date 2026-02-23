@@ -205,7 +205,7 @@ export const InventoryContainer = () => {
 
 				<TabsContent value="finished" className="mt-4">
 					<FinishedGoodsTable
-						data={finishedGoods}
+						data={finishedGoods as any}
 						warehouses={warehouses}
 						preselectedWarehouse={
 							selectedWarehouse === "all" ? undefined : selectedWarehouse

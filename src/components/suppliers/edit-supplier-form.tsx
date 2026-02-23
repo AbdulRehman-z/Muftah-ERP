@@ -91,7 +91,7 @@ export const EditSupplierForm = ({ supplier, onSuccess }: Props) => {
                             <Field>
                                 <FieldLabel>Supplier Shop Name</FieldLabel>
                                 <Input
-                                    value={field.state.value}
+                                    value={field.state.value || ""}
                                     onBlur={field.handleBlur}
                                     onChange={(e) => field.handleChange(e.target.value)}
                                 />
@@ -108,7 +108,7 @@ export const EditSupplierForm = ({ supplier, onSuccess }: Props) => {
                                 <FieldLabel>Email</FieldLabel>
                                 <Input
                                     type="email"
-                                    value={field.state.value}
+                                    value={field.state.value || ""}
                                     onBlur={field.handleBlur}
                                     onChange={(e) => field.handleChange(e.target.value)}
                                 />
@@ -123,7 +123,7 @@ export const EditSupplierForm = ({ supplier, onSuccess }: Props) => {
                                 <FieldLabel>National ID</FieldLabel>
                                 <Input
                                     type="text"
-                                    value={field.state.value}
+                                    value={field.state.value || ""}
                                     onBlur={field.handleBlur}
                                     onChange={(e) => field.handleChange(e.target.value)}
                                 />
@@ -137,7 +137,7 @@ export const EditSupplierForm = ({ supplier, onSuccess }: Props) => {
                             <Field className="col-span-2">
                                 <FieldLabel>Phone</FieldLabel>
                                 <Input
-                                    value={field.state.value}
+                                    value={field.state.value || ""}
                                     onBlur={field.handleBlur}
                                     onChange={(e) => field.handleChange(e.target.value)}
                                 />
@@ -152,7 +152,7 @@ export const EditSupplierForm = ({ supplier, onSuccess }: Props) => {
                         <Field>
                             <FieldLabel>Address</FieldLabel>
                             <Input
-                                value={field.state.value}
+                                value={field.state.value || ""}
                                 onBlur={field.handleBlur}
                                 onChange={(e) => field.handleChange(e.target.value)}
                             />
@@ -166,7 +166,7 @@ export const EditSupplierForm = ({ supplier, onSuccess }: Props) => {
                         <Field>
                             <FieldLabel>Notes</FieldLabel>
                             <Textarea
-                                value={field.state.value}
+                                value={field.state.value || ""}
                                 onBlur={field.handleBlur}
                                 onChange={(e) => field.handleChange(e.target.value)}
                             />

@@ -23,9 +23,7 @@ export const PayslipDialog = ({ open, onOpenChange, payslip }: Props) => {
             className="min-w-fit max-h-[90vh] overflow-y-auto"
         >
             {payslip ? (
-                <div className="mt-4">
-                    <PayslipView payslip={payslip} showActions={true} />
-                </div>
+                <PayslipView payslip={payslip} showActions={true} />
             ) : (
                 <div className="p-8 text-center text-muted-foreground">
                     No payslip data available.

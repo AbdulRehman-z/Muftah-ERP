@@ -1,17 +1,11 @@
 import { useState } from "react";
-import {
-    ColumnDef,
-} from "@tanstack/react-table";
+import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Edit2, ExternalLink, Clock, CheckCircle2 } from "lucide-react";
-import { EditAttendanceDialog } from "./edit-attendance-dialog";
+import { Edit2, ExternalLink, Clock } from "lucide-react";
+import { EditAttendanceSheet } from "./edit-attendance-sheet";
 import { Link } from "@tanstack/react-router";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { bulkMarkAttendanceFn } from "@/server-functions/hr/attendance/bulk-mark-attendance-fn";
-import { toast } from "sonner";
 import { formatDuration } from "@/lib/utils";
 
 interface AttendanceRecord {
@@ -24,6 +18,11 @@ interface AttendanceRecord {
     dutyHours: string | null;
     overtimeHours: string | null;
     isLate: boolean | null;
+    isNightShift: boolean | null;
+    isApprovedLeave: boolean | null;
+    overtimeStatus: string | null;
+    overtimeRemarks: string | null;
+    entrySource: string | null;
     notes: string | null;
 }
 
@@ -33,7 +32,6 @@ interface EmployeeWithAttendance {
     firstName: string;
     lastName: string;
     designation: string;
-    isOperator: boolean;
     standardDutyHours: number | null;
     attendance: AttendanceRecord[];
 }
@@ -120,7 +118,9 @@ export const AttendanceListTable = ({ data, date }: Props) => {
             header: "Duty Stats",
             cell: ({ row }) => {
                 const record = row.original.attendance[0];
-                if (!record || !record.dutyHours || record.dutyHours === "NaN") return "-";
+                if (!record || ["absent", "leave", "holiday"].includes(record.status) || !record.dutyHours || record.dutyHours === "NaN") {
+                    return <span className="text-muted-foreground">-</span>;
+                }
 
                 const duty = parseFloat(record.dutyHours || "0");
                 const standard = row.original.standardDutyHours || 8;
@@ -192,7 +192,7 @@ export const AttendanceListTable = ({ data, date }: Props) => {
             />
 
             {selectedEmployee && (
-                <EditAttendanceDialog
+                <EditAttendanceSheet
                     open={isDialogOpen}
                     onOpenChange={setIsDialogOpen}
                     employee={selectedEmployee}

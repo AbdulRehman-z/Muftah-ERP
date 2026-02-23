@@ -26,17 +26,8 @@ export const updateEmployeeFn = createServerFn()
                 phone: updateData.phone,
                 cnic: updateData.cnic,
                 address: updateData.address,
-                basicSalary: updateData.basicSalary || "0",
-                houseRentAllowance: updateData.houseRentAllowance,
-                utilitiesAllowance: updateData.utilitiesAllowance,
-                conveyanceAllowance: updateData.conveyanceAllowance,
-                bikeMaintenanceAllowance: updateData.bikeMaintenanceAllowance,
-                mobileAllowance: updateData.mobileAllowance,
-                fuelAllowance: updateData.fuelAllowance,
-                specialAllowance: updateData.specialAllowance,
-                incentivePercentage: updateData.incentivePercentage,
-                standardDutyHours: updateData.standardDutyHours,
-                isOperator: updateData.isOperator,
+                standardSalary: updateData.standardSalary || "0",
+                allowanceConfig: updateData.allowanceConfig,
             })
             .where(eq(employees.id, id))
             .returning();

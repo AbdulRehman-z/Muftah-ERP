@@ -3,9 +3,9 @@ import { employees, payslips, payrolls } from "@/db/schemas/hr-schema";
 import { requireAdminMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 import { eq, and, sql, desc, asc } from "drizzle-orm";
-import { format, parseISO, startOfMonth, endOfMonth, subMonths, addDays } from "date-fns";
+import { format, parseISO, startOfMonth, subMonths, addDays } from "date-fns";
 // import { generateEmployeePayslipCore } from "./payroll/core";
-import { calculateAbsentDeductions, calculatePayslip, calculateSalaryBreakdown, calculateWorkingDays } from "@/lib/payroll-calculator";
+import { calculatePayslip } from "@/lib/payroll-calculator";
 import { createServerFn } from "@tanstack/react-start";
 import { generateEmployeePayslipCore } from "./core";
 
@@ -82,11 +82,24 @@ export const getMonthlyPayrollTableFn = createServerFn()
             .where(eq(employees.status, "active"));
 
         const generatedStats = await db.select({
-            totalGenerated: sql<string>`sum(${payslips.netSalary})`,
+            totalGenerated: sql<string>`sum(CAST(${payslips.netSalary} AS numeric))`,
             count: sql<number>`count(*)`
         })
             .from(payslips)
             .where(payroll ? eq(payslips.payrollId, payroll.id) : sql`1=0`);
+
+        const pendingGrossStats = await db.select({
+            totalPending: sql<string>`sum(CAST(${employees.standardSalary} AS numeric))`
+        })
+            .from(employees)
+            .leftJoin(payslips, and(
+                eq(payslips.employeeId, employees.id),
+                payroll ? eq(payslips.payrollId, payroll.id) : sql`1=0`
+            ))
+            .where(and(
+                eq(employees.status, "active"),
+                sql`${payslips.id} IS NULL`
+            ));
         const tableData = allEmployees.map(emp => {
             const payslip = existingPayslips[emp.id];
 
@@ -104,7 +117,6 @@ export const getMonthlyPayrollTableFn = createServerFn()
                 designation: emp.designation,
                 department: emp.department,
                 joiningDate: emp.joiningDate,
-                basicSalary: emp.basicSalary,
                 standardSalary: emp.standardSalary,
 
                 // Payroll Status
@@ -127,6 +139,7 @@ export const getMonthlyPayrollTableFn = createServerFn()
             totalEmployees: count,
             totalSalaryBudget: totalStats[0]?.totalBasic || "0",
             totalNetProcessed: generatedStats[0]?.totalGenerated || "0",
+            totalPendingGross: pendingGrossStats[0]?.totalPending || "0",
             payslipsGeneratedCount: generatedStats[0]?.count || 0,
         };
     });

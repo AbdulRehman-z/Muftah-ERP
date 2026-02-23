@@ -1,10 +1,10 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getEmployeeAttendanceLogFn } from "@/server-functions/hr/attendance/get-employee-attendance-log-fn";
-import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
+import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Calendar as CalendarIcon, User, Briefcase, Hash, CalendarClock } from "lucide-react";
+import { Clock, User, Briefcase, Hash, CalendarClock } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
 import { useParams } from "@tanstack/react-router";
 
@@ -91,11 +91,6 @@ export const EmployeeAttendanceLog = ({ employeeId: propId, month, startDate: pr
                                     <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[10px] font-bold tracking-wider">
                                         FULL TIME
                                     </Badge>
-                                    {employee.isOperator && (
-                                        <Badge variant="outline" className="bg-blue-500/10 text-blue-700 border-blue-500/20 text-[10px] font-bold tracking-wider uppercase">
-                                            Split-Shift Op
-                                        </Badge>
-                                    )}
                                 </div>
                             </div>
                         </div>
@@ -165,7 +160,7 @@ export const EmployeeAttendanceLog = ({ employeeId: propId, month, startDate: pr
                             <TableHead>Date</TableHead>
                             <TableHead>Day</TableHead>
                             <TableHead>Shift 1</TableHead>
-                            {employee.isOperator && <TableHead>Shift 2</TableHead>}
+                            {records.some(r => r.checkIn2) && <TableHead>Shift 2</TableHead>}
                             <TableHead>Duty (Hr)</TableHead>
                             <TableHead>Overtime (Hr)</TableHead>
                             <TableHead>Status</TableHead>
@@ -194,7 +189,7 @@ export const EmployeeAttendanceLog = ({ employeeId: propId, month, startDate: pr
                                         ) : "-"}
                                     </TableCell>
 
-                                    {employee.isOperator && (
+                                    {records.some(r => r.checkIn2) && (
                                         <TableCell className="text-xs">
                                             {record?.checkIn2 ? (
                                                 <span className="flex items-center gap-1">

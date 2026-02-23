@@ -41,11 +41,13 @@ export const EmployeeListContainer = () => {
                 </Card>
                 <Card>
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Operators</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">New Hires (This Month)</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{employees.filter(e => e.isOperator).length}</div>
-                        <p className="text-xs text-muted-foreground mt-1">Split Shift Workers</p>
+                        <div className="text-2xl font-bold">
+                            {employees.filter(e => new Date(e.joiningDate).getMonth() === new Date().getMonth()).length}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">Recently joined</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -56,7 +58,7 @@ export const EmployeeListContainer = () => {
                         <div className="text-2xl font-bold">
                             PKR {employees
                                 .filter(e => e.status === 'active')
-                                .reduce((acc, curr) => acc + (parseFloat(curr.basicSalary)), 0) // Roughly 2x basic is total comp based on ratio
+                                .reduce((acc, curr) => acc + (parseFloat(curr.standardSalary || "0")), 0) // Roughly 2x basic is total comp based on ratio
                                 .toLocaleString()}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">Monthly estimated cost</p>

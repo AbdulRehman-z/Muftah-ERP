@@ -1,3 +1,4 @@
+import { createId } from "@paralleldrive/cuid2";
 import { relations } from "drizzle-orm";
 import {
     decimal,
@@ -5,6 +6,7 @@ import {
     text,
     timestamp,
     integer,
+    serial,
 } from "drizzle-orm/pg-core";
 import { recipes, warehouses } from "./inventory-schema";
 import { user } from "./auth-schema";
@@ -19,34 +21,49 @@ const timestamps = {
 
 // --- CUSTOMERS ---
 export const customers = pgTable("customers", {
-    id: text("id").primaryKey(),
+    id: text("id")
+        .primaryKey()
+        .$defaultFn(() => createId()),
+    sNo: serial("s_no"),
     name: text("name").notNull(),
-    contactPerson: text("contact_person"),
-    phone: text("phone"),
     address: text("address"),
-    type: text("type"), // "distributor", "retail", etc.
+    mobileNumber: text("mobile_number"),
+    totalSale: decimal("total_sale", { precision: 12, scale: 2 }).default("0"),
+    payment: decimal("payment", { precision: 12, scale: 2 }).default("0"),
+    credit: decimal("credit", { precision: 12, scale: 2 }).default("0"),
+    weightSaleKg: decimal("weight_sale_kg", { precision: 12, scale: 3 }).default("0"),
+    expenses: decimal("expenses", { precision: 12, scale: 2 }).default("0"),
+    averagePerKg: decimal("average_per_kg", { precision: 12, scale: 2 }).default("0"),
+    averageKgWithExpense: decimal("average_kg_with_expense", { precision: 12, scale: 2 }).default("0"),
+    expenseAverage: decimal("expense_average", { precision: 12, scale: 2 }).default("0"),
+    customerType: text("customer_type").notNull().default("retailer"), // "distributor" | "retailer"
     ...timestamps,
 });
 
 // --- INVOICES ---
 export const invoices = pgTable("invoices", {
-    id: text("id").primaryKey(),
-    invoiceNumber: text("invoice_number").unique(),
-    customerId: text("customer_id").references(() => customers.id),
-
-    totalAmount: decimal("total_amount", { precision: 12, scale: 2 })
+    id: text("id")
+        .primaryKey()
+        .$defaultFn(() => createId()),
+    sNo: serial("s_no"),
+    date: timestamp("date").notNull().defaultNow(),
+    customerId: text("customer_id")
         .notNull()
-        .default("0"),
-    profitMargin: decimal("profit_margin", { precision: 12, scale: 2 })
-        .notNull()
-        .default("0"),
+        .references(() => customers.id),
+    account: text("account"), // e.g., bank or cash account
+    cash: decimal("cash", { precision: 12, scale: 2 }).default("0"),
+    credit: decimal("credit", { precision: 12, scale: 2 }).default("0"),
+    creditReturnDate: timestamp("credit_return_date"),
+    expenses: decimal("expenses", { precision: 12, scale: 2 }).default("0"),
+    expensesDescription: text("expenses_description"),
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull().default("0"),
+    totalPrice: decimal("total_price", { precision: 12, scale: 2 }).notNull().default("0"),
+    slipNumber: text("slip_number"),
+    remarks: text("remarks"),
 
-    status: text("status").notNull().default("paid"), // paid, pending, cancelled
-    paymentMethod: text("payment_method"), // "cash", "bank"
     warehouseId: text("warehouse_id")
         .notNull()
-        .references(() => warehouses.id), // Where stock was deducted from
-
+        .references(() => warehouses.id),
     performedById: text("performed_by_id")
         .notNull()
         .references(() => user.id),
@@ -55,18 +72,22 @@ export const invoices = pgTable("invoices", {
 
 // --- INVOICE ITEMS ---
 export const invoiceItems = pgTable("invoice_items", {
-    id: text("id").primaryKey(),
+    id: text("id")
+        .primaryKey()
+        .$defaultFn(() => createId()),
     invoiceId: text("invoice_id")
         .notNull()
-        .references(() => invoices.id),
+        .references(() => invoices.id, { onDelete: "cascade" }),
+    pack: text("pack").notNull(),
     recipeId: text("recipe_id")
-        .notNull()
-        .references(() => recipes.id),
-
-    quantityCartons: integer("quantity_cartons").notNull(),
-    unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
-    subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull(),
-
+        .references(() => recipes.id), // For stock checks against Finished Goods
+    numberOfCartons: integer("number_of_cartons").notNull().default(0),
+    totalWeight: decimal("total_weight", { precision: 12, scale: 3 }).notNull().default("0"),
+    perCartonPrice: decimal("per_carton_price", { precision: 12, scale: 2 }).notNull().default("0"),
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull().default("0"),
+    hsnCode: text("hsn_code").notNull(),
+    retailPrice: decimal("retail_price", { precision: 12, scale: 2 }).notNull().default("0"),
+    margin: decimal("margin", { precision: 12, scale: 2 }).notNull().default("0"),
     ...timestamps,
 });
 

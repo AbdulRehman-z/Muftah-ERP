@@ -9,8 +9,15 @@ import { GenericLoader } from "@/components/custom/generic-loader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { format, startOfMonth, getYear } from "date-fns";
-import { LayoutDashboard, RefreshCw, CalendarDays, Sparkles } from "lucide-react";
+import { format, getYear } from "date-fns";
+import {
+    LayoutDashboard,
+    RefreshCw,
+    CalendarDays,
+    Sparkles,
+    TrendingUp,
+    TrendingDown,
+} from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { DatePicker } from "@/components/custom/date-picker";
 import { useDashboardSync } from "@/hooks/dashboard/use-dashboard-sync";
@@ -22,7 +29,10 @@ export const Route = createFileRoute("/_protected/dashboard/")({
     loader: async ({ context }) => {
         void context.queryClient.prefetchQuery({
             queryKey: ["admin-dashboard", currentYear, currentMonth],
-            queryFn: () => getDashboardStatsFn({ data: { year: currentYear, month: currentMonth } }),
+            queryFn: () =>
+                getDashboardStatsFn({
+                    data: { year: currentYear, month: currentMonth },
+                }),
         });
     },
     component: AdminDashboardPage,
@@ -34,11 +44,13 @@ function AdminDashboardPage() {
             {/* Page Header */}
             <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-lg bg-linear-to-br from-primary/20 to-primary/5 border border-primary/10">
+                    <div className="flex items-center gap-2.5">
+                        <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/10">
                             <LayoutDashboard className="size-4 text-primary" />
                         </div>
-                        <h2 className="text-2xl font-black tracking-tight">Command Center</h2>
+                        <h2 className="text-2xl font-black tracking-tight">
+                            Command Center
+                        </h2>
                         <Badge
                             variant="outline"
                             className="text-[9px] font-bold bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 gap-1"
@@ -55,7 +67,14 @@ function AdminDashboardPage() {
 
             <Separator className="opacity-50" />
 
-            <Suspense fallback={<GenericLoader title="Loading Dashboard" description="Aggregating data..." />}>
+            <Suspense
+                fallback={
+                    <GenericLoader
+                        title="Loading Dashboard"
+                        description="Aggregating data..."
+                    />
+                }
+            >
                 <AdminDashboard />
             </Suspense>
         </div>
@@ -63,7 +82,6 @@ function AdminDashboardPage() {
 }
 
 function AdminDashboard() {
-    // Single date state: default to today so it doesn't show "1st"
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const queryClient = useQueryClient();
 
@@ -75,7 +93,6 @@ function AdminDashboard() {
         queryFn: () => getDashboardStatsFn({ data: { year, month } }),
     });
 
-    // Smart polling: only invalidates queries when server data actually changes
     useDashboardSync();
 
     const handleRefresh = () => {
@@ -83,27 +100,41 @@ function AdminDashboard() {
     };
 
     const handleDateChange = (date?: Date) => {
-        if (date) {
-            setSelectedDate(date);
-        }
+        if (date) setSelectedDate(date);
     };
 
+    const netProfitPositive = data.netProfit >= 0;
+
     return (
-        <div className="space-y-6">
-            {/* Toolbar / Filters */}
+        <div className="space-y-5">
+            {/* ── Toolbar ─────────────────────────────────────────────────── */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
+                {/* Left */}
+                <div className="flex items-center gap-2.5 flex-wrap">
                     <div className="p-1.5 rounded-lg bg-muted/60 border border-border/60">
                         <CalendarDays className="size-3.5 text-muted-foreground" />
                     </div>
                     <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground leading-none mb-0.5">
                             Showing data for
                         </p>
                         <p className="text-sm font-bold leading-tight">
                             {format(selectedDate, "MMMM yyyy")}
                         </p>
                     </div>
+
+                    {/* Profit indicator pill */}
+                    <div className={`hidden sm:flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border ${netProfitPositive
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-400"
+                            : "bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-400"
+                        }`}>
+                        {netProfitPositive
+                            ? <TrendingUp className="size-3" />
+                            : <TrendingDown className="size-3" />
+                        }
+                        {netProfitPositive ? "Profitable" : "Loss"}
+                    </div>
+
                     {isFetching && (
                         <Badge
                             variant="outline"
@@ -115,22 +146,22 @@ function AdminDashboard() {
                     )}
                 </div>
 
+                {/* Right */}
                 <div className="flex items-center gap-2">
-                    {/* Clean month picker — replaces the ugly native <input type="month"> */}
                     <DatePicker
                         date={selectedDate}
                         onChange={handleDateChange}
                         placeholder="Select month"
-                        className="w-[180px]"
+                        className="h-9 w-[180px] text-xs"
                         formatStr="MMMM yyyy"
+                        monthOnly
                     />
-
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={handleRefresh}
                         disabled={isFetching}
-                        className="h-9 gap-2 text-[10px] font-black uppercase tracking-widest shadow-sm"
+                        className="h-9 gap-2 text-[10px] font-black uppercase tracking-widest"
                     >
                         <RefreshCw className={`size-3.5 ${isFetching ? "animate-spin" : ""}`} />
                         Refresh
@@ -138,13 +169,24 @@ function AdminDashboard() {
                 </div>
             </div>
 
-            {/* KPI Grid */}
+            {/* ── KPI Cards ───────────────────────────────────────────────── */}
             <DashboardKpiCards data={data} />
 
-            {/* Charts Row */}
+            {/* ── Charts Row ──────────────────────────────────────────────── */}
+            {/*
+                FIX: col-span classes MUST be on the direct children of the grid,
+                not buried inside the component. Both components now accept a
+                `className` prop so we assign spans here at the call site.
+            */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                <RevenueExpenseChart data={data.revenueExpenseChart} />
-                <RecentActivityFeed data={data.recentActivity} />
+                <RevenueExpenseChart
+                    data={data.revenueExpenseChart}
+                    className="lg:col-span-8"
+                />
+                <RecentActivityFeed
+                    data={data.recentActivity}
+                    className="lg:col-span-4"
+                />
             </div>
         </div>
     );

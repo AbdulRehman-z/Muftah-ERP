@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getMonthlyPayrollTableFn } from "@/server-functions/hr/payroll/dashboard-fn";
-import { format, startOfMonth } from "date-fns";
+import { format, startOfMonth, addDays, parseISO } from "date-fns";
 import { useState, useMemo } from "react";
 import { DatePicker } from "@/components/custom/date-picker";
 import {
@@ -56,6 +56,10 @@ export function PayrollContainer() {
     });
 
     const employees = data.employees as (EmployeePayrollRow & { missedLastMonth: boolean })[];
+
+    const payrollMonthDate = parseISO(`${month}-01`);
+    const periodEnd = addDays(startOfMonth(payrollMonthDate), 14); // 15th of month.
+    const isEarly = new Date() < periodEnd;
 
     if (employees.length === 0 && pageIndex === 0 && !globalFilter) {
         return (
@@ -153,6 +157,8 @@ export function PayrollContainer() {
                                 size="sm"
                                 variant={emp.hasPayslip ? "outline" : "default"}
                                 className="h-8 gap-2 px-3"
+                                disabled={isEarly && !emp.hasPayslip}
+                                title={isEarly && !emp.hasPayslip ? `Cycle ends on ${format(periodEnd, "dd MMM")}` : ""}
                                 onClick={() => {
                                     setSelectedEmployeeId(emp.id);
                                     setIsCalculatorOpen(true);
@@ -226,29 +232,29 @@ export function PayrollContainer() {
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <KPICard
-                    title="Total Budget"
+                    title="Total Base Payroll"
                     value={`PKR ${Math.round(parseFloat(data.totalSalaryBudget)).toLocaleString()}`}
-                    subtext="Expected monthly gross"
+                    subtext="Sum of all standard salaries"
                     icon={Calculator}
                 />
                 <KPICard
-                    title="Net Processed"
+                    title="Net Paid & Generated"
                     value={`PKR ${Math.round(parseFloat(data.totalNetProcessed)).toLocaleString()}`}
-                    subtext={`${data.payslipsGeneratedCount} slips generated`}
+                    subtext={`${data.payslipsGeneratedCount} slips finalized`}
                     icon={CheckCircle2}
                     color="text-emerald-600"
                 />
                 <KPICard
-                    title="Remaining"
-                    value={`PKR ${Math.round(parseFloat(data.totalSalaryBudget) - parseFloat(data.totalNetProcessed)).toLocaleString()}`}
-                    subtext="To be processed"
+                    title="Pending Base Salaries"
+                    value={`PKR ${Math.round(parseFloat(data.totalPendingGross)).toLocaleString()}`}
+                    subtext={`${data.activeCount - data.payslipsGeneratedCount} slips remaining`}
                     icon={Clock}
                     color="text-amber-600"
                 />
                 <KPICard
-                    title="Active Force"
-                    value={data.activeCount.toString()}
-                    subtext="Total eligible staff"
+                    title="Staff Progress"
+                    value={`${Math.round((data.payslipsGeneratedCount / Math.max(1, data.activeCount)) * 100)}%`}
+                    subtext={`${data.payslipsGeneratedCount} out of ${data.activeCount} staff`}
                     icon={UserIcon}
                 />
             </div>

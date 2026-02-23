@@ -1,17 +1,9 @@
-import { parseISO, eachDayOfInterval, isWeekend, format } from "date-fns";
+import { parseISO, eachDayOfInterval, format } from "date-fns";
+import { type AllowanceConfig } from "@/lib/types/hr-types";
 
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
-
-export type SalaryBreakdown = {
-    standardSalary: number;
-    basicSalary: number;          // 50%
-    houseRentAllowance: number;   // 20%
-    utilitiesAllowance: number;   // 15%
-    bikeMaintenanceAllowance: number; // 10%
-    mobileAllowance: number;      // 5%
-};
 
 export type AttendanceRecord = {
     date: string;
@@ -19,6 +11,21 @@ export type AttendanceRecord = {
     dutyHours: string | null;
     overtimeHours: string | null;
     isNightShift: boolean;
+    /**
+     * true  → approved paid leave (no deduction)
+     * false → unpaid / unapproved leave (conveyance deducted per existing rule)
+     */
+    isApprovedLeave?: boolean;
+    /**
+     * Type of leave — used for Bradford Factor and leave balance deduction.
+     * sick | casual | annual | unpaid | special
+     */
+    leaveType?: string | null;
+    /**
+     * Only count overtime when the admin has explicitly approved it.
+     * pending | approved | rejected
+     */
+    overtimeStatus?: string;
 };
 
 export type EmployeeData = {
@@ -31,25 +38,16 @@ export type EmployeeData = {
     bankName: string | null;
     bankAccountNumber: string | null;
     standardSalary: string;
-    basicSalary: string;
-    houseRentAllowance: string;
-    utilitiesAllowance: string;
-    bikeMaintenanceAllowance: string;
-    mobileAllowance: string;
-    fuelAllowance: string;
-    specialAllowance: string;
-    conveyanceAllowance: string;
-    standardDutyHours: number;
+    allowanceConfig: AllowanceConfig[];
+    standardDutyHours?: number; // fallback to 8 if absent
 };
 
 export type DeductionConfig = {
-    // Manual deductions
     manualDeductions: Array<{
         description: string;
         amount: number;
     }>;
-    // Policy flags
-    deductConveyanceOnLeave: boolean;
+    deductConveyanceOnLeave: boolean; // kept for backward compat, now only applies to unapproved leave
 };
 
 export type PayslipCalculation = {
@@ -71,42 +69,38 @@ export type PayslipCalculation = {
     totalWorkingDays: number;
     daysPresent: number;
     daysAbsent: number;
-    daysLeave: number;
+    daysLeave: number;           // approved paid leaves
+    daysUnapprovedLeave: number; // unpaid / unapproved
+    daysSickLeave: number;        // sick leaves (no salary deduction but count in Bradford)
     daysHalfDay: number;
     totalOvertimeHours: number;
     totalUndertimeHours: number;
     nightShiftsCount: number;
+    bradfordFactorScore: number;
+    bradfordFactorPeriod: string; // human-readable period label
 
     // Earnings
     basicSalary: number;
-    houseRentAllowance: number;
-    utilitiesAllowance: number;
-    bikeMaintenanceAllowance: number;
-    mobileAllowance: number;
-    fuelAllowance: number;
-    specialAllowance: number;
-    conveyanceAllowance: number;
+    allowanceBreakdown: Record<string, number>;
+
     overtimeAmount: number;
-    nightShiftAllowance: number;
+    nightShiftAllowanceAmount: number;
     incentiveAmount: number;
     bonusAmount: number;
 
     // Deductions
     absentDeduction: number;
-    leaveDeduction: number;
+    leaveDeduction: number;      // from unapproved/unpaid leave
     advanceDeduction: number;
     taxDeduction: number;
     manualDeductions: Array<{ description: string; amount: number }>;
     otherDeduction: number;
-    standardBreakdown: {
-        basicSalary: number;
-        houseRentAllowance: number;
-        utilitiesAllowance: number;
-        bikeMaintenanceAllowance: number;
-        mobileAllowance: number;
-        conveyanceAllowance: number;
-    };
+
+    // Original Standard Snapshot
+    standardBreakdown: Record<string, number>;
+
     calculationMeta: {
+        calendarDaysInMonth: number;
         perDayBasic: number;
         perHourBasic: number;
         overtimeMultiplier: number;
@@ -118,184 +112,248 @@ export type PayslipCalculation = {
     grossSalary: number;
     totalDeductions: number;
     netSalary: number;
+    paymentSource: string | null;
 
     // Meta
     remarks: string;
 };
 
 // ============================================================================
-// CORE CALCULATION FUNCTIONS
+// HELPERS
 // ============================================================================
 
 /**
- * Calculates the standard salary breakdown based on fixed percentages.
- * 
- * Breakdown:
- * - Basic: 50%
- * - House Rent: 20%
- * - Utilities: 15%
- * - Bike Maintenance: 10%
- * - Mobile: 5%
+ * Calculates total job days dynamically based on the pay period's calendar
+ * length minus whatever days the admin has marked as 'holiday' in attendance.
+ * This gives HR full control over weekends/holidays.
  */
-export function calculateSalaryBreakdown(totalStandardSalary: number): SalaryBreakdown {
-    const total = Math.max(0, totalStandardSalary);
-
-    return {
-        standardSalary: total,
-        basicSalary: Math.round(total * 0.50),
-        houseRentAllowance: Math.round(total * 0.20),
-        utilitiesAllowance: Math.round(total * 0.15),
-        bikeMaintenanceAllowance: Math.round(total * 0.10),
-        mobileAllowance: Math.round(total * 0.05),
-    };
-}
-
-/**
- * Counts working days in a period (excluding weekends).
- */
-export function calculateWorkingDays(startDate: string, endDate: string): number {
+export function calculateWorkingDays(startDate: string, endDate: string, records: AttendanceRecord[]): number {
     const start = parseISO(startDate);
     const end = parseISO(endDate);
-    const allDays = eachDayOfInterval({ start, end });
-
-    return allDays.filter(day => !isWeekend(day)).length;
+    const totalDaysInCycle = eachDayOfInterval({ start, end }).length;
+    // Count explicit holidays marked by the admin/system
+    const holidays = records.filter(r => r.status === "holiday").length;
+    return Math.max(1, totalDaysInCycle - holidays); // Ensure we don't divide by 0
 }
 
 /**
- * Calculates deductions based on absent days.
- * 
- * Rules:
- * 1. Hour-based: Deduct from Basic only (for partial absences)
- * 2. Day-based: Deduct from Basic + Standard Allowances (for full day absences)
- * 3. Leave-based: Deduct from Conveyance (for unpaid leaves)
+ * Derives the effective 'divisor' for daily payout rates (the Job Days).
+ * We align this directly with working days (calendar minus holidays) 
+ * for straight-forward calculation.
+ */
+export function getCalendarDaysInPayPeriodMonth(totalWorkingDays: number): number {
+    return totalWorkingDays;
+}
+
+function getAllowanceAmount(config: AllowanceConfig[], id: string): number {
+    return config.find(a => a.id === id)?.amount || 0;
+}
+
+// ============================================================================
+// DEDUCTION CALCULATION
+// ============================================================================
+
+/**
+ * Deduction rules (updated):
+ *
+ * 1. ABSENT (no notice): full-day deduction from Basic + all allowances except Fuel & Special.
+ * 2. APPROVED LEAVE: NO deduction at all.
+ * 3. UNAPPROVED / UNPAID LEAVE: Deduct from Conveyance allowance only.
+ * 4. HALF-DAY: 50% deduction from Basic + all allowances except Fuel, Special, AND Conveyance.
+ * 5. UNDERTIME (present but short hours): hour-based deduction from Basic only.
+ *
+ * Daily rate is based on CALENDAR DAYS in the pay period's month
+ * (not working days), per client requirement.
  */
 export function calculateAbsentDeductions(
     employee: EmployeeData,
     attendanceRecords: AttendanceRecord[],
-    totalWorkingDays: number
+    calendarDaysInMonth: number
 ): {
     absentDeduction: number;
     leaveDeduction: number;
     totalUndertimeHours: number;
-    adjustedEarnings: {
-        basicSalary: number;
-        houseRentAllowance: number;
-        utilitiesAllowance: number;
-        bikeMaintenanceAllowance: number;
-        mobileAllowance: number;
-        conveyanceAllowance: number;
-    };
+    adjustedAllowances: Record<string, number>;
 } {
     const standardDutyHours = employee.standardDutyHours || 8;
+    const config = employee.allowanceConfig || [];
 
-    // Extract base salaries
-    const basicSalary = parseFloat(employee.basicSalary || "0");
-    const houseRent = parseFloat(employee.houseRentAllowance || "0");
-    const utilities = parseFloat(employee.utilitiesAllowance || "0");
-    const bikeMaintenance = parseFloat(employee.bikeMaintenanceAllowance || "0");
-    const mobile = parseFloat(employee.mobileAllowance || "0");
-    const conveyance = parseFloat(employee.conveyanceAllowance || "0");
-
-    // Calculate per-day and per-hour rates
-    const perDayBasic = basicSalary / totalWorkingDays;
+    const basicSalary = parseFloat(employee.standardSalary || "0");
+    const perDayBasic = basicSalary / calendarDaysInMonth;
     const perHourBasic = perDayBasic / standardDutyHours;
-
-    const perDayHouseRent = houseRent / totalWorkingDays;
-    const perDayUtilities = utilities / totalWorkingDays;
-    const perDayBikeMaintenance = bikeMaintenance / totalWorkingDays;
-    const perDayMobile = mobile / totalWorkingDays;
-    const perDayConveyance = conveyance / totalWorkingDays;
 
     let totalAbsentDeduction = 0;
     let totalLeaveDeduction = 0;
     let totalUndertimeHours = 0;
 
-    let basicAdjustment = 0;
-    let houseRentAdjustment = 0;
-    let utilitiesAdjustment = 0;
-    let bikeMaintenanceAdjustment = 0;
-    let mobileAdjustment = 0;
-    let conveyanceAdjustment = 0;
+    // Adjustment accumulators (keyed by allowance id)
+    const adjustments: Record<string, number> = {};
+    adjustments["basicSalary"] = 0;
+    for (const a of config) adjustments[a.id] = 0;
+
+    /**
+     * Apply a fractional day deduction to:
+     *   - Basic salary
+     *   - All allowances EXCEPT: fuel, special
+     *   - Optionally EXCEPT conveyance (e.g. half-day scenario)
+     */
+    const applyAbsentDeduction = (fraction: number, skipConveyance = false) => {
+        let dailyTotal = 0;
+
+        const basicDeduction = perDayBasic * fraction;
+        adjustments["basicSalary"] += basicDeduction;
+        dailyTotal += basicDeduction;
+
+        for (const allowance of config) {
+            const skip =
+                allowance.id === "fuel" ||
+                allowance.id === "special" ||
+                (skipConveyance && allowance.id === "conveyance");
+
+            if (!skip) {
+                const dayRate = (allowance.amount / calendarDaysInMonth) * fraction;
+                adjustments[allowance.id] += dayRate;
+                dailyTotal += dayRate;
+            }
+        }
+        totalAbsentDeduction += dailyTotal;
+    };
 
     for (const record of attendanceRecords) {
         const dutyHours = parseFloat(record.dutyHours || "0");
 
         if (record.status === "absent") {
-            // Full day absent: Deduct full day from Basic + Standard Allowances
-            const dayDeduction = perDayBasic + perDayHouseRent + perDayUtilities +
-                perDayBikeMaintenance + perDayMobile;
-
-            totalAbsentDeduction += dayDeduction;
-            basicAdjustment += perDayBasic;
-            houseRentAdjustment += perDayHouseRent;
-            utilitiesAdjustment += perDayUtilities;
-            bikeMaintenanceAdjustment += perDayBikeMaintenance;
-            mobileAdjustment += perDayMobile;
+            // Full absent without notice → full deduction
+            applyAbsentDeduction(1);
         }
         else if (record.status === "half_day") {
-            // Half day: Deduct 50% from Basic + Standard Allowances
-            const halfDayDeduction = (perDayBasic + perDayHouseRent + perDayUtilities +
-                perDayBikeMaintenance + perDayMobile) * 0.5;
-
-            totalAbsentDeduction += halfDayDeduction;
-            basicAdjustment += perDayBasic * 0.5;
-            houseRentAdjustment += perDayHouseRent * 0.5;
-            utilitiesAdjustment += perDayUtilities * 0.5;
-            bikeMaintenanceAdjustment += perDayBikeMaintenance * 0.5;
-            mobileAdjustment += perDayMobile * 0.5;
-        }
-        else if (record.status === "present" && dutyHours < standardDutyHours) {
-            // Undertime: Hour-based deduction from Basic only
-            const shortHours = standardDutyHours - dutyHours;
-            const hourDeduction = perHourBasic * shortHours;
-
-            totalAbsentDeduction += hourDeduction;
-            basicAdjustment += hourDeduction;
-            totalUndertimeHours += shortHours;
+            // Half-day → 50% deduction, but conveyance is NOT deducted
+            applyAbsentDeduction(0.5, /* skipConveyance */ true);
         }
         else if (record.status === "leave") {
-            // Unpaid leave: Deduct from Conveyance
-            totalLeaveDeduction += perDayConveyance;
-            conveyanceAdjustment += perDayConveyance;
+            if (record.isApprovedLeave) {
+                // Approved paid leave → zero deduction
+                // (nothing to do)
+            } else {
+                // Unpaid / unapproved leave → deduct conveyance allowance only
+                const conveyanceAmt = getAllowanceAmount(config, "conveyance");
+                if (conveyanceAmt > 0) {
+                    const perDayConveyance = conveyanceAmt / calendarDaysInMonth;
+                    totalLeaveDeduction += perDayConveyance;
+                    if (adjustments["conveyance"] !== undefined) {
+                        adjustments["conveyance"] += perDayConveyance;
+                    }
+                }
+            }
         }
+        else if (record.status === "present" && dutyHours < standardDutyHours) {
+            // Undertime: hour-based deduction from Basic salary only
+            const shortHours = standardDutyHours - dutyHours;
+            const hourDeduction = perHourBasic * shortHours;
+            totalAbsentDeduction += hourDeduction;
+            adjustments["basicSalary"] += hourDeduction;
+            totalUndertimeHours += shortHours;
+        }
+    }
+
+    // Build final adjusted allowance map
+    const adjustedAllowances: Record<string, number> = {};
+    adjustedAllowances["basicSalary"] = Math.round(basicSalary - adjustments["basicSalary"]);
+    for (const allowance of config) {
+        adjustedAllowances[allowance.id] = Math.round(allowance.amount - adjustments[allowance.id]);
     }
 
     return {
         absentDeduction: Math.round(totalAbsentDeduction),
         leaveDeduction: Math.round(totalLeaveDeduction),
         totalUndertimeHours: +totalUndertimeHours.toFixed(2),
-        adjustedEarnings: {
-            basicSalary: Math.round(basicSalary - basicAdjustment),
-            houseRentAllowance: Math.round(houseRent - houseRentAdjustment),
-            utilitiesAllowance: Math.round(utilities - utilitiesAdjustment),
-            bikeMaintenanceAllowance: Math.round(bikeMaintenance - bikeMaintenanceAdjustment),
-            mobileAllowance: Math.round(mobile - mobileAdjustment),
-            conveyanceAllowance: Math.round(conveyance - conveyanceAdjustment),
-        },
+        adjustedAllowances,
     };
 }
 
+// ============================================================================
+// OVERTIME
+// ============================================================================
+
 /**
- * Calculates overtime pay.
- * Overtime Rate: 1.5x of hourly basic rate
+ * Only count overtime hours where overtimeStatus === "approved".
+ * Pending / rejected overtime is ignored.
  */
+export function sumApprovedOvertimeHours(records: AttendanceRecord[]): number {
+    return records.reduce((sum, r) => {
+        const isApproved = !r.overtimeStatus || r.overtimeStatus === "approved";
+        if (!isApproved) return sum;
+        return sum + parseFloat(r.overtimeHours || "0");
+    }, 0);
+}
+
 export function calculateOvertimePay(
     basicSalary: number,
     standardDutyHours: number,
-    totalWorkingDays: number,
+    calendarDaysInMonth: number,
     overtimeHours: number,
-    multiplier: number = 1.5
+    multiplier: number = 1.0
 ): number {
-    const perDayBasic = basicSalary / totalWorkingDays;
+    const perDayBasic = basicSalary / calendarDaysInMonth;
     const perHourBasic = perDayBasic / standardDutyHours;
-    const overtimeRate = perHourBasic * multiplier;
-
-    return Math.round(overtimeRate * overtimeHours);
+    return Math.round(perHourBasic * multiplier * overtimeHours);
 }
 
+// ============================================================================
+// BRADFORD FACTOR
+// ============================================================================
+
 /**
- * Main payslip calculation function.
+ * Bradford Factor: B = S² × D
+ *
+ * S = number of separate absence SPELLS (consecutive absents = 1 spell)
+ * D = total absent-equivalent days
+ *
+ * What counts:
+ *   - absent        → full day, full spell counting
+ *   - sick leave    → counts toward D (no deduction but still tracked)
+ *   - unpaid/special leave → counts toward D
+ *   - approved paid leaes (casual/annual) → excluded from Bradford
+ *   - half_day → counts as 0.5 absent-equivalent days
  */
+export function calculateBradfordFactor(attendanceRecords: AttendanceRecord[]): number {
+    let spells = 0;
+    let totalAbsentDays = 0;
+    let inSpell = false;
+
+    const sorted = [...attendanceRecords].sort((a, b) => a.date.localeCompare(b.date));
+
+    for (const record of sorted) {
+        const isBradfordEvent =
+            record.status === "absent" ||
+            record.status === "half_day" ||
+            (record.status === "leave" && (
+                // Sick, special, unpaid leaves count; casual/annual approved leaves do NOT
+                record.leaveType === "sick" ||
+                record.leaveType === "special" ||
+                record.leaveType === "unpaid" ||
+                !record.isApprovedLeave
+            ));
+
+        const dayWeight =
+            record.status === "half_day" ? 0.5 :
+                isBradfordEvent ? 1 : 0;
+
+        if (isBradfordEvent) {
+            totalAbsentDays += dayWeight;
+            if (!inSpell) { spells++; inSpell = true; }
+        } else {
+            inSpell = false;
+        }
+    }
+
+    return Math.round(Math.pow(spells, 2) * totalAbsentDays);
+}
+
+// ============================================================================
+// MAIN PAYSLIP CALCULATOR
+// ============================================================================
+
 export function calculatePayslip(
     employee: EmployeeData,
     attendanceRecords: AttendanceRecord[],
@@ -311,79 +369,88 @@ export function calculatePayslip(
         overtimeMultiplier?: number;
     } = {}
 ): PayslipCalculation {
-    // Calculate working days
-    const totalWorkingDays = calculateWorkingDays(payrollPeriod.startDate, payrollPeriod.endDate);
+    const stdDutyHours = employee.standardDutyHours || 8;
+    const config = employee.allowanceConfig || [];
+    const basicSalaryStd = parseFloat(employee.standardSalary || "0");
+
+    // ── Key change: use EXACT Job Days for absolute transparent calculation ──────────────
+    const totalWorkingDays = calculateWorkingDays(payrollPeriod.startDate, payrollPeriod.endDate, attendanceRecords);
+    const calendarDaysInMonth = getCalendarDaysInPayPeriodMonth(totalWorkingDays);
 
     // Attendance summary
     const daysPresent = attendanceRecords.filter(r => r.status === "present").length;
     const daysAbsent = attendanceRecords.filter(r => r.status === "absent").length;
-    const daysLeave = attendanceRecords.filter(r => r.status === "leave").length;
+    const daysLeave = attendanceRecords.filter(r => r.status === "leave" && r.isApprovedLeave).length;
+    const daysUnapprovedLeave = attendanceRecords.filter(r => r.status === "leave" && !r.isApprovedLeave).length;
+    const daysSickLeave = attendanceRecords.filter(r => r.status === "leave" && r.leaveType === "sick").length;
     const daysHalfDay = attendanceRecords.filter(r => r.status === "half_day").length;
-    const totalOvertimeHours = attendanceRecords.reduce((sum, r) =>
-        sum + parseFloat(r.overtimeHours || "0"), 0
-    );
+
+    // Only approved overtime counts toward pay
+    const totalOvertimeHours = sumApprovedOvertimeHours(attendanceRecords);
     const nightShiftsCount = attendanceRecords.filter(r => r.isNightShift).length;
+    const bradfordFactorScore = calculateBradfordFactor(attendanceRecords);
 
-    // Calculate absent/leave deductions
-    const { absentDeduction, leaveDeduction, totalUndertimeHours, adjustedEarnings } = calculateAbsentDeductions(
-        employee,
-        attendanceRecords,
-        totalWorkingDays
-    );
+    // Deductions (uses calendarDaysInMonth as the divisor)
+    const {
+        absentDeduction,
+        leaveDeduction,
+        totalUndertimeHours,
+        adjustedAllowances,
+    } = calculateAbsentDeductions(employee, attendanceRecords, calendarDaysInMonth);
 
-    // Variable allowances (not affected by absences)
-    const fuelAllowance = parseFloat(employee.fuelAllowance || "0");
-    const specialAllowance = parseFloat(employee.specialAllowance || "0");
-
-    // Additional earnings
-    const overtimeAmount = additionalAmounts.overtimeAmount ||
+    // Overtime pay
+    const overtimeMultiplier = additionalAmounts.overtimeMultiplier || 1.0;
+    const overtimeAmount =
+        additionalAmounts.overtimeAmount ??
         calculateOvertimePay(
-            parseFloat(employee.basicSalary),
-            employee.standardDutyHours,
-            totalWorkingDays,
+            basicSalaryStd,
+            stdDutyHours,
+            calendarDaysInMonth,
             totalOvertimeHours,
-            additionalAmounts.overtimeMultiplier || 1.5
+            overtimeMultiplier
         );
-    const nightShiftAllowance = additionalAmounts.nightShiftAllowance || 0;
+
+    // Night-shift allowance
+    let nightShiftAllowanceAmount = additionalAmounts.nightShiftAllowance || 0;
+    if (nightShiftAllowanceAmount === 0 && nightShiftsCount > 0) {
+        const nightShiftRate = getAllowanceAmount(config, "nightShift");
+        nightShiftAllowanceAmount = nightShiftRate * nightShiftsCount;
+    }
+
     const incentiveAmount = additionalAmounts.incentiveAmount || 0;
     const bonusAmount = additionalAmounts.bonusAmount || 0;
 
-    // Intermediate rates for transparency
-    const stdDutyHours = employee.standardDutyHours || 8;
-    const perDayBasicRate = parseFloat(employee.basicSalary) / totalWorkingDays;
-    const perHourBasicRate = perDayBasicRate / stdDutyHours;
-    const usedMultiplier = additionalAmounts.overtimeMultiplier || 1.5;
-
-    // Calculate gross salary
+    // Gross = sum of adjusted allowances (excl. nightShift handled above) + extras
+    let sumOfAllowances = 0;
+    for (const key of Object.keys(adjustedAllowances)) {
+        if (key !== "nightShift") sumOfAllowances += adjustedAllowances[key];
+    }
     const grossSalary =
-        adjustedEarnings.basicSalary +
-        adjustedEarnings.houseRentAllowance +
-        adjustedEarnings.utilitiesAllowance +
-        adjustedEarnings.bikeMaintenanceAllowance +
-        adjustedEarnings.mobileAllowance +
-        adjustedEarnings.conveyanceAllowance +
-        fuelAllowance +
-        specialAllowance +
+        sumOfAllowances +
         overtimeAmount +
-        nightShiftAllowance +
+        nightShiftAllowanceAmount +
         incentiveAmount +
         bonusAmount;
 
-    // Manual deductions
+    // Deductions
     const manualDeductionsTotal = deductionConfig.manualDeductions.reduce(
-        (sum, d) => sum + d.amount, 0
+        (s, d) => s + d.amount, 0
     );
-
-    // Other deductions
     const advanceDeduction = additionalAmounts.advanceDeduction || 0;
     const taxDeduction = additionalAmounts.taxDeduction || 0;
     const otherDeduction = manualDeductionsTotal;
+    // Include absent + leave deductions in total
+    const totalDeductions = absentDeduction + leaveDeduction + advanceDeduction + taxDeduction + otherDeduction;
 
-    // Total deductions (not including adjustment, as that's already applied to earnings)
-    const totalDeductions = advanceDeduction + taxDeduction + otherDeduction;
-
-    // Net salary
     const netSalary = Math.max(0, grossSalary - totalDeductions);
+
+    // Standard breakdown snapshot
+    const standardBreakdown: Record<string, number> = {};
+    standardBreakdown["basicSalary"] = basicSalaryStd;
+    for (const a of config) standardBreakdown[a.id] = a.amount;
+
+    const perDayBasic = basicSalaryStd / calendarDaysInMonth;
+    const perHourBasic = perDayBasic / stdDutyHours;
 
     return {
         employeeId: employee.id,
@@ -402,21 +469,20 @@ export function calculatePayslip(
         daysPresent,
         daysAbsent,
         daysLeave,
+        daysUnapprovedLeave,
+        daysSickLeave,
         daysHalfDay,
         totalOvertimeHours: +totalOvertimeHours.toFixed(2),
         totalUndertimeHours,
         nightShiftsCount,
+        bradfordFactorScore,
+        bradfordFactorPeriod: `${format(parseISO(payrollPeriod.startDate), "d MMM yyyy")} to ${format(parseISO(payrollPeriod.endDate), "d MMM yyyy")}`,
 
-        basicSalary: adjustedEarnings.basicSalary,
-        houseRentAllowance: adjustedEarnings.houseRentAllowance,
-        utilitiesAllowance: adjustedEarnings.utilitiesAllowance,
-        bikeMaintenanceAllowance: adjustedEarnings.bikeMaintenanceAllowance,
-        mobileAllowance: adjustedEarnings.mobileAllowance,
-        fuelAllowance,
-        specialAllowance,
-        conveyanceAllowance: adjustedEarnings.conveyanceAllowance,
+        basicSalary: adjustedAllowances["basicSalary"] || 0,
+        allowanceBreakdown: adjustedAllowances,
+
         overtimeAmount,
-        nightShiftAllowance,
+        nightShiftAllowanceAmount,
         incentiveAmount,
         bonusAmount,
 
@@ -430,19 +496,15 @@ export function calculatePayslip(
         grossSalary: Math.round(grossSalary),
         totalDeductions: Math.round(totalDeductions),
         netSalary: Math.round(netSalary),
-        standardBreakdown: {
-            basicSalary: parseFloat(employee.basicSalary),
-            houseRentAllowance: parseFloat(employee.houseRentAllowance),
-            utilitiesAllowance: parseFloat(employee.utilitiesAllowance),
-            bikeMaintenanceAllowance: parseFloat(employee.bikeMaintenanceAllowance),
-            mobileAllowance: parseFloat(employee.mobileAllowance),
-            conveyanceAllowance: parseFloat(employee.conveyanceAllowance),
-        },
+        paymentSource: null,
+
+        standardBreakdown,
         calculationMeta: {
-            perDayBasic: +perDayBasicRate.toFixed(4),
-            perHourBasic: +perHourBasicRate.toFixed(4),
-            overtimeMultiplier: usedMultiplier,
-            overtimeRatePerHour: +(perHourBasicRate * usedMultiplier).toFixed(4),
+            calendarDaysInMonth,
+            perDayBasic: +perDayBasic.toFixed(4),
+            perHourBasic: +perHourBasic.toFixed(4),
+            overtimeMultiplier,
+            overtimeRatePerHour: +(perHourBasic * overtimeMultiplier).toFixed(4),
             standardDutyHours: stdDutyHours,
         },
 
@@ -450,9 +512,10 @@ export function calculatePayslip(
     };
 }
 
-/**
- * Validates payslip calculation for edge cases.
- */
+// ============================================================================
+// VALIDATION
+// ============================================================================
+
 export function validatePayslip(payslip: PayslipCalculation): {
     isValid: boolean;
     warnings: string[];
@@ -461,39 +524,21 @@ export function validatePayslip(payslip: PayslipCalculation): {
     const warnings: string[] = [];
     const errors: string[] = [];
 
-    // Check for negative net salary
     if (payslip.netSalary < 0) {
         errors.push("Net salary is negative. Deductions exceed earnings.");
     }
-
-    // Check for zero salary
     if (payslip.grossSalary === 0) {
         warnings.push("Gross salary is zero. Employee may be on unpaid leave.");
     }
-
-    // Check for missing employee details
-    if (!payslip.cnic || payslip.cnic === "N/A") {
-        warnings.push("Employee CNIC is missing.");
-    }
-
-    if (!payslip.bankAccountNumber || payslip.bankAccountNumber === "N/A") {
-        warnings.push("Employee bank account details are missing.");
-    }
-
-    // Check for excessive deductions
-    if (payslip.totalDeductions > payslip.grossSalary * 0.5) {
-        warnings.push("Deductions exceed 50% of gross salary.");
-    }
-
-    // Check attendance consistency
-    const totalDays = payslip.daysPresent + payslip.daysAbsent + payslip.daysLeave + payslip.daysHalfDay;
+    const totalDays =
+        payslip.daysPresent +
+        payslip.daysAbsent +
+        payslip.daysLeave +
+        payslip.daysUnapprovedLeave +
+        payslip.daysHalfDay;
     if (totalDays > payslip.totalWorkingDays) {
         errors.push("Total attendance days exceed working days in period.");
     }
 
-    return {
-        isValid: errors.length === 0,
-        warnings,
-        errors,
-    };
+    return { isValid: errors.length === 0, warnings, errors };
 }

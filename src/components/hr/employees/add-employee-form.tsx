@@ -5,13 +5,14 @@ import { createEmployeeSchema } from "@/lib/validators/hr-validators";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldLabel, FieldError, FieldGroup } from "@/components/ui/field";
 import { Loader2, UserPlus, Briefcase, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/custom/date-picker";
+import { STANDARD_ALLOWANCES, type AllowanceConfig } from "@/lib/types/hr-types";
+import { Plus, Trash2 } from "lucide-react";
 
 interface Props {
     onSuccess: () => void;
@@ -33,20 +34,13 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
             phone: "",
             cnic: "",
             address: "",
+            bankName: "",
+            bankAccountNumber: "",
 
             // Compensation
-            basicSalary: "",
-            houseRentAllowance: "",
-            utilitiesAllowance: "",
-            conveyanceAllowance: "",
-            bikeMaintenanceAllowance: "",
-            mobileAllowance: "",
-            fuelAllowance: "",
-            specialAllowance: "",
-            incentivePercentage: "",
-
-            standardDutyHours: 8 as 8 | 12,
-            isOperator: false,
+            standardDutyHours: 8,
+            standardSalary: "",
+            allowanceConfig: JSON.parse(JSON.stringify(STANDARD_ALLOWANCES)) as AllowanceConfig[],
         },
         validators: {
             onSubmit: createEmployeeSchema,
@@ -187,6 +181,37 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
                             </Field>
                         )}
                     </form.Field>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <form.Field name="bankName">
+                            {(field) => (
+                                <Field>
+                                    <FieldLabel>Bank Name / Wallet (Optional)</FieldLabel>
+                                    <Input
+                                        placeholder="e.g. HBL, JazzCash, Meezan Bank"
+                                        value={field.state.value || ""}
+                                        onBlur={field.handleBlur}
+                                        onChange={(e) => field.handleChange(e.target.value)}
+                                    />
+                                    <FieldError errors={field.state.meta.errors} />
+                                </Field>
+                            )}
+                        </form.Field>
+                        <form.Field name="bankAccountNumber">
+                            {(field) => (
+                                <Field>
+                                    <FieldLabel>Account Number (Optional)</FieldLabel>
+                                    <Input
+                                        placeholder="IBAN or Mobile Number"
+                                        value={field.state.value || ""}
+                                        onBlur={field.handleBlur}
+                                        onChange={(e) => field.handleChange(e.target.value)}
+                                    />
+                                    <FieldError errors={field.state.meta.errors} />
+                                </Field>
+                            )}
+                        </form.Field>
+                    </div>
                 </div>
 
                 <Separator className="opacity-50" />
@@ -251,39 +276,20 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
                         <form.Field name="standardDutyHours">
                             {(field) => (
                                 <Field>
-                                    <FieldLabel>Standard Duty Hours</FieldLabel>
-                                    <Select
-                                        value={String(field.state.value)}
-                                        onValueChange={(val) => field.handleChange(Number(val) as 8 | 12)}
-                                    >
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="8">8 Hours Shift</SelectItem>
-                                            <SelectItem value="12">12 Hours Shift</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <FieldLabel>Daily Duty Hours</FieldLabel>
+                                    <Input
+                                        type="number"
+                                        placeholder="e.g. 8"
+                                        value={field.state.value}
+                                        onBlur={field.handleBlur}
+                                        onChange={(e) => field.handleChange(Number(e.target.value))}
+                                        className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    />
+                                    <FieldError errors={field.state.meta.errors} />
                                 </Field>
                             )}
                         </form.Field>
                     </div>
-
-                    <form.Field name="isOperator">
-                        {(field) => (
-                            <div className="flex items-start gap-3 p-4 rounded-xl border bg-muted/30">
-                                <Checkbox
-                                    id="isOperator"
-                                    checked={!!field.state.value}
-                                    onCheckedChange={(checked) => field.handleChange(!!checked)}
-                                />
-                                <div className="grid gap-1.5 leading-none">
-                                    <FieldLabel htmlFor="isOperator" className="cursor-pointer">Technician / Operator Role</FieldLabel>
-                                    <p className="text-xs text-muted-foreground">
-                                        Enables secondary shift tracking (Shift 2) for production floor staff.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-                    </form.Field>
                 </div>
 
                 <Separator className="opacity-50" />
@@ -295,139 +301,93 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
                         <span className="text-sm uppercase tracking-wider">Compensation & Allowances</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <form.Field name="basicSalary">
+                        <form.Field name="standardSalary">
                             {(field) => (
                                 <Field>
-                                    <FieldLabel>Basic Salary (Monthly)</FieldLabel>
-                                    <Input
-                                        type="number"
-                                        placeholder="0.00"
-                                        value={field.state.value}
-                                        onBlur={field.handleBlur}
-                                        onChange={(e) => field.handleChange(e.target.value)}
-                                    />
+                                    <FieldLabel className="text-muted-foreground font-medium">Basic Salary (Monthly)</FieldLabel>
+                                    <div className="relative group">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors group-focus-within:text-yellow-600">
+                                            <span className="text-xs font-bold text-muted-foreground/70">PKR</span>
+                                        </div>
+                                        <Input
+                                            type="number"
+                                            placeholder="0.00"
+                                            value={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onChange={(e) => field.handleChange(e.target.value)}
+                                            className="pl-12 bg-yellow-50/30 border-yellow-200 focus-visible:ring-yellow-500 font-mono text-lg h-12 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        />
+                                    </div>
                                     <FieldError errors={field.state.meta.errors} />
                                 </Field>
                             )}
                         </form.Field>
-                        <form.Field name="houseRentAllowance">
-                            {(field) => (
-                                <Field>
-                                    <FieldLabel>House Rent Allowance</FieldLabel>
-                                    <Input
-                                        type="number"
-                                        placeholder="0.00"
-                                        value={field.state.value}
-                                        onBlur={field.handleBlur}
-                                        onChange={(e) => field.handleChange(e.target.value)}
-                                    />
-                                </Field>
-                            )}
-                        </form.Field>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <form.Field name="utilitiesAllowance">
-                            {(field) => (
-                                <Field>
-                                    <FieldLabel>Utilities</FieldLabel>
-                                    <Input
-                                        type="number"
-                                        placeholder="0.00"
-                                        value={field.state.value}
-                                        onBlur={field.handleBlur}
-                                        onChange={(e) => field.handleChange(e.target.value)}
-                                    />
-                                </Field>
-                            )}
-                        </form.Field>
-                        <form.Field name="conveyanceAllowance">
-                            {(field) => (
-                                <Field>
-                                    <FieldLabel>Conveyance</FieldLabel>
-                                    <Input
-                                        type="number"
-                                        placeholder="0.00"
-                                        value={field.state.value}
-                                        onBlur={field.handleBlur}
-                                        onChange={(e) => field.handleChange(e.target.value)}
-                                    />
-                                </Field>
-                            )}
-                        </form.Field>
-                        <form.Field name="mobileAllowance">
-                            {(field) => (
-                                <Field>
-                                    <FieldLabel>Mobile</FieldLabel>
-                                    <Input
-                                        type="number"
-                                        placeholder="0.00"
-                                        value={field.state.value}
-                                        onBlur={field.handleBlur}
-                                        onChange={(e) => field.handleChange(e.target.value)}
-                                    />
-                                </Field>
-                            )}
-                        </form.Field>
-                        <form.Field name="bikeMaintenanceAllowance">
-                            {(field) => (
-                                <Field>
-                                    <FieldLabel>Bike Maint.</FieldLabel>
-                                    <Input
-                                        type="number"
-                                        placeholder="0.00"
-                                        value={field.state.value}
-                                        onBlur={field.handleBlur}
-                                        onChange={(e) => field.handleChange(e.target.value)}
-                                    />
-                                </Field>
-                            )}
-                        </form.Field>
-                        <form.Field name="fuelAllowance">
-                            {(field) => (
-                                <Field>
-                                    <FieldLabel>Fuel</FieldLabel>
-                                    <Input
-                                        type="number"
-                                        placeholder="0.00"
-                                        value={field.state.value}
-                                        onBlur={field.handleBlur}
-                                        onChange={(e) => field.handleChange(e.target.value)}
-                                    />
-                                </Field>
-                            )}
-                        </form.Field>
-                    </div>
+                    <div className="pt-4 pb-2">
+                        <div className="flex justify-between items-center mb-4">
+                            <h4 className="text-sm font-semibold tracking-wide text-muted-foreground">ALLOWANCES</h4>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => form.pushFieldValue('allowanceConfig', { id: `custom_${Date.now()}`, name: "New Allowance", amount: 0 })}
+                            >
+                                <Plus className="w-4 h-4 mr-2" /> Add Custom
+                            </Button>
+                        </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <form.Field name="incentivePercentage">
-                            {(field) => (
-                                <Field>
-                                    <FieldLabel>Incentive (%)</FieldLabel>
-                                    <Input
-                                        type="number"
-                                        placeholder="0.00"
-                                        value={field.state.value}
-                                        onBlur={field.handleBlur}
-                                        onChange={(e) => field.handleChange(e.target.value)}
-                                    />
-                                </Field>
-                            )}
-                        </form.Field>
-                        <form.Field name="specialAllowance">
-                            {(field) => (
-                                <Field>
-                                    <FieldLabel>Special Allowance</FieldLabel>
-                                    <Input
-                                        type="number"
-                                        placeholder="0.00"
-                                        value={field.state.value}
-                                        onBlur={field.handleBlur}
-                                        onChange={(e) => field.handleChange(e.target.value)}
-                                    />
-                                </Field>
-                            )}
-                        </form.Field>
+                        <div className="space-y-4">
+                            <form.Field name="allowanceConfig">
+                                {(field) => (
+                                    <>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {field.state.value.map((allowance: any, index: number) => (
+                                                <div key={allowance.id} className="relative flex flex-col gap-1.5 p-3 border rounded-lg bg-card  hover:border-primary/30 transition-colors">
+                                                    <div className="flex items-center justify-between">
+                                                        <form.Field name={`allowanceConfig[${index}].name` as any}>
+                                                            {(nameField) => (
+                                                                <Input
+                                                                    value={nameField.state.value as string}
+                                                                    onChange={(e) => nameField.handleChange(e.target.value as any)}
+                                                                    placeholder="Allowance Name"
+                                                                    className="h-7 text-xs font-semibold border-transparent px-1 hover:border-border focus-visible:ring-1 bg-transparent w-full shadow-none"
+                                                                />
+                                                            )}
+                                                        </form.Field>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0 ml-1 opacity-50 hover:opacity-100"
+                                                            onClick={() => form.removeFieldValue('allowanceConfig', index)}
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </Button>
+                                                    </div>
+
+                                                    <form.Field name={`allowanceConfig[${index}].amount` as any}>
+                                                        {(amountField) => (
+                                                            <div className="relative">
+                                                                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                                                    <span className="text-[10px] text-muted-foreground font-medium">PKR</span>
+                                                                </div>
+                                                                <Input
+                                                                    type="number"
+                                                                    value={amountField.state.value === 0 ? "" : (amountField.state.value as number)}
+                                                                    onChange={(e) => amountField.handleChange((e.target.value === "" ? 0 : Number(e.target.value)) as any)}
+                                                                    className="h-9 pl-10 text-sm font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </form.Field>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+                            </form.Field>
+                        </div>
                     </div>
                 </div>
 

@@ -8,10 +8,13 @@ import {
     text,
     time,
     timestamp,
-    date
+    date,
+    jsonb
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
+import { type AllowanceConfig, STANDARD_ALLOWANCES } from "@/lib/types/hr-types";
+
 import { user } from "./auth-schema";
 
 const timestamps = {
@@ -50,6 +53,7 @@ export const leaveTypeEnum = pgEnum("leave_type", [
     "casual",
     "annual",
     "unpaid",
+    "special",
 ]);
 
 // --- EMPLOYEES ---
@@ -78,25 +82,13 @@ export const employees = pgTable("employees", {
     bankName: text("bank_name"),
     bankAccountNumber: text("bank_account_number"),
 
-    // Compensation Structure (Snapshot/Current)
-    basicSalary: decimal("basic_salary", { precision: 12, scale: 2 }).notNull().default("0"),
-    houseRentAllowance: decimal("house_rent_allowance", { precision: 12, scale: 2 }).default("0"),
-    utilitiesAllowance: decimal("utilities_allowance", { precision: 12, scale: 2 }).default("0"),
-    conveyanceAllowance: decimal("conveyance_allowance", { precision: 12, scale: 2 }).default("0"),
-    bikeMaintenanceAllowance: decimal("bike_maintenance_allowance", { precision: 12, scale: 2 }).default("0"),
-    mobileAllowance: decimal("mobile_allowance", { precision: 12, scale: 2 }).default("0"),
-    fuelAllowance: decimal("fuel_allowance", { precision: 12, scale: 2 }).default("0"),
-    specialAllowance: decimal("special_allowance", { precision: 12, scale: 2 }).default("0"),
-
-    // Variable Components (Percentages or Rates)
-    incentivePercentage: decimal("incentive_percentage", { precision: 5, scale: 2 }).default("0"), // e.g. 2.00%
-
-    // Duty Rules
-    standardDutyHours: integer("standard_duty_hours").default(8).notNull(), // 8 or 12
-    isOperator: boolean("is_operator").default(false).notNull(), // Determines attendance logic (split shift vs single)
-
     // Base Calculation Field
+    standardDutyHours: integer("standard_duty_hours").default(8).notNull(),
     standardSalary: decimal("standard_salary", { precision: 12, scale: 2 }).default("0"),
+
+    // JSON configured flexible allowances
+    allowanceConfig: jsonb("allowance_config").$type<AllowanceConfig[]>().default(STANDARD_ALLOWANCES),
+
 
     // Leave & Attendance Tracking
     annualLeaveBalance: integer("annual_leave_balance").default(30), // Days remaining
@@ -134,6 +126,23 @@ export const attendance = pgTable("attendance", {
     isLate: boolean("is_late").default(false),
     isNightShift: boolean("is_night_shift").default(false),
 
+    // Overtime Approval — remarks required; hours only paid when status = 'approved'
+    overtimeStatus: text("overtime_status").default("pending"), // pending, approved, rejected
+    overtimeRemarks: text("overtime_remarks"), // Required: reason entered by computer operator
+
+    // Early Departure
+    earlyDepartureStatus: text("early_departure_status").default("none"), // none, pending, approved, rejected
+    checkOutReason: text("check_out_reason"),
+
+    // Leave approval — 'true' means paid approved leave (no deduction)
+    isApprovedLeave: boolean("is_approved_leave").default(false),
+
+    // Leave classification — determines Bradford Factor counting and balance deduction
+    leaveType: leaveTypeEnum("leave_type"), // sick | casual | annual | unpaid | special
+
+    // Data source — biometric machine feed or manual entry fallback
+    entrySource: text("entry_source").default("manual"), // 'biometric' | 'manual'
+
     notes: text("notes"),
 
     ...timestamps,
@@ -157,6 +166,10 @@ export const payrolls = pgTable("payrolls", {
     totalAmount: decimal("total_amount", { precision: 15, scale: 2 }).default("0"),
 
     processedBy: text("processed_by").references(() => user.id),
+
+    // Finance Integration — wallet used to disburse salaries
+    walletId: text("wallet_id"), // FK to finance wallets; set when status → 'paid'
+    paidAt: timestamp("paid_at"),   // Timestamp of disbursement
 
     ...timestamps,
 });
@@ -182,13 +195,9 @@ export const payslips = pgTable("payslips", {
 
     // Earnings
     basicSalary: decimal("basic_salary", { precision: 12, scale: 2 }).notNull(),
-    houseRentAllowance: decimal("house_rent_allowance", { precision: 12, scale: 2 }).default("0"),
-    utilitiesAllowance: decimal("utilities_allowance", { precision: 12, scale: 2 }).default("0"),
-    conveyanceAllowance: decimal("conveyance_allowance", { precision: 12, scale: 2 }).default("0"),
-    bikeMaintenanceAllowance: decimal("bike_maintenance_allowance", { precision: 12, scale: 2 }).default("0"),
-    mobileAllowance: decimal("mobile_allowance", { precision: 12, scale: 2 }).default("0"),
-    fuelAllowance: decimal("fuel_allowance", { precision: 12, scale: 2 }).default("0"),
-    specialAllowance: decimal("special_allowance", { precision: 12, scale: 2 }).default("0"),
+    // Dynamic Allowances computed values mapping: { "houseRent": 12000, "bikeMaintenance": 6000 }
+    allowanceBreakdown: jsonb("allowance_breakdown").$type<Record<string, number>>().default({}),
+
     incentiveAmount: decimal("incentive_amount", { precision: 12, scale: 2 }).default("0"),
 
     overtimeAmount: decimal("overtime_amount", { precision: 12, scale: 2 }).default("0"),
@@ -197,16 +206,49 @@ export const payslips = pgTable("payslips", {
 
     // Deductions
     absentDeduction: decimal("absent_deduction", { precision: 12, scale: 2 }).default("0"),
+    leaveDeduction: decimal("leave_deduction", { precision: 12, scale: 2 }).default("0"),
     advanceDeduction: decimal("advance_deduction", { precision: 12, scale: 2 }).default("0"),
     taxDeduction: decimal("tax_deduction", { precision: 12, scale: 2 }).default("0"),
     otherDeduction: decimal("other_deduction", { precision: 12, scale: 2 }).default("0"),
+
+    // Bradford Factor — computed from absences; can be manually overridden by admin
+    bradfordFactorScore: decimal("bradford_factor_score", { precision: 8, scale: 2 }).default("0"),
+    bradfordFactorOverride: decimal("bradford_factor_override", { precision: 8, scale: 2 }), // null = use computed
+    bradfordFactorPeriod: text("bradford_factor_period"), // e.g. "16 Jan 2026 to 15 Feb 2026"
 
     // Totals
     grossSalary: decimal("gross_salary", { precision: 12, scale: 2 }).notNull(),
     totalDeductions: decimal("total_deductions", { precision: 12, scale: 2 }).notNull(),
     netSalary: decimal("net_salary", { precision: 12, scale: 2 }).notNull(),
 
+    paymentSource: text("payment_source"), // e.g. "Cash", "Bank-HBL"
+
     remarks: text("remarks"),
+
+    ...timestamps,
+});
+
+// --- SALARY ADVANCES ---
+export const salaryAdvances = pgTable("salary_advances", {
+    id: text("id")
+        .primaryKey()
+        .$defaultFn(() => createId()),
+    employeeId: text("employee_id")
+        .notNull()
+        .references(() => employees.id),
+
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    date: date("date").notNull(),
+    reason: text("reason").notNull(),
+
+    status: text("status").default("pending").notNull(), // pending, approved (paid), rejected, deducted
+    approvedBy: text("approved_by").references(() => user.id),
+
+    // Finance Integration — wallet used to disburse the advance
+    walletId: text("wallet_id"),  // FK to finance wallets; set when status → 'approved' (paid)
+    paidAt: timestamp("paid_at"), // Timestamp of payout
+
+    deductedInPayslipId: text("deducted_in_payslip_id").references(() => payslips.id),
 
     ...timestamps,
 });
@@ -244,5 +286,20 @@ export const payslipRelations = relations(payslips, ({ one }) => ({
     employee: one(employees, {
         fields: [payslips.employeeId],
         references: [employees.id],
+    }),
+}));
+
+export const salaryAdvanceRelations = relations(salaryAdvances, ({ one }) => ({
+    employee: one(employees, {
+        fields: [salaryAdvances.employeeId],
+        references: [employees.id],
+    }),
+    payslip: one(payslips, {
+        fields: [salaryAdvances.deductedInPayslipId],
+        references: [payslips.id],
+    }),
+    approver: one(user, {
+        fields: [salaryAdvances.approvedBy],
+        references: [user.id],
     }),
 }));

@@ -52,17 +52,16 @@ export const EmployeeDetailView = () => {
         </div>
     }
     // Helper to sum up allowances for display
-    const totalAllowances = [
-        employee.houseRentAllowance,
-        employee.utilitiesAllowance,
-        employee.conveyanceAllowance,
-        employee.bikeMaintenanceAllowance,
-        employee.mobileAllowance,
-        employee.fuelAllowance,
-        employee.specialAllowance
-    ].reduce((acc, curr) => acc + (parseFloat(curr || "0") || 0), 0);
+    const allowanceConfig = (employee.allowanceConfig as any[]) || [];
 
-    const grossSalary = (parseFloat(employee.basicSalary || "0") || 0) + totalAllowances;
+    // Total includes all allowances
+    const standardSalary = parseFloat(employee.standardSalary || "0") || 0;
+
+    const totalAllowances = allowanceConfig
+        .filter(a => a.id !== 'basicSalary')
+        .reduce((acc, curr) => acc + (parseFloat(curr.amount || "0") || 0), 0);
+
+    const grossSalary = standardSalary + totalAllowances;
 
     const handleDelete = () => {
         deleteMutate.mutate({ data: { id: employee.id } }, {
@@ -160,8 +159,8 @@ export const EmployeeDetailView = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <Card className="bg-primary/5 border-primary/20">
                             <CardHeader className="pb-2">
-                                <CardDescription className="text-xs uppercase font-bold tracking-wider text-primary/70">Basic Salary</CardDescription>
-                                <CardTitle className="text-2xl font-bold text-primary">PKR {parseFloat(employee.basicSalary).toLocaleString()}</CardTitle>
+                                <CardDescription className="text-xs uppercase font-bold tracking-wider text-primary/70">Standard Salary</CardDescription>
+                                <CardTitle className="text-2xl font-bold text-primary">PKR {standardSalary.toLocaleString()}</CardTitle>
                             </CardHeader>
                         </Card>
                         <Card>
@@ -230,66 +229,21 @@ export const EmployeeDetailView = () => {
                                 </CardHeader>
                                 <CardContent className="space-y-6">
                                     <div>
-                                        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Standard Components</h4>
+                                        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Allowances Config</h4>
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                            <div className="p-3 border rounded-lg bg-muted/20">
-                                                <p className="text-xs text-muted-foreground mb-1">Basic Salary</p>
-                                                <p className="font-bold">PKR {parseFloat(employee.basicSalary).toLocaleString()}</p>
-                                            </div>
-                                            <div className="p-3 border rounded-lg">
-                                                <p className="text-xs text-muted-foreground mb-1">House Rent</p>
-                                                <p className="font-semibold">PKR {parseFloat(employee.houseRentAllowance || "0").toLocaleString()}</p>
-                                            </div>
-                                            <div className="p-3 border rounded-lg">
-                                                <p className="text-xs text-muted-foreground mb-1">Utilities</p>
-                                                <p className="font-semibold">PKR {parseFloat(employee.utilitiesAllowance || "0").toLocaleString()}</p>
-                                            </div>
-                                            <div className="p-3 border rounded-lg">
-                                                <p className="text-xs text-muted-foreground mb-1">Conveyance</p>
-                                                <p className="font-semibold">PKR {parseFloat(employee.conveyanceAllowance || "0").toLocaleString()}</p>
-                                            </div>
+                                            {allowanceConfig.filter((a: any) => a.id !== 'basicSalary').map((allowance: any) => (
+                                                <div key={allowance.id} className="p-3 border rounded-lg bg-muted/10">
+                                                    <p className="text-xs text-muted-foreground mb-1 font-medium">{allowance.name}</p>
+                                                    <p className="font-semibold">
+                                                        PKR {parseFloat(allowance.amount || "0").toLocaleString()}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                            {allowanceConfig.filter((a: any) => a.id !== 'basicSalary').length === 0 && (
+                                                <p className="text-sm text-muted-foreground col-span-full">No allowances configured</p>
+                                            )}
                                         </div>
                                     </div>
-
-                                    {(employee.bikeMaintenanceAllowance || employee.mobileAllowance || employee.fuelAllowance) && (
-                                        <div>
-                                            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Field Allowances</h4>
-                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                                <div className="p-3 border rounded-lg">
-                                                    <p className="text-xs text-muted-foreground mb-1">Bike Maintenance</p>
-                                                    <p className="font-semibold">PKR {parseFloat(employee.bikeMaintenanceAllowance || "0").toLocaleString()}</p>
-                                                </div>
-                                                <div className="p-3 border rounded-lg">
-                                                    <p className="text-xs text-muted-foreground mb-1">Mobile Allowance</p>
-                                                    <p className="font-semibold">PKR {parseFloat(employee.mobileAllowance || "0").toLocaleString()}</p>
-                                                </div>
-                                                <div className="p-3 border rounded-lg">
-                                                    <p className="text-xs text-muted-foreground mb-1">Fuel Allowance</p>
-                                                    <p className="font-semibold">PKR {parseFloat(employee.fuelAllowance || "0").toLocaleString()}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {(employee.specialAllowance || employee.incentivePercentage) && (
-                                        <div>
-                                            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Incentives & Special</h4>
-                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                                {employee.incentivePercentage && (
-                                                    <div className="p-3 border border-amber-200 bg-amber-50 rounded-lg">
-                                                        <p className="text-xs text-amber-700 font-medium mb-1">Sales Incentive</p>
-                                                        <p className="font-bold text-amber-800">{employee.incentivePercentage}%</p>
-                                                    </div>
-                                                )}
-                                                {employee.specialAllowance && (
-                                                    <div className="p-3 border border-indigo-200 bg-indigo-50 rounded-lg">
-                                                        <p className="text-xs text-indigo-700 font-medium mb-1">Special Allowance</p>
-                                                        <p className="font-bold text-indigo-800">PKR {parseFloat(employee.specialAllowance).toLocaleString()}</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
                                 </CardContent>
                             </Card>
                         </div>
@@ -309,14 +263,8 @@ export const EmployeeDetailView = () => {
                                         <Badge variant="secondary" className="font-medium capitalize">{employee.employmentType.replace("_", " ")}</Badge>
                                     </div>
                                     <div className="flex justify-between items-center py-2 border-b">
-                                        <span className="text-sm text-muted-foreground">Shift Type</span>
-                                        <span className="font-medium">{employee.standardDutyHours} Hours</span>
-                                    </div>
-                                    <div className="flex justify-between items-center py-2 border-b">
-                                        <span className="text-sm text-muted-foreground">Operator Role</span>
-                                        <Badge variant={employee.isOperator ? "default" : "outline"}>
-                                            {employee.isOperator ? "Yes" : "No"}
-                                        </Badge>
+                                        <span className="text-sm text-muted-foreground">Status</span>
+                                        <Badge variant="secondary" className="font-medium capitalize">{employee.status}</Badge>
                                     </div>
                                     <div className="flex justify-between items-center py-2">
                                         <span className="text-sm text-muted-foreground">Joined On</span>

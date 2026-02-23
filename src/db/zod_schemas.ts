@@ -113,12 +113,21 @@ export const stockTransferInputSchema = z.object({
 export const createInvoiceSchema = z.object({
     customerId: z.string().optional(),
     warehouseId: z.string(),
-    walletId: z.string().min(1, "Select Payment Account"),
+    account: z.string().min(1, "Select Payment Account"),
+    cash: z.number().nonnegative().default(0),
+    credit: z.number().nonnegative().default(0),
+    creditReturnDate: z.date().optional(),
+    expenses: z.number().nonnegative().default(0),
+    expensesDescription: z.string().optional(),
+    remarks: z.string().optional(),
     items: z.array(
         z.object({
-            recipeId: z.string(),
-            quantityCartons: z.number().int().positive(),
-            unitPrice: z.number().positive(),
+            pack: z.string().min(1, "Pack is required"),
+            recipeId: z.string().optional(),
+            numberOfCartons: z.number().int().positive(),
+            hsnCode: z.string().min(1, "HSN Code is mandatory"),
+            perCartonPrice: z.number().nonnegative(),
+            retailPrice: z.number().nonnegative(),
         }),
     ),
 });

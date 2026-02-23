@@ -22,17 +22,8 @@ export const createEmployeeFn = createServerFn()
                 phone: data.phone,
                 cnic: data.cnic,
                 address: data.address,
-                basicSalary: data.basicSalary || "0",
-                houseRentAllowance: data.houseRentAllowance || "0",
-                utilitiesAllowance: data.utilitiesAllowance || "0",
-                conveyanceAllowance: data.conveyanceAllowance || "0",
-                bikeMaintenanceAllowance: data.bikeMaintenanceAllowance || "0",
-                mobileAllowance: data.mobileAllowance || "0",
-                fuelAllowance: data.fuelAllowance || "0",
-                specialAllowance: data.specialAllowance || "0",
-                incentivePercentage: data.incentivePercentage || "0",
-                standardDutyHours: data.standardDutyHours,
-                isOperator: data.isOperator,
+                standardSalary: data.standardSalary || "0",
+                allowanceConfig: data.allowanceConfig,
             })
             .returning();
 

@@ -54,9 +54,9 @@ export const EmployeesTable = ({ data }: Props) => {
             ),
         },
         {
-            accessorKey: "basicSalary",
-            header: "Basic Salary",
-            cell: ({ row }) => <span>PKR {parseFloat(row.original.basicSalary).toLocaleString()}</span>,
+            accessorKey: "standardSalary",
+            header: "Standard Salary",
+            cell: ({ row }) => <span>PKR {parseFloat(row.original.standardSalary || "0").toLocaleString()}</span>,
         },
         {
             accessorKey: "status",

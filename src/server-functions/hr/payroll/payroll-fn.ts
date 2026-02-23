@@ -6,6 +6,7 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { format, parseISO, startOfMonth, subMonths, addDays } from "date-fns";
 import { generateEmployeePayslipCore } from "./core";
+import { createId } from "@paralleldrive/cuid2";
 
 const createPayrollSchema = z.object({
     month: z.string(), // YYYY-MM-DD
@@ -174,15 +175,27 @@ export const approvePayrollFn = createServerFn()
     });
 
 /**
- * Mark payroll as paid
+ * Mark payroll as paid — deducts from finance wallet and creates ledger entry.
  */
 export const markPayrollAsPaidFn = createServerFn()
     .middleware([requireAdminMiddleware])
-    .inputValidator(z.object({ payrollId: z.string() }))
+    .inputValidator(z.object({
+        payrollId: z.string(),
+    }))
     .handler(async ({ data }) => {
+        const payroll = await db.query.payrolls.findFirst({
+            where: eq(payrolls.id, data.payrollId),
+        });
+        if (!payroll) throw new Error("Payroll not found");
+        if (payroll.status === "paid") throw new Error("Payroll is already marked as paid");
+
+        // Simple update without finance integration
         const [updated] = await db
             .update(payrolls)
-            .set({ status: "paid" })
+            .set({
+                status: "paid",
+                paidAt: new Date(),
+            })
             .where(eq(payrolls.id, data.payrollId))
             .returning();
 

@@ -1,6 +1,6 @@
 {
-  "id": "3efce973-6b18-4ed5-8308-029eba580803",
-  "prevId": "b1c1d11d-3040-46c6-8782-14a06b04d502",
+  "id": "2e516eb5-7748-42c8-bd64-ae4c1798f1e5",
+  "prevId": "ec1d6d78-1490-43c9-ae82-c9a91309c510",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -874,6 +874,53 @@
           "notNull": false,
           "default": false
         },
+        "overtime_status": {
+          "name": "overtime_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'pending'"
+        },
+        "overtime_remarks": {
+          "name": "overtime_remarks",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "early_departure_status": {
+          "name": "early_departure_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'none'"
+        },
+        "check_out_reason": {
+          "name": "check_out_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_approved_leave": {
+          "name": "is_approved_leave",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "leave_type": {
+          "name": "leave_type",
+          "type": "leave_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "entry_source": {
+          "name": "entry_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'manual'"
+        },
         "notes": {
           "name": "notes",
           "type": "text",
@@ -1025,33 +1072,17 @@
           "primaryKey": false,
           "notNull": true
         },
-        "basic_salary": {
-          "name": "basic_salary",
-          "type": "numeric(12, 2)",
+        "bank_name": {
+          "name": "bank_name",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'0'"
+          "notNull": false
         },
-        "house_rent_allowance": {
-          "name": "house_rent_allowance",
-          "type": "numeric(12, 2)",
+        "bank_account_number": {
+          "name": "bank_account_number",
+          "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "default": "'0'"
-        },
-        "utilities_allowance": {
-          "name": "utilities_allowance",
-          "type": "numeric(12, 2)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'0'"
-        },
-        "conveyance_allowance": {
-          "name": "conveyance_allowance",
-          "type": "numeric(12, 2)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'0'"
+          "notNull": false
         },
         "standard_duty_hours": {
           "name": "standard_duty_hours",
@@ -1060,12 +1091,40 @@
           "notNull": true,
           "default": 8
         },
-        "is_operator": {
-          "name": "is_operator",
-          "type": "boolean",
+        "standard_salary": {
+          "name": "standard_salary",
+          "type": "numeric(12, 2)",
           "primaryKey": false,
-          "notNull": true,
-          "default": false
+          "notNull": false,
+          "default": "'0'"
+        },
+        "allowance_config": {
+          "name": "allowance_config",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'[{\"id\":\"houseRent\",\"name\":\"House Rent\",\"amount\":0},{\"id\":\"utilities\",\"name\":\"Utilities\",\"amount\":0},{\"id\":\"bikeMaintenance\",\"name\":\"Bike Maintenance\",\"amount\":0},{\"id\":\"mobile\",\"name\":\"Mobile Allowance\",\"amount\":0},{\"id\":\"technical\",\"name\":\"Technical Allowance\",\"amount\":0},{\"id\":\"conveyance\",\"name\":\"Conveyance Allowance\",\"amount\":0},{\"id\":\"fuel\",\"name\":\"Fuel Allowance\",\"amount\":0},{\"id\":\"special\",\"name\":\"Special Allowance\",\"amount\":0},{\"id\":\"nightShift\",\"name\":\"Night Shift Allowance\",\"amount\":0}]'::jsonb"
+        },
+        "annual_leave_balance": {
+          "name": "annual_leave_balance",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 30
+        },
+        "sick_leave_balance": {
+          "name": "sick_leave_balance",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 10
+        },
+        "casual_leave_balance": {
+          "name": "casual_leave_balance",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 5
         },
         "created_at": {
           "name": "created_at",
@@ -1112,8 +1171,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.payroll_runs": {
-      "name": "payroll_runs",
+    "public.payrolls": {
+      "name": "payrolls",
       "schema": "",
       "columns": {
         "id": {
@@ -1160,6 +1219,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "wallet_id": {
+          "name": "wallet_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paid_at": {
+          "name": "paid_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -1177,9 +1248,9 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "payroll_runs_processed_by_user_id_fk": {
-          "name": "payroll_runs_processed_by_user_id_fk",
-          "tableFrom": "payroll_runs",
+        "payrolls_processed_by_user_id_fk": {
+          "name": "payrolls_processed_by_user_id_fk",
+          "tableFrom": "payrolls",
           "tableTo": "user",
           "columnsFrom": [
             "processed_by"
@@ -1207,8 +1278,8 @@
           "primaryKey": true,
           "notNull": true
         },
-        "payroll_run_id": {
-          "name": "payroll_run_id",
+        "payroll_id": {
+          "name": "payroll_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -1260,22 +1331,15 @@
           "primaryKey": false,
           "notNull": true
         },
-        "house_rent_allowance": {
-          "name": "house_rent_allowance",
-          "type": "numeric(12, 2)",
+        "allowance_breakdown": {
+          "name": "allowance_breakdown",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false,
-          "default": "'0'"
+          "default": "'{}'::jsonb"
         },
-        "utilities_allowance": {
-          "name": "utilities_allowance",
-          "type": "numeric(12, 2)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'0'"
-        },
-        "conveyance_allowance": {
-          "name": "conveyance_allowance",
+        "incentive_amount": {
+          "name": "incentive_amount",
           "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": false,
@@ -1309,6 +1373,13 @@
           "notNull": false,
           "default": "'0'"
         },
+        "leave_deduction": {
+          "name": "leave_deduction",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
         "advance_deduction": {
           "name": "advance_deduction",
           "type": "numeric(12, 2)",
@@ -1330,6 +1401,25 @@
           "notNull": false,
           "default": "'0'"
         },
+        "bradford_factor_score": {
+          "name": "bradford_factor_score",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "bradford_factor_override": {
+          "name": "bradford_factor_override",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bradford_factor_period": {
+          "name": "bradford_factor_period",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "gross_salary": {
           "name": "gross_salary",
           "type": "numeric(12, 2)",
@@ -1347,6 +1437,12 @@
           "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": true
+        },
+        "payment_source": {
+          "name": "payment_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "remarks": {
           "name": "remarks",
@@ -1371,12 +1467,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "payslips_payroll_run_id_payroll_runs_id_fk": {
-          "name": "payslips_payroll_run_id_payroll_runs_id_fk",
+        "payslips_payroll_id_payrolls_id_fk": {
+          "name": "payslips_payroll_id_payrolls_id_fk",
           "tableFrom": "payslips",
-          "tableTo": "payroll_runs",
+          "tableTo": "payrolls",
           "columnsFrom": [
-            "payroll_run_id"
+            "payroll_id"
           ],
           "columnsTo": [
             "id"
@@ -1390,6 +1486,134 @@
           "tableTo": "employees",
           "columnsFrom": [
             "employee_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.salary_advances": {
+      "name": "salary_advances",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "employee_id": {
+          "name": "employee_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "approved_by": {
+          "name": "approved_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wallet_id": {
+          "name": "wallet_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paid_at": {
+          "name": "paid_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deducted_in_payslip_id": {
+          "name": "deducted_in_payslip_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "salary_advances_employee_id_employees_id_fk": {
+          "name": "salary_advances_employee_id_employees_id_fk",
+          "tableFrom": "salary_advances",
+          "tableTo": "employees",
+          "columnsFrom": [
+            "employee_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "salary_advances_approved_by_user_id_fk": {
+          "name": "salary_advances_approved_by_user_id_fk",
+          "tableFrom": "salary_advances",
+          "tableTo": "user",
+          "columnsFrom": [
+            "approved_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "salary_advances_deducted_in_payslip_id_payslips_id_fk": {
+          "name": "salary_advances_deducted_in_payslip_id_payslips_id_fk",
+          "tableFrom": "salary_advances",
+          "tableTo": "payslips",
+          "columnsFrom": [
+            "deducted_in_payslip_id"
           ],
           "columnsTo": [
             "id"
@@ -3632,7 +3856,8 @@
         "sick",
         "casual",
         "annual",
-        "unpaid"
+        "unpaid",
+        "special"
       ]
     }
   },

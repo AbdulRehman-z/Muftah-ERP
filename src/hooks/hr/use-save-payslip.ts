@@ -14,6 +14,7 @@ type SavePayslipInput = {
         incentiveAmount: number;
         taxDeduction: number;
         advanceDeduction: number;
+        overtimeMultiplier: number;
     };
 }
 
