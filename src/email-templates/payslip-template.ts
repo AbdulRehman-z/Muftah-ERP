@@ -1,9 +1,9 @@
 import { format, parseISO } from "date-fns";
 
 export function generatePayslipEmailHtml(payslip: any) {
-    const { employee, payroll } = payslip;
+  const { employee, payroll } = payslip;
 
-    return `
+  return `
     <!DOCTYPE html>
     <html>
     <head>

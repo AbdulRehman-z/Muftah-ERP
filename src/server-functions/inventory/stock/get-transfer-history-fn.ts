@@ -5,42 +5,42 @@ import { db, stockTransfers, warehouses, user } from "@/db";
 import { requireAdminMiddleware } from "@/lib/middlewares";
 
 const getTransferHistorySchema = z.object({
-    materialType: z.enum(["chemical", "packaging", "finished"]),
-    materialId: z.string(),
-    limit: z.number().optional().default(10),
+  materialType: z.enum(["chemical", "packaging", "finished"]),
+  materialId: z.string(),
+  limit: z.number().optional().default(10),
 });
 
 export const getTransferHistoryFn = createServerFn()
-    .middleware([requireAdminMiddleware])
-    .inputValidator(getTransferHistorySchema)
-    .handler(async ({ data }) => {
-        const history = await db.query.stockTransfers.findMany({
-            where: and(
-                eq(stockTransfers.materialType, data.materialType),
-                eq(stockTransfers.materialId, data.materialId)
-            ),
-            orderBy: [desc(stockTransfers.createdAt)],
-            limit: data.limit,
-            with: {
-                fromWarehouse: {
-                    columns: {
-                        name: true,
-                        id: true,
-                    },
-                },
-                toWarehouse: {
-                    columns: {
-                        name: true,
-                        id: true,
-                    },
-                },
-                performedBy: {
-                    columns: {
-                        name: true,
-                    },
-                },
-            },
-        });
-
-        return history;
+  .middleware([requireAdminMiddleware])
+  .inputValidator(getTransferHistorySchema)
+  .handler(async ({ data }) => {
+    const history = await db.query.stockTransfers.findMany({
+      where: and(
+        eq(stockTransfers.materialType, data.materialType),
+        eq(stockTransfers.materialId, data.materialId),
+      ),
+      orderBy: [desc(stockTransfers.createdAt)],
+      limit: data.limit,
+      with: {
+        fromWarehouse: {
+          columns: {
+            name: true,
+            id: true,
+          },
+        },
+        toWarehouse: {
+          columns: {
+            name: true,
+            id: true,
+          },
+        },
+        performedBy: {
+          columns: {
+            name: true,
+          },
+        },
+      },
     });
+
+    return history;
+  });

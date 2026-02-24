@@ -3,13 +3,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export const useDeletePayroll = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: deletePayrollFn,
-        onSuccess: () => {
-            toast.success("Payroll deleted successfully");
-            queryClient.invalidateQueries({ queryKey: ["payrolls"] });
-        },
-    });
+  return useMutation({
+    mutationFn: deletePayrollFn,
+    onSuccess: () => {
+      toast.success("Payroll deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["payrolls"] });
+    },
+  });
 };

@@ -7,37 +7,41 @@ import { requireAuthMiddleware } from "@/lib/middlewares";
 import { Separator } from "@/components/ui/separator";
 
 export const Route = createFileRoute("/_protected/operator/")({
-	server: {
-		middleware: [requireAuthMiddleware],
-	},
-	loader: async ({ context }) => {
-		void context.queryClient.prefetchQuery({
-			queryKey: ["productionRuns"],
-			queryFn: getProductionRunsFn,
-		});
-	},
-	component: RouteComponent,
+  server: {
+    middleware: [requireAuthMiddleware],
+  },
+  loader: async ({ context }) => {
+    void context.queryClient.prefetchQuery({
+      queryKey: ["productionRuns"],
+      queryFn: getProductionRunsFn,
+    });
+  },
+  component: RouteComponent,
 });
 
 function RouteComponent() {
-	return (
-		<main className="flex-1 overflow-y-auto min-h-screen">
-			<div className="space-y-6">
-				<div>
-					<h2 className="text-3xl font-bold tracking-tight">Operator</h2>
-					<p className="text-muted-foreground">
-						Log your production output below
-					</p>
-				</div>
+  return (
+    <main className="flex-1 overflow-y-auto min-h-screen">
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Operator</h2>
+          <p className="text-muted-foreground">
+            Log your production output below
+          </p>
+        </div>
 
-				<Separator />
-				<Suspense fallback={<GenericLoader
-					title="Loading Production Runs"
-					description="wait..."
-				/>}>
-					<OperatorInterface />
-				</Suspense>
-			</div>
-		</main>
-	);
+        <Separator />
+        <Suspense
+          fallback={
+            <GenericLoader
+              title="Loading Production Runs"
+              description="wait..."
+            />
+          }
+        >
+          <OperatorInterface />
+        </Suspense>
+      </div>
+    </main>
+  );
 }

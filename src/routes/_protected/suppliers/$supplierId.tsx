@@ -1,17 +1,43 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getSupplierDetailsFn } from "@/server-functions/suppliers/get-supplier-details-fn";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
-import { Phone, Mail, MapPin, Building2, Calendar, Package, User, Plus, Beaker, BoxIcon, WalletCards, CreditCard, Banknote, ShoppingCart, XIcon, CardSimIcon } from "lucide-react";
+import {
+  Phone,
+  Mail,
+  MapPin,
+  Building2,
+  Calendar,
+  Package,
+  User,
+  Plus,
+  Beaker,
+  BoxIcon,
+  WalletCards,
+  CreditCard,
+  Banknote,
+  ShoppingCart,
+  XIcon,
+  CardSimIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { AddRawMaterialDialog } from "@/components/inventory/add-raw-material-sheet";
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
 
-import { PurchaseHistoryTable, PurchaseRecord } from "@/components/suppliers/purchase-history-table";
+import {
+  PurchaseHistoryTable,
+  PurchaseRecord,
+} from "@/components/suppliers/purchase-history-table";
 import { PaymentRecordsTable } from "@/components/suppliers/payment-records-table";
 import { RecordPaymentDialog } from "@/components/suppliers/record-payment-dialog";
 import { PurchaseDetailsDialog } from "@/components/suppliers/purchase-details-dialog";
@@ -28,7 +54,8 @@ export const Route = createFileRoute("/_protected/suppliers/$supplierId")({
     await Promise.all([
       context.queryClient.ensureQueryData({
         queryKey: ["supplier", params.supplierId],
-        queryFn: () => getSupplierDetailsFn({ data: { id: params.supplierId } }),
+        queryFn: () =>
+          getSupplierDetailsFn({ data: { id: params.supplierId } }),
       }),
       context.queryClient.ensureQueryData({
         queryKey: ["inventory"],
@@ -46,7 +73,9 @@ function SupplierDetailsPage() {
 
   const [isRecordPaymentOpen, setRecordPaymentOpen] = useState(false);
   const [isRestockOpen, setRestockOpen] = useState(false);
-  const [itemToRestock, setItemToRestock] = useState<PurchaseRecord | null>(null);
+  const [itemToRestock, setItemToRestock] = useState<PurchaseRecord | null>(
+    null,
+  );
 
   // State for Purchase History Actions
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -58,7 +87,12 @@ function SupplierDetailsPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   // State for Defaults
-  const [paymentDefaults, setPaymentDefaults] = useState<{ amount?: string; notes?: string; purchaseId?: string; remainingBalance?: number }>({});
+  const [paymentDefaults, setPaymentDefaults] = useState<{
+    amount?: string;
+    notes?: string;
+    purchaseId?: string;
+    remainingBalance?: number;
+  }>({});
 
   const { data: supplier } = useSuspenseQuery({
     queryKey: ["supplier", supplierId],
@@ -70,10 +104,16 @@ function SupplierDetailsPage() {
     queryFn: getInventoryFn,
   });
 
-  const factoryFloor = warehouses.find(w => w.type === "factory_floor");
+  const factoryFloor = warehouses.find((w) => w.type === "factory_floor");
 
-  const totalPurchases = supplier.purchases.reduce((acc, curr) => acc + parseFloat(curr.cost), 0);
-  const totalPayments = supplier.payments.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+  const totalPurchases = supplier.purchases.reduce(
+    (acc, curr) => acc + parseFloat(curr.cost),
+    0,
+  );
+  const totalPayments = supplier.payments.reduce(
+    (acc, curr) => acc + parseFloat(curr.amount),
+    0,
+  );
   const balance = totalPurchases - totalPayments;
 
   const handleRecordPayment = (item: any) => {
@@ -85,7 +125,7 @@ function SupplierDetailsPage() {
       amount: remaining.toString(),
       purchaseId: item.id,
       remainingBalance: remaining,
-      notes: `Payment for Purchase ID: ${item.id} (${item.materialType})`
+      notes: `Payment for Purchase ID: ${item.id} (${item.materialType})`,
     });
     setRecordPaymentOpen(true);
   };
@@ -104,9 +144,13 @@ function SupplierDetailsPage() {
             <Building2 className="size-6 text-primary" />
           </div>
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">{supplier.supplierName}</h2>
+            <h2 className="text-3xl font-bold tracking-tight">
+              {supplier.supplierName}
+            </h2>
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <span className="font-mono text-xs opacity-50">ID: {supplier.id}</span>
+              <span className="font-mono text-xs opacity-50">
+                ID: {supplier.id}
+              </span>
               <span>•</span>
               <span>Added {format(new Date(supplier.createdAt), "PPP")}</span>
             </div>
@@ -144,7 +188,9 @@ function SupplierDetailsPage() {
               <User className="size-4 text-muted-foreground mt-1" />
               <div>
                 <p className="text-sm font-medium">Shop Name</p>
-                <p className="text-sm text-muted-foreground">{supplier.supplierShopName || "N/A"}</p>
+                <p className="text-sm text-muted-foreground">
+                  {supplier.supplierShopName || "N/A"}
+                </p>
               </div>
             </div>
             <Separator />
@@ -152,7 +198,9 @@ function SupplierDetailsPage() {
               <Mail className="size-4 text-muted-foreground mt-1" />
               <div>
                 <p className="text-sm font-medium">Email</p>
-                <p className="text-sm text-muted-foreground">{supplier.email || "N/A"}</p>
+                <p className="text-sm text-muted-foreground">
+                  {supplier.email || "N/A"}
+                </p>
               </div>
             </div>
             <Separator />
@@ -160,7 +208,9 @@ function SupplierDetailsPage() {
               <Phone className="size-4 text-muted-foreground mt-1" />
               <div>
                 <p className="text-sm font-medium">Phone</p>
-                <p className="text-sm text-muted-foreground">{supplier.phone || "N/A"}</p>
+                <p className="text-sm text-muted-foreground">
+                  {supplier.phone || "N/A"}
+                </p>
               </div>
             </div>
             <Separator />
@@ -168,7 +218,9 @@ function SupplierDetailsPage() {
               <CardSimIcon className="size-4 text-muted-foreground mt-1" />
               <div>
                 <p className="text-sm font-medium">National ID</p>
-                <p className="text-sm text-muted-foreground">{supplier.nationalId || "N/A"}</p>
+                <p className="text-sm text-muted-foreground">
+                  {supplier.nationalId || "N/A"}
+                </p>
               </div>
             </div>
             <Separator />
@@ -176,7 +228,9 @@ function SupplierDetailsPage() {
               <MapPin className="size-4 text-muted-foreground mt-1" />
               <div>
                 <p className="text-sm font-medium">Address</p>
-                <p className="text-sm text-muted-foreground">{supplier.address || "N/A"}</p>
+                <p className="text-sm text-muted-foreground">
+                  {supplier.address || "N/A"}
+                </p>
               </div>
             </div>
             <Separator />
@@ -199,7 +253,11 @@ function SupplierDetailsPage() {
               className="w-[260px]"
             />
             {dateRange?.from && (
-              <Button variant="outline" size="icon" onClick={() => setDateRange(undefined)}>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setDateRange(undefined)}
+              >
                 <XIcon className="size-4" />
               </Button>
             )}
@@ -209,32 +267,67 @@ function SupplierDetailsPage() {
           <div className="grid grid-cols-3 gap-4">
             <Card>
               <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Purchases</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total Purchases
+                </CardTitle>
                 <ShoppingCart className="size-4 text-muted-foreground opacity-50" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">PKR {Number(supplier.totalPurchases).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                <p className="text-xs text-muted-foreground mt-1">{supplier.purchases.length} total orders</p>
+                <div className="text-2xl font-bold">
+                  PKR{" "}
+                  {Number(supplier.totalPurchases).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {supplier.purchases.length} total orders
+                </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Paid</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total Paid
+                </CardTitle>
                 <Banknote className="size-4 text-muted-foreground opacity-50" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">PKR {Number(supplier.totalPayments).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                <p className="text-xs text-muted-foreground mt-1">{supplier.payments.length} payments recorded</p>
+                <div className="text-2xl font-bold text-green-600">
+                  PKR{" "}
+                  {Number(supplier.totalPayments).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {supplier.payments.length} payments recorded
+                </p>
               </CardContent>
             </Card>
-            <Card className={cn(supplier.balance > 0 ? "border-red-500/50 bg-red-50/10" : "border-green-500/50 bg-green-50/10")}>
+            <Card
+              className={cn(
+                supplier.balance > 0
+                  ? "border-red-500/50 bg-red-50/10"
+                  : "border-green-500/50 bg-green-50/10",
+              )}
+            >
               <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Outstanding Balance</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Outstanding Balance
+                </CardTitle>
                 <CreditCard className="size-4 text-muted-foreground opacity-50" />
               </CardHeader>
               <CardContent>
-                <div className={cn("text-2xl font-bold", supplier.balance > 0 ? "text-red-500" : "text-green-600")}>
-                  PKR {Math.abs(Number(supplier.balance)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                <div
+                  className={cn(
+                    "text-2xl font-bold",
+                    supplier.balance > 0 ? "text-red-500" : "text-green-600",
+                  )}
+                >
+                  PKR{" "}
+                  {Math.abs(Number(supplier.balance)).toLocaleString(
+                    undefined,
+                    { minimumFractionDigits: 2 },
+                  )}
                   <span className="text-xs font-normal text-muted-foreground ml-2">
                     {supplier.balance > 0 ? "(Due)" : "(Advance)"}
                   </span>
@@ -295,7 +388,11 @@ function SupplierDetailsPage() {
         }}
         supplierId={supplier.id}
         supplierName={supplier.supplierName}
-        outstandingBalance={paymentDefaults.remainingBalance !== undefined ? paymentDefaults.remainingBalance : balance}
+        outstandingBalance={
+          paymentDefaults.remainingBalance !== undefined
+            ? paymentDefaults.remainingBalance
+            : balance
+        }
         purchaseId={paymentDefaults.purchaseId}
         defaultAmount={paymentDefaults.amount}
         defaultNotes={paymentDefaults.notes}

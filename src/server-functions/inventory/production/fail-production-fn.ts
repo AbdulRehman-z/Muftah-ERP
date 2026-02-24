@@ -1,67 +1,69 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import {
-    productionRuns,
-    inventoryAuditLog,
+  productionRuns,
+  inventoryAuditLog,
 } from "@/db/schemas/inventory-schema";
 import { requireAuthMiddleware } from "@/lib/middlewares";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 const failProductionSchema = z.object({
-    productionRunId: z.string().min(1, "Production run ID is required"),
-    reason: z.string().min(1, "Failure reason is required"),
+  productionRunId: z.string().min(1, "Production run ID is required"),
+  reason: z.string().min(1, "Failure reason is required"),
 });
 
 export const failProductionFn = createServerFn()
-    .middleware([requireAuthMiddleware])
-    .inputValidator(failProductionSchema)
-    .handler(async ({ data, context }) => {
-        return await db.transaction(async (tx) => {
-            // 1. Get the production run
-            const [productionRun] = await tx
-                .select()
-                .from(productionRuns)
-                .where(eq(productionRuns.id, data.productionRunId));
+  .middleware([requireAuthMiddleware])
+  .inputValidator(failProductionSchema)
+  .handler(async ({ data, context }) => {
+    return await db.transaction(async (tx) => {
+      // 1. Get the production run
+      const [productionRun] = await tx
+        .select()
+        .from(productionRuns)
+        .where(eq(productionRuns.id, data.productionRunId));
 
-            if (!productionRun) {
-                throw new Error("Production run not found");
-            }
+      if (!productionRun) {
+        throw new Error("Production run not found");
+      }
 
-            if (productionRun.status !== "in_progress") {
-                throw new Error("Only in-progress production runs can be marked as failed");
-            }
+      if (productionRun.status !== "in_progress") {
+        throw new Error(
+          "Only in-progress production runs can be marked as failed",
+        );
+      }
 
-            // 2. Update production run status to failed
-            await tx
-                .update(productionRuns)
-                .set({
-                    status: "failed",
-                    actualCompletionDate: new Date(),
-                    notes: data.reason,
-                })
-                .where(eq(productionRuns.id, productionRun.id));
+      // 2. Update production run status to failed
+      await tx
+        .update(productionRuns)
+        .set({
+          status: "failed",
+          actualCompletionDate: new Date(),
+          notes: data.reason,
+        })
+        .where(eq(productionRuns.id, productionRun.id));
 
-            // 3. Create audit log for the failure
-            await tx.insert(inventoryAuditLog).values({
-                warehouseId: productionRun.warehouseId,
-                materialType: "finished",
-                materialId: productionRun.recipeId,
-                type: "debit",
-                amount: "0",
-                reason: `Production run ${productionRun.batchId} marked as FAILED. Reason: ${data.reason}`,
-                performedById: context.session.user.id,
-                referenceId: productionRun.id,
-            });
+      // 3. Create audit log for the failure
+      await tx.insert(inventoryAuditLog).values({
+        warehouseId: productionRun.warehouseId,
+        materialType: "finished",
+        materialId: productionRun.recipeId,
+        type: "debit",
+        amount: "0",
+        reason: `Production run ${productionRun.batchId} marked as FAILED. Reason: ${data.reason}`,
+        performedById: context.session.user.id,
+        referenceId: productionRun.id,
+      });
 
-            return {
-                success: true,
-                productionRun: {
-                    ...productionRun,
-                    status: "failed" as const,
-                    actualCompletionDate: new Date(),
-                    notes: data.reason,
-                },
-            };
-        });
+      return {
+        success: true,
+        productionRun: {
+          ...productionRun,
+          status: "failed" as const,
+          actualCompletionDate: new Date(),
+          notes: data.reason,
+        },
+      };
     });
+  });

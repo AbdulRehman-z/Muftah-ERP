@@ -3,13 +3,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export const useMarkPayrollPaid = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: markPayrollAsPaidFn,
-        onSuccess: () => {
-            toast.success("Payroll marked as paid successfully");
-            queryClient.invalidateQueries({ queryKey: ["payrolls"] });
-        },
-    });
+  return useMutation({
+    mutationFn: markPayrollAsPaidFn,
+    onSuccess: () => {
+      toast.success("Payroll marked as paid successfully");
+      queryClient.invalidateQueries({ queryKey: ["payrolls"] });
+    },
+  });
 };

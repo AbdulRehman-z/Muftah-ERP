@@ -3,16 +3,16 @@ import { upsertAttendanceFn } from "@/server-functions/hr/attendance/upsert-atte
 import { toast } from "sonner";
 
 export const useUpsertAttendance = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: upsertAttendanceFn,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["daily-attendance"] });
-            toast.success("Attendance record saved successfully");
-        },
-        onError: (error) => {
-            toast.error(error.message || "Failed to save attendance record");
-        },
-    });
+  return useMutation({
+    mutationFn: upsertAttendanceFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["daily-attendance"] });
+      toast.success("Attendance record saved successfully");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to save attendance record");
+    },
+  });
 };

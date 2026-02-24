@@ -5,12 +5,12 @@ import { desc } from "drizzle-orm";
 import { requireAuthMiddleware } from "@/lib/middlewares";
 
 export const getEmployeesFn = createServerFn()
-    .middleware([requireAuthMiddleware])
-    .handler(async () => {
-        const result = await db
-            .select()
-            .from(employees)
-            .orderBy(desc(employees.createdAt));
+  .middleware([requireAuthMiddleware])
+  .handler(async () => {
+    const result = await db
+      .select()
+      .from(employees)
+      .orderBy(desc(employees.createdAt));
 
-        return result;
-    });
+    return result;
+  });

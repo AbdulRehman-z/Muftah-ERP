@@ -6,13 +6,13 @@ import { requireAdminMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 
 const deleteProductSchema = z.object({
-    id: z.string(),
+  id: z.string(),
 });
 
 export const deleteProductFn = createServerFn()
-    .middleware([requireAdminMiddleware])
-    .inputValidator(deleteProductSchema)
-    .handler(async ({ data }) => {
-        await db.delete(products).where(eq(products.id, data.id));
-        return { success: true };
-    });
+  .middleware([requireAdminMiddleware])
+  .inputValidator(deleteProductSchema)
+  .handler(async ({ data }) => {
+    await db.delete(products).where(eq(products.id, data.id));
+    return { success: true };
+  });

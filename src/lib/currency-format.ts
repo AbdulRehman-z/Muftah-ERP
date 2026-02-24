@@ -6,32 +6,32 @@
  * 1Cr = 10,000,000 (1 Crore)
  */
 export function formatPakistaniNumber(value: number | string): string {
-    const num = typeof value === "string" ? parseFloat(value) : value;
+  const num = typeof value === "string" ? parseFloat(value) : value;
 
-    if (isNaN(num)) return "0";
-    if (num === 0) return "0";
+  if (isNaN(num)) return "0";
+  if (num === 0) return "0";
 
-    const absNum = Math.abs(num);
+  const absNum = Math.abs(num);
 
-    // Crore (1,00,00,000)
-    if (absNum >= 10000000) {
-        const crores = (num / 10000000).toFixed(2).replace(/\.?0+$/, "");
-        return `${crores}Cr`;
-    }
+  // Crore (1,00,00,000)
+  if (absNum >= 10000000) {
+    const crores = (num / 10000000).toFixed(2).replace(/\.?0+$/, "");
+    return `${crores}Cr`;
+  }
 
-    // Lac (1,00,000)
-    if (absNum >= 100000) {
-        const lacs = (num / 100000).toFixed(2).replace(/\.?0+$/, "");
-        return `${lacs}L`;
-    }
+  // Lac (1,00,000)
+  if (absNum >= 100000) {
+    const lacs = (num / 100000).toFixed(2).replace(/\.?0+$/, "");
+    return `${lacs}L`;
+  }
 
-    // Thousand (1,000)
-    if (absNum >= 1000) {
-        const thousands = (num / 1000).toFixed(2).replace(/\.?0+$/, "");
-        return `${thousands}K`;
-    }
+  // Thousand (1,000)
+  if (absNum >= 1000) {
+    const thousands = (num / 1000).toFixed(2).replace(/\.?0+$/, "");
+    return `${thousands}K`;
+  }
 
-    return num.toFixed(2).replace(/\.?0+$/, "");
+  return num.toFixed(2).replace(/\.?0+$/, "");
 }
 
 /**
@@ -39,21 +39,21 @@ export function formatPakistaniNumber(value: number | string): string {
  * Returns compact format like "1.2L PKR", "50K PKR", etc.
  */
 export function formatPKR(value: number | string, useCompact = true): string {
-    const num = typeof value === "string" ? parseFloat(value) : value;
+  const num = typeof value === "string" ? parseFloat(value) : value;
 
-    if (isNaN(num)) return "0 PKR";
+  if (isNaN(num)) return "0 PKR";
 
-    if (useCompact) {
-        return `${formatPakistaniNumber(num)} PKR`;
-    }
+  if (useCompact) {
+    return `${formatPakistaniNumber(num)} PKR`;
+  }
 
-    // Standard formatting with thousand separators
-    return `${num.toLocaleString("en-PK", {
-        style: "currency",
-        currency: "PKR",
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    })}`;
+  // Standard formatting with thousand separators
+  return `${num.toLocaleString("en-PK", {
+    style: "currency",
+    currency: "PKR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })}`;
 }
 
 /**
@@ -63,19 +63,19 @@ export function formatPKR(value: number | string, useCompact = true): string {
  * "1.5Cr" => 15000000
  */
 export function parsePakistaniNumber(value: string): number {
-    const cleaned = value.trim().toUpperCase();
+  const cleaned = value.trim().toUpperCase();
 
-    if (cleaned.endsWith("CR")) {
-        return parseFloat(cleaned.slice(0, -2)) * 10000000;
-    }
-    if (cleaned.endsWith("L")) {
-        return parseFloat(cleaned.slice(0, -1)) * 100000;
-    }
-    if (cleaned.endsWith("K")) {
-        return parseFloat(cleaned.slice(0, -1)) * 1000;
-    }
+  if (cleaned.endsWith("CR")) {
+    return parseFloat(cleaned.slice(0, -2)) * 10000000;
+  }
+  if (cleaned.endsWith("L")) {
+    return parseFloat(cleaned.slice(0, -1)) * 100000;
+  }
+  if (cleaned.endsWith("K")) {
+    return parseFloat(cleaned.slice(0, -1)) * 1000;
+  }
 
-    return parseFloat(cleaned);
+  return parseFloat(cleaned);
 }
 
 /**
@@ -83,26 +83,26 @@ export function parsePakistaniNumber(value: string): number {
  * 1000000 => "10,00,000"
  */
 export function formatIndianStyle(value: number | string): string {
-    const num = typeof value === "string" ? parseFloat(value) : value;
+  const num = typeof value === "string" ? parseFloat(value) : value;
 
-    if (isNaN(num)) return "0";
+  if (isNaN(num)) return "0";
 
-    const parts = Math.floor(Math.abs(num)).toString().split("");
-    const isNegative = num < 0;
+  const parts = Math.floor(Math.abs(num)).toString().split("");
+  const isNegative = num < 0;
 
-    const formatted: string[] = [];
+  const formatted: string[] = [];
 
-    // Process from right to left
-    for (let i = parts.length - 1; i >= 0; i--) {
-        const idx = parts.length - 1 - i;
+  // Process from right to left
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const idx = parts.length - 1 - i;
 
-        if (idx > 0 && idx % 2 === 0 && i !== parts.length - 1) {
-            formatted.unshift(",");
-        }
-
-        formatted.unshift(parts[i]);
+    if (idx > 0 && idx % 2 === 0 && i !== parts.length - 1) {
+      formatted.unshift(",");
     }
 
-    const result = formatted.join("");
-    return isNegative ? `-${result}` : result;
+    formatted.unshift(parts[i]);
+  }
+
+  const result = formatted.join("");
+  return isNegative ? `-${result}` : result;
 }

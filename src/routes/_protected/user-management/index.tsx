@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_protected/user-management/")({
       queryKey: ["admin-users"],
       queryFn: () => adminGetUsersFn(),
       staleTime: Infinity,
-    })
+    });
   },
 });
 
@@ -42,5 +42,5 @@ function RouteComponent() {
         </div>
       </div>
     </main>
-  )
+  );
 }

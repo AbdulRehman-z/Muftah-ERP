@@ -3,18 +3,18 @@ import { addPackagingMaterialFn } from "@/server-functions/inventory/add-packagi
 import { toast } from "sonner";
 
 export const useAddPackagingMaterial = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: addPackagingMaterialFn,
-        onSuccess: () => {
-            toast.success("Packaging material added successfully");
-            queryClient.invalidateQueries({ queryKey: ["inventory"] });
-            queryClient.invalidateQueries({ queryKey: ["low-stock-alerts"] });
-            queryClient.invalidateQueries({ queryKey: ["supplier"] });
-            queryClient.invalidateQueries({ queryKey: ["suppliers"] });
-        },
-        onError: (error) => {
-            toast.error(error.message || "Failed to add packaging material");
-        },
-    });
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: addPackagingMaterialFn,
+    onSuccess: () => {
+      toast.success("Packaging material added successfully");
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["low-stock-alerts"] });
+      queryClient.invalidateQueries({ queryKey: ["supplier"] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to add packaging material");
+    },
+  });
 };

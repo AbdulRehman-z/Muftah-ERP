@@ -1,20 +1,22 @@
-import { ResponsiveDialog } from "@/components/custom/responsive-dialog";
+import { ResponsiveSheet } from "@/components/custom/responsive-sheet";
 import { AddSupplierForm } from "./add-supplier-form";
+import { UserPlus } from "lucide-react";
 
 type Props = {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 };
 
 export const AddSupplierDialog = ({ open, onOpenChange }: Props) => {
-    return (
-        <ResponsiveDialog
-            title="Add Supplier"
-            description="Add a new supplier to your database."
-            open={open}
-            onOpenChange={onOpenChange}
-        >
-            <AddSupplierForm onSuccess={() => onOpenChange(false)} />
-        </ResponsiveDialog>
-    );
+  return (
+    <ResponsiveSheet
+      title="Add Supplier"
+      description="Add a new supplier to your database."
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={UserPlus}
+    >
+      <AddSupplierForm onSuccess={() => onOpenChange(false)} />
+    </ResponsiveSheet>
+  );
 };

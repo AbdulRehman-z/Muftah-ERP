@@ -6,26 +6,34 @@ import { z } from "zod";
 import { AttendanceLogView } from "@/components/hr/attendance/attendance-log-view";
 
 const searchSchema = z.object({
-    from: z.string().optional(),
-    to: z.string().optional(),
+  from: z.string().optional(),
+  to: z.string().optional(),
 });
 
 export const Route = createFileRoute("/_protected/hr/attendance/$employeeId")({
-    server: {
-        middleware: [requireAdminMiddleware]
-    },
-    validateSearch: searchSchema,
-    loaderDeps: ({ search: { from, to } }) => ({ from, to }),
-    loader: async ({ params, context, deps }) => {
-        const today = new Date();
-        const startDate = deps.from || format(startOfMonth(today), "yyyy-MM-dd");
-        const endDate = deps.to || format(endOfMonth(today), "yyyy-MM-dd");
+  server: {
+    middleware: [requireAdminMiddleware],
+  },
+  validateSearch: searchSchema,
+  loaderDeps: ({ search: { from, to } }) => ({ from, to }),
+  loader: async ({ params, context, deps }) => {
+    const today = new Date();
+    const startDate = deps.from || format(startOfMonth(today), "yyyy-MM-dd");
+    const endDate = deps.to || format(endOfMonth(today), "yyyy-MM-dd");
 
-        void context.queryClient.prefetchQuery({
-            queryKey: ["employee-attendance-log", params.employeeId, startDate, endDate],
-            queryFn: () => getEmployeeAttendanceLogFn({ data: { employeeId: params.employeeId, startDate, endDate } }),
-            gcTime: 0,
-        });
-    },
-    component: AttendanceLogView,
+    void context.queryClient.prefetchQuery({
+      queryKey: [
+        "employee-attendance-log",
+        params.employeeId,
+        startDate,
+        endDate,
+      ],
+      queryFn: () =>
+        getEmployeeAttendanceLogFn({
+          data: { employeeId: params.employeeId, startDate, endDate },
+        }),
+      gcTime: 0,
+    });
+  },
+  component: AttendanceLogView,
 });

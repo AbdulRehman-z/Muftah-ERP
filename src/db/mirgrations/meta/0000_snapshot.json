@@ -1,5 +1,5 @@
 {
-  "id": "ec1d6d78-1490-43c9-ae82-c9a91309c510",
+  "id": "d94b503b-dadb-46cc-9f8d-df49a4956bd4",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -110,12 +110,8 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -208,12 +204,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -223,9 +215,7 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -298,12 +288,8 @@
           "name": "two_factor_user_id_user_id_fk",
           "tableFrom": "two_factor",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -403,9 +389,7 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -615,12 +599,8 @@
           "name": "expenses_wallet_id_wallets_id_fk",
           "tableFrom": "expenses",
           "tableTo": "wallets",
-          "columnsFrom": [
-            "wallet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["wallet_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -628,12 +608,8 @@
           "name": "expenses_performed_by_id_user_id_fk",
           "tableFrom": "expenses",
           "tableTo": "user",
-          "columnsFrom": [
-            "performed_by_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["performed_by_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -711,12 +687,8 @@
           "name": "transactions_wallet_id_wallets_id_fk",
           "tableFrom": "transactions",
           "tableTo": "wallets",
-          "columnsFrom": [
-            "wallet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["wallet_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -724,12 +696,8 @@
           "name": "transactions_performed_by_id_user_id_fk",
           "tableFrom": "transactions",
           "tableTo": "user",
-          "columnsFrom": [
-            "performed_by_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["performed_by_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -970,12 +938,8 @@
           "name": "attendance_employee_id_employees_id_fk",
           "tableFrom": "attendance",
           "tableTo": "employees",
-          "columnsFrom": [
-            "employee_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["employee_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1147,12 +1111,8 @@
           "name": "employees_user_id_user_id_fk",
           "tableFrom": "employees",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1162,9 +1122,7 @@
         "employees_employee_code_unique": {
           "name": "employees_employee_code_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "employee_code"
-          ]
+          "columns": ["employee_code"]
         }
       },
       "policies": {},
@@ -1252,12 +1210,8 @@
           "name": "payrolls_processed_by_user_id_fk",
           "tableFrom": "payrolls",
           "tableTo": "user",
-          "columnsFrom": [
-            "processed_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["processed_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1471,12 +1425,8 @@
           "name": "payslips_payroll_id_payrolls_id_fk",
           "tableFrom": "payslips",
           "tableTo": "payrolls",
-          "columnsFrom": [
-            "payroll_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["payroll_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1484,12 +1434,8 @@
           "name": "payslips_employee_id_employees_id_fk",
           "tableFrom": "payslips",
           "tableTo": "employees",
-          "columnsFrom": [
-            "employee_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["employee_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1547,6 +1493,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "wallet_id": {
+          "name": "wallet_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paid_at": {
+          "name": "paid_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
         "deducted_in_payslip_id": {
           "name": "deducted_in_payslip_id",
           "type": "text",
@@ -1574,12 +1532,8 @@
           "name": "salary_advances_employee_id_employees_id_fk",
           "tableFrom": "salary_advances",
           "tableTo": "employees",
-          "columnsFrom": [
-            "employee_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["employee_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1587,12 +1541,8 @@
           "name": "salary_advances_approved_by_user_id_fk",
           "tableFrom": "salary_advances",
           "tableTo": "user",
-          "columnsFrom": [
-            "approved_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["approved_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1600,12 +1550,8 @@
           "name": "salary_advances_deducted_in_payslip_id_payslips_id_fk",
           "tableFrom": "salary_advances",
           "tableTo": "payslips",
-          "columnsFrom": [
-            "deducted_in_payslip_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["deducted_in_payslip_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1692,12 +1638,8 @@
           "name": "chemicals_last_supplier_id_suppliers_id_fk",
           "tableFrom": "chemicals",
           "tableTo": "suppliers",
-          "columnsFrom": [
-            "last_supplier_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["last_supplier_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1787,12 +1729,8 @@
           "name": "finished_goods_stock_warehouse_id_warehouses_id_fk",
           "tableFrom": "finished_goods_stock",
           "tableTo": "warehouses",
-          "columnsFrom": [
-            "warehouse_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["warehouse_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1800,12 +1738,8 @@
           "name": "finished_goods_stock_recipe_id_recipes_id_fk",
           "tableFrom": "finished_goods_stock",
           "tableTo": "recipes",
-          "columnsFrom": [
-            "recipe_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1926,12 +1860,8 @@
           "name": "inventory_audit_log_warehouse_id_warehouses_id_fk",
           "tableFrom": "inventory_audit_log",
           "tableTo": "warehouses",
-          "columnsFrom": [
-            "warehouse_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["warehouse_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1939,12 +1869,8 @@
           "name": "inventory_audit_log_performed_by_id_user_id_fk",
           "tableFrom": "inventory_audit_log",
           "tableTo": "user",
-          "columnsFrom": [
-            "performed_by_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["performed_by_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2027,12 +1953,8 @@
           "name": "material_stock_warehouse_id_warehouses_id_fk",
           "tableFrom": "material_stock",
           "tableTo": "warehouses",
-          "columnsFrom": [
-            "warehouse_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["warehouse_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2040,12 +1962,8 @@
           "name": "material_stock_chemical_id_chemicals_id_fk",
           "tableFrom": "material_stock",
           "tableTo": "chemicals",
-          "columnsFrom": [
-            "chemical_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["chemical_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2053,12 +1971,8 @@
           "name": "material_stock_packaging_material_id_packaging_materials_id_fk",
           "tableFrom": "material_stock",
           "tableTo": "packaging_materials",
-          "columnsFrom": [
-            "packaging_material_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["packaging_material_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2170,12 +2084,8 @@
           "name": "packaging_materials_associated_sticker_id_packaging_materials_id_fk",
           "tableFrom": "packaging_materials",
           "tableTo": "packaging_materials",
-          "columnsFrom": [
-            "associated_sticker_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["associated_sticker_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2183,12 +2093,8 @@
           "name": "packaging_materials_last_supplier_id_suppliers_id_fk",
           "tableFrom": "packaging_materials",
           "tableTo": "suppliers",
-          "columnsFrom": [
-            "last_supplier_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["last_supplier_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2266,12 +2172,8 @@
           "name": "production_materials_used_production_run_id_production_runs_id_fk",
           "tableFrom": "production_materials_used",
           "tableTo": "production_runs",
-          "columnsFrom": [
-            "production_run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["production_run_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2445,12 +2347,8 @@
           "name": "production_runs_recipe_id_recipes_id_fk",
           "tableFrom": "production_runs",
           "tableTo": "recipes",
-          "columnsFrom": [
-            "recipe_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2458,12 +2356,8 @@
           "name": "production_runs_warehouse_id_warehouses_id_fk",
           "tableFrom": "production_runs",
           "tableTo": "warehouses",
-          "columnsFrom": [
-            "warehouse_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["warehouse_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2471,12 +2365,8 @@
           "name": "production_runs_operator_id_user_id_fk",
           "tableFrom": "production_runs",
           "tableTo": "user",
-          "columnsFrom": [
-            "operator_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["operator_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2486,9 +2376,7 @@
         "production_runs_batch_id_unique": {
           "name": "production_runs_batch_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "batch_id"
-          ]
+          "columns": ["batch_id"]
         }
       },
       "policies": {},
@@ -2611,12 +2499,8 @@
           "name": "recipe_ingredients_recipe_id_recipes_id_fk",
           "tableFrom": "recipe_ingredients",
           "tableTo": "recipes",
-          "columnsFrom": [
-            "recipe_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2624,12 +2508,8 @@
           "name": "recipe_ingredients_chemical_id_chemicals_id_fk",
           "tableFrom": "recipe_ingredients",
           "tableTo": "chemicals",
-          "columnsFrom": [
-            "chemical_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["chemical_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2712,12 +2592,8 @@
           "name": "recipe_packaging_recipe_id_recipes_id_fk",
           "tableFrom": "recipe_packaging",
           "tableTo": "recipes",
-          "columnsFrom": [
-            "recipe_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2725,12 +2601,8 @@
           "name": "recipe_packaging_packaging_material_id_packaging_materials_id_fk",
           "tableFrom": "recipe_packaging",
           "tableTo": "packaging_materials",
-          "columnsFrom": [
-            "packaging_material_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["packaging_material_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2896,12 +2768,8 @@
           "name": "recipes_product_id_products_id_fk",
           "tableFrom": "recipes",
           "tableTo": "products",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["product_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2909,12 +2777,8 @@
           "name": "recipes_container_packaging_id_packaging_materials_id_fk",
           "tableFrom": "recipes",
           "tableTo": "packaging_materials",
-          "columnsFrom": [
-            "container_packaging_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["container_packaging_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2922,12 +2786,8 @@
           "name": "recipes_carton_packaging_id_packaging_materials_id_fk",
           "tableFrom": "recipes",
           "tableTo": "packaging_materials",
-          "columnsFrom": [
-            "carton_packaging_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["carton_packaging_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3018,12 +2878,8 @@
           "name": "stock_transfers_from_warehouse_id_warehouses_id_fk",
           "tableFrom": "stock_transfers",
           "tableTo": "warehouses",
-          "columnsFrom": [
-            "from_warehouse_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["from_warehouse_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3031,12 +2887,8 @@
           "name": "stock_transfers_to_warehouse_id_warehouses_id_fk",
           "tableFrom": "stock_transfers",
           "tableTo": "warehouses",
-          "columnsFrom": [
-            "to_warehouse_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["to_warehouse_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3044,12 +2896,8 @@
           "name": "stock_transfers_performed_by_id_user_id_fk",
           "tableFrom": "stock_transfers",
           "tableTo": "user",
-          "columnsFrom": [
-            "performed_by_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["performed_by_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3153,23 +3001,17 @@
           "primaryKey": true,
           "notNull": true
         },
+        "s_no": {
+          "name": "s_no",
+          "type": "serial",
+          "primaryKey": false,
+          "notNull": true
+        },
         "name": {
           "name": "name",
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "contact_person": {
-          "name": "contact_person",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "phone": {
-          "name": "phone",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "address": {
           "name": "address",
@@ -3177,11 +3019,74 @@
           "primaryKey": false,
           "notNull": false
         },
-        "type": {
-          "name": "type",
+        "mobile_number": {
+          "name": "mobile_number",
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "total_sale": {
+          "name": "total_sale",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "payment": {
+          "name": "payment",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "credit": {
+          "name": "credit",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "weight_sale_kg": {
+          "name": "weight_sale_kg",
+          "type": "numeric(12, 3)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "expenses": {
+          "name": "expenses",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "average_per_kg": {
+          "name": "average_per_kg",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "average_kg_with_expense": {
+          "name": "average_kg_with_expense",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "expense_average": {
+          "name": "expense_average",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "customer_type": {
+          "name": "customer_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'retailer'"
         },
         "created_at": {
           "name": "created_at",
@@ -3222,29 +3127,65 @@
           "primaryKey": false,
           "notNull": true
         },
-        "recipe_id": {
-          "name": "recipe_id",
+        "pack": {
+          "name": "pack",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "quantity_cartons": {
-          "name": "quantity_cartons",
+        "recipe_id": {
+          "name": "recipe_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "number_of_cartons": {
+          "name": "number_of_cartons",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": 0
         },
-        "unit_price": {
-          "name": "unit_price",
-          "type": "numeric(10, 2)",
+        "total_weight": {
+          "name": "total_weight",
+          "type": "numeric(12, 3)",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "'0'"
         },
-        "subtotal": {
-          "name": "subtotal",
+        "per_carton_price": {
+          "name": "per_carton_price",
           "type": "numeric(12, 2)",
           "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "hsn_code": {
+          "name": "hsn_code",
+          "type": "text",
+          "primaryKey": false,
           "notNull": true
+        },
+        "retail_price": {
+          "name": "retail_price",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "margin": {
+          "name": "margin",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
         },
         "created_at": {
           "name": "created_at",
@@ -3267,25 +3208,17 @@
           "name": "invoice_items_invoice_id_invoices_id_fk",
           "tableFrom": "invoice_items",
           "tableTo": "invoices",
-          "columnsFrom": [
-            "invoice_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
+          "columnsFrom": ["invoice_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "invoice_items_recipe_id_recipes_id_fk": {
           "name": "invoice_items_recipe_id_recipes_id_fk",
           "tableFrom": "invoice_items",
           "tableTo": "recipes",
-          "columnsFrom": [
-            "recipe_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3306,41 +3239,86 @@
           "primaryKey": true,
           "notNull": true
         },
-        "invoice_number": {
-          "name": "invoice_number",
-          "type": "text",
+        "s_no": {
+          "name": "s_no",
+          "type": "serial",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         },
         "customer_id": {
           "name": "customer_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
-        "total_amount": {
-          "name": "total_amount",
-          "type": "numeric(12, 2)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'0'"
-        },
-        "profit_margin": {
-          "name": "profit_margin",
-          "type": "numeric(12, 2)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'0'"
-        },
-        "status": {
-          "name": "status",
+        "account": {
+          "name": "account",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'paid'"
+          "notNull": false
         },
-        "payment_method": {
-          "name": "payment_method",
+        "cash": {
+          "name": "cash",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "credit": {
+          "name": "credit",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "credit_return_date": {
+          "name": "credit_return_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expenses": {
+          "name": "expenses",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "expenses_description": {
+          "name": "expenses_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "total_price": {
+          "name": "total_price",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "slip_number": {
+          "name": "slip_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "remarks": {
+          "name": "remarks",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -3378,12 +3356,8 @@
           "name": "invoices_customer_id_customers_id_fk",
           "tableFrom": "invoices",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3391,12 +3365,8 @@
           "name": "invoices_warehouse_id_warehouses_id_fk",
           "tableFrom": "invoices",
           "tableTo": "warehouses",
-          "columnsFrom": [
-            "warehouse_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["warehouse_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3404,26 +3374,14 @@
           "name": "invoices_performed_by_id_user_id_fk",
           "tableFrom": "invoices",
           "tableTo": "user",
-          "columnsFrom": [
-            "performed_by_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["performed_by_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "invoices_invoice_number_unique": {
-          "name": "invoices_invoice_number_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "invoice_number"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -3603,12 +3561,8 @@
           "name": "purchase_records_supplier_id_suppliers_id_fk",
           "tableFrom": "purchase_records",
           "tableTo": "suppliers",
-          "columnsFrom": [
-            "supplier_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["supplier_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3616,12 +3570,8 @@
           "name": "purchase_records_warehouse_id_warehouses_id_fk",
           "tableFrom": "purchase_records",
           "tableTo": "warehouses",
-          "columnsFrom": [
-            "warehouse_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["warehouse_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3629,12 +3579,8 @@
           "name": "purchase_records_chemical_id_chemicals_id_fk",
           "tableFrom": "purchase_records",
           "tableTo": "chemicals",
-          "columnsFrom": [
-            "chemical_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["chemical_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3642,12 +3588,8 @@
           "name": "purchase_records_packaging_material_id_packaging_materials_id_fk",
           "tableFrom": "purchase_records",
           "tableTo": "packaging_materials",
-          "columnsFrom": [
-            "packaging_material_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["packaging_material_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3775,12 +3717,8 @@
           "name": "supplier_payments_supplier_id_suppliers_id_fk",
           "tableFrom": "supplier_payments",
           "tableTo": "suppliers",
-          "columnsFrom": [
-            "supplier_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["supplier_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3788,12 +3726,8 @@
           "name": "supplier_payments_purchase_id_purchase_records_id_fk",
           "tableFrom": "supplier_payments",
           "tableTo": "purchase_records",
-          "columnsFrom": [
-            "purchase_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["purchase_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3809,44 +3743,22 @@
     "public.attendance_status": {
       "name": "attendance_status",
       "schema": "public",
-      "values": [
-        "present",
-        "absent",
-        "leave",
-        "half_day",
-        "holiday"
-      ]
+      "values": ["present", "absent", "leave", "half_day", "holiday"]
     },
     "public.employee_status": {
       "name": "employee_status",
       "schema": "public",
-      "values": [
-        "active",
-        "on_leave",
-        "terminated",
-        "resigned"
-      ]
+      "values": ["active", "on_leave", "terminated", "resigned"]
     },
     "public.employment_type": {
       "name": "employment_type",
       "schema": "public",
-      "values": [
-        "full_time",
-        "part_time",
-        "contract",
-        "intern"
-      ]
+      "values": ["full_time", "part_time", "contract", "intern"]
     },
     "public.leave_type": {
       "name": "leave_type",
       "schema": "public",
-      "values": [
-        "sick",
-        "casual",
-        "annual",
-        "unpaid",
-        "special"
-      ]
+      "values": ["sick", "casual", "annual", "unpaid", "special"]
     }
   },
   "schemas": {},

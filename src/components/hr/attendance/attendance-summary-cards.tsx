@@ -2,73 +2,73 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, UserCheck, UserMinus, Clock, CalendarIcon } from "lucide-react";
 
 interface AttendanceStats {
-    total: number;
-    present: number;
-    absent: number;
-    late: number;
-    leave: number;
+  total: number;
+  present: number;
+  absent: number;
+  late: number;
+  leave: number;
 }
 
 interface Props {
-    stats: AttendanceStats;
+  stats: AttendanceStats;
 }
 
 export const AttendanceSummaryCards = ({ stats }: Props) => {
-    const cards = [
-        {
-            title: "Total Employees",
-            value: stats.total,
-            icon: Users,
-            color: "text-blue-500",
-            bg: "bg-blue-50/50",
-        },
-        {
-            title: "Present",
-            value: stats.present,
-            icon: UserCheck,
-            color: "text-emerald-500",
-            bg: "bg-emerald-50/50",
-        },
-        {
-            title: "Absent",
-            value: stats.absent,
-            icon: UserMinus,
-            color: "text-rose-500",
-            bg: "bg-rose-50/50",
-        },
-        {
-            title: "Late Arrivals",
-            value: stats.late,
-            icon: Clock,
-            color: "text-amber-500",
-            bg: "bg-amber-50/50",
-        },
-        {
-            title: "On Leave",
-            value: stats.leave,
-            icon: CalendarIcon,
-            color: "text-indigo-500",
-            bg: "bg-indigo-50/50",
-        },
-    ];
+  const cards = [
+    {
+      title: "Total Employees",
+      value: stats.total,
+      icon: Users,
+      color: "text-blue-500",
+      bg: "bg-blue-50/50",
+    },
+    {
+      title: "Present",
+      value: stats.present,
+      icon: UserCheck,
+      color: "text-emerald-500",
+      bg: "bg-emerald-50/50",
+    },
+    {
+      title: "Absent",
+      value: stats.absent,
+      icon: UserMinus,
+      color: "text-rose-500",
+      bg: "bg-rose-50/50",
+    },
+    {
+      title: "Late Arrivals",
+      value: stats.late,
+      icon: Clock,
+      color: "text-amber-500",
+      bg: "bg-amber-50/50",
+    },
+    {
+      title: "On Leave",
+      value: stats.leave,
+      icon: CalendarIcon,
+      color: "text-indigo-500",
+      bg: "bg-indigo-50/50",
+    },
+  ];
 
-    return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {cards.map((card) => (
-                <Card key={card.title} className="border-none transition-all">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">
-                            {card.title}
-                        </CardTitle>
-                        <div className={`${card.bg} p-2 rounded-lg`}>
-                            <card.icon className={`h-4 w-4 ${card.color}`} />
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{card.value}</div>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-    );
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      {cards.map((card) => (
+        <Card key={card.title} className="border-none transition-all">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {card.title}
+            </CardTitle>
+            <div className={`${card.bg} p-2 rounded-lg`}>
+              <card.icon className={`h-4 w-4 ${card.color}`} />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{card.value}</div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
 };

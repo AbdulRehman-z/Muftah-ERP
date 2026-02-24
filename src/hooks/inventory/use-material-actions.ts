@@ -4,31 +4,31 @@ import { updateMaterialFn } from "@/server-functions/inventory/update-material-f
 import { toast } from "sonner";
 
 export const useDeleteMaterial = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: deleteMaterialFn,
-        onSuccess: () => {
-            toast.success("Material deleted successfully");
-            queryClient.invalidateQueries({ queryKey: ["inventory"] });
-            queryClient.invalidateQueries({ queryKey: ["low-stock-alerts"] });
-        },
-        onError: (error) => {
-            toast.error(error.message || "Failed to delete material");
-        },
-    });
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteMaterialFn,
+    onSuccess: () => {
+      toast.success("Material deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["low-stock-alerts"] });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to delete material");
+    },
+  });
 };
 
 export const useUpdateMaterial = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: updateMaterialFn,
-        onSuccess: () => {
-            toast.success("Material updated successfully");
-            queryClient.invalidateQueries({ queryKey: ["inventory"] });
-            queryClient.invalidateQueries({ queryKey: ["low-stock-alerts"] });
-        },
-        onError: (error) => {
-            toast.error(error.message || "Failed to update material");
-        },
-    });
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateMaterialFn,
+    onSuccess: () => {
+      toast.success("Material updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["low-stock-alerts"] });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update material");
+    },
+  });
 };

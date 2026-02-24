@@ -4,33 +4,33 @@ import type { AllRoutes } from "@/lib/types";
 import { buttonVariants } from "../ui/button";
 
 export const Header = () => {
-	const location = useLocation();
-	const currentPath = location.pathname;
-	const showAuthButtons = (
-		["/reset-password", "/forgot-password", "/2-fa"] as AllRoutes[]
-	).includes(currentPath as AllRoutes);
+  const location = useLocation();
+  const currentPath = location.pathname;
+  const showAuthButtons = (
+    ["/reset-password", "/forgot-password", "/2-fa"] as AllRoutes[]
+  ).includes(currentPath as AllRoutes);
 
-	return (
-		<div className="flex justify-between items-center">
-			{showAuthButtons && (
-				<div className="flex items-center gap-2">
-					<Link
-						className={buttonVariants({ variant: "outline", size: "lg" })}
-						to="/login"
-					>
-						Login
-					</Link>
-					<Link
-						className={buttonVariants({
-							variant: "default",
-							size: "lg",
-						})}
-						to="/sign-up"
-					>
-						Sign Up
-					</Link>
-				</div>
-			)}
-		</div>
-	);
+  return (
+    <div className="flex justify-between items-center">
+      {showAuthButtons && (
+        <div className="flex items-center gap-2">
+          <Link
+            className={buttonVariants({ variant: "outline", size: "lg" })}
+            to="/login"
+          >
+            Login
+          </Link>
+          <Link
+            className={buttonVariants({
+              variant: "default",
+              size: "lg",
+            })}
+            to="/sign-up"
+          >
+            Sign Up
+          </Link>
+        </div>
+      )}
+    </div>
+  );
 };

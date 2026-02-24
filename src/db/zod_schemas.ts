@@ -13,10 +13,10 @@ export const insertChemicalSchema = createInsertSchema(inventory.chemicals);
 export const selectChemicalSchema = createSelectSchema(inventory.chemicals);
 
 export const insertPackagingMaterialSchema = createInsertSchema(
-    inventory.packagingMaterials,
+  inventory.packagingMaterials,
 );
 export const selectPackagingMaterialSchema = createSelectSchema(
-    inventory.packagingMaterials,
+  inventory.packagingMaterials,
 );
 
 // --- PRODUCTS ---
@@ -28,56 +28,56 @@ export const insertRecipeSchema = createInsertSchema(inventory.recipes);
 export const selectRecipeSchema = createSelectSchema(inventory.recipes);
 
 export const insertRecipeIngredientSchema = createInsertSchema(
-    inventory.recipeIngredients,
+  inventory.recipeIngredients,
 );
 export const selectRecipeIngredientSchema = createSelectSchema(
-    inventory.recipeIngredients,
+  inventory.recipeIngredients,
 );
 
 export const insertRecipePackagingSchema = createInsertSchema(
-    inventory.recipePackaging,
+  inventory.recipePackaging,
 );
 export const selectRecipePackagingSchema = createSelectSchema(
-    inventory.recipePackaging,
+  inventory.recipePackaging,
 );
 
 // --- PRODUCTION ---
 export const insertProductionRunSchema = createInsertSchema(
-    inventory.productionRuns,
+  inventory.productionRuns,
 );
 export const selectProductionRunSchema = createSelectSchema(
-    inventory.productionRuns,
+  inventory.productionRuns,
 );
 
 // --- STOCK ---
 export const insertMaterialStockSchema = createInsertSchema(
-    inventory.materialStock,
+  inventory.materialStock,
 );
 export const selectMaterialStockSchema = createSelectSchema(
-    inventory.materialStock,
+  inventory.materialStock,
 );
 
 export const insertFinishedGoodsStockSchema = createInsertSchema(
-    inventory.finishedGoodsStock,
+  inventory.finishedGoodsStock,
 );
 export const selectFinishedGoodsStockSchema = createSelectSchema(
-    inventory.finishedGoodsStock,
+  inventory.finishedGoodsStock,
 );
 
 // --- STOCK TRANSFERS ---
 export const insertStockTransferSchema = createInsertSchema(
-    inventory.stockTransfers,
+  inventory.stockTransfers,
 );
 export const selectStockTransferSchema = createSelectSchema(
-    inventory.stockTransfers,
+  inventory.stockTransfers,
 );
 
 // --- AUDIT LOGS ---
 export const insertInventoryAuditLogSchema = createInsertSchema(
-    inventory.inventoryAuditLog,
+  inventory.inventoryAuditLog,
 );
 export const selectInventoryAuditLogSchema = createSelectSchema(
-    inventory.inventoryAuditLog,
+  inventory.inventoryAuditLog,
 );
 
 // --- SALES ---
@@ -103,40 +103,49 @@ export const selectTransactionSchema = createSelectSchema(finance.transactions);
 // --- CUSTOM INPUT SCHEMAS (For RPC/API) ---
 
 export const stockTransferInputSchema = z.object({
-    fromWarehouseId: z.string(),
-    toWarehouseId: z.string(),
-    materialType: z.enum(["chemical", "packaging", "finished"]),
-    materialId: z.string(),
-    quantity: z.number().positive(),
+  fromWarehouseId: z.string(),
+  toWarehouseId: z.string(),
+  materialType: z.enum(["chemical", "packaging", "finished"]),
+  materialId: z.string(),
+  quantity: z.number().positive(),
 });
 
 export const createInvoiceSchema = z.object({
-    customerId: z.string().optional(),
-    warehouseId: z.string(),
-    account: z.string().min(1, "Select Payment Account"),
-    cash: z.number().nonnegative().default(0),
-    credit: z.number().nonnegative().default(0),
-    creditReturnDate: z.date().optional(),
-    expenses: z.number().nonnegative().default(0),
-    expensesDescription: z.string().optional(),
-    remarks: z.string().optional(),
-    items: z.array(
-        z.object({
-            pack: z.string().min(1, "Pack is required"),
-            recipeId: z.string().optional(),
-            numberOfCartons: z.number().int().positive(),
-            hsnCode: z.string().min(1, "HSN Code is mandatory"),
-            perCartonPrice: z.number().nonnegative(),
-            retailPrice: z.number().nonnegative(),
-        }),
-    ),
+  customerId: z.string().optional(),
+  customerName: z.string().min(1, "Customer name is required if new").optional(),
+  customerMobile: z.string().optional(),
+  customerCnic: z.string().optional(),
+  customerCity: z.string().optional(),
+  customerState: z.string().optional(),
+  customerBankAccount: z.string().optional(),
+  customerType: z.enum(["distributor", "retailer"]).default("retailer"),
+  warehouseId: z.string(),
+  account: z.string().min(1, "Select Payment Account"),
+  cash: z.number().nonnegative().default(0),
+  credit: z.number().nonnegative().default(0),
+  creditReturnDate: z.date().optional(),
+  expenses: z.number().nonnegative().default(0),
+  expensesDescription: z.string().optional(),
+  remarks: z.string().optional(),
+  items: z.array(
+    z.object({
+      pack: z.string().min(1, "Pack is required"),
+      recipeId: z.string().optional(),
+      unitType: z.enum(["carton", "units"]).default("carton"),
+      numberOfCartons: z.number().nonnegative().default(0),
+      numberOfUnits: z.number().nonnegative().default(0),
+      hsnCode: z.string().min(1, "HSN Code is mandatory"),
+      perCartonPrice: z.number().nonnegative(),
+      retailPrice: z.number().nonnegative(),
+    }),
+  ),
 });
 
 export const addExpenseSchema = z.object({
-    description: z.string().min(1),
-    category: z.string().min(1),
-    amount: z.number().positive(),
-    walletId: z.string().min(1),
+  description: z.string().min(1),
+  category: z.string().min(1),
+  amount: z.number().positive(),
+  walletId: z.string().min(1),
 });
 
 export type StockTransferInput = z.infer<typeof stockTransferInputSchema>;

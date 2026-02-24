@@ -8,7 +8,7 @@ import { requireAdminMiddleware } from "@/lib/middlewares";
 
 export const Route = createFileRoute("/_protected/suppliers/")({
   server: {
-    middleware: [requireAdminMiddleware]
+    middleware: [requireAdminMiddleware],
   },
   loader: async ({ context }) => {
     void context.queryClient.prefetchQuery({
@@ -30,10 +30,11 @@ function SuppliersPage() {
       </div>
 
       <Separator />
-      <Suspense fallback={<GenericLoader
-        title="Loading Sppliers"
-        description="wait..."
-      />}>
+      <Suspense
+        fallback={
+          <GenericLoader title="Loading Sppliers" description="wait..." />
+        }
+      >
         <SupplierContainer />
       </Suspense>
     </div>

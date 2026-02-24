@@ -5,431 +5,600 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
-    Warehouse,
-    User,
-    Activity,
-    Calculator,
-    FlaskConical,
-    ChevronRight,
-    Clock,
-    CheckCircle2,
-    AlertCircle,
-    BarChart3,
-    Receipt,
-    Calendar1Icon,
-    ArrowLeft,
-    AlertTriangle,
-    Package
+  Warehouse,
+  User,
+  Activity,
+  Calculator,
+  FlaskConical,
+  ChevronRight,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  BarChart3,
+  Receipt,
+  Calendar1Icon,
+  ArrowLeft,
+  AlertTriangle,
+  Package,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMemo, useState } from "react";
 import { useStartProduction } from "@/hooks/production/use-start-production";
 import { useCompleteProduction } from "@/hooks/production/use-complete-production";
 import { useCancelProduction } from "@/hooks/production/use-cancel-production";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_protected/manufacturing/productions/$runId")({
-    component: ProductionRunDetailsPage,
+export const Route = createFileRoute(
+  "/_protected/manufacturing/productions/$runId",
+)({
+  component: ProductionRunDetailsPage,
 });
 
 function ProductionRunDetailsPage() {
-    const { runId } = Route.useParams();
+  const { runId } = Route.useParams();
 
-    const { data: runs } = useSuspenseQuery({
-        queryKey: ["production-runs"],
-        queryFn: () => getProductionRunsFn({ data: {} }),
-    });
+  const { data: runs } = useSuspenseQuery({
+    queryKey: ["production-runs"],
+    queryFn: () => getProductionRunsFn({ data: {} }),
+  });
 
-    const run = runs.find((r) => r.id === runId);
+  const run = runs.find((r) => r.id === runId);
 
-    // Hooks
-    const startProduction = useStartProduction();
-    const completeProduction = useCompleteProduction();
-    const cancelProduction = useCancelProduction();
-    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-    const [cancelReason, setCancelReason] = useState("");
+  // Hooks
+  const startProduction = useStartProduction();
+  const completeProduction = useCompleteProduction();
+  const cancelProduction = useCancelProduction();
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
-    if (!run) {
+  if (!run) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8 space-y-4">
+        <AlertCircle className="size-12 text-muted-foreground/50" />
+        <h2 className="text-xl font-bold text-muted-foreground">
+          Production Run Not Found or Access Denied
+        </h2>
+        <Button variant="outline" asChild>
+          <Link to="/manufacturing/productions">Back to List</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "scheduled":
         return (
-            <div className="flex flex-col items-center justify-center h-full p-8 space-y-4">
-                <AlertCircle className="size-12 text-muted-foreground/50" />
-                <h2 className="text-xl font-bold text-muted-foreground">Production Run Not Found or Access Denied</h2>
-                <Button variant="outline" asChild>
-                    <Link to="/manufacturing/productions">Back to List</Link>
-                </Button>
-            </div>
+          <Badge
+            variant="secondary"
+            className="px-3 py-1 font-bold uppercase tracking-widest text-[10px]"
+          >
+            Scheduled
+          </Badge>
+        );
+      case "in_progress":
+        return (
+          <Badge
+            variant="default"
+            className="bg-blue-600 px-3 py-1 font-bold uppercase tracking-widest text-[10px]"
+          >
+            In Progress
+          </Badge>
+        );
+      case "completed":
+        return (
+          <Badge
+            variant="default"
+            className="bg-emerald-600 px-3 py-1 font-bold uppercase tracking-widest text-[10px]"
+          >
+            Completed
+          </Badge>
+        );
+      case "cancelled":
+        return (
+          <Badge
+            variant="destructive"
+            className="px-3 py-1 font-bold uppercase tracking-widest text-[10px]"
+          >
+            Cancelled
+          </Badge>
+        );
+      default:
+        return (
+          <Badge
+            variant="outline"
+            className="px-3 py-1 font-bold uppercase tracking-widest text-[10px]"
+          >
+            {status}
+          </Badge>
         );
     }
+  };
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case "scheduled":
-                return <Badge variant="secondary" className="px-3 py-1 font-bold uppercase tracking-widest text-[10px]">Scheduled</Badge>;
-            case "in_progress":
-                return <Badge variant="default" className="bg-blue-600 px-3 py-1 font-bold uppercase tracking-widest text-[10px]">In Progress</Badge>;
-            case "completed":
-                return <Badge variant="default" className="bg-emerald-600 px-3 py-1 font-bold uppercase tracking-widest text-[10px]">Completed</Badge>;
-            case "cancelled":
-                return <Badge variant="destructive" className="px-3 py-1 font-bold uppercase tracking-widest text-[10px]">Cancelled</Badge>;
-            default:
-                return <Badge variant="outline" className="px-3 py-1 font-bold uppercase tracking-widest text-[10px]">{status}</Badge>;
-        }
-    };
+  return (
+    <div className="flex flex-col h-full bg-muted/5 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b px-8 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild className="-ml-2">
+            <Link to="/manufacturing/productions">
+              <ArrowLeft className="size-5 text-muted-foreground" />
+            </Link>
+          </Button>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 bg-muted px-2 py-0.5 rounded">
+                Production Details
+              </span>
+              <ChevronRight className="size-3 text-muted-foreground/40" />
+              <span className="text-[10px] font-bold font-mono text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/10">
+                {run.batchId}
+              </span>
+            </div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              {run.recipe.name}
+            </h1>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {getStatusBadge(run.status)}
 
-    return (
-        <div className="flex flex-col h-full bg-muted/5 animate-in fade-in duration-500">
-            {/* Header */}
-            <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b px-8 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" asChild className="-ml-2">
-                        <Link to="/manufacturing/productions">
-                            <ArrowLeft className="size-5 text-muted-foreground" />
-                        </Link>
-                    </Button>
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 bg-muted px-2 py-0.5 rounded">Production Details</span>
-                            <ChevronRight className="size-3 text-muted-foreground/40" />
-                            <span className="text-[10px] font-bold font-mono text-primary bg-primary/5 px-2 py-0.5 rounded border border-primary/10">{run.batchId}</span>
-                        </div>
-                        <h1 className="text-xl font-bold tracking-tight text-foreground">{run.recipe.name}</h1>
+          {/* Action Buttons */}
+          {run.status === "scheduled" && (
+            <div className="flex gap-2">
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={cancelProduction.isPending}
+                onClick={() => setCancelDialogOpen(true)}
+                className="h-8 text-xs font-bold uppercase tracking-wide bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20"
+              >
+                Cancel Run
+              </Button>
+              <Button
+                size="sm"
+                disabled={startProduction.isPending}
+                onClick={() =>
+                  startProduction.mutate(
+                    { data: { productionRunId: run.id } },
+                    {
+                      onSuccess: () => toast.success("Production Started"),
+                    },
+                  )
+                }
+                className="h-8 text-xs font-bold uppercase tracking-wide px-4"
+              >
+                {startProduction.isPending ? "Starting..." : "Start Production"}
+              </Button>
+            </div>
+          )}
+
+          {run.status === "in_progress" && (
+            <div className="flex gap-2">
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={cancelProduction.isPending}
+                onClick={() => setCancelDialogOpen(true)}
+                className="h-8 text-xs font-bold uppercase tracking-wide bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20"
+              >
+                Mark as Failed / Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={completeProduction.isPending}
+                onClick={() =>
+                  completeProduction.mutate(
+                    { data: { productionRunId: run.id } },
+                    {
+                      onSuccess: () =>
+                        toast.success("Production Run Completed"),
+                    },
+                  )
+                }
+                className="h-8 text-xs font-bold uppercase tracking-wide px-4 bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                {completeProduction.isPending
+                  ? "Completing..."
+                  : "Complete Run"}
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <ScrollArea className="flex-1">
+        <div className="p-8 pb-24 space-y-8 max-w-[1600px] mx-auto">
+          {/* Top Stats Row */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* Costs Stats */}
+            <Card className="md:col-span-2 bg-gradient-to-br from-primary/5 via-background to-background border-primary/10  relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-[0.03]">
+                <Calculator className="size-32 -mr-8 -mt-8" />
+              </div>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                  <Receipt className="size-4" />
+                  Financials
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-8 items-end">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">
+                      Total Cost
+                    </p>
+                    <p className="text-3xl font-black text-foreground tabular-nums">
+                      <span className="text-lg font-bold text-muted-foreground/40 mr-1">
+                        PKR
+                      </span>
+                      {parseFloat(
+                        run.totalProductionCost || "0",
+                      ).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-1 items-end">
+                    <Badge
+                      variant="outline"
+                      className="bg-emerald-500/5 text-emerald-600 border-emerald-500/20 font-bold mb-2"
+                    >
+                      PKR {parseFloat(run.costPerContainer || "0").toFixed(2)} /
+                      Unit
+                    </Badge>
+                    <div className="text-xs text-right">
+                      <span className="text-muted-foreground mr-2">
+                        Chemicals:
+                      </span>
+                      <span className="font-bold">
+                        {(
+                          (parseFloat(run.totalChemicalCost || "0") /
+                            parseFloat(run.totalProductionCost || "1")) *
+                          100
+                        ).toFixed(0)}
+                        %
+                      </span>
                     </div>
+                    <div className="text-xs text-right">
+                      <span className="text-muted-foreground mr-2">
+                        Packaging:
+                      </span>
+                      <span className="font-bold">
+                        {(
+                          (parseFloat(run.totalPackagingCost || "0") /
+                            parseFloat(run.totalProductionCost || "1")) *
+                          100
+                        ).toFixed(0)}
+                        %
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    {getStatusBadge(run.status)}
+              </CardContent>
+            </Card>
 
-                    {/* Action Buttons */}
-                    {run.status === 'scheduled' && (
-                        <div className="flex gap-2">
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                disabled={cancelProduction.isPending}
-                                onClick={() => setCancelDialogOpen(true)}
-                                className="h-8 text-xs font-bold uppercase tracking-wide bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20"
-                            >
-                                Cancel Run
-                            </Button>
-                            <Button
-                                size="sm"
-                                disabled={startProduction.isPending}
-                                onClick={() =>
-                                    startProduction.mutate({ data: { productionRunId: run.id } }, {
-                                        onSuccess: () => toast.success("Production Started")
-                                    })
-                                }
-                                className="h-8 text-xs font-bold uppercase tracking-wide px-4"
-                            >
-                                {startProduction.isPending ? "Starting..." : "Start Production"}
-                            </Button>
-                        </div>
-                    )}
-
-                    {run.status === 'in_progress' && (
-                        <div className="flex gap-2">
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                disabled={cancelProduction.isPending}
-                                onClick={() => setCancelDialogOpen(true)}
-                                className="h-8 text-xs font-bold uppercase tracking-wide bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20"
-                            >
-                                Mark as Failed / Cancel
-                            </Button>
-                            <Button
-                                size="sm"
-                                disabled={completeProduction.isPending}
-                                onClick={() =>
-                                    completeProduction.mutate({ data: { productionRunId: run.id } }, {
-                                        onSuccess: () => toast.success("Production Run Completed")
-                                    })
-                                }
-                                className="h-8 text-xs font-bold uppercase tracking-wide px-4 bg-emerald-600 hover:bg-emerald-700 text-white"
-                            >
-                                {completeProduction.isPending ? "Completing..." : "Complete Run"}
-                            </Button>
-                        </div>
-                    )}
+            {/* Yield Stats */}
+            <Card className="bg-background/50 border ">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <BarChart3 className="size-4" />
+                  Production Output
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Total Units
+                    </span>
+                    <span className="text-2xl font-black">
+                      {run.completedUnits}{" "}
+                      <span className="text-xs font-bold text-muted-foreground">
+                        / {run.containersProduced}
+                      </span>
+                    </span>
+                  </div>
+                  <Progress
+                    value={(run.completedUnits! / run.containersProduced) * 100}
+                    className="h-2"
+                  />
+                  <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                    <div className="bg-muted/30 p-2 rounded">
+                      <p className="text-muted-foreground text-[10px] uppercase font-bold">
+                        Cartons
+                      </p>
+                      <p className="font-bold text-base">
+                        {Math.floor(
+                          run.completedUnits! /
+                            (run.recipe.containersPerCarton || 1),
+                        )}
+                      </p>
+                    </div>
+                    <div className="bg-amber-50/50 border border-amber-100 p-2 rounded text-amber-900">
+                      <p className="text-amber-800/70 text-[10px] uppercase font-bold">
+                        Loose Units
+                      </p>
+                      <p className="font-bold text-base">
+                        {run.completedUnits! %
+                          (run.recipe.containersPerCarton || 1)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Timing */}
+            <Card className="bg-background/50 border ">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <Clock className="size-4" />
+                  Timeline
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                    Started
+                  </p>
+                  <p className="text-sm font-medium">
+                    {run.actualStartDate
+                      ? format(new Date(run.actualStartDate), "MMM d, h:mm a")
+                      : "---"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                    Completed
+                  </p>
+                  <p className="text-sm font-medium">
+                    {run.actualCompletionDate
+                      ? format(
+                          new Date(run.actualCompletionDate),
+                          "MMM d, h:mm a",
+                        )
+                      : "---"}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content: Material Audit */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-black uppercase tracking-wider text-primary flex items-center gap-2">
+                  <FlaskConical className="size-4" />
+                  Material Consumption Audit
+                </h3>
+                <Badge variant="outline" className="bg-background text-xs">
+                  {run.materialsUsed?.length || 0} Records
+                </Badge>
+              </div>
+
+              <Card className=" border-border overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-muted/50">
+                    <TableRow>
+                      <TableHead className="text-[10px] uppercase font-bold tracking-wider">
+                        Resource
+                      </TableHead>
+                      <TableHead className="text-[10px] uppercase font-bold tracking-wider text-center">
+                        Type
+                      </TableHead>
+                      <TableHead className="text-[10px] uppercase font-bold tracking-wider text-right">
+                        Qty Used
+                      </TableHead>
+                      <TableHead className="text-[10px] uppercase font-bold tracking-wider text-right">
+                        Cost Impact
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {run.materialsUsed?.map((m: any, idx: number) => (
+                      <TableRow key={idx} className="group hover:bg-muted/5">
+                        <TableCell className="font-medium">
+                          {m.materialName}
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            ID: {m.materialId.substring(0, 6)}...
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] uppercase font-bold border-muted-foreground/20 text-muted-foreground"
+                          >
+                            {m.materialType}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-xs font-bold">
+                          {parseFloat(m.quantityUsed).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-xs font-bold text-muted-foreground">
+                          PKR {parseFloat(m.totalCost).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {!run.materialsUsed?.length && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={4}
+                          className="h-24 text-center text-muted-foreground text-sm"
+                        >
+                          No material usage recorded.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </Card>
             </div>
 
-            <ScrollArea className="flex-1">
-                <div className="p-8 pb-24 space-y-8 max-w-[1600px] mx-auto">
-
-                    {/* Top Stats Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        {/* Costs Stats */}
-                        <Card className="md:col-span-2 bg-gradient-to-br from-primary/5 via-background to-background border-primary/10  relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-4 opacity-[0.03]">
-                                <Calculator className="size-32 -mr-8 -mt-8" />
-                            </div>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                                    <Receipt className="size-4" />
-                                    Financials
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-2 gap-8 items-end">
-                                    <div>
-                                        <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1 tracking-wider">Total Cost</p>
-                                        <p className="text-3xl font-black text-foreground tabular-nums">
-                                            <span className="text-lg font-bold text-muted-foreground/40 mr-1">PKR</span>
-                                            {parseFloat(run.totalProductionCost || "0").toLocaleString()}
-                                        </p>
-                                    </div>
-                                    <div className="flex flex-col gap-1 items-end">
-                                        <Badge variant="outline" className="bg-emerald-500/5 text-emerald-600 border-emerald-500/20 font-bold mb-2">
-                                            PKR {parseFloat(run.costPerContainer || "0").toFixed(2)} / Unit
-                                        </Badge>
-                                        <div className="text-xs text-right">
-                                            <span className="text-muted-foreground mr-2">Chemicals:</span>
-                                            <span className="font-bold">{(parseFloat(run.totalChemicalCost || "0") / parseFloat(run.totalProductionCost || "1") * 100).toFixed(0)}%</span>
-                                        </div>
-                                        <div className="text-xs text-right">
-                                            <span className="text-muted-foreground mr-2">Packaging:</span>
-                                            <span className="font-bold">{(parseFloat(run.totalPackagingCost || "0") / parseFloat(run.totalProductionCost || "1") * 100).toFixed(0)}%</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Yield Stats */}
-                        <Card className="bg-background/50 border ">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                                    <BarChart3 className="size-4" />
-                                    Production Output
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex flex-col gap-4">
-                                    <div className="flex items-baseline justify-between">
-                                        <span className="text-sm font-medium text-muted-foreground">Total Units</span>
-                                        <span className="text-2xl font-black">{run.completedUnits} <span className="text-xs font-bold text-muted-foreground">/ {run.containersProduced}</span></span>
-                                    </div>
-                                    <Progress value={(run.completedUnits! / run.containersProduced) * 100} className="h-2" />
-                                    <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-                                        <div className="bg-muted/30 p-2 rounded">
-                                            <p className="text-muted-foreground text-[10px] uppercase font-bold">Cartons</p>
-                                            <p className="font-bold text-base">{Math.floor(run.completedUnits! / (run.recipe.containersPerCarton || 1))}</p>
-                                        </div>
-                                        <div className="bg-amber-50/50 border border-amber-100 p-2 rounded text-amber-900">
-                                            <p className="text-amber-800/70 text-[10px] uppercase font-bold">Loose Units</p>
-                                            <p className="font-bold text-base">{run.completedUnits! % (run.recipe.containersPerCarton || 1)}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Timing */}
-                        <Card className="bg-background/50 border ">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                                    <Clock className="size-4" />
-                                    Timeline
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div>
-                                    <p className="text-[10px] font-bold uppercase text-muted-foreground">Started</p>
-                                    <p className="text-sm font-medium">{run.actualStartDate ? format(new Date(run.actualStartDate), "MMM d, h:mm a") : "---"}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-bold uppercase text-muted-foreground">Completed</p>
-                                    <p className="text-sm font-medium">{run.actualCompletionDate ? format(new Date(run.actualCompletionDate), "MMM d, h:mm a") : "---"}</p>
-                                </div>
-                            </CardContent>
-                        </Card>
+            {/* Sidebar: Details & Failure Notes */}
+            <div className="space-y-6">
+              {/* Failure / Notes Section */}
+              <Card
+                className={
+                  run.notes
+                    ? "bg-amber-50/50 border-amber-200"
+                    : "bg-muted/10 border-border/50"
+                }
+              >
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <AlertCircle className="size-4" />
+                    Process Notes & Observations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {run.notes ? (
+                    <div className="text-sm italic text-amber-900/80 leading-relaxed font-medium whitespace-pre-wrap">
+                      "{run.notes}"
                     </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Main Content: Material Audit */}
-                        <div className="lg:col-span-2 space-y-6">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-sm font-black uppercase tracking-wider text-primary flex items-center gap-2">
-                                    <FlaskConical className="size-4" />
-                                    Material Consumption Audit
-                                </h3>
-                                <Badge variant="outline" className="bg-background text-xs">
-                                    {run.materialsUsed?.length || 0} Records
-                                </Badge>
-                            </div>
-
-                            <Card className=" border-border overflow-hidden">
-                                <Table>
-                                    <TableHeader className="bg-muted/50">
-                                        <TableRow>
-                                            <TableHead className="text-[10px] uppercase font-bold tracking-wider">Resource</TableHead>
-                                            <TableHead className="text-[10px] uppercase font-bold tracking-wider text-center">Type</TableHead>
-                                            <TableHead className="text-[10px] uppercase font-bold tracking-wider text-right">Qty Used</TableHead>
-                                            <TableHead className="text-[10px] uppercase font-bold tracking-wider text-right">Cost Impact</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {run.materialsUsed?.map((m: any, idx: number) => (
-                                            <TableRow key={idx} className="group hover:bg-muted/5">
-                                                <TableCell className="font-medium">
-                                                    {m.materialName}
-                                                    <div className="text-[10px] text-muted-foreground mt-0.5">ID: {m.materialId.substring(0, 6)}...</div>
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    <Badge variant="outline" className="text-[9px] uppercase font-bold border-muted-foreground/20 text-muted-foreground">
-                                                        {m.materialType}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="text-right font-mono text-xs font-bold">
-                                                    {parseFloat(m.quantityUsed).toLocaleString()}
-                                                </TableCell>
-                                                <TableCell className="text-right font-mono text-xs font-bold text-muted-foreground">
-                                                    PKR {parseFloat(m.totalCost).toLocaleString()}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                        {!run.materialsUsed?.length && (
-                                            <TableRow>
-                                                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground text-sm">
-                                                    No material usage recorded.
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </Card>
-                        </div>
-
-                        {/* Sidebar: Details & Failure Notes */}
-                        <div className="space-y-6">
-                            {/* Failure / Notes Section */}
-                            <Card className={run.notes ? "bg-amber-50/50 border-amber-200" : "bg-muted/10 border-border/50"}>
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                                        <AlertCircle className="size-4" />
-                                        Process Notes & Observations
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    {run.notes ? (
-                                        <div className="text-sm italic text-amber-900/80 leading-relaxed font-medium whitespace-pre-wrap">
-                                            "{run.notes}"
-                                        </div>
-                                    ) : (
-                                        <div className="text-sm text-muted-foreground italic h-20 flex items-center justify-center border border-dashed rounded-lg bg-background/50">
-                                            No notes recorded.
-                                        </div>
-                                    )}
-                                    <div className="mt-4 text-[10px] text-muted-foreground">
-                                        * Review these notes for failure reasons or production anomalies.
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            {/* Logistics */}
-                            <Card>
-                                <CardHeader className="pb-4">
-                                    <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                                        <Activity className="size-4" />
-                                        Logistics
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                                            <Warehouse className="size-4" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] text-muted-foreground font-bold uppercase">Warehouse</p>
-                                            <p className="text-sm font-bold">{run.warehouse.name}</p>
-                                        </div>
-                                    </div>
-                                    <Separator />
-                                    <div className="flex items-center gap-3">
-                                        <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                                            <User className="size-4" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] text-muted-foreground font-bold uppercase">Operator</p>
-                                            <p className="text-sm font-bold">{run.operator.name}</p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground italic h-20 flex items-center justify-center border border-dashed rounded-lg bg-background/50">
+                      No notes recorded.
                     </div>
-                </div>
-            </ScrollArea>
+                  )}
+                  <div className="mt-4 text-[10px] text-muted-foreground">
+                    * Review these notes for failure reasons or production
+                    anomalies.
+                  </div>
+                </CardContent>
+              </Card>
 
-            {/* Cancel/Fail Dialog */}
-            <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Mark Run as Failed / Cancelled</DialogTitle>
-                        <DialogDescription>
-                            This will stop the production run. Please provide a reason for the record.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label>Reason for Failure / Cancellation</Label>
-                            <Textarea
-                                placeholder="e.g. Machine breakdown, Material shortage, etc."
-                                value={cancelReason}
-                                onChange={(e) => setCancelReason(e.target.value)}
-                            />
-                        </div>
-                        <div className="text-xs text-muted-foreground p-3 bg-muted rounded-md border border-dashed">
-                            Note: Any materials already consumed will remain deducted. You may need to manually adjust stock if materials are salvageable.
-                        </div>
+              {/* Logistics */}
+              <Card>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <Activity className="size-4" />
+                    Logistics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                      <Warehouse className="size-4" />
                     </div>
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setCancelDialogOpen(false)}>Back</Button>
-                        <Button
-                            variant="destructive"
-                            disabled={!cancelReason || cancelProduction.isPending}
-                            onClick={() => {
-                                cancelProduction.mutate({
-                                    data: {
-                                        productionRunId: run.id,
-                                        reason: cancelReason
-                                    }
-                                }, {
-                                    onSuccess: () => {
-                                        setCancelDialogOpen(false);
-                                        setCancelReason("");
-                                        toast.error("Production run cancelled.");
-                                    }
-                                });
-                            }}
-                        >
-                            {cancelProduction.isPending ? "Cancelling..." : "Confirm Failure/Cancel"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase">
+                        Warehouse
+                      </p>
+                      <p className="text-sm font-bold">{run.warehouse.name}</p>
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center gap-3">
+                    <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                      <User className="size-4" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase">
+                        Operator
+                      </p>
+                      <p className="text-sm font-bold">{run.operator.name}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
-    );
+      </ScrollArea>
+
+      {/* Cancel/Fail Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mark Run as Failed / Cancelled</DialogTitle>
+            <DialogDescription>
+              This will stop the production run. Please provide a reason for the
+              record.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Reason for Failure / Cancellation</Label>
+              <Textarea
+                placeholder="e.g. Machine breakdown, Material shortage, etc."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+              />
+            </div>
+            <div className="text-xs text-muted-foreground p-3 bg-muted rounded-md border border-dashed">
+              Note: Any materials already consumed will remain deducted. You may
+              need to manually adjust stock if materials are salvageable.
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCancelDialogOpen(false)}>
+              Back
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={!cancelReason || cancelProduction.isPending}
+              onClick={() => {
+                cancelProduction.mutate(
+                  {
+                    data: {
+                      productionRunId: run.id,
+                      reason: cancelReason,
+                    },
+                  },
+                  {
+                    onSuccess: () => {
+                      setCancelDialogOpen(false);
+                      setCancelReason("");
+                      toast.error("Production run cancelled.");
+                    },
+                  },
+                );
+              }}
+            >
+              {cancelProduction.isPending
+                ? "Cancelling..."
+                : "Confirm Failure/Cancel"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }
 
-const Progress = ({ value, className }: { value: number, className?: string }) => (
-    <div className={`w-full bg-secondary rounded-full overflow-hidden ${className}`}>
-        <div
-            className="h-full bg-primary transition-all duration-500 ease-in-out"
-            style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
-        />
-    </div>
+const Progress = ({
+  value,
+  className,
+}: {
+  value: number;
+  className?: string;
+}) => (
+  <div
+    className={`w-full bg-secondary rounded-full overflow-hidden ${className}`}
+  >
+    <div
+      className="h-full bg-primary transition-all duration-500 ease-in-out"
+      style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+    />
+  </div>
 );

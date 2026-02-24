@@ -7,18 +7,18 @@ import { notFound } from "@tanstack/react-router";
 import { requireAuthMiddleware } from "@/lib/middlewares";
 
 export const getEmployeeFn = createServerFn()
-    .middleware([requireAuthMiddleware])
-    .inputValidator(z.object({ id: z.string() }))
-    .handler(async ({ data }) => {
-        const result = await db
-            .select()
-            .from(employees)
-            .where(eq(employees.id, data.id))
-            .limit(1);
+  .middleware([requireAuthMiddleware])
+  .inputValidator(z.object({ id: z.string() }))
+  .handler(async ({ data }) => {
+    const result = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.id, data.id))
+      .limit(1);
 
-        if (!result.length) {
-            throw notFound();
-        }
+    if (!result.length) {
+      throw notFound();
+    }
 
-        return result[0];
-    });
+    return result[0];
+  });

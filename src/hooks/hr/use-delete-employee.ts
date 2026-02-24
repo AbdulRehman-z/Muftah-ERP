@@ -3,17 +3,17 @@ import { deleteEmployeeFn } from "@/server-functions/hr/employees/delete-employe
 import { toast } from "sonner";
 
 export const useDeleteEmployee = () => {
-    const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn: deleteEmployeeFn,
-        onSuccess: () => {
-            toast.success("Employee deleted successfully");
-            queryClient.invalidateQueries({ queryKey: ["employees"] });
-        },
-        onError: (error) => {
-            console.error(error);
-            toast.error("Failed to delete employee");
-        },
-    });
+  return useMutation({
+    mutationFn: deleteEmployeeFn,
+    onSuccess: () => {
+      toast.success("Employee deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+    },
+    onError: (error) => {
+      console.error(error);
+      toast.error("Failed to delete employee");
+    },
+  });
 };

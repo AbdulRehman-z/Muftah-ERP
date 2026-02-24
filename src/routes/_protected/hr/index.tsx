@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_protected/hr/")({
-	component: RouteComponent,
+  component: RouteComponent,
 });
 
 function RouteComponent() {
-	return <div>Hello "/hr/"!</div>;
+  return <div>Hello "/hr/"!</div>;
 }
 
 // import { zodResolver } from "@hookform/resolvers/zod";
