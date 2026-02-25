@@ -221,7 +221,33 @@ export const previewEmployeePayslipFn = createServerFn()
       dutyHours: record.dutyHours,
       overtimeHours: record.overtimeHours,
       isNightShift: record.isNightShift || false,
+      isApprovedLeave: record.isApprovedLeave ?? false,
+      leaveType: record.leaveType ?? null,
+      overtimeStatus: record.overtimeStatus ?? "pending",
     }));
+
+    let advanceDeduction = data.additionalAmounts?.advanceDeduction ?? 0;
+
+    // Auto-fetch pending advances if manual override is not strictly > 0
+    if (advanceDeduction === 0) {
+      const pendingAdvances = await db.query.salaryAdvances.findMany({
+        where: (table, { and, eq }) => and(
+          eq(table.employeeId, employeeId),
+          eq(table.status, "approved"),
+        ),
+      });
+      // Sum all approved but not deducted advances
+      const notYetDeducted = pendingAdvances.filter((a) => !a.deductedInPayslipId);
+      advanceDeduction = notYetDeducted.reduce(
+        (sum, a) => sum + parseFloat(a.amount || "0"),
+        0,
+      );
+    }
+
+    const mergedAdditional = {
+      ...(data.additionalAmounts || {}),
+      advanceDeduction,
+    };
 
     const calculation = calculatePayslip(
       employeeData as any,
@@ -231,7 +257,7 @@ export const previewEmployeePayslipFn = createServerFn()
         manualDeductions: data.manualDeductions || [],
         deductConveyanceOnLeave: true,
       },
-      data.additionalAmounts,
+      mergedAdditional,
     );
 
     // Fetch missed payslip info for previous month

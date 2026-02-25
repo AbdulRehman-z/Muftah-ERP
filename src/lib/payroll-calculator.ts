@@ -72,7 +72,11 @@ export type PayslipCalculation = {
   daysLeave: number; // approved paid leaves
   daysUnapprovedLeave: number; // unpaid / unapproved
   daysSickLeave: number; // sick leaves (no salary deduction but count in Bradford)
+  daysCasualLeave: number;
+  daysAnnualLeave: number;
+  daysSpecialLeave: number;
   daysHalfDay: number;
+  unmarkedDays: number; // dynamically computed missing days
   totalOvertimeHours: number;
   totalUndertimeHours: number;
   nightShiftsCount: number;
@@ -403,18 +407,35 @@ export function calculatePayslip(
   const daysAbsent = attendanceRecords.filter(
     (r) => r.status === "absent",
   ).length;
+  // All approved leaves combined
   const daysLeave = attendanceRecords.filter(
     (r) => r.status === "leave" && r.isApprovedLeave,
   ).length;
+  // Unapproved leaves
   const daysUnapprovedLeave = attendanceRecords.filter(
     (r) => r.status === "leave" && !r.isApprovedLeave,
   ).length;
+  // Specific leave type counters
   const daysSickLeave = attendanceRecords.filter(
     (r) => r.status === "leave" && r.leaveType === "sick",
   ).length;
+  const daysCasualLeave = attendanceRecords.filter(
+    (r) => r.status === "leave" && r.leaveType === "casual",
+  ).length;
+  const daysAnnualLeave = attendanceRecords.filter(
+    (r) => r.status === "leave" && r.leaveType === "annual",
+  ).length;
+  const daysSpecialLeave = attendanceRecords.filter(
+    (r) => r.status === "leave" && r.leaveType === "special",
+  ).length;
+
   const daysHalfDay = attendanceRecords.filter(
     (r) => r.status === "half_day",
   ).length;
+
+  // Track any missing records
+  // "unmarkedDays" occur if an admin did not input *any* attendance record for a working day
+  const unmarkedDays = Math.max(0, totalWorkingDays - (daysPresent + daysAbsent + daysLeave + daysUnapprovedLeave + daysHalfDay));
 
   // Only approved overtime counts toward pay
   const totalOvertimeHours = sumApprovedOvertimeHours(attendanceRecords);
@@ -469,7 +490,7 @@ export function calculatePayslip(
     incentiveAmount +
     bonusAmount;
 
-  // Deductions
+  // Flat Deductions (Total flat deductions outside of attendance)
   const manualDeductionsTotal = deductionConfig.manualDeductions.reduce(
     (s, d) => s + d.amount,
     0,
@@ -477,13 +498,8 @@ export function calculatePayslip(
   const advanceDeduction = additionalAmounts.advanceDeduction || 0;
   const taxDeduction = additionalAmounts.taxDeduction || 0;
   const otherDeduction = manualDeductionsTotal;
-  // Include absent + leave deductions in total
-  const totalDeductions =
-    absentDeduction +
-    leaveDeduction +
-    advanceDeduction +
-    taxDeduction +
-    otherDeduction;
+
+  const totalDeductions = advanceDeduction + taxDeduction + otherDeduction;
 
   const netSalary = Math.max(0, grossSalary - totalDeductions);
 
@@ -514,7 +530,11 @@ export function calculatePayslip(
     daysLeave,
     daysUnapprovedLeave,
     daysSickLeave,
+    daysCasualLeave,
+    daysAnnualLeave,
+    daysSpecialLeave,
     daysHalfDay,
+    unmarkedDays,
     totalOvertimeHours: +totalOvertimeHours.toFixed(2),
     totalUndertimeHours,
     nightShiftsCount,

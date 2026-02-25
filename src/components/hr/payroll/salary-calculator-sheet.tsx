@@ -1,5 +1,6 @@
 import { ResponsiveSheet } from "@/components/custom/responsive-sheet";
 import { Calculator } from "lucide-react";
+import { SalaryCalculatorForm } from "./salary-calculator-form";
 
 interface SalaryCalculatorSheetProps {
   employeeId: string | null;

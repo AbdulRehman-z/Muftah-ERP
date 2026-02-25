@@ -14,6 +14,28 @@ import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import React, { useState, type ChangeEvent } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { STANDARD_ALLOWANCES } from "@/lib/types/hr-types";
+import { Badge } from "@/components/ui/badge";
+import { ShieldAlert } from "lucide-react";
+
+// ── Allowance display name resolver ──────────────────────────────────────────
+// Builds a lookup from the STANDARD_ALLOWANCES constant. Falls back to
+// a title-cased version of the raw ID so custom/future allowances still
+// render nicely without requiring a code change.
+const ALLOWANCE_LABELS: Record<string, string> = Object.fromEntries(
+    STANDARD_ALLOWANCES.map((a) => [a.id, a.name]),
+);
+
+function getAllowanceLabel(id: string): string {
+    if (id === "basicSalary") return "Basic Salary";
+    return (
+        ALLOWANCE_LABELS[id] ??
+        id.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase())
+    );
+}
+
+/** Classify allowances that are never deducted for absences/leaves */
+const NON_DEDUCTIBLE_IDS = new Set(["fuel", "special", "nightShift"]);
 
 type SalaryCalculatorFormProps = {
     employeeId: string;
@@ -34,7 +56,7 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
             incentive: "",
             tax: "",
             advance: "",
-            overtimeMultiplier: "1.5",
+            overtimeMultiplier: "1.0",
             manualDeductions: [] as { description: string; amount: string }[],
         },
         onSubmit: async () => {
@@ -57,8 +79,8 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
             bonusAmount: parseFloat(formValues.bonus) || 0,
             incentiveAmount: parseFloat(formValues.incentive) || 0,
             taxDeduction: parseFloat(formValues.tax) || 0,
-            advanceDeduction: parseFloat(formValues.advance) || 0,
-            overtimeMultiplier: parseFloat(formValues.overtimeMultiplier) || 1.5,
+            advanceDeduction: formValues.advance === "" ? undefined : (parseFloat(formValues.advance) || 0),
+            overtimeMultiplier: parseFloat(formValues.overtimeMultiplier) || 1.0,
         }
     }, isOpen);
 
@@ -86,8 +108,8 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                 bonusAmount: Math.round(parseFloat(formValues.bonus) || 0),
                 incentiveAmount: Math.round(parseFloat(formValues.incentive) || 0),
                 taxDeduction: Math.round(parseFloat(formValues.tax) || 0),
-                advanceDeduction: Math.round(parseFloat(formValues.advance) || 0),
-                overtimeMultiplier: parseFloat(formValues.overtimeMultiplier) || 1.5,
+                advanceDeduction: formValues.advance === "" ? undefined : (parseFloat(formValues.advance) || 0),
+                overtimeMultiplier: parseFloat(formValues.overtimeMultiplier) || 1.0,
             }
         });
     };
@@ -181,7 +203,15 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                         value={Object.values(calculation.standardBreakdown).reduce((a, b) => a + b, 0)}
                                         tooltip="Sum of all fixed salary components"
                                     />
-                                    <SummaryRow label="Fuel & Special Allowances" value={calculation.fuelAllowance + calculation.specialAllowance} />
+                                    {/* Dynamic non-deductible allowances (fuel, special, etc.) */}
+                                    {(() => {
+                                        const nonDeductibleTotal = Object.entries(calculation.allowanceBreakdown)
+                                            .filter(([id]) => NON_DEDUCTIBLE_IDS.has(id))
+                                            .reduce((sum, [, val]) => sum + val, 0);
+                                        return nonDeductibleTotal > 0 ? (
+                                            <SummaryRow label="Fixed Allowances (non-deductible)" value={nonDeductibleTotal} />
+                                        ) : null;
+                                    })()}
                                     <SummaryRow label="Overtime Pay" value={calculation.overtimeAmount} highlight />
                                     <SummaryRow label="Bonus & Incentives" value={calculation.bonusAmount + calculation.incentiveAmount} highlight />
                                     <TableRow className="bg-muted/10 font-semibold">
@@ -208,7 +238,11 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                         tooltip="Loss of pay due to missing days or short hours"
                                     />
                                     <SummaryRow label="Income Tax" value={calculation.taxDeduction} isDeduction />
-                                    <SummaryRow label="Salary Advance Recovery" value={calculation.advanceDeduction} isDeduction />
+                                    <SummaryRow
+                                        label={formValues.advance === "" ? "Salary Advance Recovery (Auto)" : "Salary Advance Recovery"}
+                                        value={calculation.advanceDeduction}
+                                        isDeduction
+                                    />
                                     <SummaryRow label="Other Manual Deductions" value={calculation.otherDeduction} isDeduction />
                                     <TableRow className="bg-muted/10 font-semibold border-t">
                                         <TableCell className="py-2.5">Total Deductions</TableCell>
@@ -236,12 +270,12 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                 </TabsContent>
 
                 {/* ATTENDANCE TAB */}
-                <TabsContent value="attendance">
+                <TabsContent value="attendance" className="space-y-6">
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <StatCard
                             label="Total Job Days"
                             value={calculation.totalWorkingDays}
-                            tooltip="Standard working days in this cycle (Mon-Fri)"
+                            tooltip="Calendar days minus holidays in this cycle"
                         />
                         <StatCard
                             label="Present"
@@ -253,24 +287,78 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                             tooltip={calculation.daysPresent > calculation.totalWorkingDays ? "Includes working on weekends/holidays" : undefined}
                         />
                         <StatCard label="Absent" value={calculation.daysAbsent} className="bg-rose-50 border-rose-100 text-rose-700" />
-                        <StatCard label="Leaves" value={calculation.daysLeave} className="bg-amber-50 border-amber-100 text-amber-700" />
                         <StatCard label="Short Days" value={calculation.daysHalfDay} />
+                        <StatCard label="Unmarked Days" value={calculation.unmarkedDays} className={calculation.unmarkedDays > 0 ? "bg-rose-50 border-rose-500 text-rose-800 ring-2 ring-rose-500 animate-pulse" : ""} tooltip="Days with no attendance records! Please fix in Attendance." />
+
+                        <StatCard label="Casual Leave" value={calculation.daysCasualLeave} className="bg-amber-50 border-amber-100 text-amber-700" />
+                        <StatCard label="Annual Leave" value={calculation.daysAnnualLeave} className="bg-amber-50 border-amber-100 text-amber-700" />
+                        <StatCard label="Sick Leave" value={calculation.daysSickLeave} className="bg-amber-50 border-amber-100 text-amber-700" />
+                        <StatCard label="Special Leave" value={calculation.daysSpecialLeave} className="bg-amber-50 border-amber-100 text-amber-700" />
+                        <StatCard label="Unpaid Leave" value={calculation.daysUnapprovedLeave} className="bg-rose-50 border-rose-100 text-rose-700" tooltip="Conveyance deducted" />
                         <StatCard
                             label="Undertime (Hrs)"
                             value={calculation.totalUndertimeHours}
                             className={calculation.totalUndertimeHours > 0 ? "bg-amber-50 border-amber-100 text-amber-700" : ""}
                         />
-                        <StatCard label="Overtime (Hrs)" value={calculation.totalOvertimeHours} className="bg-blue-50 border-blue-100 text-blue-700 md:col-span-1" />
+                        <StatCard label="Overtime (Hrs)" value={calculation.totalOvertimeHours} className="bg-blue-50 border-blue-100 text-blue-700" />
                     </div>
 
                     {calculation.daysPresent > calculation.totalWorkingDays && (
-                        <div className="mt-4 p-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-xs flex items-center gap-2">
+                        <div className="p-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-xs flex items-center gap-2">
                             <Info className="size-4 shrink-0" />
-                            Employee worked {calculation.daysPresent - calculation.totalWorkingDays} extra days beyond the standard job cycle.
+                            Employee worked {calculation.daysPresent - calculation.totalWorkingDays} extra day(s) beyond the standard job cycle.
                         </div>
                     )}
 
-                    <p className="text-[10px] text-center text-muted-foreground mt-8 border-t pt-2 uppercase font-medium tracking-widest">
+                    {/* Bradford Factor */}
+                    <Card>
+                        <CardHeader className="py-2 px-4 border-b bg-muted/30">
+                            <CardTitle className="text-xs font-bold uppercase text-muted-foreground tracking-wider flex items-center gap-2">
+                                <ShieldAlert className="size-3.5" />
+                                Bradford Factor
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <p className="text-xs text-muted-foreground">Absence pattern score (B = S² × D)</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Period: {calculation.bradfordFactorPeriod}
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <p className={cn(
+                                        "text-3xl font-extrabold tracking-tight",
+                                        calculation.bradfordFactorScore === 0 && "text-emerald-600",
+                                        calculation.bradfordFactorScore > 0 && calculation.bradfordFactorScore < 50 && "text-amber-600",
+                                        calculation.bradfordFactorScore >= 50 && calculation.bradfordFactorScore < 250 && "text-orange-600",
+                                        calculation.bradfordFactorScore >= 250 && "text-rose-600",
+                                    )}>
+                                        {calculation.bradfordFactorScore}
+                                    </p>
+                                    <Badge
+                                        variant="outline"
+                                        className={cn(
+                                            "text-[10px] mt-1",
+                                            calculation.bradfordFactorScore === 0 && "border-emerald-200 text-emerald-700 bg-emerald-50",
+                                            calculation.bradfordFactorScore > 0 && calculation.bradfordFactorScore < 50 && "border-amber-200 text-amber-700 bg-amber-50",
+                                            calculation.bradfordFactorScore >= 50 && calculation.bradfordFactorScore < 250 && "border-orange-200 text-orange-700 bg-orange-50",
+                                            calculation.bradfordFactorScore >= 250 && "border-rose-200 text-rose-700 bg-rose-50",
+                                        )}
+                                    >
+                                        {calculation.bradfordFactorScore === 0 ? "Excellent" : calculation.bradfordFactorScore < 50 ? "Acceptable" : calculation.bradfordFactorScore < 250 ? "Concerning" : "Critical"}
+                                    </Badge>
+                                </div>
+                            </div>
+                            <div className="mt-3 pt-3 border-t text-[10px] text-muted-foreground space-y-0.5">
+                                <p><strong>S</strong> = number of separate absence spells (consecutive absents count as 1 spell)</p>
+                                <p><strong>D</strong> = total absent-equivalent days (half-days count as 0.5)</p>
+                                <p>Thresholds: 0 = Excellent, &lt;50 = Acceptable, &lt;250 = Concerning, 250+ = Critical</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <p className="text-[10px] text-center text-muted-foreground border-t pt-2 uppercase font-medium tracking-widest">
                         Verified Attendance Records
                     </p>
                 </TabsContent>
@@ -289,7 +377,7 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                                     <Info className="size-3 text-muted-foreground" />
                                                 </TooltipTrigger>
                                                 <TooltipContent className="max-w-[200px] text-xs">
-                                                    Standard is 1.5x of hourly basic rate. Change here if required.
+                                                    Standard is 1.0x of hourly basic rate. Change here if overtime payout should be at 1.5x or 2.0x.
                                                 </TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>
@@ -299,7 +387,7 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                         step="0.1"
                                         value={field.state.value}
                                         onChange={(e: ChangeEvent<HTMLInputElement>) => field.handleChange(e.target.value)}
-                                        placeholder="1.5"
+                                        placeholder="1.0"
                                         className="w-24 border-primary/30"
                                     />
                                 </Field>
@@ -448,7 +536,7 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                         </div>
                     </CalcSection>
 
-                    {/* Step 2: Salary Component Breakdown */}
+                    {/* Step 2: Salary Component Breakdown — fully dynamic */}
                     <CalcSection step="Step 2" title="Salary Component Breakdown" color="slate">
                         <div className="overflow-x-auto">
                             <table className="w-full text-xs border-collapse">
@@ -461,76 +549,95 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border/50">
-                                    {[
-                                        { label: "Basic Salary (50%)", std: calculation.standardBreakdown.basicSalary, adj: calculation.basicSalary },
-                                        { label: "House Rent (20%)", std: calculation.standardBreakdown.houseRentAllowance, adj: calculation.houseRentAllowance },
-                                        { label: "Utilities (15%)", std: calculation.standardBreakdown.utilitiesAllowance, adj: calculation.utilitiesAllowance },
-                                        { label: "Bike Maintenance (10%)", std: calculation.standardBreakdown.bikeMaintenanceAllowance, adj: calculation.bikeMaintenanceAllowance },
-                                        { label: "Mobile Allowance (5%)", std: calculation.standardBreakdown.mobileAllowance, adj: calculation.mobileAllowance },
-                                        { label: "Conveyance (fixed)", std: calculation.standardBreakdown.conveyanceAllowance, adj: calculation.conveyanceAllowance },
-                                    ].map(({ label, std, adj }) => {
-                                        const deducted = std - adj;
-                                        return (
-                                            <tr key={label} className="hover:bg-muted/20">
-                                                <td className="py-1.5 px-2 text-muted-foreground">{label}</td>
-                                                <td className="py-1.5 px-2 text-right font-mono">{Math.round(std).toLocaleString()}</td>
-                                                <td className={`py-1.5 px-2 text-right font-mono ${deducted > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
-                                                    {deducted > 0 ? `- ${Math.round(deducted).toLocaleString()}` : "—"}
-                                                </td>
-                                                <td className="py-1.5 px-2 text-right font-mono font-semibold text-emerald-700">{Math.round(adj).toLocaleString()}</td>
-                                            </tr>
-                                        );
-                                    })}
-                                    {calculation.fuelAllowance > 0 && (
-                                        <tr className="hover:bg-muted/20">
-                                            <td className="py-1.5 px-2 text-muted-foreground">Fuel Allowance (fixed)</td>
-                                            <td className="py-1.5 px-2 text-right font-mono">{Math.round(calculation.fuelAllowance).toLocaleString()}</td>
-                                            <td className="py-1.5 px-2 text-right text-muted-foreground">—</td>
-                                            <td className="py-1.5 px-2 text-right font-mono font-semibold text-emerald-700">{Math.round(calculation.fuelAllowance).toLocaleString()}</td>
-                                        </tr>
-                                    )}
-                                    {calculation.specialAllowance > 0 && (
-                                        <tr className="hover:bg-muted/20">
-                                            <td className="py-1.5 px-2 text-muted-foreground">Special Allowance (fixed)</td>
-                                            <td className="py-1.5 px-2 text-right font-mono">{Math.round(calculation.specialAllowance).toLocaleString()}</td>
-                                            <td className="py-1.5 px-2 text-right text-muted-foreground">—</td>
-                                            <td className="py-1.5 px-2 text-right font-mono font-semibold text-emerald-700">{Math.round(calculation.specialAllowance).toLocaleString()}</td>
-                                        </tr>
-                                    )}
+                                    {Object.entries(calculation.standardBreakdown)
+                                        .filter(([, stdVal]) => stdVal > 0)
+                                        .map(([id, stdVal]) => {
+                                            const adjVal = calculation.allowanceBreakdown[id] ?? stdVal;
+                                            const deducted = stdVal - adjVal;
+                                            const isFixed = NON_DEDUCTIBLE_IDS.has(id);
+                                            return (
+                                                <tr key={id} className="hover:bg-muted/20">
+                                                    <td className="py-1.5 px-2 text-muted-foreground">
+                                                        {getAllowanceLabel(id)}
+                                                        {isFixed && (
+                                                            <span className="ml-1.5 text-[9px] text-muted-foreground/60 italic">(non-deductible)</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-1.5 px-2 text-right font-mono">{Math.round(stdVal).toLocaleString()}</td>
+                                                    <td className={`py-1.5 px-2 text-right font-mono ${deducted > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                                                        {deducted > 0 ? `- ${Math.round(deducted).toLocaleString()}` : "—"}
+                                                    </td>
+                                                    <td className="py-1.5 px-2 text-right font-mono font-semibold text-emerald-700">{Math.round(adjVal).toLocaleString()}</td>
+                                                </tr>
+                                            );
+                                        })}
                                 </tbody>
                             </table>
                         </div>
                         <div className="mt-2 p-2.5 bg-muted/30 rounded-lg text-xs text-muted-foreground">
-                            <span className="font-semibold text-foreground">Note:</span> Fuel & Special Allowances are never deducted for absences or leaves.
+                            <span className="font-semibold text-foreground">Note:</span> Non-deductible allowances (Fuel, Special, Night Shift) are never reduced for absences or leaves.
                         </div>
                     </CalcSection>
 
-                    {/* Step 3: Attendance Deductions Breakdown */}
+                    {/* Step 3: Attendance Deductions Breakdown — clean stacked layout */}
                     <CalcSection step="Step 3" title="Attendance Deduction Rules Applied" color="rose">
-                        <div className="space-y-2 text-xs">
-                            <div className="grid grid-cols-3 gap-1 text-muted-foreground font-semibold border-b pb-1">
-                                <span>Type</span><span className="text-center">Count</span><span className="text-right">Formula</span>
-                            </div>
-                            <div className="grid grid-cols-3 gap-1 items-center py-1 border-b border-dashed border-border/50">
-                                <span className="font-medium">Full Day Absent</span>
-                                <span className="text-center font-mono">{calculation.daysAbsent}×</span>
-                                <span className="text-right text-muted-foreground font-mono">{calculation.daysAbsent} × Per Day (Basic+HRA+Util+Bike+Mobile)</span>
-                            </div>
-                            <div className="grid grid-cols-3 gap-1 items-center py-1 border-b border-dashed border-border/50">
-                                <span className="font-medium">Half Day</span>
-                                <span className="text-center font-mono">{calculation.daysHalfDay}×</span>
-                                <span className="text-right text-muted-foreground font-mono">{calculation.daysHalfDay} × 0.5 × Per Day (same 5 components)</span>
-                            </div>
-                            <div className="grid grid-cols-3 gap-1 items-center py-1 border-b border-dashed border-border/50">
-                                <span className="font-medium">Undertime</span>
-                                <span className="text-center font-mono">{calculation.totalUndertimeHours} hrs</span>
-                                <span className="text-right text-muted-foreground font-mono">{calculation.totalUndertimeHours} × {calculation.calculationMeta.perHourBasic.toFixed(2)} (Basic only)</span>
-                            </div>
-                            <div className="grid grid-cols-3 gap-1 items-center py-1">
-                                <span className="font-medium">Unpaid Leave</span>
-                                <span className="text-center font-mono">{calculation.daysLeave}×</span>
-                                <span className="text-right text-muted-foreground font-mono">{calculation.daysLeave} × Per Day Conveyance (only)</span>
-                            </div>
+                        <div className="space-y-3 text-xs">
+                            {/* Full Day Absent */}
+                            {calculation.daysAbsent > 0 && (
+                                <div className="p-3 rounded-lg border border-rose-100 bg-rose-50/50 space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-semibold text-rose-800">Full Day Absent</span>
+                                        <Badge variant="outline" className="text-[10px] border-rose-200 text-rose-700 bg-white">{calculation.daysAbsent} day(s)</Badge>
+                                    </div>
+                                    <p className="text-muted-foreground font-mono leading-relaxed">
+                                        {calculation.daysAbsent} × Per Day Rate (Basic + all allowances except Fuel & Special)
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Half Day */}
+                            {calculation.daysHalfDay > 0 && (
+                                <div className="p-3 rounded-lg border border-amber-100 bg-amber-50/50 space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-semibold text-amber-800">Half Day</span>
+                                        <Badge variant="outline" className="text-[10px] border-amber-200 text-amber-700 bg-white">{calculation.daysHalfDay} day(s)</Badge>
+                                    </div>
+                                    <p className="text-muted-foreground font-mono leading-relaxed">
+                                        {calculation.daysHalfDay} × 50% × Per Day Rate (same components, except Conveyance)
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Undertime */}
+                            {calculation.totalUndertimeHours > 0 && (
+                                <div className="p-3 rounded-lg border border-orange-100 bg-orange-50/50 space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-semibold text-orange-800">Undertime (Short Hours)</span>
+                                        <Badge variant="outline" className="text-[10px] border-orange-200 text-orange-700 bg-white">{calculation.totalUndertimeHours} hrs</Badge>
+                                    </div>
+                                    <p className="text-muted-foreground font-mono leading-relaxed">
+                                        {calculation.totalUndertimeHours} hrs × PKR {calculation.calculationMeta.perHourBasic.toFixed(2)} per hour (Basic salary only)
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Unpaid Leave */}
+                            {calculation.daysUnapprovedLeave > 0 && (
+                                <div className="p-3 rounded-lg border border-violet-100 bg-violet-50/50 space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-semibold text-violet-800">Unpaid / Unapproved Leave</span>
+                                        <Badge variant="outline" className="text-[10px] border-violet-200 text-violet-700 bg-white">{calculation.daysUnapprovedLeave} day(s)</Badge>
+                                    </div>
+                                    <p className="text-muted-foreground font-mono leading-relaxed">
+                                        {calculation.daysUnapprovedLeave} × Per Day Conveyance only
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Empty state */}
+                            {calculation.daysAbsent === 0 && calculation.daysHalfDay === 0 && calculation.totalUndertimeHours === 0 && calculation.daysUnapprovedLeave === 0 && (
+                                <p className="text-muted-foreground italic py-2 text-center">No attendance deductions this cycle. 🎉</p>
+                            )}
                         </div>
                         <div className="mt-3 flex items-center justify-between p-2.5 bg-rose-50 border border-rose-100 rounded-lg">
                             <span className="text-xs font-semibold text-rose-800">Total Attendance Deduction</span>
@@ -559,17 +666,19 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                     {/* Step 5: Gross Salary Build-up */}
                     <CalcSection step={calculation.totalOvertimeHours > 0 ? "Step 5" : "Step 4"} title="Gross Salary Build-up" color="emerald">
                         <div className="space-y-1 text-xs font-mono">
+                            {/* Dynamic: all adjusted allowances from allowanceBreakdown */}
+                            {Object.entries(calculation.allowanceBreakdown)
+                                .filter(([id, val]) => val > 0 && id !== "nightShift")
+                                .map(([id, val]) => (
+                                    <div key={id} className="flex justify-between py-0.5 border-b border-dashed border-border/40">
+                                        <span className="text-muted-foreground">+ {getAllowanceLabel(id)}</span>
+                                        <span>{Math.round(val).toLocaleString()}</span>
+                                    </div>
+                                ))}
+                            {/* Extras: overtime, night shift, incentive, bonus */}
                             {[
-                                { label: "Adjusted Basic", val: calculation.basicSalary },
-                                { label: "Adjusted House Rent", val: calculation.houseRentAllowance },
-                                { label: "Adjusted Utilities", val: calculation.utilitiesAllowance },
-                                { label: "Adjusted Bike Maintenance", val: calculation.bikeMaintenanceAllowance },
-                                { label: "Adjusted Mobile", val: calculation.mobileAllowance },
-                                { label: "Adjusted Conveyance", val: calculation.conveyanceAllowance },
-                                { label: "Fuel Allowance", val: calculation.fuelAllowance },
-                                { label: "Special Allowance", val: calculation.specialAllowance },
                                 { label: "Overtime Pay", val: calculation.overtimeAmount },
-                                { label: "Night Shift Allowance", val: calculation.nightShiftAllowance },
+                                { label: "Night Shift Allowance", val: calculation.nightShiftAllowanceAmount },
                                 { label: "Incentive / Arrears", val: calculation.incentiveAmount },
                                 { label: "Bonus", val: calculation.bonusAmount },
                             ].filter(r => r.val > 0).map(({ label, val }) => (
@@ -633,7 +742,7 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
             </Tabs>
 
             {/* Footer Actions */}
-            <div className="flex gap-3 pt-6 border-t mt-auto sticky bottom-0 bg-background/80 backdrop-blur-sm pb-4">
+            <div className="flex flex-col gap-3 pt-6 border-t mt-auto sticky bottom-0 bg-background/80 backdrop-blur-sm pb-4">
                 <Button variant="outline" className="w-full" onClick={onSuccess} disabled={saveMutation.isPending}>
                     Cancel
                 </Button>
