@@ -59,15 +59,17 @@ export const logProductionProgressFn = createServerFn()
       }
 
       // ===== GUARD: Enforce full cartons if recipe has carton packaging =====
+      // Exception: Allow partial last carton when remaining < containersPerCarton
       if (
         recipe.cartonPackagingId &&
         recipe.containersPerCarton &&
         recipe.containersPerCarton > 0
       ) {
-        if (data.unitsProduced % recipe.containersPerCarton !== 0) {
+        const isPartialLastCarton = remaining < recipe.containersPerCarton && data.unitsProduced === remaining;
+        if (data.unitsProduced % recipe.containersPerCarton !== 0 && !isPartialLastCarton) {
           throw new Error(
             `Units must be packed in full cartons. Each carton holds ${recipe.containersPerCarton} units. ` +
-              `You entered ${data.unitsProduced} which is not a multiple of ${recipe.containersPerCarton}.`,
+            `You entered ${data.unitsProduced} which is not a multiple of ${recipe.containersPerCarton}.`,
           );
         }
       }

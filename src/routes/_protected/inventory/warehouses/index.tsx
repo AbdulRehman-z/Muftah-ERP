@@ -36,7 +36,6 @@ function RouteComponent() {
             }
           >
             <InventoryContainer />
-            {/*<UsersTable />*/}
           </Suspense>
         </div>
       </div>

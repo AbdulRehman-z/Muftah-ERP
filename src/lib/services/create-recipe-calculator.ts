@@ -20,7 +20,7 @@ export function calculateRecipeCost(recipe: RecipeWithDetails) {
     return (
       sum +
       parseFloat(ing.quantityPerBatch) *
-        parseFloat(ing.chemical.costPerUnit || "0")
+      parseFloat(ing.chemical.costPerUnit || "0")
     );
   }, 0);
 
@@ -53,7 +53,7 @@ export function calculateRecipeCost(recipe: RecipeWithDetails) {
 
   // Additional packaging per container (caps, stickers, etc.)
   const additionalPackagingCost = recipe.packaging.reduce((sum, pkg) => {
-    const qtyNeeded = totalContainers * pkg.quantityPerContainer;
+    const qtyNeeded = Math.round(totalContainers * pkg.quantityPerContainer);
     return (
       sum + qtyNeeded * parseFloat(pkg.packagingMaterial.costPerUnit || "0")
     );
@@ -61,7 +61,7 @@ export function calculateRecipeCost(recipe: RecipeWithDetails) {
 
   // Carton cost
   const totalCartons = recipe.containersPerCarton
-    ? Math.floor(totalContainers / recipe.containersPerCarton)
+    ? Math.ceil(totalContainers / recipe.containersPerCarton)
     : 0;
   const cartonCost = recipe.cartonPackaging
     ? totalCartons * parseFloat(recipe.cartonPackaging.costPerUnit || "0")

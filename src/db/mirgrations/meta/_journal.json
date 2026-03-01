@@ -22,6 +22,20 @@
       "when": 1771917232012,
       "tag": "0002_careless_roland_deschain",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1772014450363,
+      "tag": "0003_round_proemial_gods",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1772027465767,
+      "tag": "0004_skinny_husk",
+      "breakpoints": true
     }
   ]
 }

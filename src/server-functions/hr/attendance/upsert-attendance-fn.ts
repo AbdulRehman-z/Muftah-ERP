@@ -86,8 +86,8 @@ export const upsertAttendanceFn = createServerFn()
       isLate: rest.isLate ?? false,
       isNightShift: rest.isNightShift ?? false,
       isApprovedLeave: rest.isApprovedLeave ?? false,
-      leaveType:
-        rest.status === "leave" ? ((rest as any).leaveType ?? null) : null,
+      leaveType: rest.status === "leave" ? (rest.leaveType ?? null) : null,
+      earlyDepartureStatus: rest.earlyDepartureStatus ?? null,
       overtimeRemarks: rest.overtimeRemarks || null,
       overtimeStatus: rest.overtimeStatus || "pending",
       entrySource: rest.entrySource || "manual",

@@ -1,82 +1,93 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { listSalaryAdvancesFn } from "@/server-functions/hr/advances/advances-fn";
 import { useState, useMemo } from "react";
-import {
-  ColumnDef,
-  useReactTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  flexRender,
-} from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { RequestAdvanceDialog } from "./request-advance-dialog";
 import { ApproveAdvanceDialog } from "./approve-advance-dialog";
 import { useRejectSalaryAdvance } from "@/hooks/hr/use-salary-advances";
 import {
   Search,
-  Wallet,
   CheckCircle2,
   Clock,
   XCircle,
   Plus,
+  Receipt,
+  TrendingUp,
 } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { GenericEmpty } from "@/components/custom/empty";
 import { format, parseISO } from "date-fns";
+import { cn } from "@/lib/utils";
+import { DataTable } from "@/components/ui/data-table";
+
+// ── Status config ─────────────────────────────────────────────────────────
+
+const statusConfig: Record<string, { label: string; className: string }> = {
+  pending: { label: "Pending", className: "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800/30" },
+  approved: { label: "Approved", className: "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/30" },
+  deducted: { label: "Deducted", className: "bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-800/30" },
+  rejected: { label: "Rejected", className: "bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800/30" },
+};
 
 export function AdvancesContainer() {
-  const [globalFilter, setGlobalFilter] = useState("");
   const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [approveId, setApproveId] = useState<string | null>(null);
   const [approveAmount, setApproveAmount] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const rejectMutate = useRejectSalaryAdvance();
 
-  // Fetch advance requests
   const { data: advances } = useSuspenseQuery({
     queryKey: ["salary-advances"],
-    queryFn: () => listSalaryAdvancesFn({ data: { limit: 100 } }),
+    queryFn: () => listSalaryAdvancesFn({ data: { limit: 200 } }),
   });
 
-  // KPI data
+  // ── KPI stats ─────────────────────────────────────────────────────────────
+  const pendingCount = advances.filter((a) => a.status === "pending").length;
   const pendingSum = advances
     .filter((a) => a.status === "pending")
     .reduce((s, a) => s + parseFloat(a.amount), 0);
   const approvedSum = advances
     .filter((a) => a.status === "approved" || a.status === "deducted")
     .reduce((s, a) => s + parseFloat(a.amount), 0);
+  const totalSum = advances.reduce((s, a) => s + parseFloat(a.amount), 0);
 
-  const columns: ColumnDef<any>[] = useMemo(
+  // ── Client-side search filter ─────────────────────────────────────────────
+  const filteredAdvances = useMemo(() => {
+    if (!searchQuery.trim()) return advances;
+    const q = searchQuery.toLowerCase();
+    return advances.filter((a) => {
+      const emp = a.employee;
+      return (
+        `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(q) ||
+        emp.employeeCode.toLowerCase().includes(q) ||
+        a.reason?.toLowerCase().includes(q)
+      );
+    });
+  }, [advances, searchQuery]);
+
+  // ── Columns ───────────────────────────────────────────────────────────────
+  const columns: ColumnDef<(typeof advances)[number]>[] = useMemo(
     () => [
       {
-        accessorKey: "employee",
+        id: "employee",
         header: "Employee",
         cell: ({ row }) => {
           const emp = row.original.employee;
           return (
             <div className="flex items-center gap-3">
-              <Avatar className="h-9 w-9 border-2 border-background">
+              <Avatar className="h-8 w-8 border border-border shadow-sm">
                 <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">
-                  {emp.firstName[0]}
-                  {emp.lastName[0]}
+                  {emp.firstName[0]}{emp.lastName[0]}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
                 <span className="font-bold text-sm leading-tight">
                   {emp.firstName} {emp.lastName}
                 </span>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-tighter font-medium">
+                <span className="text-[10px] text-muted-foreground font-mono">
                   {emp.employeeCode}
                 </span>
               </div>
@@ -85,42 +96,43 @@ export function AdvancesContainer() {
         },
       },
       {
-        accessorKey: "date",
+        id: "date",
         header: "Request Date",
         cell: ({ row }) => (
           <div className="flex flex-col">
-            <span className="font-medium text-sm">
+            <span className="font-semibold text-sm">
               {format(parseISO(row.original.date), "dd MMM yyyy")}
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-[10px] text-muted-foreground line-clamp-1 max-w-[160px]">
               {row.original.reason}
             </span>
           </div>
         ),
       },
       {
-        accessorKey: "amount",
+        id: "amount",
         header: "Amount",
         cell: ({ row }) => (
-          <span className="font-bold text-sm">
+          <span className="font-black text-sm tabular-nums">
             PKR {parseFloat(row.original.amount).toLocaleString()}
           </span>
         ),
       },
       {
-        accessorKey: "status",
+        id: "status",
         header: "Status",
         cell: ({ row }) => {
-          const s = row.original.status;
-          const colors: any = {
-            pending: "bg-amber-100 text-amber-800 border-amber-200",
-            approved: "bg-emerald-100 text-emerald-800 border-emerald-200",
-            deducted: "bg-indigo-100 text-indigo-800 border-indigo-200",
-            rejected: "bg-rose-100 text-rose-800 border-rose-200",
-          };
+          const s = row.original.status as string;
+          const cfg = statusConfig[s] ?? { label: s, className: "" };
           return (
-            <Badge variant="outline" className={colors[s] || ""}>
-              {s.toUpperCase()}
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-[10px] font-bold uppercase px-2 py-0.5 h-5",
+                cfg.className,
+              )}
+            >
+              {cfg.label}
             </Badge>
           );
         },
@@ -130,30 +142,34 @@ export function AdvancesContainer() {
         header: "",
         cell: ({ row }) => {
           if (row.original.status !== "pending") return null;
-
           return (
             <div className="flex items-center gap-2 justify-end">
               <Button
                 size="sm"
-                variant="default"
-                className="h-8 gap-2 bg-emerald-600 hover:bg-emerald-700"
+                className="h-8 gap-1.5 bg-emerald-600 hover:bg-emerald-700"
                 onClick={() => {
                   setApproveAmount(row.original.amount);
                   setApproveId(row.original.id);
                 }}
               >
-                <CheckCircle2 className="size-3" /> Approve
+                <CheckCircle2 className="size-3" />
+                <span className="text-[10px] font-bold uppercase tracking-tight">
+                  Approve
+                </span>
               </Button>
               <Button
                 size="sm"
                 variant="destructive"
-                className="h-8 gap-2 px-3"
+                className="h-8 gap-1.5 px-3"
                 disabled={rejectMutate.isPending}
                 onClick={() =>
                   rejectMutate.mutate({ data: { advanceId: row.original.id } })
                 }
               >
-                <XCircle className="size-3" /> Reject
+                <XCircle className="size-3" />
+                <span className="text-[10px] font-bold uppercase tracking-tight">
+                  Reject
+                </span>
               </Button>
             </div>
           );
@@ -163,118 +179,68 @@ export function AdvancesContainer() {
     [rejectMutate],
   );
 
-  const table = useReactTable({
-    data: advances,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    state: { globalFilter },
-    onGlobalFilterChange: setGlobalFilter,
-  });
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input
-            placeholder="Search employee or code..."
-            value={globalFilter ?? ""}
-            onChange={(event) => setGlobalFilter(event.target.value)}
-            className="pl-10 h-11 bg-card shadow-xs border-muted-foreground/20 rounded-xl"
-          />
-        </div>
-        <Button
-          className="h-11  font-semibold tracking-tight"
-          onClick={() => setIsRequestOpen(true)}
-        >
-          <Plus className="mr-2 size-4" /> Request Advance
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* ── KPI Cards ──────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KPICard
-          title="Total Requested"
+          title="Total Requests"
           value={advances.length.toString()}
           subtext="Advances in history"
-          icon={Wallet}
+          icon={Receipt}
+          color="blue"
         />
         <KPICard
           title="Pending Approval"
-          value={`PKR ${pendingSum.toLocaleString()}`}
-          subtext={`${advances.filter((a) => a.status === "pending").length} requests waiting`}
+          value={`PKR ${Math.round(pendingSum).toLocaleString()}`}
+          subtext={`${pendingCount} request${pendingCount !== 1 ? "s" : ""} waiting`}
           icon={Clock}
-          color="text-amber-600"
+          color="amber"
         />
         <KPICard
           title="Total Paid Out"
-          value={`PKR ${approvedSum.toLocaleString()}`}
-          subtext="Deducted & Un-deducted"
+          value={`PKR ${Math.round(approvedSum).toLocaleString()}`}
+          subtext="Approved & Deducted"
           icon={CheckCircle2}
-          color="text-emerald-600"
+          color="emerald"
+        />
+        <KPICard
+          title="Grand Total"
+          value={`PKR ${Math.round(totalSum).toLocaleString()}`}
+          subtext="All time advance value"
+          icon={TrendingUp}
+          color="violet"
         />
       </div>
 
-      <div className="border border-muted-foreground/10 rounded-2xl bg-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader className="bg-muted/30">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow
-                  key={headerGroup.id}
-                  className="hover:bg-transparent border-b border-muted-foreground/10"
-                >
-                  {headerGroup.headers.map((header) => (
-                    <TableHead
-                      key={header.id}
-                      className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 py-4 h-14 first:pl-6 last:pr-6"
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    className="hover:bg-muted/30 transition-colors border-b border-muted-foreground/5 last:border-0"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell
-                        key={cell.id}
-                        className="py-2.5 text-sm first:pl-6 last:pr-6"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-64">
-                    <GenericEmpty
-                      icon={Search}
-                      title="No results found"
-                      description="No salary advances found or matching your search."
-                    />
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+      {/* ── DataTable ─────────────────────────────────────────────────── */}
+      <DataTable
+        columns={columns}
+        data={filteredAdvances}
+        showSearch
+        searchPlaceholder="Search employee or code..."
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        showViewOptions={false}
+        pageSize={7}
+        actions={
+          <Button
+            size="sm"
+            className="h-8 gap-1.5 font-semibold"
+            onClick={() => setIsRequestOpen(true)}
+          >
+            <Plus className="size-3.5" />
+            Request Advance
+          </Button>
+        }
+        emptyState={
+          <GenericEmpty
+            icon={Search}
+            title="No results found"
+            description="No salary advances matching your search."
+          />
+        }
+      />
 
       <RequestAdvanceDialog
         open={isRequestOpen}
@@ -290,41 +256,44 @@ export function AdvancesContainer() {
   );
 }
 
+// ── KPI Card ──────────────────────────────────────────────────────────────
+
+type KPIColor = "blue" | "emerald" | "amber" | "violet" | "rose";
+
+const kpiColorMap: Record<KPIColor, { bg: string; iconBg: string; icon: string; value: string }> = {
+  blue: { bg: "bg-blue-50 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/30", iconBg: "bg-blue-100 dark:bg-blue-900/40", icon: "text-blue-600", value: "text-blue-700 dark:text-blue-400" },
+  emerald: { bg: "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-800/30", iconBg: "bg-emerald-100 dark:bg-emerald-900/40", icon: "text-emerald-600", value: "text-emerald-700 dark:text-emerald-400" },
+  amber: { bg: "bg-amber-50 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/30", iconBg: "bg-amber-100 dark:bg-amber-900/40", icon: "text-amber-600", value: "text-amber-700 dark:text-amber-400" },
+  violet: { bg: "bg-violet-50 dark:bg-violet-950/20 border-violet-200/60 dark:border-violet-800/30", iconBg: "bg-violet-100 dark:bg-violet-900/40", icon: "text-violet-600", value: "text-violet-700 dark:text-violet-400" },
+  rose: { bg: "bg-rose-50 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-800/30", iconBg: "bg-rose-100 dark:bg-rose-900/40", icon: "text-rose-600", value: "text-rose-700 dark:text-rose-400" },
+};
+
 function KPICard({
   title,
   value,
   subtext,
   icon: Icon,
-  color = "text-foreground",
+  color = "blue",
 }: {
   title: string;
   value: string;
   subtext: string;
   icon: any;
-  color?: string;
+  color?: KPIColor;
 }) {
+  const c = kpiColorMap[color];
   return (
-    <Card>
-      <CardContent className="p-0">
-        <div className="p-6 relative">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-2.5 rounded-xl bg-primary/5 group-hover:bg-primary/10 transition-colors">
-              <Icon className="size-5 text-primary" />
-            </div>
-          </div>
-          <div className="space-y-1">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              {title}
-            </p>
-            <h3 className={`text-2xl font-black tracking-tight ${color}`}>
-              {value}
-            </h3>
-            <p className="text-xs font-semibold tracking-tight text-muted-foreground/70">
-              {subtext}
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className={cn("rounded-2xl border p-4 transition-all hover:shadow-md", c.bg)}>
+      <div className={cn("p-2 rounded-xl w-fit mb-3", c.iconBg)}>
+        <Icon className={cn("size-4", c.icon)} />
+      </div>
+      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+        {title}
+      </p>
+      <p className={cn("text-xl font-black tracking-tight leading-tight mb-1", c.value)}>
+        {value}
+      </p>
+      <p className="text-[10px] font-medium text-muted-foreground/70">{subtext}</p>
+    </div>
   );
 }

@@ -1,9 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
-import { payrolls, employees, payslips } from "@/db/schemas/hr-schema";
+import { payrolls, employees, payslips, salaryAdvances } from "@/db/schemas/hr-schema";
+import { wallets, transactions } from "@/db/schemas/finance-schema";
 import { requireAdminMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { eq, sql, inArray } from "drizzle-orm";
 import { format, parseISO, startOfMonth, subMonths, addDays } from "date-fns";
 import { generateEmployeePayslipCore } from "./core";
 import { createId } from "@paralleldrive/cuid2";
@@ -185,52 +186,116 @@ export const approvePayrollFn = createServerFn()
     return updated;
   });
 
+
 /**
- * Mark payroll as paid — deducts from finance wallet and creates ledger entry.
+ * Mark payroll as paid — debits from a finance wallet and logs a ledger transaction.
  */
 export const markPayrollAsPaidFn = createServerFn()
   .middleware([requireAdminMiddleware])
   .inputValidator(
     z.object({
       payrollId: z.string(),
+      walletId: z.string().min(1, "Please select a payment wallet"),
     }),
   )
-  .handler(async ({ data }) => {
-    const payroll = await db.query.payrolls.findFirst({
-      where: eq(payrolls.id, data.payrollId),
+  .handler(async ({ data, context }) => {
+    return await db.transaction(async (tx) => {
+      // 1. Get the payroll details
+      const payroll = await tx.query.payrolls.findFirst({
+        where: eq(payrolls.id, data.payrollId),
+      });
+
+      if (!payroll) throw new Error("Payroll not found");
+      if (payroll.status === "paid")
+        throw new Error("Payroll is already marked as paid");
+
+      const payrollAmount = parseFloat(payroll.totalAmount || "0");
+
+      // 2. Fetch wallet and validate balance
+      const [wallet] = await tx
+        .select()
+        .from(wallets)
+        .where(eq(wallets.id, data.walletId));
+
+      if (!wallet) throw new Error("Selected wallet not found");
+
+      const currentBalance = parseFloat(wallet.balance || "0");
+      if (currentBalance < payrollAmount) {
+        throw new Error(
+          `Insufficient balance in "${wallet.name}". Available: PKR ${currentBalance.toLocaleString()}, Required: PKR ${payrollAmount.toLocaleString()}`,
+        );
+      }
+
+      // 3. Debit the wallet
+      await tx
+        .update(wallets)
+        .set({
+          balance: sql`${wallets.balance} - ${payrollAmount}`,
+        })
+        .where(eq(wallets.id, data.walletId));
+
+      // 4. Create ledger transaction
+      await tx.insert(transactions).values({
+        id: createId(),
+        walletId: data.walletId,
+        type: "debit",
+        amount: payrollAmount.toString(),
+        source: `Payroll - ${format(parseISO(payroll.month), "MMM yyyy")}`,
+        referenceId: data.payrollId,
+        performedById: context.session.user.id,
+      });
+
+      // 5. Update the payroll record
+      const [updated] = await tx
+        .update(payrolls)
+        .set({
+          status: "paid",
+          walletId: data.walletId,
+          paidAt: new Date(),
+        })
+        .where(eq(payrolls.id, data.payrollId))
+        .returning();
+
+      return updated;
     });
-    if (!payroll) throw new Error("Payroll not found");
-    if (payroll.status === "paid")
-      throw new Error("Payroll is already marked as paid");
-
-    // Simple update without finance integration
-    const [updated] = await db
-      .update(payrolls)
-      .set({
-        status: "paid",
-        paidAt: new Date(),
-      })
-      .where(eq(payrolls.id, data.payrollId))
-      .returning();
-
-    return updated;
   });
 
 /**
- * Delete a payroll and all its payslips
+ * Delete a payroll and all its payslips.
+ * Also resets any salary advances that were deducted via this payroll's payslips
+ * so they can be recovered in the next payroll cycle.
  */
 export const deletePayrollFn = createServerFn()
   .middleware([requireAdminMiddleware])
   .inputValidator(z.object({ payrollId: z.string() }))
   .handler(async ({ data }) => {
-    // First delete payslips
-    await db.delete(payslips).where(eq(payslips.payrollId, data.payrollId));
+    return await db.transaction(async (tx) => {
+      // 1. Get all payslip IDs for this payroll
+      const payslipList = await tx.query.payslips.findMany({
+        where: eq(payslips.payrollId, data.payrollId),
+        columns: { id: true },
+      });
+      const payslipIds = payslipList.map((p) => p.id);
 
-    // Then delete
-    const [deleted] = await db
-      .delete(payrolls)
-      .where(eq(payrolls.id, data.payrollId))
-      .returning();
+      // 2. Reset salary advances that were deducted via these payslips.
+      //    Move them back to 'approved' so they'll be re-deducted in the next cycle.
+      if (payslipIds.length > 0) {
+        await tx
+          .update(salaryAdvances)
+          .set({ status: "approved", deductedInPayslipId: null })
+          .where(inArray(salaryAdvances.deductedInPayslipId, payslipIds));
+      }
 
-    return deleted;
+      // 3. Delete payslips
+      await tx.delete(payslips).where(eq(payslips.payrollId, data.payrollId));
+
+      // 4. Delete the payroll
+      const [deleted] = await tx
+        .delete(payrolls)
+        .where(eq(payrolls.id, data.payrollId))
+        .returning();
+
+      return deleted;
+    });
   });
+

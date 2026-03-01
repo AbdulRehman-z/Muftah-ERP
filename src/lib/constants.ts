@@ -16,6 +16,10 @@ import {
   Users,
   UsersIcon,
   WarehouseIcon,
+  WalletIcon,
+  ReceiptIcon,
+  BookOpenIcon,
+  LandmarkIcon,
 } from "lucide-react";
 
 export interface NavigationItem {
@@ -23,6 +27,7 @@ export interface NavigationItem {
   url: string;
   icon?: LucideIcon | React.ComponentType<any>;
   items?: NavigationItem[];
+  exact?: boolean;
 }
 
 export const navigations: NavigationItem[] = [
@@ -79,11 +84,35 @@ export const navigations: NavigationItem[] = [
         title: "New Invoice",
         url: "/sales/new-invoice",
         icon: ScrollText,
+        exact: true,
       },
       {
         title: "Customers",
         url: "/sales/customers",
         icon: UsersIcon,
+      },
+    ],
+  },
+  {
+    title: "Finance",
+    url: "/finance",
+    icon: LandmarkIcon,
+    items: [
+      {
+        title: "Accounts",
+        url: "/finance",
+        icon: WalletIcon,
+        exact: true,
+      },
+      {
+        title: "Expenses",
+        url: "/finance/expenses",
+        icon: ReceiptIcon,
+      },
+      {
+        title: "Ledger",
+        url: "/finance/ledger",
+        icon: BookOpenIcon,
       },
     ],
   },

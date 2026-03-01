@@ -12,10 +12,9 @@ import {
 } from "@/components/ui/select";
 import { useCreateSalaryAdvance } from "@/hooks/hr/use-salary-advances";
 
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { getEmployeesFn } from "@/server-functions/hr/employees/get-employees-fn";
 import { Loader2, HandCoins } from "lucide-react";
-import { format } from "date-fns";
 import { toast } from "sonner";
 
 export const RequestAdvanceDialog = ({
@@ -30,10 +29,11 @@ export const RequestAdvanceDialog = ({
   const [reason, setReason] = useState("");
   const mutate = useCreateSalaryAdvance();
 
-  // Get active employees
-  const { data: employees } = useSuspenseQuery({
+  // Get active employees — only load when dialog is open
+  const { data: employees = [], isLoading: isEmployeesLoading } = useQuery({
     queryKey: ["employees", "active"],
     queryFn: () => getEmployeesFn({ data: { status: "active" } }),
+    enabled: open,
   });
 
   // Reset when dialog opens
@@ -85,9 +85,9 @@ export const RequestAdvanceDialog = ({
           <label className="text-sm font-semibold text-slate-700">
             Employee <span className="text-destructive">*</span>
           </label>
-          <Select value={employeeId} onValueChange={setEmployeeId}>
-            <SelectTrigger className="h-11 ">
-              <SelectValue placeholder="Select an employee..." />
+          <Select value={employeeId} onValueChange={setEmployeeId} disabled={isEmployeesLoading}>
+            <SelectTrigger className="h-11">
+              <SelectValue placeholder={isEmployeesLoading ? "Loading employees..." : "Select an employee..."} />
             </SelectTrigger>
             <SelectContent>
               {employees.map((emp: any) => (

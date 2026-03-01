@@ -10,6 +10,8 @@ export const useMarkPayrollPaid = () => {
     onSuccess: () => {
       toast.success("Payroll marked as paid successfully");
       queryClient.invalidateQueries({ queryKey: ["payrolls"] });
+      queryClient.invalidateQueries({ queryKey: ["wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 };

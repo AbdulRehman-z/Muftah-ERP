@@ -31,7 +31,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useCreateRecipe } from "@/hooks/recipes/create-recipe-hook";
 import { getProductsFn } from "@/server-functions/inventory/get-products-fn";
 import { getMaterialsFn } from "@/server-functions/inventory/get-materials-fn";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { getWarehousesFn } from "@/server-functions/inventory/get-warehouses-fn";
 import { Badge } from "../ui/badge";
 import { getRecipesFn } from "@/server-functions/inventory/recipes/get-recipe-fn";
@@ -297,6 +297,7 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
   // Mass Balance Check
 
   // Auto-populate Carton Capacity if defined in Master Packaging
+  const mountTimeRef = useRef(Date.now());
   useEffect(() => {
     if (selectedCarton?.capacity && values.producedUnits > 0) {
       const definedCapacity = parseFloat(selectedCarton.capacity);
@@ -304,9 +305,14 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
       const neededCartons = Math.ceil(values.producedUnits / definedCapacity);
       if (cartonsCount !== neededCartons) {
         setCartonsCount(neededCartons);
-        toast.info(
-          `Carton count adjusted to ${neededCartons} based on standard capacity (${definedCapacity}/box)`,
-        );
+        // Only show toast for user-triggered changes, not initialization
+        // Guard for 500ms after mount to cover async form population re-renders
+        const isInitializing = Date.now() - mountTimeRef.current < 500;
+        if (!isInitializing) {
+          toast.info(
+            `Carton count adjusted to ${neededCartons} based on standard capacity (${definedCapacity}/box)`,
+          );
+        }
       }
     }
   }, [selectedCarton, values.producedUnits]);
@@ -404,7 +410,10 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
       );
       if (!material) return total;
       const costPerUnit = parseFloat(material.costPerUnit?.toString() || "0");
-      const totalQty = pkg.quantityPerContainer * (values.producedUnits || 0);
+      // Use Math.round to avoid floating-point precision errors
+      const totalQty = Math.round(
+        pkg.quantityPerContainer * (values.producedUnits || 0)
+      );
       return total + costPerUnit * totalQty;
     }, 0);
   }, [values.additionalPackaging, materials.packagings, values.producedUnits]);
@@ -465,9 +474,13 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
   const handleAddAdditionalPackaging = () => {
     if (!tempPackagingId || !tempPkgQty) return;
     const qty = parseFloat(tempPkgQty);
+    // For per_carton items (stickers), store the exact ratio using full precision
+    // cartonsCount / producedUnits gives us the per-unit ratio
     const finalQty =
       tempPkgUnit === "per_carton"
-        ? (qty * cartonsCount) / (values.producedUnits || 1)
+        ? cartonsCount > 0 && values.producedUnits > 0
+          ? (qty * cartonsCount) / values.producedUnits
+          : qty
         : qty;
 
     const validationResult = additionalPackagingItemSchema.safeParse({
@@ -562,7 +575,7 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
             className="min-w-[140px]"
           >
             {createRecipeMutation.isPending ||
-            updateRecipeMutation.isPending ? (
+              updateRecipeMutation.isPending ? (
               <Loader2 className="size-4 animate-spin mr-2" />
             ) : (
               <Save className="size-4 mr-2" />
@@ -644,35 +657,35 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
 
                         {(!massBalance.isStrictlyBalanced ||
                           massBalance.isUnitMismatch) && (
-                          <div className="mt-3 text-xs opacity-90 font-medium">
-                            <p>
-                              Yield is out of strict balance (99%-101%).
-                              {massBalance.isUnitMismatch
-                                ? " Likely unit mismatch (g vs kg)."
-                                : " Please verify inputs."}
-                            </p>
-                            {massBalance.isUnitMismatch && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="mt-2 h-7 text-xs bg-white border-destructive/30 hover:bg-destructive/5"
-                                onClick={() => {
-                                  form.setFieldValue(
-                                    "batchSize",
-                                    formatNumber(massBalance.suggestedBatch),
-                                  );
-                                  toast.success(
-                                    "Batch Size corrected based on yield.",
-                                  );
-                                }}
-                              >
-                                Fix Batch Size to{" "}
-                                {formatNumber(massBalance.suggestedBatch)}{" "}
-                                {values.batchUnit}
-                              </Button>
-                            )}
-                          </div>
-                        )}
+                            <div className="mt-3 text-xs opacity-90 font-medium">
+                              <p>
+                                Yield is out of strict balance (99%-101%).
+                                {massBalance.isUnitMismatch
+                                  ? " Likely unit mismatch (g vs kg)."
+                                  : " Please verify inputs."}
+                              </p>
+                              {massBalance.isUnitMismatch && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="mt-2 h-7 text-xs bg-white border-destructive/30 hover:bg-destructive/5"
+                                  onClick={() => {
+                                    form.setFieldValue(
+                                      "batchSize",
+                                      formatNumber(massBalance.suggestedBatch),
+                                    );
+                                    toast.success(
+                                      "Batch Size corrected based on yield.",
+                                    );
+                                  }}
+                                >
+                                  Fix Batch Size to{" "}
+                                  {formatNumber(massBalance.suggestedBatch)}{" "}
+                                  {values.batchUnit}
+                                </Button>
+                              )}
+                            </div>
+                          )}
                       </div>
                     )}
 
@@ -692,7 +705,7 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                               className={cn(
                                 "h-11 bg-background/50",
                                 field.state.meta.errors.length &&
-                                  "border-destructive",
+                                "border-destructive",
                               )}
                             >
                               <SelectValue placeholder="Select Product" />
@@ -724,7 +737,7 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                             className={cn(
                               "h-11",
                               field.state.meta.errors.length &&
-                                "border-destructive",
+                              "border-destructive",
                             )}
                           />
                           <FieldError errors={field.state.meta.errors} />
@@ -750,7 +763,7 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                                 className={cn(
                                   "w-full h-11 font-bold text-lg",
                                   field.state.meta.errors.length &&
-                                    "border-destructive",
+                                  "border-destructive",
                                 )}
                                 step="0.01"
                               />
@@ -997,7 +1010,7 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                                   className={cn(
                                     "",
                                     field.state.meta.errors.length &&
-                                      "border-destructive",
+                                    "border-destructive",
                                   )}
                                 >
                                   <SelectValue placeholder="Select primary container material..." />
@@ -1301,6 +1314,34 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                         </div>
                       )
                     )}
+
+                    {/* Loose Units Warning */}
+                    {cartonsCount > 0 &&
+                      values.producedUnits > 0 &&
+                      values.containersPerCarton > 0 &&
+                      values.producedUnits % values.containersPerCarton !== 0 && (
+                        <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 space-y-1.5">
+                          <div className="flex items-center gap-2 text-amber-800">
+                            <AlertTriangle className="size-4 shrink-0" />
+                            <span className="text-xs font-bold uppercase tracking-wider">
+                              Uneven Distribution
+                            </span>
+                          </div>
+                          <p className="text-xs text-amber-700 leading-relaxed">
+                            {values.producedUnits} units ÷ {values.containersPerCarton} per carton ={" "}
+                            <strong>{Math.floor(values.producedUnits / values.containersPerCarton)} full cartons</strong>
+                            {" + "}
+                            <strong className="text-amber-900">{values.producedUnits % values.containersPerCarton} loose units</strong>.
+                          </p>
+                          <p className="text-[11px] text-amber-600 leading-relaxed">
+                            The last carton (#{cartonsCount}) will only contain{" "}
+                            <strong>{values.producedUnits % values.containersPerCarton}</strong> units
+                            instead of {values.containersPerCarton}. During production, the operator
+                            will be given the choice to pack them as a partial carton or leave them
+                            as loose units.
+                          </p>
+                        </div>
+                      )}
                   </div>
 
                   {/* 4. Additional Materials */}
@@ -1401,9 +1442,10 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                         const material = materials.packagings.find(
                           (m) => m.id === pkg.packagingMaterialId,
                         );
-                        const totalNeeded =
+                        const totalNeeded = Math.round(
                           pkg.quantityPerContainer *
-                          (values.producedUnits || 0);
+                          (values.producedUnits || 0)
+                        );
                         const stock = getStockStatus(
                           pkg.packagingMaterialId,
                           "packaging",
@@ -1442,15 +1484,17 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-2">
                               <div className="relative">
                                 <Input
                                   type="number"
                                   step="any"
-                                  className="w-24 h-9 text-right pr-12 text-base font-bold text-primary"
+                                  className="w-28 h-9 text-right text-base font-bold text-primary"
                                   value={
-                                    (pkg.quantityPerContainer || 0) *
-                                      (values.producedUnits || 0) || ""
+                                    Math.round(
+                                      (pkg.quantityPerContainer || 0) *
+                                      (values.producedUnits || 0)
+                                    ) || ""
                                   }
                                   onChange={(e) => {
                                     const val = parseFloat(e.target.value) || 0;
@@ -1470,13 +1514,14 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                                     );
                                   }}
                                 />
-                                <div className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">
-                                  Total
-                                </div>
                               </div>
+                              <span className="text-[10px] text-muted-foreground font-bold uppercase whitespace-nowrap">
+                                Total
+                              </span>
                               <Button
                                 variant="destructive"
                                 size="icon"
+                                className="shrink-0"
                                 onClick={() =>
                                   handleRemoveAdditionalPackaging(idx)
                                 }

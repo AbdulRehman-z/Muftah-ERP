@@ -29,6 +29,8 @@ import { Route as AuthLayout2FaIndexRouteImport } from './routes/_authLayout/2-f
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ProtectedSuppliersSupplierIdRouteImport } from './routes/_protected/suppliers/$supplierId'
 import { Route as ProtectedOperatorRunIdRouteImport } from './routes/_protected/operator/$runId'
+import { Route as ProtectedFinanceLedgerRouteImport } from './routes/_protected/finance/ledger'
+import { Route as ProtectedFinanceExpensesRouteImport } from './routes/_protected/finance/expenses'
 import { Route as ProtectedSalesNewInvoiceIndexRouteImport } from './routes/_protected/sales/new-invoice/index'
 import { Route as ProtectedSalesCustomersIndexRouteImport } from './routes/_protected/sales/customers/index'
 import { Route as ProtectedManufacturingRecipesIndexRouteImport } from './routes/_protected/manufacturing/recipes/index'
@@ -147,6 +149,17 @@ const ProtectedOperatorRunIdRoute = ProtectedOperatorRunIdRouteImport.update({
   path: '/operator/$runId',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
+const ProtectedFinanceLedgerRoute = ProtectedFinanceLedgerRouteImport.update({
+  id: '/finance/ledger',
+  path: '/finance/ledger',
+  getParentRoute: () => ProtectedRouteRoute,
+} as any)
+const ProtectedFinanceExpensesRoute =
+  ProtectedFinanceExpensesRouteImport.update({
+    id: '/finance/expenses',
+    path: '/finance/expenses',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
 const ProtectedSalesNewInvoiceIndexRoute =
   ProtectedSalesNewInvoiceIndexRouteImport.update({
     id: '/sales/new-invoice/',
@@ -240,6 +253,8 @@ const ProtectedHrPayrollEmployeeEmployeeIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/investor/': typeof InvestorIndexRoute
+  '/finance/expenses': typeof ProtectedFinanceExpensesRoute
+  '/finance/ledger': typeof ProtectedFinanceLedgerRoute
   '/operator/$runId': typeof ProtectedOperatorRunIdRoute
   '/suppliers/$supplierId': typeof ProtectedSuppliersSupplierIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -275,6 +290,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/investor': typeof InvestorIndexRoute
+  '/finance/expenses': typeof ProtectedFinanceExpensesRoute
+  '/finance/ledger': typeof ProtectedFinanceLedgerRoute
   '/operator/$runId': typeof ProtectedOperatorRunIdRoute
   '/suppliers/$supplierId': typeof ProtectedSuppliersSupplierIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -313,6 +330,8 @@ export interface FileRoutesById {
   '/_authLayout': typeof AuthLayoutRouteRouteWithChildren
   '/_protected': typeof ProtectedRouteRouteWithChildren
   '/investor/': typeof InvestorIndexRoute
+  '/_protected/finance/expenses': typeof ProtectedFinanceExpensesRoute
+  '/_protected/finance/ledger': typeof ProtectedFinanceLedgerRoute
   '/_protected/operator/$runId': typeof ProtectedOperatorRunIdRoute
   '/_protected/suppliers/$supplierId': typeof ProtectedSuppliersSupplierIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -350,6 +369,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/investor/'
+    | '/finance/expenses'
+    | '/finance/ledger'
     | '/operator/$runId'
     | '/suppliers/$supplierId'
     | '/api/auth/$'
@@ -385,6 +406,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/investor'
+    | '/finance/expenses'
+    | '/finance/ledger'
     | '/operator/$runId'
     | '/suppliers/$supplierId'
     | '/api/auth/$'
@@ -422,6 +445,8 @@ export interface FileRouteTypes {
     | '/_authLayout'
     | '/_protected'
     | '/investor/'
+    | '/_protected/finance/expenses'
+    | '/_protected/finance/ledger'
     | '/_protected/operator/$runId'
     | '/_protected/suppliers/$supplierId'
     | '/api/auth/$'
@@ -605,6 +630,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedOperatorRunIdRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
+    '/_protected/finance/ledger': {
+      id: '/_protected/finance/ledger'
+      path: '/finance/ledger'
+      fullPath: '/finance/ledger'
+      preLoaderRoute: typeof ProtectedFinanceLedgerRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/finance/expenses': {
+      id: '/_protected/finance/expenses'
+      path: '/finance/expenses'
+      fullPath: '/finance/expenses'
+      preLoaderRoute: typeof ProtectedFinanceExpensesRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
     '/_protected/sales/new-invoice/': {
       id: '/_protected/sales/new-invoice/'
       path: '/sales/new-invoice'
@@ -734,6 +773,8 @@ const AuthLayoutRouteRouteWithChildren = AuthLayoutRouteRoute._addFileChildren(
 )
 
 interface ProtectedRouteRouteChildren {
+  ProtectedFinanceExpensesRoute: typeof ProtectedFinanceExpensesRoute
+  ProtectedFinanceLedgerRoute: typeof ProtectedFinanceLedgerRoute
   ProtectedOperatorRunIdRoute: typeof ProtectedOperatorRunIdRoute
   ProtectedSuppliersSupplierIdRoute: typeof ProtectedSuppliersSupplierIdRoute
   ProtectedDashboardIndexRoute: typeof ProtectedDashboardIndexRoute
@@ -762,6 +803,8 @@ interface ProtectedRouteRouteChildren {
 }
 
 const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
+  ProtectedFinanceExpensesRoute: ProtectedFinanceExpensesRoute,
+  ProtectedFinanceLedgerRoute: ProtectedFinanceLedgerRoute,
   ProtectedOperatorRunIdRoute: ProtectedOperatorRunIdRoute,
   ProtectedSuppliersSupplierIdRoute: ProtectedSuppliersSupplierIdRoute,
   ProtectedDashboardIndexRoute: ProtectedDashboardIndexRoute,

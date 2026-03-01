@@ -14,6 +14,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { type NavigationItem, navigations } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -21,54 +22,68 @@ import { NavUser } from "./nav-user";
 import { authClient } from "@/lib/auth-client";
 import { ScrollArea } from "../ui/scroll-area";
 
+// ── Path helpers ────────────────────────────────────────────────────────────
+
 /**
- * Checks if the current path matches or is contained within a navigation item's path
+ * Exact OR prefix match — only for leaf items (no children).
+ * For parent items we use isChildExactlyActive instead.
  */
-const isPathActive = (pathname: string, itemPath: string): boolean => {
-  return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
+const isLeafActive = (pathname: string, itemPath: string, exact?: boolean): boolean =>
+  pathname === itemPath || (!exact && pathname.startsWith(`${itemPath}/`));
+
+/**
+ * Returns true only if a CHILD of this group is the currently active route.
+ * Never returns true for the parent itself being active — that's the fix for
+ * the double-highlight bug (parent url === child url scenario).
+ */
+const isChildExactlyActive = (
+  pathname: string,
+  item: NavigationItem,
+): boolean => {
+  if (!item.items?.length) return false;
+  return item.items.some((child) =>
+    child.items?.length
+      ? isChildExactlyActive(pathname, child)
+      : isLeafActive(pathname, child.url, child.exact),
+  );
 };
 
 /**
- * Recursively checks if any nested item or the parent item is active
+ * Used to auto-open a parent group on load.
  */
 const isItemOrChildActive = (
   pathname: string,
   item: NavigationItem,
 ): boolean => {
-  if (isPathActive(pathname, item.url)) return true;
+  if (isLeafActive(pathname, item.url, item.exact)) return true;
   if (item.items?.length) {
     return item.items.some((child) => isItemOrChildActive(pathname, child));
   }
   return false;
 };
 
-/**
- * Recursively filters navigation items based on search query
- */
+// ── Search filter ────────────────────────────────────────────────────────────
+
 const filterNavItems = (
   items: NavigationItem[],
   query: string,
 ): NavigationItem[] => {
   if (!query.trim()) return items;
-
-  const lowerQuery = query.toLowerCase();
-
+  const q = query.toLowerCase();
   return items.reduce((acc: NavigationItem[], item) => {
-    const titleMatch = item.title.toLowerCase().includes(lowerQuery);
-    const filteredChildren = item.items
-      ? filterNavItems(item.items, lowerQuery)
-      : [];
-
+    const titleMatch = item.title.toLowerCase().includes(q);
+    const filteredChildren = item.items ? filterNavItems(item.items, q) : [];
     if (titleMatch || filteredChildren.length > 0) {
       acc.push({
         ...item,
         items: filteredChildren.length > 0 ? filteredChildren : item.items,
       });
     }
-
     return acc;
   }, []);
 };
+
+// ── NavItem ──────────────────────────────────────────────────────────────────
 
 interface NavItemProps {
   item: NavigationItem;
@@ -76,51 +91,48 @@ interface NavItemProps {
   searchActive?: boolean;
 }
 
-/**
- * Recursive navigation item component with support for nested items
- */
 const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
-  const [isOpen, setIsOpen] = useState(() =>
-    item.items?.length
-      ? isItemOrChildActive(pathname, item) || searchActive
-      : false,
+  const { state, setOpen } = useSidebar();
+  const hasChildren = !!(item.items && item.items.length > 0);
+
+  // For parent items: active = any child is active
+  // For leaf items: active = exact or prefix match
+  const isActive = hasChildren
+    ? isChildExactlyActive(pathname, item)
+    : isLeafActive(pathname, item.url, item.exact);
+
+  const [isOpen, setIsOpen] = useState(
+    () => isActive || (hasChildren && isItemOrChildActive(pathname, item)) || searchActive,
   );
-  const isActive = isPathActive(pathname, item.url);
-  const hasChildren = item.items && item.items.length > 0;
 
-  // Auto-expand when searching
-  useState(() => {
-    if (searchActive && hasChildren) {
-      setIsOpen(true);
-    }
-  });
-
+  // ── Leaf item ──────────────────────────────────────────────────────────
   if (!hasChildren) {
     return (
       <SidebarMenuItem>
         <SidebarMenuButton
+          size="lg"
           asChild
           isActive={isActive}
-          size="lg"
           tooltip={item.title}
           className={cn(
-            "transition-all duration-300 relative group/btn",
+            "relative group/btn rounded-xl px-3 transition-all duration-200",
             isActive
-              ? "bg-primary/10 text-primary font-semibold hover:bg-primary/15"
-              : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground",
+              ? "bg-primary/10 text-primary font-semibold hover:bg-primary/15 shadow-sm"
+              : "text-sidebar-foreground/65 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
           )}
         >
           <Link
             to={item.url}
-            className="flex items-center w-full group-data-[collapsible=icon]:justify-center"
+            className="flex items-center w-full gap-3 group-data-[collapsible=icon]:justify-center"
           >
+            {/* Active left indicator bar */}
             {isActive && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full shadow-[0_0_12px_rgba(var(--primary),0.8)] group-data-[collapsible=icon]:h-4 group-data-[collapsible=icon]:w-0.5" />
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary rounded-r-full shadow-[0_0_8px_rgba(124,58,237,0.6)] group-data-[collapsible=icon]:hidden" />
             )}
             {item.icon && (
               <item.icon
                 className={cn(
-                  "size-[18px] shrink-0 transition-all duration-300",
+                  "size-[17px] shrink-0 transition-colors duration-200",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground group-hover/btn:text-sidebar-foreground",
@@ -129,10 +141,8 @@ const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
             )}
             <span
               className={cn(
-                "text-[15.5px] tracking-tight whitespace-nowrap group-data-[collapsible=icon]:hidden ml-2.5",
-                isActive
-                  ? "text-primary"
-                  : "text-sidebar-foreground/70 group-hover/btn:text-sidebar-foreground",
+                "text-[14.5px] font-medium tracking-tight whitespace-nowrap group-data-[collapsible=icon]:hidden",
+                isActive ? "text-primary" : "",
               )}
             >
               {item.title}
@@ -143,88 +153,104 @@ const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
     );
   }
 
+  // ── Parent / group item ─────────────────────────────────────────────────
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
-        onClick={() => setIsOpen(!isOpen)}
         size="lg"
+        onClick={() => {
+          if (state === "collapsed") {
+            setOpen(true);
+            setIsOpen(true);
+          } else {
+            setIsOpen(!isOpen);
+          }
+        }}
         tooltip={item.title}
         className={cn(
-          "transition-all duration-300 relative group/btn",
-          isItemOrChildActive(pathname, item)
-            ? "bg-primary/5 text-primary font-semibold"
-            : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground",
+          "relative group/btn rounded-xl px-3 transition-all duration-200",
+          isActive
+            ? "bg-primary/5 text-primary font-semibold hover:bg-primary/10"
+            : "text-sidebar-foreground/65 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
         )}
       >
-        {isItemOrChildActive(pathname, item) && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full group-data-[collapsible=icon]:h-4 group-data-[collapsible=icon]:w-0.5" />
+        {/* Subtle left indicator when a child is active */}
+        {isActive && (
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary/60 rounded-r-full group-data-[collapsible=icon]:hidden" />
         )}
-        <div className="flex items-center w-full group-data-[collapsible=icon]:justify-center">
+        <div className="flex items-center w-full gap-3 group-data-[collapsible=icon]:justify-center">
           {item.icon && (
             <item.icon
               className={cn(
-                "size-[18px] shrink-0 transition-all duration-300",
-                isItemOrChildActive(pathname, item)
+                "size-[17px] shrink-0 transition-colors duration-200",
+                isActive
                   ? "text-primary"
                   : "text-muted-foreground group-hover/btn:text-sidebar-foreground",
               )}
             />
           )}
-          <span className="text-[15.5px] tracking-tight flex-1 text-left whitespace-nowrap group-data-[collapsible=icon]:hidden ml-2.5">
+          <span className="text-[14.5px] font-medium tracking-tight flex-1 text-left whitespace-nowrap group-data-[collapsible=icon]:hidden">
             {item.title}
           </span>
           <ChevronDown
             className={cn(
-              "ml-auto size-4 transition-transform duration-500 ease-in-out opacity-60 group-data-[collapsible=icon]:hidden",
-              isOpen && "rotate-180 opacity-100",
+              "ml-auto size-4 transition-transform duration-300 ease-in-out opacity-50 group-data-[collapsible=icon]:hidden",
+              isOpen && "rotate-180 opacity-80",
             )}
           />
         </div>
       </SidebarMenuButton>
 
-      {hasChildren && isOpen && (
-        <SidebarMenuSub className="border-l border-primary/10 ml-5 pl-1.5 space-y-0.5 my-1">
-          {item.items!.map((child) => (
-            <SidebarMenuSubItem key={child.title}>
-              <SidebarMenuSubButton
-                asChild
-                isActive={isPathActive(pathname, child.url)}
-                className={cn(
-                  "transition-all duration-200 h-9 px-4 relative group/sub",
-                  isPathActive(pathname, child.url)
-                    ? "text-foreground font-medium"
-                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30",
-                )}
-              >
-                <Link to={child.url} preload="render">
-                  <div
-                    className={cn(
-                      "absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-0 transition-all duration-300 bg-primary/50 rounded-full",
-                      isPathActive(pathname, child.url) && "h-4",
-                    )}
-                  />
-                  {child.icon && (
-                    <child.icon
-                      className={cn(
-                        "size-4 transition-colors",
-                        isPathActive(pathname, child.url)
-                          ? "text-primary"
-                          : "text-muted-foreground group-hover/sub:text-sidebar-foreground",
-                      )}
-                    />
+      {/* Children */}
+      {isOpen && (
+        <SidebarMenuSub
+          className={cn(
+            "ml-5 pl-2 border-l my-0.5 space-y-0.5",
+            isActive ? "border-primary/20" : "border-border/50",
+          )}
+        >
+          {item.items!.map((child) => {
+            const childActive = isLeafActive(pathname, child.url, child.exact);
+            return (
+              <SidebarMenuSubItem key={child.title}>
+                <SidebarMenuSubButton
+                  asChild
+                  isActive={childActive}
+                  className={cn(
+                    "relative group/sub h-9 rounded-lg px-3 transition-all duration-200 text-[13px]",
+                    childActive
+                      ? "bg-primary/10 text-primary font-semibold hover:bg-primary/15"
+                      : "text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent/50",
                   )}
-                  <span className="text-[15px] group-data-[collapsible=icon]:hidden">
-                    {child.title}
-                  </span>
-                </Link>
-              </SidebarMenuSubButton>
-            </SidebarMenuSubItem>
-          ))}
+                >
+                  <Link to={child.url} preload={false}>
+                    {/* Sub-item active dot */}
+                    {childActive && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-3.5 bg-primary rounded-r-full" />
+                    )}
+                    {child.icon && (
+                      <child.icon
+                        className={cn(
+                          "size-4 shrink-0 transition-colors",
+                          childActive
+                            ? "text-primary"
+                            : "text-muted-foreground group-hover/sub:text-sidebar-foreground",
+                        )}
+                      />
+                    )}
+                    <span>{child.title}</span>
+                  </Link>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            );
+          })}
         </SidebarMenuSub>
       )}
     </SidebarMenuItem>
   );
 };
+
+// ── AppSidebar ───────────────────────────────────────────────────────────────
 
 export const AppSidebar = () => {
   const router = useRouterState();
@@ -237,15 +263,16 @@ export const AppSidebar = () => {
   if (isPending) {
     return (
       <Sidebar collapsible="icon" variant="floating">
-        <SidebarHeader>
-          <div className="h-12 w-full animate-pulse bg-sidebar-accent/10 rounded-lg" />
+        <SidebarHeader className="p-3">
+          <div className="h-11 w-full animate-pulse bg-sidebar-accent/20 rounded-xl" />
         </SidebarHeader>
         <SidebarContent>
-          <div className="space-y-2 p-2">
-            {[1, 2, 3, 4, 5].map((i) => (
+          <div className="space-y-1.5 p-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
-                className="h-10 w-full animate-pulse bg-sidebar-accent/5 rounded-lg"
+                className="h-10 w-full animate-pulse bg-sidebar-accent/10 rounded-xl"
+                style={{ animationDelay: `${i * 80}ms` }}
               />
             ))}
           </div>
@@ -275,26 +302,28 @@ export const AppSidebar = () => {
 
   return (
     <Sidebar collapsible="icon" variant="floating">
-      <SidebarHeader>
+      {/* ── Header ─────────────────────────────────────────────────────── */}
+      <SidebarHeader className="px-3 pt-3 pb-2">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
               asChild
-              className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              className="h-11 rounded-xl hover:bg-primary/5 transition-all duration-200 group/logo"
             >
               <Link
                 to="/dashboard"
-                className="flex items-center w-full group-data-[collapsible=icon]:justify-center"
+                className="flex items-center w-full gap-3 group-data-[collapsible=icon]:justify-center"
               >
-                <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <ZapIcon className="size-5" />
+                {/* Logo mark */}
+                <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm ring-1 ring-primary/20 transition-all group-hover/logo:shadow-md group-hover/logo:scale-105">
+                  <ZapIcon className="size-4" />
                 </div>
-                <div className="flex flex-col gap-y-1 leading-none group-data-[collapsible=icon]:hidden ml-3">
-                  <span className="font-semibold text-base whitespace-nowrap">
+                <div className="flex flex-col leading-none group-data-[collapsible=icon]:hidden">
+                  <span className="font-bold text-[14px] tracking-tight">
                     Titan Enterprise
                   </span>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  <span className="text-[11px] text-muted-foreground font-medium mt-0.5">
                     Management System
                   </span>
                 </div>
@@ -303,25 +332,28 @@ export const AppSidebar = () => {
           </SidebarMenuItem>
         </SidebarMenu>
 
+        {/* Search */}
         {userRole !== "operator" && (
-          <div className="px-2 py-2 group-data-[collapsible=icon]:hidden">
-            <div className="relative group/search">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/50 transition-colors group-focus-within/search:text-primary" />
-              <Input
-                type="search"
-                placeholder="Quick find..."
-                className="h-9 w-full bg-muted/40 border-muted-foreground/10 pl-9 transition-all focus:bg-background focus:ring-1 focus:ring-primary/20"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+          <div className="relative group/search group-data-[collapsible=icon]:hidden mt-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/50 transition-colors group-focus-within/search:text-primary" />
+            <Input
+              type="search"
+              placeholder="Quick find..."
+              className="h-9 w-full bg-muted/40 border-border/40 pl-8 text-[13px] rounded-xl placeholder:text-muted-foreground/40 transition-all focus:bg-background focus:border-primary/30 focus:ring-1 focus:ring-primary/20 shadow-none"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         )}
       </SidebarHeader>
 
+      {/* ── Divider ────────────────────────────────────────────────────── */}
+      <div className="mx-3 h-px bg-border/40 group-data-[collapsible=icon]:mx-2" />
+
+      {/* ── Nav items ──────────────────────────────────────────────────── */}
       <SidebarContent className="overflow-hidden">
         <ScrollArea className="h-full">
-          <SidebarGroup>
+          <SidebarGroup className="px-2 py-2">
             <SidebarMenu>
               {filteredNavigations.length > 0 ? (
                 filteredNavigations.map((item) => (
@@ -333,12 +365,15 @@ export const AppSidebar = () => {
                   />
                 ))
               ) : (
-                <div className="px-2 py-8 text-center">
-                  <p className="text-sm text-muted-foreground">
+                <div className="px-3 py-10 text-center">
+                  <div className="w-9 h-9 rounded-xl bg-muted/50 flex items-center justify-center mx-auto mb-3">
+                    <Search className="size-4 text-muted-foreground/40" />
+                  </div>
+                  <p className="text-[13px] font-medium text-muted-foreground">
                     No results found
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Try a different search term
+                  <p className="mt-1 text-[11px] text-muted-foreground/60">
+                    Try a different keyword
                   </p>
                 </div>
               )}
@@ -347,7 +382,11 @@ export const AppSidebar = () => {
         </ScrollArea>
       </SidebarContent>
 
-      <SidebarFooter>
+      {/* ── Divider ────────────────────────────────────────────────────── */}
+      <div className="mx-3 h-px bg-border/40 group-data-[collapsible=icon]:mx-2" />
+
+      {/* ── Footer ─────────────────────────────────────────────────────── */}
+      <SidebarFooter className="px-3 py-3">
         <NavUser />
       </SidebarFooter>
     </Sidebar>

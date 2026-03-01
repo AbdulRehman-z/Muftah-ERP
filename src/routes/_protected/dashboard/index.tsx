@@ -14,9 +14,10 @@ import {
   LayoutDashboard,
   RefreshCw,
   CalendarDays,
-  Sparkles,
   TrendingUp,
   TrendingDown,
+  Clock,
+  Zap,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { DatePicker } from "@/components/custom/date-picker";
@@ -43,25 +44,29 @@ function AdminDashboardPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/10">
-              <LayoutDashboard className="size-4 text-primary" />
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10 shadow-sm">
+              <LayoutDashboard className="size-5 text-primary" />
             </div>
-            <h2 className="text-2xl font-black tracking-tight">
-              Command Center
-            </h2>
-            <Badge
-              variant="outline"
-              className="text-[9px] font-bold bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 gap-1"
-            >
-              <Sparkles className="size-2.5" />
-              Live
-            </Badge>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-black tracking-tight">
+                  Command Center
+                </h2>
+                <Badge
+                  variant="outline"
+                  className="text-[9px] font-bold bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 gap-1 animate-pulse"
+                >
+                  <Zap className="size-2.5" />
+                  Live
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Real-time overview of operations, finances, and production.
+              </p>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground pl-9">
-            Real-time overview of operations, finances, and production.
-          </p>
         </div>
       </div>
 
@@ -110,11 +115,11 @@ function AdminDashboard() {
   return (
     <div className="space-y-5">
       {/* ── Toolbar ─────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-muted/30 rounded-xl border border-border/40 p-3 px-4">
         {/* Left */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <div className="p-1.5 rounded-lg bg-muted/60 border border-border/60">
-            <CalendarDays className="size-3.5 text-muted-foreground" />
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="p-2 rounded-lg bg-background border border-border/60 shadow-sm">
+            <CalendarDays className="size-4 text-muted-foreground" />
           </div>
           <div>
             <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground leading-none mb-0.5">
@@ -127,18 +132,17 @@ function AdminDashboard() {
 
           {/* Profit indicator pill */}
           <div
-            className={`hidden sm:flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border ${
-              netProfitPositive
+            className={`hidden sm:flex items-center gap-1.5 text-[10px] font-bold px-3 py-1.5 rounded-full border shadow-sm ${netProfitPositive
                 ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-400"
                 : "bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-400"
-            }`}
+              }`}
           >
             {netProfitPositive ? (
               <TrendingUp className="size-3" />
             ) : (
               <TrendingDown className="size-3" />
             )}
-            {netProfitPositive ? "Profitable" : "Loss"}
+            {netProfitPositive ? "Profitable" : "Net Loss"}
           </div>
 
           {isFetching && (
@@ -150,6 +154,11 @@ function AdminDashboard() {
               Refreshing
             </Badge>
           )}
+
+          <div className="hidden sm:flex items-center gap-1.5 text-[9px] text-muted-foreground/60 font-medium">
+            <Clock className="size-3" />
+            Last updated: {format(new Date(), "h:mm a")}
+          </div>
         </div>
 
         {/* Right */}
@@ -167,7 +176,7 @@ function AdminDashboard() {
             size="sm"
             onClick={handleRefresh}
             disabled={isFetching}
-            className="h-9 gap-2 text-[10px] font-black uppercase tracking-widest"
+            className="h-9 gap-2 text-[10px] font-black uppercase tracking-widest shadow-sm"
           >
             <RefreshCw
               className={`size-3.5 ${isFetching ? "animate-spin" : ""}`}
@@ -181,11 +190,6 @@ function AdminDashboard() {
       <DashboardKpiCards data={data} />
 
       {/* ── Charts Row ──────────────────────────────────────────────── */}
-      {/*
-                FIX: col-span classes MUST be on the direct children of the grid,
-                not buried inside the component. Both components now accept a
-                `className` prop so we assign spans here at the call site.
-            */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <RevenueExpenseChart
           data={data.revenueExpenseChart}

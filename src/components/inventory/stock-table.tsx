@@ -7,6 +7,7 @@ import {
   Eye,
   ArrowUpDown,
   Wrench,
+  FlaskConical,
 } from "lucide-react";
 import { format } from "date-fns";
 import { InventoryDetailsDialog } from "./inventory-details-dialog";
@@ -31,6 +32,14 @@ import {
 } from "../ui/alert-dialog";
 import { DataTable } from "../ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
+import { LabReportsList } from "./lab-reports/lab-reports-list";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "../ui/sheet";
 
 type StockItem = {
   id: string;
@@ -103,6 +112,7 @@ export const StockTable = ({
   const [selectedItem, setSelectedItem] = useState<StockItem | null>(null);
 
   const deleteMutation = useDeleteMaterial();
+  const [labReportItem, setLabReportItem] = useState<StockItem | null>(null);
 
   const isChemical = type === "chemical";
 
@@ -315,6 +325,17 @@ export const StockTable = ({
             >
               <Trash2 className="size-3.5" />
             </Button>
+            {isChemical && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7 text-teal-600 hover:bg-teal-50 hover:text-teal-700 rounded-md transition-colors"
+                onClick={() => setLabReportItem(row.original)}
+                title="Lab Reports (COA)"
+              >
+                <FlaskConical className="size-3.5" />
+              </Button>
+            )}
           </div>
         ),
       });
@@ -347,6 +368,17 @@ export const StockTable = ({
                 title="Manual Stock Adjustment"
               >
                 <Wrench className="size-3.5" />
+              </Button>
+            )}
+            {isChemical && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7 text-teal-600 hover:bg-teal-50 hover:text-teal-700 rounded-md transition-colors"
+                onClick={() => setLabReportItem(row.original)}
+                title="Lab Reports (COA)"
+              >
+                <FlaskConical className="size-3.5" />
               </Button>
             )}
           </div>
@@ -490,6 +522,32 @@ export const StockTable = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Lab Reports Sheet */}
+      {isChemical && labReportItem && labReportItem.chemical && (
+        <Sheet
+          open={!!labReportItem}
+          onOpenChange={(open) => !open && setLabReportItem(null)}
+        >
+          <SheetContent className="min-w-[600px] overflow-y-auto pb-5">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2 text-primary font-semibold text-lg">
+                <FlaskConical className="size-6 text-primary" />
+                Lab Reports
+              </SheetTitle>
+              <SheetDescription>
+                Certificates of Analysis for {labReportItem.chemical.name}
+              </SheetDescription>
+            </SheetHeader>
+            <div className="px-5 pt-4">
+              <LabReportsList
+                chemicalId={labReportItem.chemical.id}
+                chemicalName={labReportItem.chemical.name}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
 
       {/* Add Dialogs */}
       {isChemical ? (

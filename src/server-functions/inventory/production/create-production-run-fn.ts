@@ -95,7 +95,7 @@ export const createProductionRunFn = createServerFn()
       let looseContainers = 0;
 
       if (recipe.containersPerCarton && recipe.containersPerCarton > 0) {
-        totalCartons = Math.floor(totalContainers / recipe.containersPerCarton);
+        totalCartons = Math.ceil(totalContainers / recipe.containersPerCarton);
         looseContainers = totalContainers % recipe.containersPerCarton;
       } else {
         looseContainers = totalContainers;

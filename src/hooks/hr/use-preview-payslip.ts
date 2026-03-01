@@ -9,7 +9,7 @@ interface PreviewPayslipInput {
     bonusAmount: number;
     incentiveAmount: number;
     taxDeduction: number;
-    advanceDeduction: number;
+    advanceDeduction?: number; // undefined = auto-pull approved advances from DB
     overtimeMultiplier: number;
   };
 }

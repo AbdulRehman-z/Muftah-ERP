@@ -574,9 +574,7 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                 </tbody>
                             </table>
                         </div>
-                        <div className="mt-2 p-2.5 bg-muted/30 rounded-lg text-xs text-muted-foreground">
-                            <span className="font-semibold text-foreground">Note:</span> Non-deductible allowances (Fuel, Special, Night Shift) are never reduced for absences or leaves.
-                        </div>
+
                     </CalcSection>
 
                     {/* Step 3: Attendance Deductions Breakdown — clean stacked layout */}

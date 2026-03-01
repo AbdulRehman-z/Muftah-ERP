@@ -108,7 +108,7 @@ export function RevenueExpenseChart({
     const rev = filteredData.reduce((s, d) => s + d.revenue, 0);
     const exp = filteredData.reduce((s, d) => s + d.expenses, 0);
     const net = rev - exp;
-    const margin = rev > 0 ? ((net / rev) * 100).toFixed(1) : "0.0";
+    const margin = rev > 0 ? ((net / rev) * 100).toFixed(1) : null;
     return { rev, exp, net, margin };
   }, [filteredData]);
 
@@ -190,7 +190,7 @@ export function RevenueExpenseChart({
             )}
             <span className="tabular-nums">
               {isProfit ? "+" : ""}
-              {formatPKR(totals.net)} · {totals.margin}% margin
+              {formatPKR(totals.net)}{totals.margin !== null ? ` · ${totals.margin}% margin` : " · No revenue"}
             </span>
           </div>
         </div>

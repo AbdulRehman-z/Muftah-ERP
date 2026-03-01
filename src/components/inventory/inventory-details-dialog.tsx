@@ -11,6 +11,7 @@ import {
   Factory,
   Truck,
   ArrowRight,
+  FlaskConical,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { format } from "date-fns";
@@ -26,6 +27,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { getTransferHistoryFn } from "@/server-functions/inventory/stock/get-transfer-history-fn";
+import { LabReportsList } from "./lab-reports/lab-reports-list";
+import { Separator } from "@/components/ui/separator";
 
 type DetailsProps = {
   open: boolean;
@@ -55,7 +58,7 @@ export const InventoryDetailsDialog = ({
 
   const currentQty = isFinished
     ? item.quantityCartons * (item.recipe.containersPerCarton || 0) +
-      item.quantityContainers
+    item.quantityContainers
     : parseFloat(item.quantity);
   const minLevel = isFinished
     ? 0
@@ -140,7 +143,7 @@ export const InventoryDetailsDialog = ({
                       {isFinished
                         ? "Cartons"
                         : material.unit ||
-                          (type === "packaging" ? "pcs" : "kg")}
+                        (type === "packaging" ? "pcs" : "kg")}
                     </span>
                   </div>
                 </CardContent>
@@ -155,8 +158,8 @@ export const InventoryDetailsDialog = ({
                       <span className="text-3xl font-black text-foreground leading-none tracking-tighter">
                         {isFinished
                           ? parseFloat(
-                              material.estimatedCostPerContainer,
-                            ).toFixed(2)
+                            material.estimatedCostPerContainer,
+                          ).toFixed(2)
                           : parseFloat(material.costPerUnit).toFixed(2)}
                       </span>
                     </div>
@@ -358,6 +361,17 @@ export const InventoryDetailsDialog = ({
                   </div>
                 </div>
               )
+            )}
+
+            {/* Lab Reports Section (Chemicals Only) */}
+            {type === "chemical" && material?.id && (
+              <>
+                <Separator />
+                <LabReportsList
+                  chemicalId={material.id}
+                  chemicalName={material.name}
+                />
+              </>
             )}
 
             {/* Inventory Timeline */}

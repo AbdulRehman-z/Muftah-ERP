@@ -157,7 +157,7 @@ function ProductionRunManagePage() {
   const perCarton = Number(recipe.containersPerCarton) || 0;
   const hasCartonPackaging = !!recipe.cartonPackagingId && perCarton > 0;
   const remainingCartons = hasCartonPackaging
-    ? Math.floor(remaining / perCarton)
+    ? Math.ceil(remaining / perCarton)
     : 0;
   const completedCartons = hasCartonPackaging
     ? Math.floor(completed / perCarton)
@@ -177,11 +177,13 @@ function ProductionRunManagePage() {
 
     if (hasCartonPackaging) {
       // Enforce full cartons — units = cartons * perCarton
-      const totalUnits = cartonsCount * perCarton;
+      // But allow a partial final carton when remaining < perCarton
+      const isLastPartialCarton = cartonsCount === 1 && remaining < perCarton && remaining > 0;
+      const totalUnits = isLastPartialCarton ? remaining : cartonsCount * perCarton;
 
       if (totalUnits > remaining) {
         toast.error(
-          `Cannot produce ${cartonsCount} cartons (${totalUnits} units). Only ${remaining} units (${remainingCartons} cartons) remaining.`,
+          `Cannot produce ${cartonsCount} cartons (${cartonsCount * perCarton} units). Only ${remaining} units (${remainingCartons} cartons) remaining.`,
         );
         return;
       }
@@ -285,11 +287,10 @@ function ProductionRunManagePage() {
         </div>
         <Badge
           variant="outline"
-          className={`px-3 py-1 text-sm uppercase tracking-widest font-bold ${
-            isCancelled
-              ? "bg-red-50 text-red-700 border-red-200"
-              : "bg-blue-50 text-blue-700 border-blue-200"
-          }`}
+          className={`px-3 py-1 text-sm uppercase tracking-widest font-bold ${isCancelled
+            ? "bg-red-50 text-red-700 border-red-200"
+            : "bg-blue-50 text-blue-700 border-blue-200"
+            }`}
         >
           {isCancelled ? "CANCELLED" : "IN PROGRESS"}
         </Badge>
@@ -386,7 +387,7 @@ function ProductionRunManagePage() {
                 {isCancelled
                   ? "This production run has ended. No more entries can be logged."
                   : hasCartonPackaging
-                    ? `Enter the number of FULL cartons produced. Each carton = ${perCarton} units.`
+                    ? `Enter the number of cartons produced. Each carton = ${perCarton} units.`
                     : "Enter the number of units produced."}
               </CardDescription>
             </CardHeader>
@@ -401,11 +402,31 @@ function ProductionRunManagePage() {
               ) : (
                 <form onSubmit={handleLogProgress} className="space-y-4">
                   {hasCartonPackaging && (
-                    <div className="bg-muted/30 p-3 rounded-lg border text-xs text-muted-foreground">
-                      <strong>Carton Mode Enforced:</strong> This recipe
-                      requires all units to be packed in full cartons of{" "}
-                      {perCarton}. No loose units are allowed.
-                    </div>
+                    <>
+                      {remaining < perCarton && remaining > 0 ? (
+                        <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 space-y-1.5">
+                          <div className="flex items-center gap-2 text-amber-800">
+                            <AlertTriangle className="size-4 shrink-0" />
+                            <span className="text-xs font-bold uppercase tracking-wider">
+                              Partial Carton — Last {remaining} Units
+                            </span>
+                          </div>
+                          <p className="text-xs text-amber-700 leading-relaxed">
+                            Only <strong>{remaining} units</strong> remain, which is less than a full carton of {perCarton}.
+                            Enter <strong>1 carton</strong> to pack these as a partial carton ({remaining} units),
+                            and the production will auto-complete.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-muted/30 p-3 rounded-lg border text-xs text-muted-foreground">
+                          <strong>Carton Mode:</strong> This recipe
+                          requires units to be packed in cartons of{" "}
+                          {perCarton}. {remaining > 0 && remaining % perCarton !== 0 && (
+                            <span className="text-amber-700"> Note: The final carton will contain {remaining % perCarton} units (partial).</span>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
 
                   <div className="flex gap-4 items-end">
@@ -428,14 +449,30 @@ function ProductionRunManagePage() {
                         min={1}
                         max={hasCartonPackaging ? remainingCartons : remaining}
                       />
-                      {hasCartonPackaging && cartonsInput && (
-                        <p className="text-xs text-muted-foreground">
-                          {parseInt(cartonsInput) || 0} cartons × {perCarton} ={" "}
-                          <span className="font-bold text-foreground">
-                            {(parseInt(cartonsInput) || 0) * perCarton} units
-                          </span>
-                        </p>
-                      )}
+                      {hasCartonPackaging && cartonsInput && (() => {
+                        const inputCount = parseInt(cartonsInput) || 0;
+                        const isPartial = inputCount === 1 && remaining < perCarton && remaining > 0;
+                        const effectiveUnits = isPartial ? remaining : inputCount * perCarton;
+                        return (
+                          <p className="text-xs text-muted-foreground">
+                            {isPartial ? (
+                              <>
+                                1 partial carton ={" "}
+                                <span className="font-bold text-amber-700">
+                                  {remaining} units (partial)
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                {inputCount} cartons × {perCarton} ={" "}
+                                <span className="font-bold text-foreground">
+                                  {effectiveUnits} units
+                                </span>
+                              </>
+                            )}
+                          </p>
+                        );
+                      })()}
                     </div>
                     <Button
                       type="submit"
@@ -503,7 +540,7 @@ function ProductionRunManagePage() {
                       </span>
                       <span className="text-xs text-muted-foreground">
                         {pkg.packagingMaterial.type === "sticker" &&
-                        hasCartonPackaging
+                          hasCartonPackaging
                           ? "Per Carton (Sticker)"
                           : `Additional (${pkg.quantityPerContainer} per unit)`}
                       </span>

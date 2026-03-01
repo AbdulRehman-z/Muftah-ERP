@@ -230,7 +230,7 @@ export const RecipeDetailView = ({ recipe }: Props) => {
                         Rs.{" "}
                         {formatCurrency(
                           Number(ing.quantityPerBatch) *
-                            Number(ing.chemical.costPerUnit || 0),
+                          Number(ing.chemical.costPerUnit || 0),
                         )}{" "}
                         Total
                       </p>
@@ -333,10 +333,10 @@ export const RecipeDetailView = ({ recipe }: Props) => {
                     <div className="text-right">
                       <p className="font-bold">
                         {recipe.containersPerCarton
-                          ? Math.floor(
-                              recipe.targetUnitsPerBatch /
-                                recipe.containersPerCarton,
-                            )
+                          ? Math.ceil(
+                            recipe.targetUnitsPerBatch /
+                            recipe.containersPerCarton,
+                          )
                           : 0}{" "}
                         Buckets
                       </p>
@@ -377,7 +377,7 @@ export const RecipeDetailView = ({ recipe }: Props) => {
                     </div>
                     <div className="text-right">
                       <p className="font-bold">
-                        {(
+                        {Math.round(
                           Number(pkg.quantityPerContainer) *
                           recipe.targetUnitsPerBatch
                         ).toLocaleString()}{" "}

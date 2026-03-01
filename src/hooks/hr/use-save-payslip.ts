@@ -13,7 +13,7 @@ type SavePayslipInput = {
     bonusAmount: number;
     incentiveAmount: number;
     taxDeduction: number;
-    advanceDeduction: number;
+    advanceDeduction?: number; // undefined = auto-deduct from DB
     overtimeMultiplier: number;
   };
 };

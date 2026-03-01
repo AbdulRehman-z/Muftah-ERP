@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "@tanstack/react-form";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,11 +48,42 @@ interface AttendanceData {
 }
 
 interface Props {
-  employee: { id: string; firstName: string; lastName: string };
+  employee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    standardDutyHours?: number | null;
+  };
   attendance?: AttendanceData | null;
   date: string;
   onSuccess: () => void;
 }
+
+// Helper to calculate hours between two "HH:mm" strings
+const calculateHours = (
+  in1?: string | null,
+  out1?: string | null,
+  in2?: string | null,
+  out2?: string | null
+) => {
+  const toMin = (t: string) => {
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  let mins = 0;
+  if (in1 && out1) {
+    const s = toMin(in1),
+      e = toMin(out1);
+    mins += e >= s ? e - s : 24 * 60 - s + e;
+  }
+  if (in2 && out2) {
+    const s = toMin(in2),
+      e = toMin(out2);
+    mins += e >= s ? e - s : 24 * 60 - s + e;
+  }
+  return mins > 0 ? (mins / 60).toFixed(1) : null;
+};
 
 export const EditAttendanceForm = ({
   employee,
@@ -94,17 +126,19 @@ export const EditAttendanceForm = ({
       entrySource: (attendance?.entrySource ?? "manual") as
         | "biometric"
         | "manual",
+      dutyHours: (attendance as any)?.dutyHours ?? null,
       notes: attendance?.notes ?? null,
     },
     onSubmit: async ({ value }) => {
       const payload = upsertAttendanceSchema.parse(value);
       await mutate.mutateAsync(
         { data: payload },
-        { onSuccess: () => onSuccess() },
+        { onSuccess: () => onSuccess() }
       );
     },
   });
 
+  // ── AUTO-POPULATION LOGIC ──
   return (
     <form
       onSubmit={(e) => {
@@ -114,6 +148,47 @@ export const EditAttendanceForm = ({
       }}
       className="space-y-5 py-2"
     >
+      {/* Invisible subscriber to handle side-effects for auto-populating dutyHours */}
+      <form.Subscribe
+        selector={(s) => [
+          s.values.checkIn,
+          s.values.checkOut,
+          s.values.checkIn2,
+          s.values.checkOut2,
+          s.values.status,
+        ]}
+      >
+        {([ci1, co1, ci2, co2, status]) => {
+          useEffect(() => {
+            if (status === "absent" || status === "holiday" || status === "leave") {
+              form.setFieldValue("dutyHours", "0");
+              return;
+            }
+
+            const calculated = calculateHours(
+              ci1 as string,
+              co1 as string,
+              ci2 as string,
+              co2 as string
+            );
+
+            if (calculated) {
+              form.setFieldValue("dutyHours", calculated);
+            } else if (status === "present" || status === "half_day") {
+              // Fallback to standard hours if no timings but status is present
+              const std = employee.standardDutyHours || 8;
+              const val = status === "half_day" ? (std / 2).toString() : std.toString();
+              // Only override if it's currently empty/null or same as last calc to avoid overwriting manual edits?
+              // For simplicity, let's just populate if it's empty
+              if (!form.getFieldValue("dutyHours")) {
+                form.setFieldValue("dutyHours", val);
+              }
+            }
+          }, [ci1, co1, ci2, co2, status]);
+          return null;
+        }}
+      </form.Subscribe>
+
       <FieldGroup>
         {/* ── Status ── */}
         <form.Field name="status">
@@ -342,8 +417,24 @@ export const EditAttendanceForm = ({
                   </form.Field>
                 </div>
 
-                {/* Overtime hours */}
-                <div className="grid grid-cols-1 gap-4">
+                {/* Duty hours + Overtime hours */}
+                <div className="grid grid-cols-2 gap-4">
+                  <form.Field name="dutyHours">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel>Duty Hours (Work Record)</FieldLabel>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          placeholder="e.g. 8.0"
+                          value={field.state.value || ""}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          className="font-mono font-bold bg-emerald-50/30 border-emerald-200 focus-visible:ring-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
+
                   <form.Field name="overtimeHours">
                     {(field) => (
                       <Field>

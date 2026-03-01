@@ -26,6 +26,8 @@ export type AttendanceRecord = {
    * pending | approved | rejected
    */
   overtimeStatus?: string;
+  isLate?: boolean;
+  earlyDepartureStatus?: string; // none, pending, approved, rejected
 };
 
 export type EmployeeData = {
@@ -202,75 +204,103 @@ export function calculateAbsentDeductions(
   for (const a of config) adjustments[a.id] = 0;
 
   /**
-   * Apply a fractional day deduction to:
-   *   - Basic salary
-   *   - All allowances EXCEPT: fuel, special
-   *   - Optionally EXCEPT conveyance (e.g. half-day scenario)
+   * Helper to deduct based on specific occasions
    */
-  const applyAbsentDeduction = (fraction: number, skipConveyance = false) => {
-    let dailyTotal = 0;
+  const applyOccasionDeduction = (
+    fraction: number,
+    occasion: "absent" | "leave" | "specialLeave" | "lateArrival" | "earlyLeaving",
+    isLeaveType = false,
+  ) => {
+    let subTotal = 0;
 
-    const basicDeduction = perDayBasic * fraction;
-    adjustments["basicSalary"] += basicDeduction;
-    dailyTotal += basicDeduction;
+    // Basic is always deducted for absent/leave/specialLeave
+    if (occasion !== "lateArrival" && occasion !== "earlyLeaving") {
+      const basicDeduction = perDayBasic * fraction;
+      adjustments["basicSalary"] += basicDeduction;
+      subTotal += basicDeduction;
+    }
 
+    // Process allowances
     for (const allowance of config) {
-      const skip =
-        allowance.id === "fuel" ||
-        allowance.id === "special" ||
-        (skipConveyance && allowance.id === "conveyance");
-
-      if (!skip) {
-        const dayRate = (allowance.amount / calendarDaysInMonth) * fraction;
-        adjustments[allowance.id] += dayRate;
-        dailyTotal += dayRate;
+      const shouldDeduct = allowance.deductions?.[occasion] ?? false;
+      if (shouldDeduct) {
+        let amt = 0;
+        if (occasion === "lateArrival" || occasion === "earlyLeaving") {
+          const perHourRate = allowance.amount / (calendarDaysInMonth * standardDutyHours);
+          amt = perHourRate * fraction;
+        } else {
+          amt = (allowance.amount / calendarDaysInMonth) * fraction;
+        }
+        adjustments[allowance.id] = (adjustments[allowance.id] || 0) + amt;
+        subTotal += amt;
       }
     }
-    totalAbsentDeduction += dailyTotal;
+
+    if (isLeaveType) {
+      totalLeaveDeduction += subTotal;
+    } else {
+      totalAbsentDeduction += subTotal;
+    }
   };
 
   for (const record of attendanceRecords) {
     const dutyHours = parseFloat(record.dutyHours || "0");
 
     if (record.status === "absent") {
-      // Full absent without notice → full deduction
-      applyAbsentDeduction(1);
+      applyOccasionDeduction(1, "absent");
     } else if (record.status === "half_day") {
-      // Half-day → 50% deduction, but conveyance is NOT deducted
-      applyAbsentDeduction(0.5, /* skipConveyance */ true);
+      // Half-day is treated as 0.5 of an absence
+      applyOccasionDeduction(0.5, "absent");
     } else if (record.status === "leave") {
-      if (record.isApprovedLeave) {
-        // Approved paid leave → zero deduction
-        // (nothing to do)
-      } else {
-        // Unpaid / unapproved leave → deduct conveyance allowance only
-        const conveyanceAmt = getAllowanceAmount(config, "conveyance");
-        if (conveyanceAmt > 0) {
-          const perDayConveyance = conveyanceAmt / calendarDaysInMonth;
-          totalLeaveDeduction += perDayConveyance;
-          if (adjustments["conveyance"] !== undefined) {
-            adjustments["conveyance"] += perDayConveyance;
-          }
-        }
+      if (record.leaveType === "special") {
+        // Special Leave: only Basic is paid, everything else deducted
+        applyOccasionDeduction(1, "specialLeave", true);
+      } else if (record.leaveType === "sick") {
+        // Sick Leave: Always no-deduction regardless of approval status.
+        // Bradford Factor still counts (tracked via filter elsewhere).
+        // No deduction applied — intentionally fall through without any action.
+      } else if (record.leaveType === "unpaid") {
+        // Unpaid Leave: Only conveyance is deducted (not full absent deduction).
+        applyOccasionDeduction(1, "leave", true);
+      } else if (!record.isApprovedLeave) {
+        // Casual/Annual leave without admin approval → conveyance deducted
+        applyOccasionDeduction(1, "leave", true);
       }
+      // Approved paid casual/annual/special = no deduction (isApprovedLeave = true)
     } else if (record.status === "present" && dutyHours < standardDutyHours) {
-      // Undertime: hour-based deduction from Basic salary only
+      // Undertime / Late Arrival / Early Leaving
       const shortHours = standardDutyHours - dutyHours;
-      const hourDeduction = perHourBasic * shortHours;
-      totalAbsentDeduction += hourDeduction;
-      adjustments["basicSalary"] += hourDeduction;
       totalUndertimeHours += shortHours;
+
+      // Deduct from the basic salary component at the per-hour rate.
+      // We only apply this via applyOccasionDeduction to avoid double-counting.
+      // applyOccasionDeduction for lateArrival/earlyLeaving handles the per-hour
+      // allowance deductions. For basic, we apply it separately once here.
+      const basicDeduction = perHourBasic * shortHours;
+      adjustments["basicSalary"] = (adjustments["basicSalary"] || 0) + basicDeduction;
+      totalAbsentDeduction += basicDeduction;
+
+      // Apply per-hour allowance deductions (does NOT touch basic, see applyOccasionDeduction).
+      // Only apply for relevant tagged records to avoid deducting allowances unjustly.
+      if (record.isLate) {
+        applyOccasionDeduction(shortHours, "lateArrival");
+      } else if (record.earlyDepartureStatus && record.earlyDepartureStatus !== "none") {
+        applyOccasionDeduction(shortHours, "earlyLeaving");
+      }
+      // If neither flag is set, only basic deduction is applied (already done above).
     }
   }
 
-  // Build final adjusted allowance map
+  // Build final adjusted allowance map — clamp to 0 to prevent negative components.
   const adjustedAllowances: Record<string, number> = {};
-  adjustedAllowances["basicSalary"] = Math.round(
-    basicSalary - adjustments["basicSalary"],
+  adjustedAllowances["basicSalary"] = Math.max(
+    0,
+    Math.round(basicSalary - adjustments["basicSalary"]),
   );
   for (const allowance of config) {
-    adjustedAllowances[allowance.id] = Math.round(
-      allowance.amount - adjustments[allowance.id],
+    adjustedAllowances[allowance.id] = Math.max(
+      0,
+      Math.round(allowance.amount - (adjustments[allowance.id] || 0)),
     );
   }
 
@@ -292,8 +322,9 @@ export function calculateAbsentDeductions(
  */
 export function sumApprovedOvertimeHours(records: AttendanceRecord[]): number {
   return records.reduce((sum, r) => {
-    const isApproved = !r.overtimeStatus || r.overtimeStatus === "approved";
-    if (!isApproved) return sum;
+    // Only count explicitly approved overtime (not pending or rejected).
+    // If overtimeStatus is missing/undefined, treat as pending (do NOT count).
+    if (r.overtimeStatus !== "approved") return sum;
     return sum + parseFloat(r.overtimeHours || "0");
   }, 0);
 }

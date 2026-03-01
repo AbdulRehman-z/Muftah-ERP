@@ -80,13 +80,16 @@ export async function generateEmployeePayslipCore(input: GeneratePayslipInput) {
     isApprovedLeave: r.isApprovedLeave ?? false,
     leaveType: r.leaveType ?? null,
     overtimeStatus: r.overtimeStatus ?? "pending",
+    isLate: r.isLate ?? false,
+    earlyDepartureStatus: r.earlyDepartureStatus ?? "none",
   }));
 
-  // 3. Auto-pull salary advance deductions if not manually overridden
-  let advanceDeduction = additionalAmounts.advanceDeduction ?? 0;
+  // 3. Auto-pull salary advance deductions if not manually overridden.
+  //    Sentinel: undefined = auto-pull from DB; explicit number (even 0) = honour admin choice.
+  let advanceDeduction: number;
   let advanceIdsToMark: string[] = [];
 
-  if (autoDeductAdvances && advanceDeduction === 0) {
+  if (autoDeductAdvances && additionalAmounts.advanceDeduction === undefined) {
     const pendingAdvances = await db.query.salaryAdvances.findMany({
       where: and(
         eq(salaryAdvances.employeeId, employeeId),
@@ -102,6 +105,9 @@ export async function generateEmployeePayslipCore(input: GeneratePayslipInput) {
       0,
     );
     advanceIdsToMark = notYetDeducted.map((a) => a.id);
+  } else {
+    // Admin explicitly provided a value (including 0 to skip recovery).
+    advanceDeduction = additionalAmounts.advanceDeduction ?? 0;
   }
 
   // 4. Calculate payslip using the updated calculator

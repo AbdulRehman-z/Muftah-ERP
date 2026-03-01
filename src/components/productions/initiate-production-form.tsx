@@ -169,7 +169,7 @@ export const InitiateProductionForm = ({
             const containersPerCarton = currentRecipe.containersPerCarton || 0;
             const totalCartons =
               containersPerCarton > 0
-                ? Math.floor(totalContainers / containersPerCarton)
+                ? Math.ceil(totalContainers / containersPerCarton)
                 : 0;
 
             // 3. Packaging Calculation

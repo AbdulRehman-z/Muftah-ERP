@@ -2,7 +2,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { Eye, Pencil, Trash2 } from "lucide-react";
-import { toast } from "sonner";
 import { DataTable } from "@/components/ui/data-table";
 import { getEmployeesFn } from "@/server-functions/hr/employees/get-employees-fn";
 import { Badge } from "@/components/ui/badge";

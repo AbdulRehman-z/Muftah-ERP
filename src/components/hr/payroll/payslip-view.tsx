@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Printer, Mail, Loader2, ShieldCheck, Edit2 } from "lucide-react";
+import { Printer, Mail, Loader2, Edit2 } from "lucide-react";
 import { useSendPayslipEmail } from "@/hooks/hr/use-send-payslip-email";
 import { OverrideBradfordDialog } from "./override-bradford-dialog";
 
@@ -202,119 +202,340 @@ export const PayslipView = ({
     const ep = [...earnings, ...Array(rowCount - earnings.length).fill(null)];
     const dp = [...deductions, ...Array(rowCount - deductions.length).fill(null)];
 
-    // ── Print: open isolated popup containing only the payslip HTML ────────
+    // ── Print: open a full new tab with self-contained HTML (like COA) ──────
     const handlePrint = () => {
-        if (!printRef.current) return;
-
-        const popup = window.open("", "_blank", "width=900,height=700");
-        if (!popup) {
-            // Fallback if popup was blocked
+        const printWindow = window.open("", "_blank");
+        if (!printWindow) {
             window.print();
             return;
         }
 
-        popup.document.write(`
+        // Build the combined earnings/deductions table rows
+        const earningRows: string[] = [];
+        const deductionRows: string[] = [];
+        const maxRows = Math.max(earnings.length, deductions.length, 6);
+
+        for (let i = 0; i < maxRows; i++) {
+            const e = earnings[i];
+            const d = deductions[i];
+            earningRows.push(e ? `<td class="cell">${e.label}</td><td class="cell ta-center"></td><td class="cell num">${fmt(e.value)}</td>` : `<td class="cell"></td><td class="cell"></td><td class="cell"></td>`);
+            deductionRows.push(d ? `<td class="cell">${d.label}</td><td class="cell ta-center"></td><td class="cell num">${fmt(d.value)}</td>` : `<td class="cell"></td><td class="cell"></td><td class="cell"></td>`);
+        }
+
+        const combinedRows = earningRows
+            .map((er, i) => `<tr>${er}${deductionRows[i]}</tr>`)
+            .join("");
+
+        printWindow.document.write(`
             <!DOCTYPE html>
             <html>
             <head>
                 <meta charset="utf-8" />
-                <title>Payslip - ${format(parseISO(payroll.month), "MMMM yyyy")}</title>
+                <title>Payslip - ${format(parseISO(payroll.month), "MMMM yyyy")} - ${employee.firstName} ${employee.lastName}</title>
                 <style>
-                    * { box-sizing: border-box; margin: 0; padding: 0; }
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+
                     body {
-                        font-family: Arial, sans-serif;
+                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
                         font-size: 11px;
                         color: #111;
-                        background: #fff;
-                        padding: 28px 32px;
+                        background: white;
+                        padding: 0;
                     }
+
+                    @media print {
+                        body { padding: 0; }
+                        .no-print { display: none !important; }
+                        @page { margin: 15mm; size: A4; }
+                    }
+
+                    .payslip {
+                        max-width: 780px;
+                        margin: 0 auto;
+                        padding: 40px;
+                    }
+
+                    /* Header */
+                    .header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                        margin-bottom: 14px;
+                    }
+                    .header-left {
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                    }
+                    .company-name {
+                        font-size: 16px;
+                        font-weight: 800;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }
+                    .company-sub {
+                        font-size: 10px;
+                        color: #6b7280;
+                        font-style: italic;
+                    }
+                    .meta-right {
+                        text-align: right;
+                        font-size: 10px;
+                        color: #374151;
+                        line-height: 1.8;
+                    }
+
+                    /* Table styles */
                     table {
                         width: 100%;
                         border-collapse: collapse;
                         table-layout: fixed;
                     }
-                    td, th {
+                    .cell {
                         border: 1px solid #9ca3af;
                         padding: 3px 7px;
                         font-size: 11px;
                         vertical-align: middle;
                     }
-                    .net-row td {
-                        background: #bfdbfe !important;
-                        font-weight: 800;
-                        font-size: 12px;
-                        -webkit-print-color-adjust: exact;
-                        print-color-adjust: exact;
+                    .cell-label {
+                        border: 1px solid #9ca3af;
+                        padding: 3px 7px;
+                        font-size: 11px;
+                        font-weight: 600;
+                        vertical-align: middle;
                     }
-                    .total-row td {
-                        background: #f9fafb !important;
+                    .cell-hdr {
+                        border: 1px solid #9ca3af;
+                        padding: 3px 7px;
+                        font-size: 11px;
                         font-weight: 700;
+                        background: #fff;
+                    }
+                    .num {
+                        text-align: right;
+                        font-variant-numeric: tabular-nums;
+                    }
+                    .ta-center { text-align: center; }
+                    .ta-right { text-align: right; }
+                    .total-cell {
+                        border: 1px solid #9ca3af;
+                        padding: 3px 7px;
+                        font-weight: 700;
+                        text-align: right;
+                        background: #f3f4f6;
                         -webkit-print-color-adjust: exact;
                         print-color-adjust: exact;
                     }
-                    .ta-right { text-align: right; }
-                    .ta-center { text-align: center; }
-                    .fw-bold { font-weight: 700; }
-                    .fw-800  { font-weight: 800; }
-                    .mono { font-variant-numeric: tabular-nums; }
-                    /*
-                     * @page at top level (not inside @media print) is the
-                     * only way to suppress Chromium browser headers/footers
-                     * (the "about:blank", date, and page number lines).
-                     * margin:0 removes them; body padding controls whitespace.
-                     */
-                    .no-print { display: none !important; }
-                    [data-no-print] { display: none !important; }
-                    @media print {
-                        [data-no-print] { display: none !important; }
+                    .total-label {
+                        border: 1px solid #9ca3af;
+                        padding: 3px 7px;
+                        font-weight: 700;
+                        text-align: right;
+                        background: #f3f4f6;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
                     }
-                    @page {
-                        size: A4 portrait;
-                        margin: 0;
+                    .net-cell {
+                        border: 1px solid #9ca3af;
+                        padding: 3px 7px;
+                        font-weight: 800;
+                        font-size: 13px;
+                        background: #ADD8E6;
+                        text-align: center;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
                     }
-                    @media print {
-                        html, body {
-                            width: 210mm;
-                            height: 297mm;
-                            overflow: hidden;
-                        }
-                        body { padding: 12mm 14mm; }
+                    .net-num {
+                        border: 1px solid #9ca3af;
+                        padding: 3px 7px;
+                        font-weight: 800;
+                        font-size: 13px;
+                        background: #ADD8E6;
+                        text-align: right;
+                        font-variant-numeric: tabular-nums;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    .bradford {
+                        font-weight: 700;
+                        color: ${bradfordColor};
+                    }
+
+                    /* Remarks */
+                    .remarks {
+                        border: 1px solid #9ca3af;
+                        padding: 8px 10px;
+                        min-height: 54px;
+                        margin-top: 16px;
+                        margin-bottom: 32px;
+                        font-size: 11px;
+                    }
+
+                    /* Signatures */
+                    .signatures {
+                        display: flex;
+                        justify-content: space-between;
+                        padding-top: 36px;
+                        padding-left: 8px;
+                        padding-right: 8px;
+                    }
+                    .sig-block {
+                        text-align: center;
+                        width: 200px;
+                    }
+                    .sig-line {
+                        border-top: 1px solid #1f2937;
+                        padding-top: 6px;
+                        font-size: 11px;
+                        font-weight: 700;
+                    }
+
+                    /* Footer */
+                    .footer {
+                        margin-top: 20px;
+                        border-top: 1px solid #f3f4f6;
+                        padding-top: 10px;
+                        text-align: center;
+                        font-size: 9px;
+                        color: #9ca3af;
+                        text-transform: uppercase;
+                        letter-spacing: 2px;
                     }
                 </style>
             </head>
             <body>
-                ${(() => {
-                // Clone the node so we don't mutate the live DOM
-                const clone = printRef.current!.cloneNode(
-                    true,
-                ) as HTMLElement;
-                // Remove ALL elements marked as no-print before serialising
-                clone
-                    .querySelectorAll("[data-no-print]")
-                    .forEach((el) => el.remove());
-                return clone.innerHTML;
-            })()}
+                <div class="payslip">
+                    <!-- Header -->
+                    <div class="header">
+                        <div class="header-left">
+                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7l-9-5z" fill="#fef9c3" stroke="#eab308" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M9 12l2 2 4-4" stroke="#eab308" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <div>
+                                <div class="company-name">TITAN ENTERPRISE</div>
+                                <div class="company-sub">Confidential Payslip</div>
+                            </div>
+                        </div>
+                        <div class="meta-right">
+                            <div><strong>Month:</strong> ${format(parseISO(payroll.month), "MMMM yyyy")}</div>
+                            <div><strong>Period:</strong> ${format(parseISO(payroll.startDate), "dd MMM yyyy")} to ${format(parseISO(payroll.endDate), "dd MMM yyyy")}</div>
+                            <div><strong>Slip ID:</strong> ${payslip.id.slice(0, 8).toUpperCase()}</div>
+                        </div>
+                    </div>
+
+                    <!-- Master table -->
+                    <table>
+                        <colgroup>
+                            <col style="width: 18%" />
+                            <col style="width: 7%" />
+                            <col style="width: 11%" />
+                            <col style="width: 20%" />
+                            <col style="width: 7%" />
+                            <col style="width: 11%" />
+                        </colgroup>
+                        <tbody>
+                            <!-- Employee info -->
+                            <tr>
+                                <td class="cell-label">Employee Code</td>
+                                <td class="cell" colspan="2">${employee.employeeCode}</td>
+                                <td class="cell-label">Name</td>
+                                <td class="cell" colspan="2">${employee.firstName} ${employee.lastName}</td>
+                            </tr>
+                            <tr>
+                                <td class="cell-label">Designation</td>
+                                <td class="cell" colspan="2">${employee.designation}</td>
+                                <td class="cell-label">CNIC</td>
+                                <td class="cell" colspan="2">${employee.cnic || "N/A"}</td>
+                            </tr>
+                            <tr>
+                                <td class="cell-label">Bank Account Number</td>
+                                <td class="cell" colspan="2">${employee.bankAccountNumber || "N/A"}</td>
+                                <td class="cell-label">Bradford Factor Period</td>
+                                <td class="cell" colspan="2">${bradfordPeriod}</td>
+                            </tr>
+                            <tr>
+                                <td class="cell-label">Bank Name</td>
+                                <td class="cell" colspan="2">${employee.bankName || "Cash"}</td>
+                                <td class="cell-label">Bradford Factor</td>
+                                <td class="cell bradford" colspan="2">${effectiveBradford}${payslip.bradfordFactorOverride != null ? ' <span style="font-size:9px;color:#9ca3af;font-weight:400">(override)</span>' : ""}</td>
+                            </tr>
+
+                            <!-- Attendance -->
+                            <tr>
+                                <td class="cell" colspan="6" style="padding-top:5px;padding-bottom:5px">
+                                    <strong>Attendance:</strong>
+                                    <span style="margin-right:14px">Present: <strong>${payslip.daysPresent ?? 0}</strong></span>
+                                    <span style="margin-right:14px">Absent: <strong>${payslip.daysAbsent ?? 0}</strong></span>
+                                    <span style="margin-right:14px">Leave: <strong>${payslip.daysLeave ?? 0}</strong></span>
+                                    <span style="margin-right:14px">OT (Hrs): <strong>${payslip.totalOvertimeHours ?? "0.00"}</strong></span>
+                                    <span>Night Shifts: <strong>${payslip.nightShiftsCount ?? 0}</strong></span>
+                                </td>
+                            </tr>
+
+                            <!-- Column headers -->
+                            <tr>
+                                <th class="cell-hdr">Earning</th>
+                                <th class="cell-hdr ta-center">Hrs/Days</th>
+                                <th class="cell-hdr ta-right">PKR</th>
+                                <th class="cell-hdr">Deduction</th>
+                                <th class="cell-hdr ta-center">Hrs/Days</th>
+                                <th class="cell-hdr ta-right">PKR</th>
+                            </tr>
+
+                            <!-- Line items -->
+                            ${combinedRows}
+
+                            <!-- Totals -->
+                            <tr>
+                                <td class="total-label" colspan="2">Total Earnings</td>
+                                <td class="total-cell">${fmt(totalEarnings)}</td>
+                                <td class="total-label" colspan="2">Total Deduction</td>
+                                <td class="total-cell">${fmt(totalDedns)}</td>
+                            </tr>
+
+                            <!-- Net Pay -->
+                            <tr>
+                                <td class="net-cell" colspan="4">Net Pay</td>
+                                <td class="net-num">${fmt(netPay)}</td>
+                                <td class="net-cell">PKR</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Remarks -->
+                    <div class="remarks">
+                        ${payslip.remarks || "Salaries are paid as per company policy."}
+                    </div>
+
+                    <!-- Signatures -->
+                    <div class="signatures">
+                        <div class="sig-block"><div class="sig-line">Employee Signature</div></div>
+                        <div class="sig-block"><div class="sig-line">HR / Finance Manager</div></div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="footer">
+                        System Generated Slip • Titan Enterprise
+                    </div>
+                </div>
             </body>
             </html>
         `);
 
-        popup.document.close();
+        printWindow.document.close();
 
-        // Wait for render then trigger print dialog in the popup
-        popup.onload = () => {
-            popup.focus();
-            popup.print();
-            // Close popup after print dialog is dismissed
-            popup.onafterprint = () => popup.close();
-        };
-
-        // Fallback for browsers that fire onload before resources settle
+        // Wait for fonts/content to render before triggering the print dialog
         setTimeout(() => {
-            if (!popup.closed) {
-                popup.focus();
-                popup.print();
+            try {
+                printWindow.focus();
+                printWindow.print();
+            } catch (_) {
+                // Some browsers block programmatic print — user can use Ctrl+P
             }
-        }, 500);
+        }, 400);
     };
 
     return (

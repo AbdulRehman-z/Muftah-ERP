@@ -105,13 +105,28 @@ export const OperatorInterface = () => {
                   <div className="p-2 rounded-md border border-border/50">
                     <CheckCircle2 className="size-4 text-green-600" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-none mb-1">
                       Target Output
                     </p>
                     <p className="font-semibold text-sm">
                       {run.containersProduced} Pack(s)
                     </p>
+                    {run.recipe.containersPerCarton && run.recipe.containersPerCarton > 0 && run.recipe.cartonPackagingId && (() => {
+                      const perCarton = run.recipe.containersPerCarton!;
+                      const total = run.containersProduced;
+                      const fullCartons = Math.floor(total / perCarton);
+                      const loose = total % perCarton;
+                      return (
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {loose > 0 ? (
+                            <>{fullCartons} full carton{fullCartons !== 1 ? "s" : ""} + <span className="text-amber-700 font-medium">1 partial ({loose} units)</span></>
+                          ) : (
+                            <>{fullCartons} carton{fullCartons !== 1 ? "s" : ""}</>
+                          )}
+                        </p>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

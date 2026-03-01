@@ -1,11 +1,12 @@
 import { formatDistanceToNow } from "date-fns";
-import { Eye, Play, NotebookPenIcon, ArrowUpDown } from "lucide-react";
+import { Eye, Play, NotebookPenIcon, ArrowUpDown, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Progress } from "../ui/progress";
 import { toast } from "sonner";
 import { useStartProduction } from "@/hooks/production/use-start-production";
 import { useCompleteProduction } from "@/hooks/production/use-complete-production";
+import { useDeleteProductionRun } from "@/hooks/production/use-delete-production-run";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,10 +39,14 @@ type ProductionRunsTableProps = {
 export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
   const startProduction = useStartProduction();
   const completeProduction = useCompleteProduction();
+  const deleteProductionRun = useDeleteProductionRun();
 
   // Lifted dialog state — prevents re-renders from closing open dialogs
   const [startDialogRunId, setStartDialogRunId] = useState<string | null>(null);
   const [finishDialogRunId, setFinishDialogRunId] = useState<string | null>(
+    null,
+  );
+  const [deleteDialogRunId, setDeleteDialogRunId] = useState<string | null>(
     null,
   );
 
@@ -180,9 +185,9 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
             </p>
             {row.original.recipe.containersPerCarton > 0 && (
               <p className="text-[10px] text-muted-foreground font-bold uppercase leading-none">
-                {Math.floor(
+                {Math.ceil(
                   row.original.containersProduced /
-                    row.original.recipe.containersPerCarton,
+                  row.original.recipe.containersPerCarton,
                 )}{" "}
                 Cartons
               </p>
@@ -201,7 +206,7 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
           const run = row.original;
           const produced = run.completedUnits || 0;
           const perCarton = run.recipe.containersPerCarton || 0;
-          const cartons = perCarton > 0 ? Math.floor(produced / perCarton) : 0;
+          const cartons = perCarton > 0 ? Math.ceil(produced / perCarton) : 0;
           const loose = perCarton > 0 ? produced % perCarton : produced;
 
           if (run.status === "scheduled")
@@ -356,12 +361,23 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
                   <Eye className="size-4" />
                 </Link>
               </Button>
+
+              {(run.status === "scheduled" || run.status === "cancelled") && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  onClick={() => setDeleteDialogRunId(run.id)}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              )}
             </div>
           );
         },
       },
     ],
-    [startProduction.isPending, completeProduction.isPending],
+    [startProduction.isPending, completeProduction.isPending, deleteProductionRun.isPending],
   );
 
   return (
@@ -457,6 +473,47 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
               }}
             >
               Complete Production
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Run Confirmation Dialog — lifted outside table to survive re-renders */}
+      <AlertDialog
+        open={!!deleteDialogRunId}
+        onOpenChange={(open) => !open && setDeleteDialogRunId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="size-5 text-destructive" />
+              Delete Production Run?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this production run and all its
+              associated material usage records. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteProductionRun.isPending}
+              onClick={() => {
+                if (!deleteDialogRunId) return;
+                deleteProductionRun.mutate(
+                  {
+                    data: { productionRunId: deleteDialogRunId },
+                  },
+                  {
+                    onSuccess: () => {
+                      setDeleteDialogRunId(null);
+                    },
+                  },
+                );
+              }}
+            >
+              {deleteProductionRun.isPending ? "Deleting..." : "Delete Run"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

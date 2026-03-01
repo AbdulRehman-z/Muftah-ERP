@@ -13,7 +13,7 @@ import {
   startOfMonth,
   addDays,
 } from "date-fns";
-import { type AllowanceConfig } from "@/lib/types/hr-types";
+import { type AllowanceConfig, STANDARD_ALLOWANCES } from "@/lib/types/hr-types";
 import {
   calculatePayslip,
   type EmployeeData,
@@ -26,6 +26,27 @@ import {
 //   allowanceConfig = JSON array of { id, name, amount }
 //   No basicSalary / isOperator / individual allowance columns
 // ---------------------------------------------------------------------------
+
+type PartialAllowance = { id: string; name: string; amount: number };
+
+/**
+ * Merges a partial allowance with STANDARD_ALLOWANCES defaults.
+ * If the id is not in STANDARD_ALLOWANCES, uses safe no-deduction defaults.
+ */
+function buildAllowance(partial: PartialAllowance): AllowanceConfig {
+  const standard = STANDARD_ALLOWANCES.find((a) => a.id === partial.id);
+  return {
+    ...partial,
+    deductions: standard?.deductions ?? {
+      absent: false,
+      leave: false,
+      specialLeave: false,
+      lateArrival: false,
+      earlyLeaving: false,
+    },
+    lateEarlyBasis: standard?.lateEarlyBasis,
+  };
+}
 
 type EmployeeSeed = {
   employeeCode: string;
@@ -60,11 +81,11 @@ const employeeData: EmployeeSeed[] = [
     bankName: "HBL",
     bankAccountNumber: "12345678901",
     allowanceConfig: [
-      { id: "houseRent", name: "House Rent", amount: 50000 },
-      { id: "utilities", name: "Utilities", amount: 25000 },
-      { id: "conveyance", name: "Conveyance Allowance", amount: 25000 },
-      { id: "mobile", name: "Mobile Allowance", amount: 10000 },
-      { id: "special", name: "Special Allowance", amount: 15000 },
+      buildAllowance({ id: "houseRent", name: "House Rent", amount: 50000 }),
+      buildAllowance({ id: "utilities", name: "Utilities", amount: 25000 }),
+      buildAllowance({ id: "conveyance", name: "Conveyance Allowance", amount: 25000 }),
+      buildAllowance({ id: "mobile", name: "Mobile Allowance", amount: 10000 }),
+      buildAllowance({ id: "special", name: "Special Allowance", amount: 15000 }),
     ],
   },
   {
@@ -81,11 +102,11 @@ const employeeData: EmployeeSeed[] = [
     bankName: "MCB",
     bankAccountNumber: "98765432101",
     allowanceConfig: [
-      { id: "houseRent", name: "House Rent", amount: 36000 },
-      { id: "utilities", name: "Utilities", amount: 18000 },
-      { id: "conveyance", name: "Conveyance Allowance", amount: 18000 },
-      { id: "mobile", name: "Mobile Allowance", amount: 5000 },
-      { id: "special", name: "Special Allowance", amount: 13000 },
+      buildAllowance({ id: "houseRent", name: "House Rent", amount: 36000 }),
+      buildAllowance({ id: "utilities", name: "Utilities", amount: 18000 }),
+      buildAllowance({ id: "conveyance", name: "Conveyance Allowance", amount: 18000 }),
+      buildAllowance({ id: "mobile", name: "Mobile Allowance", amount: 5000 }),
+      buildAllowance({ id: "special", name: "Special Allowance", amount: 13000 }),
     ],
   },
   {
@@ -99,11 +120,11 @@ const employeeData: EmployeeSeed[] = [
     standardSalary: "60000",
     standardDutyHours: 8,
     allowanceConfig: [
-      { id: "houseRent", name: "House Rent", amount: 24000 },
-      { id: "utilities", name: "Utilities", amount: 12000 },
-      { id: "conveyance", name: "Conveyance Allowance", amount: 12000 },
-      { id: "bikeMaintenance", name: "Bike Maintenance", amount: 5000 },
-      { id: "fuel", name: "Fuel Allowance", amount: 7000 },
+      buildAllowance({ id: "houseRent", name: "House Rent", amount: 24000 }),
+      buildAllowance({ id: "utilities", name: "Utilities", amount: 12000 }),
+      buildAllowance({ id: "conveyance", name: "Conveyance Allowance", amount: 12000 }),
+      buildAllowance({ id: "bikeMaintenance", name: "Bike Maintenance", amount: 5000 }),
+      buildAllowance({ id: "fuel", name: "Fuel Allowance", amount: 7000 }),
     ],
   },
   {
@@ -117,10 +138,10 @@ const employeeData: EmployeeSeed[] = [
     standardSalary: "35000",
     standardDutyHours: 8,
     allowanceConfig: [
-      { id: "houseRent", name: "House Rent", amount: 14000 },
-      { id: "utilities", name: "Utilities", amount: 7000 },
-      { id: "conveyance", name: "Conveyance Allowance", amount: 7000 },
-      { id: "special", name: "Special Allowance", amount: 7000 },
+      buildAllowance({ id: "houseRent", name: "House Rent", amount: 14000 }),
+      buildAllowance({ id: "utilities", name: "Utilities", amount: 7000 }),
+      buildAllowance({ id: "conveyance", name: "Conveyance Allowance", amount: 7000 }),
+      buildAllowance({ id: "special", name: "Special Allowance", amount: 7000 }),
     ],
   },
   {
@@ -134,10 +155,10 @@ const employeeData: EmployeeSeed[] = [
     standardSalary: "32500",
     standardDutyHours: 8,
     allowanceConfig: [
-      { id: "houseRent", name: "House Rent", amount: 13000 },
-      { id: "utilities", name: "Utilities", amount: 6500 },
-      { id: "conveyance", name: "Conveyance Allowance", amount: 6500 },
-      { id: "special", name: "Special Allowance", amount: 6500 },
+      buildAllowance({ id: "houseRent", name: "House Rent", amount: 13000 }),
+      buildAllowance({ id: "utilities", name: "Utilities", amount: 6500 }),
+      buildAllowance({ id: "conveyance", name: "Conveyance Allowance", amount: 6500 }),
+      buildAllowance({ id: "special", name: "Special Allowance", amount: 6500 }),
     ],
   },
   {
@@ -151,11 +172,11 @@ const employeeData: EmployeeSeed[] = [
     standardSalary: "22500",
     standardDutyHours: 12, // 12-hour shift
     allowanceConfig: [
-      { id: "houseRent", name: "House Rent", amount: 9000 },
-      { id: "utilities", name: "Utilities", amount: 4500 },
-      { id: "conveyance", name: "Conveyance Allowance", amount: 4500 },
-      { id: "special", name: "Special Allowance", amount: 4500 },
-      { id: "nightShift", name: "Night Shift Allowance", amount: 1000 }, // per shift
+      buildAllowance({ id: "houseRent", name: "House Rent", amount: 9000 }),
+      buildAllowance({ id: "utilities", name: "Utilities", amount: 4500 }),
+      buildAllowance({ id: "conveyance", name: "Conveyance Allowance", amount: 4500 }),
+      buildAllowance({ id: "special", name: "Special Allowance", amount: 4500 }),
+      buildAllowance({ id: "nightShift", name: "Night Shift Allowance", amount: 1000 }),
     ],
   },
 ];
@@ -503,7 +524,7 @@ async function seedHR() {
 
     console.log(
       `  Payslip: ${emp.employeeCode} ${emp.firstName} ${emp.lastName}` +
-        ` → gross PKR ${calc.grossSalary.toLocaleString()}, net PKR ${calc.netSalary.toLocaleString()}`,
+      ` → gross PKR ${calc.grossSalary.toLocaleString()}, net PKR ${calc.netSalary.toLocaleString()}`,
     );
   }
 

@@ -5,6 +5,7 @@ import {
   decimal,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -235,8 +236,8 @@ export const recipePackaging = pgTable(
     // Support fractional quantities (e.g., 1.5 caps per bottle)
     quantityPerContainer: decimal("quantity_per_container", {
       precision: 10,
-      scale: 3,
-    }).notNull(), // e.g., 1 cap per bottle, 1.5 labels per bottle
+      scale: 6,
+    }).notNull(), // e.g., 1 cap per bottle, 0.04175 stickers per unit
     // Optional flag for flexible configurations
     isOptional: boolean("is_optional").default(false),
     ...timestamps,
@@ -393,6 +394,56 @@ export const inventoryAuditLog = pgTable(
   }),
 );
 
+// --- CHEMICAL LAB REPORTS (Certificate of Analysis) ---
+export const chemicalLabReports = pgTable(
+  "chemical_lab_reports",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => createId()),
+    chemicalId: text("chemical_id")
+      .notNull()
+      .references(() => chemicals.id, { onDelete: "cascade" }),
+
+    // Certificate Details
+    productName: text("product_name").notNull(),
+    stockNumber: text("stock_number"),
+    lotNumber: text("lot_number"),
+
+    // Analysis items as JSONB array
+    // [{item: "Appearance", requirement: "Liquid", result: "Accept", passed: true}]
+    analysisItems: jsonb("analysis_items")
+      .notNull()
+      .$type<
+        Array<{
+          item: string;
+          requirement: string;
+          result: string;
+          passed: boolean;
+        }>
+      >(),
+
+    // Certification
+    certifiedBy: text("certified_by").notNull(),
+    certifierTitle: text("certifier_title"),
+    reportDate: timestamp("report_date").notNull(),
+
+    // Standard reference
+    standardReference: text("standard_reference"), // e.g., "ISO 9001:2015"
+
+    notes: text("notes"),
+
+    createdById: text("created_by_id")
+      .notNull()
+      .references(() => user.id),
+    ...timestamps,
+  },
+  (t) => ({
+    chemicalIdx: index("lab_report_chemical_idx").on(t.chemicalId),
+    dateIdx: index("lab_report_date_idx").on(t.reportDate),
+  }),
+);
+
 // --- RELATIONS ---
 export const warehousesRelations = relations(warehouses, ({ many }) => ({
   materialStock: many(materialStock),
@@ -403,11 +454,26 @@ export const warehousesRelations = relations(warehouses, ({ many }) => ({
 export const chemicalsRelations = relations(chemicals, ({ many, one }) => ({
   stock: many(materialStock),
   recipeIngredients: many(recipeIngredients),
+  labReports: many(chemicalLabReports),
   lastSupplier: one(suppliers, {
     fields: [chemicals.lastSupplierId],
     references: [suppliers.id],
   }),
 }));
+
+export const chemicalLabReportsRelations = relations(
+  chemicalLabReports,
+  ({ one }) => ({
+    chemical: one(chemicals, {
+      fields: [chemicalLabReports.chemicalId],
+      references: [chemicals.id],
+    }),
+    createdBy: one(user, {
+      fields: [chemicalLabReports.createdById],
+      references: [user.id],
+    }),
+  }),
+);
 
 export const packagingMaterialsRelations = relations(
   packagingMaterials,

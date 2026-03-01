@@ -12,6 +12,8 @@ export const useDeleteRecipe = () => {
       queryClient.invalidateQueries({ queryKey: ["recipes"] });
     },
     onError: (error) => {
+      // Show toast for all errors — the card component will also handle
+      // the force-delete upgrade via the error message
       toast.error(error.message || "Failed to delete recipe");
     },
   });
