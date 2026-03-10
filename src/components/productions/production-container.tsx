@@ -1,8 +1,9 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Factory, PlusIcon, Search } from "lucide-react";
+import { PlusIcon, Search } from "lucide-react";
 import { useState } from "react";
 import { getProductionRunsFn } from "@/server-functions/inventory/production/get-production-run-fn";
 import { GenericEmpty } from "../custom/empty";
+import { InventoryEmptyIllustration } from "@/components/illustrations/InventoryEmptyIllustration";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
@@ -20,7 +21,6 @@ import {
   subDays,
   isAfter,
   startOfDay,
-  parseISO,
 } from "date-fns";
 import { InitiateProductionSheet } from "./initiate-production-sheet";
 import { useProductionRunsSync } from "@/hooks/production/use-production-runs-sync";
@@ -43,7 +43,7 @@ export const ProductionRunsContainer = () => {
     return (
       <>
         <GenericEmpty
-          icon={Factory}
+          icon={InventoryEmptyIllustration}
           title="No Production Runs Yet"
           description="Start your first production run to begin manufacturing. The system will automatically calculate costs and deduct materials."
           ctaText="Start Production Run"

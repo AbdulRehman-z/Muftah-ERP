@@ -1,5 +1,4 @@
 import { useForm } from "@tanstack/react-form";
-import { Loader2 } from "lucide-react";
 import { z } from "zod";
 import { useUsers } from "@/hooks/use-users";
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { UserCircleIcon, MailIcon, KeyIcon, ShieldIcon } from "lucide-react";
 
 const addUserSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -75,85 +75,115 @@ export const AddUserForm = ({ onSuccess }: Props) => {
         e.stopPropagation();
         form.handleSubmit();
       }}
-      className="space-y-4"
+      className="space-y-6 pt-2"
     >
-      <form.Field name="name">
-        {(field) => (
-          <Field>
-            <FieldLabel>Name</FieldLabel>
-            <Input
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              onBlur={field.handleBlur}
-            />
-            <FieldError errors={field.state.meta.errors} />
-          </Field>
-        )}
-      </form.Field>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
+        <form.Field name="name">
+          {(field) => (
+            <Field>
+              <FieldLabel className="flex items-center gap-2 mb-1.5">
+                <UserCircleIcon className="size-4 text-muted-foreground" />
+                <span className="text-sm font-semibold">Full Name</span>
+              </FieldLabel>
+              <Input
+                placeholder="e.g. Abdul Rehman"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                className="bg-background"
+                autoFocus
+              />
+              <p className="text-[13px] text-muted-foreground mt-1.5">
+                The official name of the employee for system records.
+              </p>
+              <FieldError errors={field.state.meta.errors} />
+            </Field>
+          )}
+        </form.Field>
 
-      <form.Field name="email">
-        {(field) => (
-          <Field>
-            <FieldLabel>Email</FieldLabel>
-            <Input
-              type="email"
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              onBlur={field.handleBlur}
-            />
-            <FieldError errors={field.state.meta.errors} />
-          </Field>
-        )}
-      </form.Field>
+        <form.Field name="email">
+          {(field) => (
+            <Field>
+              <FieldLabel className="flex items-center gap-2 mb-1.5">
+                <MailIcon className="size-4 text-muted-foreground" />
+                <span className="text-sm font-semibold">Email Address</span>
+              </FieldLabel>
+              <Input
+                type="email"
+                placeholder="employee@company.dev"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                className="bg-background"
+              />
+              <p className="text-[13px] text-muted-foreground mt-1.5">
+                Used for account login and system notifications.
+              </p>
+              <FieldError errors={field.state.meta.errors} />
+            </Field>
+          )}
+        </form.Field>
 
-      <form.Field name="password">
-        {(field) => (
-          <Field>
-            <FieldLabel>Password</FieldLabel>
-            <Input
-              type="password"
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              onBlur={field.handleBlur}
-            />
-            <FieldError errors={field.state.meta.errors} />
-          </Field>
-        )}
-      </form.Field>
+        <form.Field name="password">
+          {(field) => (
+            <Field>
+              <FieldLabel className="flex items-center gap-2 mb-1.5">
+                <KeyIcon className="size-4 text-muted-foreground" />
+                <span className="text-sm font-semibold">Password</span>
+              </FieldLabel>
+              <Input
+                type="password"
+                placeholder="••••••••"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                className="bg-background"
+              />
+              <p className="text-[13px] text-muted-foreground mt-1.5">
+                Must be at least 8 characters long.
+              </p>
+              <FieldError errors={field.state.meta.errors} />
+            </Field>
+          )}
+        </form.Field>
 
-      <form.Field name="role">
-        {(field) => (
-          <Field>
-            <FieldLabel>Role</FieldLabel>
-            <Select
-              value={field.state.value}
-              onValueChange={(val: any) => field.handleChange(val)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="operator">Operator</SelectItem>
-                <SelectItem value="finance-manager">Finance Manager</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="super-admin">Super Admin</SelectItem>
-              </SelectContent>
-            </Select>
-            <FieldError errors={field.state.meta.errors} />
-          </Field>
-        )}
-      </form.Field>
+        <form.Field name="role">
+          {(field) => (
+            <Field>
+              <FieldLabel className="flex items-center gap-2 mb-1.5">
+                <ShieldIcon className="size-4 text-muted-foreground" />
+                <span className="text-sm font-semibold">System Role</span>
+              </FieldLabel>
+              <Select
+                value={field.state.value}
+                onValueChange={(val: any) => field.handleChange(val)}
+              >
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="operator">Operator</SelectItem>
+                  <SelectItem value="finance-manager">Finance Manager</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="super-admin">Super Admin</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[13px] text-muted-foreground mt-1.5">
+                Determines the user's access level and permissions.
+              </p>
+              <FieldError errors={field.state.meta.errors} />
+            </Field>
+          )}
+        </form.Field>
+      </div>
 
-      <div className="flex justify-end pt-4">
+      <div className="flex justify-end pt-4 border-t border-border/60">
         <Button
           type="submit"
           disabled={createUser.isPending}
-          className="w-full"
+          className="w-full md:w-auto md:min-w-[140px]"
         >
-          {createUser.isPending && (
-            <Loader2 className="mr-2 size-4 animate-spin" />
-          )}
-          Create User
+          {createUser.isPending ? "Creating..." : "Create User"}
         </Button>
       </div>
     </form>

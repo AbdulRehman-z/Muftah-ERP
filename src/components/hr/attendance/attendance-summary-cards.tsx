@@ -19,43 +19,43 @@ export const AttendanceSummaryCards = ({ stats }: Props) => {
       title: "Total Employees",
       value: stats.total,
       icon: Users,
-      color: "text-blue-500",
-      bg: "bg-blue-50/50",
+      color: "text-blue-600 dark:text-blue-400",
+      bg: "bg-blue-50 dark:bg-blue-500/10",
     },
     {
       title: "Present",
       value: stats.present,
       icon: UserCheck,
-      color: "text-emerald-500",
-      bg: "bg-emerald-50/50",
+      color: "text-emerald-600 dark:text-emerald-400",
+      bg: "bg-emerald-50 dark:bg-emerald-500/10",
     },
     {
       title: "Absent",
       value: stats.absent,
       icon: UserMinus,
-      color: "text-rose-500",
-      bg: "bg-rose-50/50",
+      color: "text-rose-600 dark:text-rose-400",
+      bg: "bg-rose-50 dark:bg-rose-500/10",
     },
     {
       title: "Late Arrivals",
       value: stats.late,
       icon: Clock,
-      color: "text-amber-500",
-      bg: "bg-amber-50/50",
+      color: "text-amber-600 dark:text-amber-400",
+      bg: "bg-amber-50 dark:bg-amber-500/10",
     },
     {
       title: "On Leave",
       value: stats.leave,
       icon: CalendarIcon,
-      color: "text-indigo-500",
-      bg: "bg-indigo-50/50",
+      color: "text-indigo-600 dark:text-indigo-400",
+      bg: "bg-indigo-50 dark:bg-indigo-500/10",
     },
   ];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
       {cards.map((card) => (
-        <Card key={card.title} className="border-none transition-all">
+        <Card key={card.title} className="border transition-all">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               {card.title}

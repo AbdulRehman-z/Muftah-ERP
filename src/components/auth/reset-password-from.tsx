@@ -26,7 +26,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "../ui/field";
-import { PasswordInput } from "../ui/password-input";
+import { PasswordInput } from "../custom/password-input";
 
 export const ResetPasswordForm = () => {
   const navigate = useNavigate();

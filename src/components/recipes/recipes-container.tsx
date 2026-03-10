@@ -1,9 +1,10 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { FlaskConical, PackageIcon, PlusIcon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getRecipesFn } from "@/server-functions/inventory/recipes/get-recipe-fn";
 import { getProductsFn } from "@/server-functions/inventory/get-products-fn";
 import { GenericEmpty } from "../custom/empty";
+import { RecipeEmptyIllustration } from "../illustrations/RecipeEmptyIllustration";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { RecipeCard } from "./recipe-card";
@@ -73,7 +74,7 @@ export const RecipesContainer = () => {
     return (
       <>
         <GenericEmpty
-          icon={PackageIcon}
+          icon={RecipeEmptyIllustration}
           title="No Products Found"
           description="You haven't added any products yet. First, define a product (e.g., 'Dish Wash Liquid'), then you can create a recipe for it."
           ctaText="Add Product"
@@ -161,7 +162,7 @@ export const RecipesContainer = () => {
           {recipes.length === 0 ? (
             <div className="flex flex-col items-center justify-center w-full py-32 text-center bg-muted/10 rounded-[32px] border-2 border-dashed border-border/50">
               <GenericEmpty
-                icon={FlaskConical}
+                icon={RecipeEmptyIllustration}
                 title="No Recipes Yet"
                 description="Your products are ready, but they need recipes! Create a recipe to define ingredients, packaging, and costs."
                 ctaText="Create First Recipe"

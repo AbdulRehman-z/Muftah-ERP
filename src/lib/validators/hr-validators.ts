@@ -11,7 +11,8 @@ import { z } from "zod";
  */
 const deductionsSchema = z.object({
   absent: z.boolean(),
-  leave: z.boolean(),
+  annualLeave: z.boolean(),
+  sickLeave: z.boolean(),
   specialLeave: z.boolean(),
   lateArrival: z.boolean(),
   earlyLeaving: z.boolean(),
@@ -58,6 +59,13 @@ export const createEmployeeSchema = z.object({
       message: "Must be a valid positive number",
     }),
 
+  commissionRate: z
+    .string()
+    .refine((val) => !isNaN(Number(val)) && Number(val) >= 0 && Number(val) <= 100, {
+      message: "Must be a valid percentage between 0 and 100",
+    }),
+
+  isOrderBooker: z.boolean(),
   allowanceConfig: z.array(allowanceConfigSchema),
 });
 
@@ -96,6 +104,13 @@ export const upsertAttendanceSchema = z.object({
   // Leave policy
   isApprovedLeave: z.boolean().nullable(),
 
+  // Leave approval workflow
+  leaveApprovalStatus: z
+    .enum(["none", "pending", "approved", "rejected"])
+    .nullable()
+    .optional()
+    .default("none"),
+
   // Overtime workflow
   overtimeRemarks: z.string().nullable(),
   overtimeStatus: z.enum(["pending", "approved", "rejected"]).nullable(),
@@ -106,10 +121,35 @@ export const upsertAttendanceSchema = z.object({
     .nullable()
     .optional(),
 
+  // Order Booker Tracking
+  areaVisited: z.string().nullable().optional(),
+  paymentMode: z.enum(["per_km"]).default("per_km"),
+  isCompanyVehicle: z.boolean().default(false),
+  distanceKm: z.string().nullable().optional(),
+  perKmRate: z.string().nullable().optional(),
+  petrolAmount: z.string().nullable().optional(),
+  saleAmount: z.string().nullable().optional(),
+  recoveryAmount: z.string().nullable().optional(),
+  returnAmount: z.string().nullable().optional(),
+  slipNumbers: z.string().nullable().optional(),
+  shopType: z.enum(["old", "new"]).nullable().optional().default("old"),
+
   // Entry source for dual-entry system
   entrySource: z.enum(["biometric", "manual"]).default("manual"),
   notes: z.string().nullable(),
-});
+}).refine(
+  (data) => {
+    const ot = parseFloat(data.overtimeHours || "0");
+    if (ot > 0 && !data.overtimeRemarks?.trim()) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "Overtime reason is required when overtime hours are greater than 0",
+    path: ["overtimeRemarks"],
+  }
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EXPORTED TYPES — inferred directly from schemas so they always stay in sync

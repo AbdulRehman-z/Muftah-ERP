@@ -1,5 +1,4 @@
 import {
-  BoxesIcon,
   Eye,
   Warehouse,
   ArrowUpDown,
@@ -11,8 +10,9 @@ import { useState, useMemo } from "react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { GenericEmpty } from "../custom/empty";
+import { InventoryEmptyIllustration } from "@/components/illustrations/InventoryEmptyIllustration";
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
-import { DataTable } from "../ui/data-table";
+import { DataTable } from "../custom/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { TransferStockDialog } from "./transfer-stock-dialog";
 
@@ -33,6 +33,7 @@ type FinishedGood = {
     containersPerCarton: number | null;
     estimatedCostPerContainer: string | null;
     batchUnit: string;
+    minimumStockLevel: number | null;
     createdAt: string | Date;
     updatedAt: string | Date;
     product: {
@@ -160,7 +161,11 @@ export const FinishedGoodsTable = ({
             return <Badge variant="destructive">Out of Stock</Badge>;
           }
 
-          if (fg.quantityCartons < 10) {
+          if (
+            fg.recipe.minimumStockLevel !== null &&
+            fg.recipe.minimumStockLevel > 0 &&
+            totalUnits <= fg.recipe.minimumStockLevel
+          ) {
             return (
               <Badge
                 variant="destructive"
@@ -235,7 +240,7 @@ export const FinishedGoodsTable = ({
 
     return (
       <GenericEmpty
-        icon={BoxesIcon}
+        icon={InventoryEmptyIllustration}
         title="No Finished Goods"
         description={description}
       />
@@ -259,7 +264,7 @@ export const FinishedGoodsTable = ({
         data={data.filter(
           (item) =>
             item.quantityCartons * (item.recipe.containersPerCarton || 0) +
-              item.quantityContainers >
+            item.quantityContainers >
             0,
         )}
         searchKey="product"

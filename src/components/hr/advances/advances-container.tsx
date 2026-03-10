@@ -4,23 +4,21 @@ import { useState, useMemo } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RequestAdvanceDialog } from "./request-advance-dialog";
 import { ApproveAdvanceDialog } from "./approve-advance-dialog";
 import { useRejectSalaryAdvance } from "@/hooks/hr/use-salary-advances";
 import {
-  Search,
   CheckCircle2,
   Clock,
   XCircle,
-  Plus,
   Receipt,
   TrendingUp,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { GenericEmpty } from "@/components/custom/empty";
+import { HREmptyIllustration } from "@/components/illustrations/HREmptyIllustration";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
-import { DataTable } from "@/components/ui/data-table";
+import { DataTable } from "@/components/custom/data-table";
 
 // ── Status config ─────────────────────────────────────────────────────────
 
@@ -32,7 +30,6 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 export function AdvancesContainer() {
-  const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [approveId, setApproveId] = useState<string | null>(null);
   const [approveAmount, setApproveAmount] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -223,29 +220,15 @@ export function AdvancesContainer() {
         onSearchChange={setSearchQuery}
         showViewOptions={false}
         pageSize={7}
-        actions={
-          <Button
-            size="sm"
-            className="h-8 gap-1.5 font-semibold"
-            onClick={() => setIsRequestOpen(true)}
-          >
-            <Plus className="size-3.5" />
-            Request Advance
-          </Button>
-        }
         emptyState={
           <GenericEmpty
-            icon={Search}
+            icon={HREmptyIllustration}
             title="No results found"
             description="No salary advances matching your search."
           />
         }
       />
 
-      <RequestAdvanceDialog
-        open={isRequestOpen}
-        onOpenChange={setIsRequestOpen}
-      />
       <ApproveAdvanceDialog
         open={!!approveId}
         onOpenChange={(open) => !open && setApproveId(null)}

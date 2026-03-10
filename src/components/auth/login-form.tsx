@@ -23,7 +23,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "../ui/field";
-import { PasswordInput } from "../ui/password-input";
+import { PasswordInput } from "../custom/password-input";
 import { EmailVerification } from "./email-verification";
 
 export const LoginForm = () => {
@@ -157,17 +157,17 @@ export const LoginForm = () => {
                             !["operator", "finance-manager"].includes(
                               userRole,
                             )) && (
-                            <Link
-                              className={buttonVariants({
-                                className:
-                                  "h-auto p-0 text-sm underline hover:text-primary",
-                                variant: "link",
-                              })}
-                              to="/forgot-password"
-                            >
-                              Forgot password?
-                            </Link>
-                          )}
+                              <Link
+                                className={buttonVariants({
+                                  className:
+                                    "h-auto p-0 text-sm underline hover:text-primary",
+                                  variant: "link",
+                                })}
+                                to="/forgot-password"
+                              >
+                                Forgot password?
+                              </Link>
+                            )}
                         </div>
                         <PasswordInput
                           className="h-11!"

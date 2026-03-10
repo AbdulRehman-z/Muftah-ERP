@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { DataTable } from "@/components/ui/data-table";
+import { DataTable } from "@/components/custom/data-table";
 import { AddUserDialog } from "@/components/user-management/add-user-dialog";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { adminGetUsersFn } from "@/server-functions/user-management/super-admin-get-users-fn";

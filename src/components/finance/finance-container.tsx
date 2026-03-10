@@ -13,6 +13,7 @@ import {
 } from "@/hooks/finance/use-finance";
 import { GenericEmpty } from "@/components/custom/empty";
 import { Button } from "@/components/ui/button";
+import { FinanceEmptyIllustration } from "@/components/illustrations/FinanceEmptyIllustration";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -154,7 +155,7 @@ export const FinanceContainer = () => {
                 <Card className="border-dashed">
                     <CardContent className="py-16">
                         <GenericEmpty
-                            icon={WalletIcon}
+                            icon={FinanceEmptyIllustration}
                             title="No Accounts Yet"
                             description='Create your first account (Cash Box or Bank Account) to start tracking finances. Click "New Account" above.'
                         />
@@ -194,7 +195,7 @@ export const FinanceContainer = () => {
                     <Card className="border-dashed">
                         <CardContent className="py-8">
                             <GenericEmpty
-                                icon={ReceiptIcon}
+                                icon={FinanceEmptyIllustration}
                                 title="No Transactions"
                                 description="Transactions will appear here when you deposit, withdraw, or record expenses."
                             />
@@ -324,8 +325,8 @@ function WalletCard({
                     <div className="flex items-center gap-3">
                         <div
                             className={`p-2.5 rounded-xl shadow-sm ${wallet.type === "bank"
-                                    ? "bg-gradient-to-br from-blue-100 to-cyan-50 dark:from-blue-900/40 dark:to-cyan-900/20"
-                                    : "bg-gradient-to-br from-violet-100 to-fuchsia-50 dark:from-violet-900/40 dark:to-fuchsia-900/20"
+                                    ? "bg-linear-to-br from-blue-100 to-cyan-50 dark:from-blue-900/40 dark:to-cyan-900/20"
+                                    : "bg-linear-to-br from-violet-100 to-fuchsia-50 dark:from-violet-900/40 dark:to-fuchsia-900/20"
                                 }`}
                         >
                             {wallet.type === "bank" ? (

@@ -3,7 +3,8 @@ import {
   employees,
   payslips,
   salaryAdvances,
-  attendance as attendanceTable,
+  nightShiftRates,
+  travelLogs,
 } from "@/db/schemas/hr-schema";
 import { eq, and, lte, gte, inArray } from "drizzle-orm";
 import {
@@ -12,7 +13,7 @@ import {
   type AttendanceRecord,
   type EmployeeData,
 } from "@/lib/payroll-calculator";
-import { format, parseISO } from "date-fns";
+
 
 export type GeneratePayslipInput = {
   employeeId: string;
@@ -36,6 +37,10 @@ export type GeneratePayslipInput = {
   autoDeductAdvances?: boolean;
   /** If true, update leave balance counters on the employee record */
   autoUpdateLeaveBalances?: boolean;
+  /** If true, auto-pull night shift rate from config table (default: true) */
+  autoFetchNightShiftRate?: boolean;
+  /** If true, auto-pull TA/DA total from approved travel logs (default: true) */
+  autoFetchTada?: boolean;
 };
 
 /**
@@ -51,6 +56,8 @@ export async function generateEmployeePayslipCore(input: GeneratePayslipInput) {
     additionalAmounts = {},
     autoDeductAdvances = true,
     autoUpdateLeaveBalances = true,
+    autoFetchNightShiftRate = true,
+    autoFetchTada = true,
   } = input;
 
   // 1. Fetch employee data
@@ -110,10 +117,79 @@ export async function generateEmployeePayslipCore(input: GeneratePayslipInput) {
     advanceDeduction = additionalAmounts.advanceDeduction ?? 0;
   }
 
-  // 4. Calculate payslip using the updated calculator
+  // 4. Auto-pull night shift rate from config table
+  let nightShiftAllowance = additionalAmounts.nightShiftAllowance;
+  if (
+    autoFetchNightShiftRate &&
+    nightShiftAllowance === undefined
+  ) {
+    // Count night shifts in this period
+    const nightShifts = formattedAttendance.filter((r) => r.isNightShift);
+    if (nightShifts.length > 0) {
+      const payrollYear = new Date(payrollPeriod.month).getFullYear();
+      const rateConfig = await db.query.nightShiftRates.findFirst({
+        where: eq(nightShiftRates.year, payrollYear),
+      });
+      // Fallback to most recent year
+      const effectiveRate = rateConfig
+        ? parseFloat(rateConfig.ratePerNight)
+        : 0;
+      nightShiftAllowance = effectiveRate * nightShifts.length;
+    } else {
+      nightShiftAllowance = 0;
+    }
+  }
+
+  // 5. Auto-pull TA/DA from approved travel logs
+  let tadaAmount = 0;
+  if (autoFetchTada) {
+    const approvedTrips = await db.query.travelLogs.findMany({
+      where: and(
+        eq(travelLogs.employeeId, employeeId),
+        eq(travelLogs.status, "approved"),
+        gte(travelLogs.date, payrollPeriod.startDate),
+        lte(travelLogs.date, payrollPeriod.endDate)
+      ),
+    });
+    tadaAmount = approvedTrips.reduce(
+      (sum, t) => sum + parseFloat(t.totalAmount || "0"),
+      0
+    );
+  }
+
+  // 5.5 Order Booker TA & Commission Calculations
+  let dynamicTA = 0;
+  let totalRecovery = 0;
+
+  for (const record of rawAttendance) {
+    // Sum recovery for commission calculation
+    if (record.recoveryAmount) {
+      totalRecovery += parseFloat(record.recoveryAmount);
+    }
+    // Calculate Transport / Travel Allowance
+    if (record.isCompanyVehicle) {
+      // If using company vehicle, they get petrol reimbursement instead of per-KM
+      if (record.petrolAmount) {
+        dynamicTA += parseFloat(record.petrolAmount);
+      }
+    } else if (record.paymentMode === "per_km" && record.distanceKm && record.perKmRate) {
+      // Standard per-KM calculation for personal vehicle
+      dynamicTA += parseFloat(record.distanceKm) * parseFloat(record.perKmRate);
+    }
+  }
+
+  const commissionRate = employeeData.commissionRate 
+    ? parseFloat(employeeData.commissionRate) 
+    : 0;
+  const orderBookerCommission = totalRecovery * (commissionRate / 100);
+
+  // 6. Calculate payslip using the updated calculator
   const mergedAdditional = {
     ...additionalAmounts,
     advanceDeduction,
+    nightShiftAllowance: nightShiftAllowance ?? additionalAmounts.nightShiftAllowance,
+    // Add old manual tadaAmount + new dynamicTA + new orderBookerCommission
+    incentiveAmount: (additionalAmounts.incentiveAmount || 0) + tadaAmount + dynamicTA + orderBookerCommission,
   };
 
   const payslipCalc = calculatePayslip(
@@ -124,7 +200,7 @@ export async function generateEmployeePayslipCore(input: GeneratePayslipInput) {
     mergedAdditional,
   );
 
-  // 5. Delete existing payslip for this payroll + employee (idempotent)
+  // 7. Delete existing payslip for this payroll + employee (idempotent)
   await db
     .delete(payslips)
     .where(
@@ -134,7 +210,7 @@ export async function generateEmployeePayslipCore(input: GeneratePayslipInput) {
       ),
     );
 
-  // 6. Save payslip to DB
+  // 8. Save payslip to DB
   const [savedPayslip] = await db
     .insert(payslips)
     .values({

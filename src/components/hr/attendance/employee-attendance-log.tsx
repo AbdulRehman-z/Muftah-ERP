@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
 import { useParams } from "@tanstack/react-router";
-import { DataTable } from "@/components/ui/data-table";
+import { DataTable } from "@/components/custom/data-table";
 import type { ColumnDef } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 
@@ -83,7 +83,12 @@ export const EmployeeAttendanceLog = ({
       .reduce((acc: number, r: any) => acc + (parseFloat(r.dutyHours || "0") || 0), 0)
       .toFixed(1),
     totalOvertime: records
-      .reduce((acc: number, r: any) => acc + (parseFloat(r.overtimeHours || "0") || 0), 0)
+      .reduce((acc: number, r: any) => {
+        if (r.overtimeStatus === "approved") {
+          return acc + (parseFloat(r.overtimeHours || "0") || 0);
+        }
+        return acc;
+      }, 0)
       .toFixed(1),
     totalUndertime: records
       .reduce((acc: number, r: any) => {
@@ -197,13 +202,47 @@ export const EmployeeAttendanceLog = ({
       id: "overtime",
       header: "OT (h)",
       cell: ({ row }) => {
-        const ot = parseFloat(row.original.record?.overtimeHours || "0");
-        return ot > 0 ? (
-          <span className="text-emerald-600 font-bold text-xs tabular-nums">
-            +{row.original.record?.overtimeHours}
-          </span>
-        ) : (
-          <span className="text-muted-foreground text-xs">—</span>
+        const record = row.original.record;
+        if (!record) return <span className="text-muted-foreground text-xs">—</span>;
+
+        const ot = parseFloat(record.overtimeHours || "0");
+        if (ot <= 0) return <span className="text-muted-foreground text-xs">—</span>;
+
+        if (record.overtimeStatus === "approved") {
+          return (
+            <div className="flex flex-col">
+              <span className="text-emerald-600 font-bold text-xs tabular-nums">
+                +{record.overtimeHours}
+              </span>
+              <span className="text-[9px] font-black text-emerald-500 uppercase tracking-tighter">
+                Approved
+              </span>
+            </div>
+          );
+        }
+
+        if (record.overtimeStatus === "pending") {
+          return (
+            <div className="flex flex-col">
+              <span className="text-amber-500 font-bold text-xs tabular-nums">
+                +{record.overtimeHours}
+              </span>
+              <span className="text-[9px] font-black text-amber-500 uppercase tracking-tighter">
+                Pending Admin
+              </span>
+            </div>
+          );
+        }
+
+        return (
+          <div className="flex flex-col">
+            <span className="text-rose-600 font-bold text-xs tabular-nums line-through opacity-70">
+              +{record.overtimeHours}
+            </span>
+            <span className="text-[9px] font-black text-rose-500 uppercase tracking-tighter">
+              Rejected
+            </span>
+          </div>
         );
       },
     },

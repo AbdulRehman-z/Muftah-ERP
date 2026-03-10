@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useForm } from "@tanstack/react-form";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpsertAttendance } from "@/hooks/hr/use-upsert-attendance";
+import { useActiveTadaRate } from "@/hooks/hr/use-tada";
 import {
   Loader2,
   Clock,
@@ -26,10 +27,48 @@ import {
   PenLine,
   AlertCircle,
   CheckCircle2,
+  CalendarDays,
+  Zap,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { upsertAttendanceSchema } from "@/lib/validators/hr-validators";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+
+// ── TimeInput ──────────────────────────────────────────────────────────────
+
+const TimeInput = ({
+  value,
+  onChange,
+  className,
+}: {
+  value: string | null;
+  onChange: (val: string | null) => void;
+  className?: string;
+}) => {
+  return (
+    <div className="relative">
+      <Input
+        type="time"
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value || null)}
+        className={cn(
+          "h-10 pl-9 transition-colors focus-visible:ring-primary/50",
+          "[&::-webkit-calendar-picker-indicator]:opacity-100",
+          "[&::-webkit-calendar-picker-indicator]:bg-transparent",
+          "[&::-webkit-calendar-picker-indicator]:absolute",
+          "[&::-webkit-calendar-picker-indicator]:right-2",
+          "[&::-webkit-calendar-picker-indicator]:cursor-pointer",
+          className
+        )}
+      />
+      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none transition-colors group-focus-within:text-primary" />
+    </div>
+  );
+};
+
+// ── Types ──────────────────────────────────────────────────────────────────
 
 interface AttendanceData {
   checkIn?: string | null;
@@ -37,14 +76,28 @@ interface AttendanceData {
   checkIn2?: string | null;
   checkOut2?: string | null;
   overtimeHours?: string | null;
+  dutyHours?: string | null;
+  leaveType?: "sick" | "casual" | "annual" | "unpaid" | "special" | null;
   status: "present" | "absent" | "leave" | "half_day" | "holiday";
   isLate?: boolean | null;
   isNightShift?: boolean | null;
   isApprovedLeave?: boolean | null;
-  overtimeStatus?: string | null;
+  leaveApprovalStatus?: "none" | "pending" | "approved" | "rejected" | null;
+  overtimeStatus?: "pending" | "approved" | "rejected" | null;
   overtimeRemarks?: string | null;
-  entrySource?: string | null;
+  entrySource?: "biometric" | "manual" | null;
   notes?: string | null;
+  isCompanyVehicle?: boolean | null;
+  areaVisited?: string | null;
+  paymentMode?: "per_km" | null;
+  distanceKm?: string | null;
+  perKmRate?: string | null;
+  petrolAmount?: string | null;
+  saleAmount?: string | null;
+  recoveryAmount?: string | null;
+  returnAmount?: string | null;
+  slipNumbers?: string | null;
+  shopType?: "old" | "new" | null;
 }
 
 interface Props {
@@ -53,92 +106,198 @@ interface Props {
     firstName: string;
     lastName: string;
     standardDutyHours?: number | null;
+    isOrderBooker?: boolean | null;
   };
   attendance?: AttendanceData | null;
   date: string;
   onSuccess: () => void;
 }
 
-// Helper to calculate hours between two "HH:mm" strings
+// ── Helpers ────────────────────────────────────────────────────────────────
+
 const calculateHours = (
   in1?: string | null,
   out1?: string | null,
   in2?: string | null,
   out2?: string | null
-) => {
+): number | null => {
   const toMin = (t: string) => {
     const [h, m] = t.split(":").map(Number);
     return h * 60 + m;
   };
 
-  let mins = 0;
-  if (in1 && out1) {
-    const s = toMin(in1),
-      e = toMin(out1);
-    mins += e >= s ? e - s : 24 * 60 - s + e;
-  }
-  if (in2 && out2) {
-    const s = toMin(in2),
-      e = toMin(out2);
-    mins += e >= s ? e - s : 24 * 60 - s + e;
-  }
-  return mins > 0 ? (mins / 60).toFixed(1) : null;
+  const getMinsDiff = (startStr?: string | null, endStr?: string | null): number => {
+    if (!startStr || !endStr) return 0;
+    const s = toMin(startStr);
+    const e = toMin(endStr);
+    return e >= s ? e - s : 24 * 60 - s + e;
+  };
+
+  const totalMins = getMinsDiff(in1, out1) + getMinsDiff(in2, out2);
+  return totalMins > 0 ? totalMins / 60 : null;
 };
 
-export const EditAttendanceForm = ({
-  employee,
-  attendance,
-  date,
-  onSuccess,
-}: Props) => {
+const statusConfig = {
+  present: { label: "Present" },
+  absent: { label: "Absent" },
+  leave: { label: "On Leave" },
+  half_day: { label: "Half Day" },
+  holiday: { label: "Official Holiday" },
+} as const;
+
+// ── Auto-populate hook ─────────────────────────────────────────────────────
+
+interface AutoPopulateProps {
+  form: any;
+  standardDutyHours: number;
+}
+
+const AutoPopulate = ({ form, standardDutyHours }: AutoPopulateProps) => {
+  return (
+    <form.Subscribe
+      selector={(s: any) => [
+        s.values.checkIn,
+        s.values.checkOut,
+        s.values.checkIn2,
+        s.values.checkOut2,
+        s.values.status,
+      ]}
+    >
+      {([ci1, co1, ci2, co2, status]: any[]) => (
+        <AutoPopulateEffect
+          form={form}
+          ci1={ci1}
+          co1={co1}
+          ci2={ci2}
+          co2={co2}
+          status={status}
+          standardDutyHours={standardDutyHours}
+        />
+      )}
+    </form.Subscribe>
+  );
+};
+
+const AutoPopulateEffect = ({
+  form, ci1, co1, ci2, co2, status, standardDutyHours,
+}: {
+  form: any; ci1: string | null; co1: string | null; ci2: string | null; co2: string | null; status: string; standardDutyHours: number;
+}) => {
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    if (status === "absent" || status === "holiday") {
+      form.setFieldValue("dutyHours", "0");
+      form.setFieldValue("overtimeHours", "0");
+      form.setFieldValue("leaveApprovalStatus", "none");
+      return;
+    }
+
+    if (status === "leave") {
+      form.setFieldValue("dutyHours", "0");
+      form.setFieldValue("overtimeHours", "0");
+      const currentLeaveStatus = form.getFieldValue("leaveApprovalStatus");
+      if (!currentLeaveStatus || currentLeaveStatus === "none") {
+        form.setFieldValue("leaveApprovalStatus", "pending");
+      }
+      return;
+    }
+
+    form.setFieldValue("leaveApprovalStatus", "none");
+
+    const totalHours = calculateHours(ci1, co1, ci2, co2);
+    const baseStd = standardDutyHours || 8;
+    const std = status === "half_day" ? baseStd / 2 : baseStd;
+
+    if (totalHours !== null) {
+      if (totalHours > std) {
+        const overtime = totalHours - std;
+        form.setFieldValue("dutyHours", std.toFixed(2));
+        form.setFieldValue("overtimeHours", overtime.toFixed(2));
+
+        const currentOTStatus = form.getFieldValue("overtimeStatus");
+        if (!currentOTStatus) {
+          form.setFieldValue("overtimeStatus", "pending");
+        }
+      } else {
+        form.setFieldValue("dutyHours", totalHours.toFixed(2));
+        form.setFieldValue("overtimeHours", "0");
+        const currentOTStatus = form.getFieldValue("overtimeStatus");
+        if (!currentOTStatus || currentOTStatus === "pending") {
+          form.setFieldValue("overtimeStatus", "pending");
+          form.setFieldValue("overtimeRemarks", null);
+        }
+      }
+    } else if (status === "present" || status === "half_day") {
+      if (!form.getFieldValue("dutyHours")) {
+        form.setFieldValue("dutyHours", std.toFixed(2));
+      }
+      if (!form.getFieldValue("overtimeHours")) {
+        form.setFieldValue("overtimeHours", "0");
+      }
+    }
+  }, [ci1, co1, ci2, co2, status]);
+
+  return null;
+};
+
+// ── Form ───────────────────────────────────────────────────────────────────
+
+export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Props) => {
   const mutate = useUpsertAttendance();
+  const { data: activeRate } = useActiveTadaRate();
+  const std = employee.standardDutyHours || 8;
 
   const form = useForm({
     defaultValues: {
       employeeId: employee.id,
       date: date,
-      status: (attendance?.status || "present") as
-        | "present"
-        | "absent"
-        | "leave"
-        | "half_day"
-        | "holiday",
-      leaveType: ((attendance as any)?.leaveType ?? null) as
-        | "sick"
-        | "casual"
-        | "annual"
-        | "unpaid"
-        | "special"
-        | null,
+      status: (attendance?.status || "present") as "present" | "absent" | "leave" | "half_day" | "holiday",
+      leaveType: (attendance?.leaveType ?? null) as "sick" | "casual" | "annual" | "unpaid" | "special" | null,
       checkIn: attendance?.checkIn ?? null,
       checkOut: attendance?.checkOut ?? null,
       checkIn2: attendance?.checkIn2 ?? null,
       checkOut2: attendance?.checkOut2 ?? null,
       overtimeHours: attendance?.overtimeHours ?? null,
-      isLate: attendance?.isLate ?? null,
-      isNightShift: attendance?.isNightShift ?? null,
-      isApprovedLeave: attendance?.isApprovedLeave ?? null,
+      isLate: attendance?.isLate ?? false,
+      isNightShift: attendance?.isNightShift ?? false,
+      isApprovedLeave: attendance?.isApprovedLeave ?? false,
       overtimeRemarks: attendance?.overtimeRemarks ?? null,
-      overtimeStatus: (attendance?.overtimeStatus ?? "pending") as
-        | "pending"
-        | "approved"
-        | "rejected",
-      entrySource: (attendance?.entrySource ?? "manual") as
-        | "biometric"
-        | "manual",
-      dutyHours: (attendance as any)?.dutyHours ?? null,
+      overtimeStatus: (attendance?.overtimeStatus ?? "pending") as "pending" | "approved" | "rejected",
+      entrySource: (attendance?.entrySource ?? "manual") as "biometric" | "manual",
+      dutyHours: attendance?.dutyHours ?? null,
+      leaveApprovalStatus: attendance?.leaveApprovalStatus ?? "none",
       notes: attendance?.notes ?? null,
+
+      isCompanyVehicle: attendance?.isCompanyVehicle ?? false,
+      areaVisited: attendance?.areaVisited ?? null,
+      paymentMode: "per_km" as const,
+      distanceKm: attendance?.distanceKm ?? null,
+      perKmRate: attendance?.perKmRate ?? null,
+      petrolAmount: attendance?.petrolAmount ?? null,
+      saleAmount: attendance?.saleAmount ?? null,
+      recoveryAmount: attendance?.recoveryAmount ?? null,
+      returnAmount: attendance?.returnAmount ?? null,
+      slipNumbers: attendance?.slipNumbers ?? null,
+      shopType: (attendance?.shopType ?? "old") as "old" | "new",
     },
     onSubmit: async ({ value }) => {
       const payload = upsertAttendanceSchema.parse(value);
-      await mutate.mutateAsync(
-        { data: payload },
-        { onSuccess: () => onSuccess() }
-      );
+      await mutate.mutateAsync({ data: payload }, { onSuccess: () => onSuccess() });
     },
   });
 
-  // ── AUTO-POPULATION LOGIC ──
+  useEffect(() => {
+    if (activeRate?.ratePerKm && !form.getFieldValue("perKmRate")) {
+      form.setFieldValue("perKmRate", String(activeRate.ratePerKm));
+    }
+  }, [activeRate, form]);
+
   return (
     <form
       onSubmit={(e) => {
@@ -146,467 +305,609 @@ export const EditAttendanceForm = ({
         e.stopPropagation();
         form.handleSubmit();
       }}
-      className="space-y-5 py-2"
+      className="space-y-0 py-1"
     >
-      {/* Invisible subscriber to handle side-effects for auto-populating dutyHours */}
-      <form.Subscribe
-        selector={(s) => [
-          s.values.checkIn,
-          s.values.checkOut,
-          s.values.checkIn2,
-          s.values.checkOut2,
-          s.values.status,
-        ]}
-      >
-        {([ci1, co1, ci2, co2, status]) => {
-          useEffect(() => {
-            if (status === "absent" || status === "holiday" || status === "leave") {
-              form.setFieldValue("dutyHours", "0");
-              return;
+      <AutoPopulate form={form} standardDutyHours={std} />
+
+      <FieldGroup className="space-y-0 divide-y divide-border/60">
+
+        {/* ── Section: Status ─────────────────────────────────────────── */}
+        <SectionBlock icon={CalendarDays} label="Attendance Status">
+          <form.Field name="status">
+            {(field) => (
+              <Field>
+                <FieldLabel className="sr-only">Status</FieldLabel>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                  {(["present", "half_day", "leave", "absent", "holiday"] as const).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => field.handleChange(s)}
+                      className={cn(
+                        "flex items-center justify-center rounded-md border py-2 px-1 text-center transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        field.state.value === s
+                          ? statusPillActive[s]
+                          : "bg-background text-muted-foreground hover:bg-muted/50 border-border/60"
+                      )}
+                    >
+                      <span className="text-sm font-medium">
+                        {statusConfig[s].label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <FieldError errors={field.state.meta.errors} />
+              </Field>
+            )}
+          </form.Field>
+
+          <form.Subscribe selector={(s: any) => s.values.status}>
+            {(status: string) =>
+              status === "leave" && (
+                <div className="mt-4 space-y-4 animate-in fade-in duration-300">
+                  <form.Field name="leaveType">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel>
+                          Leave Type <span className="text-destructive">*</span>
+                        </FieldLabel>
+                        <Select
+                          value={field.state.value || ""}
+                          onValueChange={(v: any) => field.handleChange(v || null)}
+                        >
+                          <SelectTrigger className="transition-colors">
+                            <SelectValue placeholder="Select leave type…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectOption value="annual">Annual Leave</SelectOption>
+                            <SelectOption value="sick">Sick Leave</SelectOption>
+                            <SelectOption value="special">Special Leave</SelectOption>
+                          </SelectContent>
+                        </Select>
+                        <FieldError errors={field.state.meta.errors} />
+                      </Field>
+                    )}
+                  </form.Field>
+
+                  <form.Field name="isApprovedLeave">
+                    {() => (
+                      <div className="flex items-start gap-3 p-3.5 rounded-md border border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20">
+                        <Info className="size-4 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-amber-800 dark:text-amber-400 mb-1">
+                            Pending Admin Approval
+                          </p>
+                          <p className="text-sm text-amber-700/80 dark:text-amber-500/80">
+                            This leave request will be sent to admin for approval. Bradford Factor and salary deductions will be finalized after the admin decision.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </form.Field>
+                </div>
+              )
             }
+          </form.Subscribe>
+        </SectionBlock>
 
-            const calculated = calculateHours(
-              ci1 as string,
-              co1 as string,
-              ci2 as string,
-              co2 as string
-            );
+        {/* ── Section: Order Booker Data ────────────────────────────── */}
+        {employee.isOrderBooker && (
+          <form.Subscribe selector={(s: any) => s.values.status}>
+            {(status: string) => status === "present" && (
+              <SectionBlock icon={Zap} label="Sales & Recovery Log">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form.Field name="areaVisited">
+                {(field) => (
+                  <Field className="md:col-span-2">
+                    <FieldLabel>Area Visited</FieldLabel>
+                    <Input
+                      placeholder="e.g. North Nazimabad..."
+                      value={field.state.value || ""}
+                      onChange={(e) => field.handleChange(e.target.value || null)}
+                      className="transition-colors"
+                    />
+                    <FieldError errors={field.state.meta.errors} />
+                  </Field>
+                )}
+              </form.Field>
 
-            if (calculated) {
-              form.setFieldValue("dutyHours", calculated);
-            } else if (status === "present" || status === "half_day") {
-              // Fallback to standard hours if no timings but status is present
-              const std = employee.standardDutyHours || 8;
-              const val = status === "half_day" ? (std / 2).toString() : std.toString();
-              // Only override if it's currently empty/null or same as last calc to avoid overwriting manual edits?
-              // For simplicity, let's just populate if it's empty
-              if (!form.getFieldValue("dutyHours")) {
-                form.setFieldValue("dutyHours", val);
-              }
-            }
-          }, [ci1, co1, ci2, co2, status]);
-          return null;
-        }}
-      </form.Subscribe>
+              <form.Field name="shopType">
+                {(field) => (
+                  <Field>
+                    <FieldLabel>Shop Type</FieldLabel>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(v: "old" | "new") => field.handleChange(v)}
+                    >
+                      <SelectTrigger className="transition-colors">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectOption value="old">Existing / Old Shop</SelectOption>
+                        <SelectOption value="new">Newly Onboarded Shop</SelectOption>
+                      </SelectContent>
+                    </Select>
+                    <FieldError errors={field.state.meta.errors} />
+                  </Field>
+                )}
+              </form.Field>
 
-      <FieldGroup>
-        {/* ── Status ── */}
-        <form.Field name="status">
-          {(field) => (
-            <Field>
-              <FieldLabel>Attendance Status</FieldLabel>
-              <Select
-                value={field.state.value}
-                onValueChange={(v: any) => field.handleChange(v)}
-              >
-                <SelectTrigger className="h-11">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectOption value="present">Present</SelectOption>
-                  <SelectOption value="absent">Absent</SelectOption>
-                  <SelectOption value="leave">On Leave</SelectOption>
-                  <SelectOption value="half_day">Half Day</SelectOption>
-                  <SelectOption value="holiday">Official Holiday</SelectOption>
-                </SelectContent>
-              </Select>
-              <FieldError errors={field.state.meta.errors} />
-            </Field>
-          )}
-        </form.Field>
-
-        {/* ── Leave type + approval (only when status = leave) ── */}
-        <form.Subscribe selector={(s) => s.values.status}>
-          {(status) =>
-            status === "leave" && (
-              <div className="space-y-3 animate-in fade-in">
-                {/* Leave Type selector */}
-                <form.Field name="leaveType">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>
-                        Leave Type <span className="text-destructive">*</span>
-                      </FieldLabel>
-                      <Select
-                        value={field.state.value || ""}
-                        onValueChange={(v: any) =>
-                          field.handleChange(v || null)
-                        }
-                      >
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Select leave type…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectOption value="casual">
-                            Casual Leave (balance tracked)
-                          </SelectOption>
-                          <SelectOption value="annual">
-                            Annual Leave (balance tracked)
-                          </SelectOption>
-                          <SelectOption value="sick">
-                            Sick Leave (no deduction; Bradford counted)
-                          </SelectOption>
-                          <SelectOption value="special">
-                            Special Leave (Bradford counted)
-                          </SelectOption>
-                          <SelectOption value="unpaid">
-                            Unpaid Leave (conveyance deducted)
-                          </SelectOption>
-                        </SelectContent>
-                      </Select>
-                      <FieldError errors={field.state.meta.errors} />
-                    </Field>
-                  )}
-                </form.Field>
-
-                {/* Approved / Paid Leave toggle */}
-                <form.Field name="isApprovedLeave">
-                  {(field) => (
-                    <div className="flex items-start gap-3 p-3 rounded-lg border bg-indigo-50/40 dark:bg-indigo-900/10">
+              <form.Field name="isCompanyVehicle">
+                {(field) => (
+                  <div className="md:col-span-2">
+                    <label className={cn(
+                      "flex items-center gap-3 p-4 rounded-md border cursor-pointer transition-colors select-none",
+                      field.state.value ? "bg-indigo-50/50 border-indigo-200 dark:bg-indigo-950/20 dark:border-indigo-900" : "bg-background hover:bg-muted/30"
+                    )}>
                       <Checkbox
-                        id="isApprovedLeave"
-                        checked={!!field.state.value}
+                        checked={field.state.value}
                         onCheckedChange={(c) => field.handleChange(!!c)}
-                        className="mt-0.5"
                       />
                       <div>
-                        <FieldLabel
-                          htmlFor="isApprovedLeave"
-                          className="mb-0 cursor-pointer text-indigo-700 dark:text-indigo-400 font-bold text-xs uppercase tracking-tight"
-                        >
-                          Admin-Approved Paid Leave
-                        </FieldLabel>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          Tick if admin-approved. No salary deduction. Sick
-                          leave is always no-deduction regardless.
-                        </p>
+                        <p className={cn("text-sm font-medium", field.state.value && "text-indigo-700 dark:text-indigo-400")}>Using Company Vehicle</p>
+                        <p className="text-sm text-muted-foreground">Toggle this if the trip was made using a company car/bike.</p>
                       </div>
-                    </div>
-                  )}
-                </form.Field>
-              </div>
-            )
-          }
-        </form.Subscribe>
+                    </label>
+                  </div>
+                )}
+              </form.Field>
 
-        {/* ── Time-tracking fields (hidden for absent/holiday) ── */}
-        <form.Subscribe selector={(s) => s.values.status}>
-          {(status) => {
-            if (["absent", "holiday", "leave"].includes(status)) {
-              return (
-                <div className="flex items-center gap-3 p-4 rounded-xl border bg-muted/30 animate-in fade-in zoom-in-95">
-                  <Info className="size-4 text-muted-foreground shrink-0" />
-                  <p className="text-xs text-muted-foreground font-medium">
-                    Time tracking is disabled for {status} status.
-                  </p>
-                </div>
-              );
-            }
-
-            return (
-              <div className="space-y-4 animate-in slide-in-from-top-2">
-                <Separator className="opacity-50" />
-
-                {/* Entry source selector */}
-                <form.Field name="entrySource">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel className="flex items-center gap-1.5">
-                        <Cpu className="size-3.5 text-muted-foreground" /> Entry
-                        Source
-                      </FieldLabel>
-                      <Select
-                        value={field.state.value}
-                        onValueChange={(v: any) => field.handleChange(v)}
-                      >
-                        <SelectTrigger className="h-9">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectOption value="biometric">
-                            <span className="flex items-center gap-2">
-                              <Cpu className="size-3.5" /> Biometric Machine
-                            </span>
-                          </SelectOption>
-                          <SelectOption value="manual">
-                            <span className="flex items-center gap-2">
-                              <PenLine className="size-3.5" /> Manual Entry
-                            </span>
-                          </SelectOption>
-                        </SelectContent>
-                      </Select>
-                      <FieldError errors={field.state.meta.errors} />
-                    </Field>
-                  )}
-                </form.Field>
-
-                <div className="flex items-center gap-2 text-primary font-semibold">
-                  <Clock className="size-4" />
-                  <span className="text-sm uppercase tracking-wider">
-                    Shift Timings
-                  </span>
-                </div>
-
-                {/* Shift 1 */}
-                <div className="grid grid-cols-2 gap-4">
-                  <form.Field name="checkIn">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel>Shift 1 – Start</FieldLabel>
-                        <Input
-                          type="time"
-                          value={field.state.value || ""}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                        />
-                      </Field>
-                    )}
-                  </form.Field>
-                  <form.Field name="checkOut">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel>Shift 1 – End</FieldLabel>
-                        <Input
-                          type="time"
-                          value={field.state.value || ""}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                        />
-                      </Field>
-                    )}
-                  </form.Field>
-                </div>
-
-                {/* Shift 2 (always available, for split-shift employees) */}
-                <div className="grid grid-cols-2 gap-4">
-                  <form.Field name="checkIn2">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel>
-                          Shift 2 – Start{" "}
-                          <span className="text-muted-foreground text-[10px]">
-                            (optional)
-                          </span>
-                        </FieldLabel>
-                        <Input
-                          type="time"
-                          value={field.state.value || ""}
-                          onChange={(e) =>
-                            field.handleChange(e.target.value || null)
-                          }
-                        />
-                      </Field>
-                    )}
-                  </form.Field>
-                  <form.Field name="checkOut2">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel>
-                          Shift 2 – End{" "}
-                          <span className="text-muted-foreground text-[10px]">
-                            (optional)
-                          </span>
-                        </FieldLabel>
-                        <Input
-                          type="time"
-                          value={field.state.value || ""}
-                          onChange={(e) =>
-                            field.handleChange(e.target.value || null)
-                          }
-                        />
-                      </Field>
-                    )}
-                  </form.Field>
-                </div>
-
-                {/* Duty hours + Overtime hours */}
-                <div className="grid grid-cols-2 gap-4">
-                  <form.Field name="dutyHours">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel>Duty Hours (Work Record)</FieldLabel>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          placeholder="e.g. 8.0"
-                          value={field.state.value || ""}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          className="font-mono font-bold bg-emerald-50/30 border-emerald-200 focus-visible:ring-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                      </Field>
-                    )}
-                  </form.Field>
-
-                  <form.Field name="overtimeHours">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel>Overtime Hours</FieldLabel>
-                        <Input
-                          type="number"
-                          step="0.5"
-                          placeholder="e.g. 1.5"
-                          value={field.state.value || ""}
-                          onChange={(e) =>
-                            field.handleChange(e.target.value || null)
-                          }
-                          className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                      </Field>
-                    )}
-                  </form.Field>
-                </div>
-
-                {/* Overtime remarks + approval (shown when overtime is entered) */}
-                <form.Subscribe
-                  selector={(s) =>
-                    parseFloat(s.values.overtimeHours || "0") > 0
-                  }
-                >
-                  {(hasOT) =>
-                    hasOT && (
-                      <div className="space-y-3 p-3 rounded-lg border border-amber-200 bg-amber-50/40 dark:border-amber-800 dark:bg-amber-900/10 animate-in fade-in">
-                        <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-semibold text-xs uppercase tracking-tight">
-                          <AlertCircle className="size-3.5" /> Overtime Approval
-                          Required
-                        </div>
-
-                        <form.Field name="overtimeRemarks">
+              <form.Subscribe selector={(s: any) => s.values.isCompanyVehicle}>
+                {(isCompany: boolean) => (
+                  <>
+                    {!isCompany ? (
+                      <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-300">
+                        <form.Field name="distanceKm">
                           {(field) => (
                             <Field>
-                              <FieldLabel>
-                                Overtime Reason{" "}
-                                <span className="text-destructive">*</span>
-                              </FieldLabel>
-                              <Textarea
-                                placeholder="Reason for overtime (required before admin approval)..."
-                                className="min-h-[70px] resize-none text-sm"
+                              <FieldLabel>Distance (KM)</FieldLabel>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                placeholder="0.0"
                                 value={field.state.value || ""}
-                                onChange={(e) =>
-                                  field.handleChange(e.target.value)
-                                }
+                                onChange={(e) => field.handleChange(e.target.value || null)}
+                                className="transition-colors"
                               />
                               <FieldError errors={field.state.meta.errors} />
                             </Field>
                           )}
                         </form.Field>
-
-                        <form.Field name="overtimeStatus">
+                        <form.Field name="perKmRate">
                           {(field) => (
                             <Field>
-                              <FieldLabel className="flex items-center gap-1.5">
-                                <CheckCircle2 className="size-3.5" /> Approval
-                                Status
-                              </FieldLabel>
-                              <Select
-                                value={field.state.value || "pending"}
-                                onValueChange={(v: any) =>
-                                  field.handleChange(v)
-                                }
-                              >
-                                <SelectTrigger className="h-9">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectOption value="pending">
-                                    Pending Admin Approval
-                                  </SelectOption>
-                                  <SelectOption value="approved">
-                                    Approved
-                                  </SelectOption>
-                                  <SelectOption value="rejected">
-                                    Rejected
-                                  </SelectOption>
-                                </SelectContent>
-                              </Select>
-                              <p className="text-[11px] text-muted-foreground">
-                                Overtime pay is only calculated for{" "}
-                                <strong>Approved</strong> records.
-                              </p>
+                              <FieldLabel>Rate per KM</FieldLabel>
+                              <div className="relative group/rate">
+                                <Input
+                                  type="number"
+                                  readOnly
+                                  placeholder={activeRate ? "Rate loaded..." : "Set Global Rate First"}
+                                  value={field.state.value || ""}
+                                  className={cn(
+                                    "bg-muted/50 cursor-not-allowed pr-9 transition-colors",
+                                    !activeRate && "border-rose-300 text-rose-600 dark:border-rose-800 dark:text-rose-400 bg-rose-50/30 dark:bg-rose-950/10"
+                                  )}
+                                />
+                                {activeRate ? (
+                                  <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-emerald-500" />
+                                ) : (
+                                  <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-rose-500" />
+                                )}
+                              </div>
+                              {!activeRate && (
+                                <p className="text-sm text-rose-600 dark:text-rose-400 mt-1.5 font-medium animate-in fade-in">
+                                  Action Required: First set TADA rate in header
+                                </p>
+                              )}
+                              <FieldError errors={field.state.meta.errors} />
                             </Field>
                           )}
                         </form.Field>
                       </div>
-                    )
-                  }
-                </form.Subscribe>
-
-                {/* Flags */}
-                <div className="flex gap-4">
-                  <form.Field name="isLate">
-                    {(field) => (
-                      <div className="flex items-center gap-2 p-2.5 rounded-lg border bg-rose-50/30 dark:bg-rose-900/10 flex-1">
-                        <Checkbox
-                          id="isLateEdit"
-                          checked={!!field.state.value}
-                          onCheckedChange={(c) => field.handleChange(!!c)}
-                        />
-                        <FieldLabel
-                          htmlFor="isLateEdit"
-                          className="mb-0 cursor-pointer text-rose-700 dark:text-rose-400 font-bold text-xs uppercase tracking-tight"
-                        >
-                          Late Arrival
-                        </FieldLabel>
-                      </div>
+                    ) : (
+                      <form.Field name="petrolAmount">
+                        {(field) => (
+                          <Field className="md:col-span-2 animate-in fade-in duration-300">
+                            <FieldLabel className="text-indigo-700 dark:text-indigo-400">Reimbursable Fuel Cost (PKR)</FieldLabel>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="PKR 0"
+                              value={field.state.value || ""}
+                              onChange={(e) => field.handleChange(e.target.value || null)}
+                              className="border-indigo-200 focus-visible:ring-indigo-500 bg-indigo-50/30 dark:border-indigo-800 dark:bg-indigo-950/20 transition-colors"
+                            />
+                            <p className="text-sm text-muted-foreground mt-1.5">
+                              Since a Company Vehicle was used, per-KM transport allowance is disabled. Enter the actual fuel expenditure to be reimbursed.
+                            </p>
+                            <FieldError errors={field.state.meta.errors} />
+                          </Field>
+                        )}
+                      </form.Field>
                     )}
-                  </form.Field>
+                  </>
+                )}
+              </form.Subscribe>
 
-                  <form.Field name="isNightShift">
-                    {(field) => (
-                      <div className="flex items-center gap-2 p-2.5 rounded-lg border bg-indigo-50/30 dark:bg-indigo-900/10 flex-1">
-                        <Checkbox
-                          id="isNightShiftEdit"
-                          checked={!!field.state.value}
-                          onCheckedChange={(c) => field.handleChange(!!c)}
-                        />
-                        <FieldLabel
-                          htmlFor="isNightShiftEdit"
-                          className="mb-0 cursor-pointer text-indigo-700 dark:text-indigo-400 font-bold text-xs uppercase tracking-tight"
-                        >
-                          Night Shift
-                        </FieldLabel>
-                      </div>
-                    )}
-                  </form.Field>
-                </div>
-              </div>
-            );
-          }}
-        </form.Subscribe>
+              <form.Field name="saleAmount">
+                {(field) => (
+                  <Field>
+                    <FieldLabel>Total Sale Amount</FieldLabel>
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="PKR 0"
+                      value={field.state.value || ""}
+                      onChange={(e) => field.handleChange(e.target.value || null)}
+                      className="transition-colors focus-visible:ring-emerald-500"
+                    />
+                    <FieldError errors={field.state.meta.errors} />
+                  </Field>
+                )}
+              </form.Field>
 
-        <Separator className="opacity-50" />
+              <form.Field name="recoveryAmount">
+                {(field) => (
+                  <Field>
+                    <FieldLabel>Recovery Amount <span className="text-muted-foreground text-xs font-normal ml-1">(Used for Commission)</span></FieldLabel>
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="PKR 0"
+                      value={field.state.value || ""}
+                      onChange={(e) => field.handleChange(e.target.value || null)}
+                      className="transition-colors focus-visible:ring-blue-500"
+                    />
+                    <FieldError errors={field.state.meta.errors} />
+                  </Field>
+                )}
+              </form.Field>
 
-        {/* Notes */}
-        <form.Field name="notes">
-          {(field) => (
-            <Field>
-              <div className="flex items-center gap-2 text-primary font-semibold mb-2">
-                <StickyNote className="size-4" />
-                <span className="text-sm uppercase tracking-wider">
-                  Internal Notes
-                </span>
-              </div>
-              <Textarea
-                placeholder="Add any specific observations or reasons..."
-                className="min-h-[80px] resize-none"
-                value={field.state.value || ""}
-                onChange={(e) => field.handleChange(e.target.value)}
-              />
-            </Field>
-          )}
-        </form.Field>
+              <form.Field name="returnAmount">
+                {(field) => (
+                  <Field>
+                    <FieldLabel>Return / Spoilage</FieldLabel>
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="PKR 0"
+                      value={field.state.value || ""}
+                      onChange={(e) => field.handleChange(e.target.value || null)}
+                      className="transition-colors focus-visible:ring-rose-500"
+                    />
+                    <FieldError errors={field.state.meta.errors} />
+                  </Field>
+                )}
+              </form.Field>
 
-        <div className="pt-2">
-          <Button
-            type="submit"
-            disabled={form.state.isSubmitting}
-            className="w-full h-11"
-          >
-            {form.state.isSubmitting ? (
-              <Loader2 className="mr-2 size-4 animate-spin" />
-            ) : (
-              "Save Attendance Record"
+              <form.Field name="slipNumbers">
+                {(field) => (
+                  <Field>
+                    <FieldLabel>Slip / Invoice Numbers</FieldLabel>
+                    <Input
+                      placeholder="#1001, #1002"
+                      value={field.state.value || ""}
+                      onChange={(e) => field.handleChange(e.target.value || null)}
+                      className="transition-colors"
+                    />
+                    <FieldError errors={field.state.meta.errors} />
+                  </Field>
+                )}
+              </form.Field>
+            </div>
+          </SectionBlock>
             )}
-          </Button>
-        </div>
+          </form.Subscribe>
+        )}
+
+        {/* ── Section: Time Tracking ──────────────────────────────────── */}
+        {!employee.isOrderBooker && (
+          <form.Subscribe selector={(s: any) => s.values.status}>
+            {(status: string) => {
+              const blocked = ["absent", "holiday", "leave"].includes(status);
+
+              return (
+                <SectionBlock icon={Clock} label="Shift Timings">
+                  {blocked ? (
+                    <div className="flex items-center gap-3 p-4 rounded-md border border-dashed bg-muted/30 animate-in fade-in duration-300">
+                      <Info className="size-4 text-muted-foreground shrink-0" />
+                      <p className="text-sm text-muted-foreground">
+                        Time tracking is disabled for <strong>{statusConfig[status as keyof typeof statusConfig]?.label || status}</strong> status.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6 animate-in fade-in duration-300">
+                      <form.Field name="entrySource">
+                        {(field) => (
+                          <Field>
+                            <FieldLabel>Entry Source</FieldLabel>
+                            <div className="grid grid-cols-2 gap-2">
+                              {[
+                                { value: "biometric", label: "Biometric" },
+                                { value: "manual", label: "Manual Entry" },
+                              ].map(({ value, label }) => (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => field.handleChange(value as any)}
+                                  className={cn(
+                                    "flex items-center justify-center rounded-md border py-2 px-3 text-sm font-medium transition-colors duration-200",
+                                    field.state.value === value
+                                      ? "bg-primary text-primary-foreground border-primary"
+                                      : "bg-background text-muted-foreground hover:bg-muted/50"
+                                  )}
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          </Field>
+                        )}
+                      </form.Field>
+
+                      <Separator className="opacity-60" />
+
+                      <div>
+                        <p className="text-sm font-semibold mb-3">Shift 1</p>
+                        <div className="grid grid-cols-2 gap-4">
+                          <form.Field name="checkIn">
+                            {(field) => (
+                              <Field>
+                                <FieldLabel>Start</FieldLabel>
+                                <TimeInput value={field.state.value} onChange={field.handleChange} />
+                              </Field>
+                            )}
+                          </form.Field>
+                          <form.Field name="checkOut">
+                            {(field) => (
+                              <Field>
+                                <FieldLabel>End</FieldLabel>
+                                <TimeInput value={field.state.value} onChange={field.handleChange} />
+                              </Field>
+                            )}
+                          </form.Field>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-semibold mb-3">
+                          Shift 2 <span className="font-normal text-muted-foreground">(split-shift, optional)</span>
+                        </p>
+                        <div className="grid grid-cols-2 gap-4">
+                          <form.Field name="checkIn2">
+                            {(field) => (
+                              <Field>
+                                <FieldLabel>Start</FieldLabel>
+                                <TimeInput value={field.state.value} onChange={field.handleChange} />
+                              </Field>
+                            )}
+                          </form.Field>
+                          <form.Field name="checkOut2">
+                            {(field) => (
+                              <Field>
+                                <FieldLabel>End</FieldLabel>
+                                <TimeInput value={field.state.value} onChange={field.handleChange} />
+                              </Field>
+                            )}
+                          </form.Field>
+                        </div>
+                      </div>
+
+                      <Separator className="opacity-60" />
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <form.Field name="dutyHours">
+                          {(field) => (
+                            <Field>
+                              <FieldLabel>Duty Hours</FieldLabel>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder={`e.g. ${std}.00`}
+                                value={field.state.value || ""}
+                                onChange={(e) => field.handleChange(e.target.value || null)}
+                                className="transition-colors focus-visible:ring-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                            </Field>
+                          )}
+                        </form.Field>
+
+                        <form.Field name="overtimeHours">
+                          {(field) => (
+                            <Field>
+                              <FieldLabel>Overtime</FieldLabel>
+                              <Input
+                                type="number"
+                                step="0.5"
+                                placeholder="0.00"
+                                value={field.state.value || ""}
+                                onChange={(e) => field.handleChange(e.target.value || null)}
+                                className="transition-colors focus-visible:ring-amber-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                            </Field>
+                          )}
+                        </form.Field>
+                      </div>
+
+                      <form.Subscribe selector={(s: any) => parseFloat(s.values.overtimeHours || "0") > 0}>
+                        {(hasOT: boolean) =>
+                          hasOT && (
+                            <div className="space-y-4 p-4 rounded-md border border-amber-200 bg-amber-50/40 dark:border-amber-900/40 dark:bg-amber-950/20 animate-in fade-in duration-300">
+                              <div className="flex items-center gap-2">
+                                <AlertCircle className="size-4 text-amber-600 dark:text-amber-500 shrink-0" />
+                                <span className="text-sm font-semibold text-amber-800 dark:text-amber-400">
+                                  Overtime Approval Required
+                                </span>
+                              </div>
+
+                              <form.Field name="overtimeRemarks">
+                                {(field) => (
+                                  <Field>
+                                    <FieldLabel>
+                                      Reason <span className="text-destructive">*</span>
+                                    </FieldLabel>
+                                    <Textarea
+                                      placeholder="Describe why overtime was necessary..."
+                                      className="min-h-[80px] resize-none transition-colors focus-visible:ring-amber-500 bg-background"
+                                      value={field.state.value || ""}
+                                      onChange={(e) => field.handleChange(e.target.value || null)}
+                                    />
+                                    <FieldError errors={field.state.meta.errors} />
+                                  </Field>
+                                )}
+                              </form.Field>
+
+                              <form.Field name="overtimeStatus">
+                                {(field) => (
+                                  <div className="flex items-center justify-between border-t border-amber-200/60 dark:border-amber-800/60 pt-3">
+                                    <div className="text-sm text-amber-800/70 dark:text-amber-500/80">Approval Status</div>
+                                    <OTStatusBadge status={field.state.value as any} />
+                                  </div>
+                                )}
+                              </form.Field>
+                              <p className="text-sm text-amber-700/70 dark:text-amber-500/70">
+                                Overtime pay is calculated only for Approved records. Status is set by admin.
+                              </p>
+                            </div>
+                          )
+                        }
+                      </form.Subscribe>
+
+                      <Separator className="opacity-60" />
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <form.Field name="isLate">
+                          {(field) => (
+                            <FlagToggle
+                              id="isLateEdit"
+                              checked={!!field.state.value}
+                              onCheckedChange={(c) => field.handleChange(!!c)}
+                              label="Late Arrival"
+                              colorClass="data-[state=checked]:bg-rose-50/50 data-[state=checked]:border-rose-200 dark:data-[state=checked]:bg-rose-950/20 dark:data-[state=checked]:border-rose-900"
+                            />
+                          )}
+                        </form.Field>
+
+                        <form.Field name="isNightShift">
+                          {(field) => (
+                            <FlagToggle
+                              id="isNightShiftEdit"
+                              checked={!!field.state.value}
+                              onCheckedChange={(c) => field.handleChange(!!c)}
+                              label="Night Shift"
+                              colorClass="data-[state=checked]:bg-indigo-50/50 data-[state=checked]:border-indigo-200 dark:data-[state=checked]:bg-indigo-950/20 dark:data-[state=checked]:border-indigo-900"
+                            />
+                          )}
+                        </form.Field>
+                      </div>
+                    </div>
+                  )}
+                </SectionBlock>
+              );
+            }}
+          </form.Subscribe>
+        )}
+
+        {/* ── Section: Notes ──────────────────────────────────────────── */}
+        <SectionBlock icon={StickyNote} label="Internal Notes">
+          <form.Field name="notes">
+            {(field) => (
+              <Field>
+                <FieldLabel className="sr-only">Notes</FieldLabel>
+                <Textarea
+                  placeholder="Add any specific observations, corrections, or context..."
+                  className="min-h-[100px] resize-none transition-colors"
+                  value={field.state.value || ""}
+                  onChange={(e) => field.handleChange(e.target.value || null)}
+                />
+              </Field>
+            )}
+          </form.Field>
+        </SectionBlock>
+
       </FieldGroup>
+
+      {/* ── Submit ──────────────────────────────────────────────────────── */}
+      <div className="pt-6 pb-2">
+        <form.Subscribe selector={(s: any) => s.isSubmitting}>
+          {(isSubmitting: boolean) => (
+            <Button type="submit" disabled={isSubmitting} className="w-full transition-colors duration-200">
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  Saving Record...
+                </>
+              ) : (
+                "Save Attendance Record"
+              )}
+            </Button>
+          )}
+        </form.Subscribe>
+      </div>
     </form>
   );
+};
+
+// ── Sub-components ─────────────────────────────────────────────────────────
+
+const SectionBlock = ({ icon: Icon, label, children }: { icon: any; label: string; children: React.ReactNode }) => (
+  <div className="py-6 first:pt-4 space-y-4">
+    <div className="flex items-center gap-2 border-b pb-2">
+      <Icon className="size-4 text-muted-foreground shrink-0" />
+      <h3 className="text-sm font-semibold">{label}</h3>
+    </div>
+    <div>{children}</div>
+  </div>
+);
+
+const FlagToggle = ({
+  id,
+  checked,
+  onCheckedChange,
+  label,
+  colorClass
+}: {
+  id: string;
+  checked: boolean;
+  onCheckedChange: (c: boolean) => void;
+  label: string;
+  colorClass?: string;
+}) => (
+  <label
+    htmlFor={id}
+    data-state={checked ? "checked" : "unchecked"}
+    className={cn(
+      "flex items-center gap-3 p-3 rounded-md border cursor-pointer bg-background transition-colors duration-200 select-none",
+      !checked && "hover:bg-muted/40",
+      colorClass
+    )}
+  >
+    <Checkbox id={id} checked={checked} onCheckedChange={(c) => onCheckedChange(!!c)} />
+    <span className="text-sm font-medium">{label}</span>
+  </label>
+);
+
+const OTStatusBadge = ({ status }: { status: "pending" | "approved" | "rejected" | null }) => {
+  const config = {
+    pending: { label: "Pending Admin", className: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800" },
+    approved: { label: "Approved", className: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800" },
+    rejected: { label: "Rejected", className: "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/40 dark:text-rose-400 dark:border-rose-800" },
+  };
+  const c = config[status || "pending"];
+  return (
+    <Badge className={c.className} variant="outline">
+      {c.label}
+    </Badge>
+  );
+};
+
+// ── Status pill active styles ──────────────────────────────────────────────
+
+const statusPillActive: Record<string, string> = {
+  present: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400",
+  absent: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400",
+  leave: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400",
+  half_day: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400",
+  holiday: "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300",
 };

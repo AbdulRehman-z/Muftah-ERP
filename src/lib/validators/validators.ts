@@ -13,6 +13,7 @@ export const createRecipeSchema = z.object({
   containerPackagingId: z.string().min(1, "Container packaging is required"),
   containersPerCarton: z.number().int().min(0).default(0), // 0 means no cartons
   cartonPackagingId: z.string().optional(),
+  minimumStockLevel: z.number().int().min(0).default(0),
   ingredients: z.array(
     z.object({
       chemicalId: z.string().min(1, "Chemical is required"),

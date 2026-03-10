@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { getMonthlyPayrollTableFn } from "@/server-functions/hr/payroll/dashboard-fn";
 import {
   format,
@@ -26,7 +26,6 @@ import {
   Search,
   Eye,
   Edit,
-  UserIcon,
   CheckCircle2,
   Clock,
   CalendarCheck,
@@ -44,7 +43,10 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Link, useRouter } from "@tanstack/react-router";
 import { GenericEmpty } from "../../custom/empty";
+import { HREmptyIllustration } from "@/components/illustrations/HREmptyIllustration";
 import { cn } from "@/lib/utils";
+import { getPendingApprovalCountsFn } from "@/server-functions/hr/get-pending-approval-counts-fn";
+import { AlertTriangle } from "lucide-react";
 
 export type EmployeePayrollRow = {
   id: string;
@@ -105,7 +107,7 @@ export function PayrollContainer() {
   if (employees.length === 0 && pageIndex === 0 && !globalFilter) {
     return (
       <GenericEmpty
-        icon={UserIcon}
+        icon={HREmptyIllustration}
         title="No Employees Found"
         description="There are no active employees to process payroll for this month. Ensure employees are added and active in the system."
         ctaText="Go to Employees"
@@ -349,6 +351,9 @@ export function PayrollContainer() {
         </div>
       )}
 
+      {/* ── Pending Approvals Warning ─────────────────────────────────── */}
+      <PendingApprovalsWarning />
+
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative w-full max-w-sm">
@@ -457,7 +462,7 @@ export function PayrollContainer() {
                 <TableRow>
                   <TableCell colSpan={6} className="h-64">
                     <GenericEmpty
-                      icon={Search}
+                      icon={HREmptyIllustration}
                       title="No results found"
                       description="Try adjusting your search or filters."
                     />
@@ -517,11 +522,11 @@ export function PayrollContainer() {
 type KPIColor = "blue" | "emerald" | "amber" | "violet" | "rose";
 
 const kpiColorMap: Record<KPIColor, { bg: string; iconBg: string; icon: string; value: string; bar: string }> = {
-  blue: { bg: "bg-blue-50 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/30", iconBg: "bg-blue-100 dark:bg-blue-900/40", icon: "text-blue-600", value: "text-blue-700 dark:text-blue-400", bar: "bg-blue-500" },
-  emerald: { bg: "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-800/30", iconBg: "bg-emerald-100 dark:bg-emerald-900/40", icon: "text-emerald-600", value: "text-emerald-700 dark:text-emerald-400", bar: "bg-emerald-500" },
-  amber: { bg: "bg-amber-50 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/30", iconBg: "bg-amber-100 dark:bg-amber-900/40", icon: "text-amber-600", value: "text-amber-700 dark:text-amber-400", bar: "bg-amber-500" },
-  violet: { bg: "bg-violet-50 dark:bg-violet-950/20 border-violet-200/60 dark:border-violet-800/30", iconBg: "bg-violet-100 dark:bg-violet-900/40", icon: "text-violet-600", value: "text-violet-700 dark:text-violet-400", bar: "bg-violet-500" },
-  rose: { bg: "bg-rose-50 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-800/30", iconBg: "bg-rose-100 dark:bg-rose-900/40", icon: "text-rose-600", value: "text-rose-700 dark:text-rose-400", bar: "bg-rose-500" },
+  blue: { bg: "bg-blue-50 dark:bg-blue-500/10 border-blue-200/60 dark:border-blue-500/20", iconBg: "bg-blue-100 dark:bg-blue-500/20", icon: "text-blue-600 dark:text-blue-400", value: "text-blue-700 dark:text-blue-400", bar: "bg-blue-500" },
+  emerald: { bg: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200/60 dark:border-emerald-500/20", iconBg: "bg-emerald-100 dark:bg-emerald-500/20", icon: "text-emerald-600 dark:text-emerald-400", value: "text-emerald-700 dark:text-emerald-400", bar: "bg-emerald-500" },
+  amber: { bg: "bg-amber-50 dark:bg-amber-500/10 border-amber-200/60 dark:border-amber-500/20", iconBg: "bg-amber-100 dark:bg-amber-500/20", icon: "text-amber-600 dark:text-amber-400", value: "text-amber-700 dark:text-amber-400", bar: "bg-amber-500" },
+  violet: { bg: "bg-violet-50 dark:bg-violet-500/10 border-violet-200/60 dark:border-violet-500/20", iconBg: "bg-violet-100 dark:bg-violet-500/20", icon: "text-violet-600 dark:text-violet-400", value: "text-violet-700 dark:text-violet-400", bar: "bg-violet-500" },
+  rose: { bg: "bg-rose-50 dark:bg-rose-500/10 border-rose-200/60 dark:border-rose-500/20", iconBg: "bg-rose-100 dark:bg-rose-500/20", icon: "text-rose-600 dark:text-rose-400", value: "text-rose-700 dark:text-rose-400", bar: "bg-rose-500" },
 };
 
 function KPICard({
@@ -562,6 +567,59 @@ function KPICard({
           />
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Warning banner shown in the payroll container when there are
+ * unresolved leave, overtime, or advance approval requests.
+ */
+function PendingApprovalsWarning() {
+  const { data: counts } = useQuery({
+    queryKey: ["pending-approval-counts"],
+    queryFn: () => getPendingApprovalCountsFn(),
+    staleTime: 30_000,
+  });
+
+  if (!counts || counts.total === 0) return null;
+
+  const parts: string[] = [];
+  if (counts.leave > 0)
+    parts.push(`${counts.leave} leave request${counts.leave !== 1 ? "s" : ""}`);
+  if (counts.overtime > 0)
+    parts.push(
+      `${counts.overtime} overtime request${counts.overtime !== 1 ? "s" : ""}`
+    );
+  if (counts.advances > 0)
+    parts.push(
+      `${counts.advances} salary advance${counts.advances !== 1 ? "s" : ""}`
+    );
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800/30 animate-in fade-in duration-300">
+      <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-900/40">
+        <AlertTriangle className="size-4 text-orange-600 dark:text-orange-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold text-orange-800 dark:text-orange-300">
+          Pending Approvals Detected
+        </p>
+        <p className="text-xs text-orange-600 dark:text-orange-400 mt-0.5">
+          {parts.join(", ")} awaiting admin decision. Resolve these before
+          generating payslips to ensure accurate deductions and Bradford Factor
+          calculations.
+        </p>
+      </div>
+      <Link to="/hr/approvals">
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 text-[10px] font-bold uppercase tracking-wider border-orange-300 text-orange-700 hover:bg-orange-100 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/40 shrink-0"
+        >
+          Review Approvals
+        </Button>
+      </Link>
     </div>
   );
 }

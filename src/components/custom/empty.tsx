@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/empty";
 
 type Props = {
-  icon: LucideIcon;
+  icon: LucideIcon | React.ElementType;
   title: string;
   description: string;
   ctaText?: string;

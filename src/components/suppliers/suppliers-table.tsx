@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { DataTable } from "@/components/ui/data-table";
+import { DataTable } from "@/components/custom/data-table";
 import { useState } from "react";
 import { EditSupplierDialog } from "./edit-supplier-dialog";
 import { getSuppliersFn } from "@/server-functions/suppliers/get-suppliers-fn";

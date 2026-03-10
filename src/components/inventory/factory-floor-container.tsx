@@ -1,9 +1,10 @@
-import { Package, Beaker, Box, Factory, Wrench } from "lucide-react";
+import { Package, Beaker, Box, Wrench } from "lucide-react";
 import { useState } from "react";
 import { getFactoryFloorStockFn } from "@/server-functions/inventory/factory-floor/get-factory-floor-stocks-fn";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 import { GenericEmpty } from "../custom/empty";
+import { InventoryEmptyIllustration } from "@/components/illustrations/InventoryEmptyIllustration";
 import { AddWarehouseDialog } from "./add-warehouse-dialog";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { StockTable } from "./stock-table";
@@ -50,7 +51,7 @@ export const FactoryFloorContainer = () => {
     return (
       <>
         <GenericEmpty
-          icon={Factory}
+          icon={InventoryEmptyIllustration}
           title="No Factory Floor Configured"
           description="You haven't set up a Factory Floor warehouse yet. Create a production facility to start tracking chemicals and packaging."
           ctaText="Add Factory Floor"

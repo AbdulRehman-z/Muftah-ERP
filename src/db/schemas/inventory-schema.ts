@@ -188,6 +188,9 @@ export const recipes = pgTable("recipes", {
   minBatchYield: decimal("min_batch_yield", { precision: 5, scale: 2 }), // Minimum acceptable yield %
   targetShelfLife: integer("target_shelf_life"), // Days
 
+  // Inventory
+  minimumStockLevel: integer("minimum_stock_level").default(0),
+
   // Production notes
   notes: text("notes"),
   productionInstructions: text("production_instructions"),

@@ -39,7 +39,8 @@ function buildAllowance(partial: PartialAllowance): AllowanceConfig {
     ...partial,
     deductions: standard?.deductions ?? {
       absent: false,
-      leave: false,
+      annualLeave: false,
+      sickLeave: false,
       specialLeave: false,
       lateArrival: false,
       earlyLeaving: false,
@@ -64,6 +65,8 @@ type EmployeeSeed = {
   address?: string;
   bankName?: string;
   bankAccountNumber?: string;
+  isOrderBooker?: boolean;
+  commissionRate?: string;
 };
 
 const employeeData: EmployeeSeed[] = [
@@ -179,6 +182,42 @@ const employeeData: EmployeeSeed[] = [
       buildAllowance({ id: "nightShift", name: "Night Shift Allowance", amount: 1000 }),
     ],
   },
+  {
+    employeeCode: "MKT001",
+    firstName: "Rizwan",
+    lastName: "Qureshi",
+    designation: "Order Booker",
+    department: "Sales",
+    joiningDate: "2023-05-10",
+    employmentType: "full_time",
+    standardSalary: "40000",
+    standardDutyHours: 8,
+    isOrderBooker: true,
+    commissionRate: "1.50",
+    allowanceConfig: [
+      buildAllowance({ id: "houseRent", name: "House Rent", amount: 16000 }),
+      buildAllowance({ id: "utilities", name: "Utilities", amount: 8000 }),
+      buildAllowance({ id: "mobile", name: "Mobile Allowance", amount: 2000 }),
+    ],
+  },
+  {
+    employeeCode: "MKT002",
+    firstName: "Adeel",
+    lastName: "Farooq",
+    designation: "Order Booker",
+    department: "Sales",
+    joiningDate: "2023-07-22",
+    employmentType: "full_time",
+    standardSalary: "38000",
+    standardDutyHours: 8,
+    isOrderBooker: true,
+    commissionRate: "1.75",
+    allowanceConfig: [
+      buildAllowance({ id: "houseRent", name: "House Rent", amount: 15200 }),
+      buildAllowance({ id: "utilities", name: "Utilities", amount: 7600 }),
+      buildAllowance({ id: "mobile", name: "Mobile Allowance", amount: 2000 }),
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -230,6 +269,8 @@ async function seedHR() {
           phone: emp.phone ?? null,
           bankName: emp.bankName ?? null,
           bankAccountNumber: emp.bankAccountNumber ?? null,
+          isOrderBooker: emp.isOrderBooker ?? false,
+          commissionRate: emp.commissionRate ?? "0",
         })
         .where(eq(employees.employeeCode, emp.employeeCode))
         .returning();
@@ -258,6 +299,8 @@ async function seedHR() {
           address: emp.address ?? null,
           bankName: emp.bankName ?? null,
           bankAccountNumber: emp.bankAccountNumber ?? null,
+          isOrderBooker: emp.isOrderBooker ?? false,
+          commissionRate: emp.commissionRate ?? "0",
         })
         .returning();
       insertedEmployees.push(newEmp);
@@ -328,8 +371,41 @@ async function seedHR() {
 
       const isLate = Math.random() < 0.1;
 
+      // Order Bookers — daily sales and TA/DA routing
+      if (emp.isOrderBooker) {
+        const isCompanyVehicle = Math.random() < 0.3; // 30% chance they used company vehicle
+        const hasSales = Math.random() < 0.9;         // 90% chance they made sales
+
+        const sales = hasSales ? Math.floor(20000 + Math.random() * 80000) : 0;
+        const recovery = hasSales ? Math.floor(15000 + Math.random() * 60000) : 0;
+        const paramReturn = hasSales ? Math.floor(0 + Math.random() * 5000) : 0;
+        
+        const distance = Math.floor(20 + Math.random() * 60);
+        const ratePerKm = 15; // Set a static dummy TA test rate of 15 PKR/km
+
+        const petrolAmt = isCompanyVehicle ? Math.floor(distance * 20) : 0; // if used company bike, log fuel price
+
+        await db.insert(attendance).values({
+          id: createId(),
+          employeeId: emp.id,
+          date: dateStr,
+          status: "present",
+          entrySource: "manual",
+          areaVisited: "North Sector D" + Math.floor(Math.random() * 10),
+          isCompanyVehicle,
+          paymentMode: "per_km",
+          distanceKm: distance.toString(),
+          perKmRate: ratePerKm.toString(),
+          petrolAmount: petrolAmt.toString(),
+          saleAmount: sales.toString(),
+          recoveryAmount: recovery.toString(),
+          returnAmount: paramReturn.toString(),
+          shopType: Math.random() > 0.8 ? "new" : "old",
+          slipNumbers: `SLP-${Math.floor(100 + Math.random() * 900)}`,
+        });
+      }
       // Operators — split shift with occasional overtime
-      if (emp.designation.toLowerCase().includes("operator")) {
+      else if (emp.designation.toLowerCase().includes("operator")) {
         const overtimeHrs = Math.random() < 0.3 ? "0.5" : "0";
         const dutyHrs = (8.5 + parseFloat(overtimeHrs)).toString();
         await db.insert(attendance).values({

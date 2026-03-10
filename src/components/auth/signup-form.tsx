@@ -27,7 +27,7 @@ import {
 import {
   PasswordInput,
   PasswordInputStrengthChecker,
-} from "../ui/password-input";
+} from "../custom/password-input";
 import { EmailVerification } from "./email-verification";
 
 export const SignupForm = () => {

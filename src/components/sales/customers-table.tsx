@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { DataTable } from "@/components/ui/data-table";
+import { DataTable } from "@/components/custom/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { useGetCustomers } from "@/hooks/sales/use-customers";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Users, X, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { GenericEmpty } from "@/components/custom/empty";
 import { useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
+import { CustomersEmptyIllustration } from "../illustrations/CustomersEmptyIllustration";
+import { SalesEmptyIllustration } from "../illustrations/SalesEmptyIllustration";
 
 const PKR = (v: number) =>
   `PKR ${v.toLocaleString("en-PK", { minimumFractionDigits: 2 })}`;
@@ -29,7 +31,7 @@ export const CustomersTable = () => {
     return (
       <GenericEmpty
         className="mt-30"
-        icon={Users}
+        icon={CustomersEmptyIllustration}
         title="No Customers Yet"
         description="Customers are created automatically when you generate invoices."
         ctaText="Create First Invoice"
@@ -135,15 +137,14 @@ export const CustomersTable = () => {
 
       {/* Empty search state */}
       {total === 0 && search ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border rounded-xl border-dashed">
-          <Users className="size-8 text-muted-foreground mb-3 opacity-50" />
-          <p className="text-sm font-medium text-muted-foreground">
-            No customers match "<strong>{search}</strong>"
-          </p>
-          <Button variant="link" size="sm" onClick={() => setSearch("")} className="mt-1 text-xs">
-            Clear search
-          </Button>
-        </div>
+        <GenericEmpty
+          className="py-12"
+          icon={SalesEmptyIllustration}
+          title="No Match Found"
+          description={`We couldn't find any customers matching "${search}".`}
+          ctaText="Clear Search"
+          onAddChange={() => setSearch("")}
+        />
       ) : (
         <>
           <DataTable columns={columns} data={customers} showSearch={false} showPagination={false} />

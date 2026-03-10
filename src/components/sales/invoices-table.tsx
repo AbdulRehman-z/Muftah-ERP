@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DataTable } from "@/components/ui/data-table";
+import { DataTable } from "@/components/custom/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { useGetInvoices } from "@/hooks/sales/use-invoices";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { DatePickerWithRange } from "@/components/custom/date-range-picker";
 import { type DateRange } from "react-day-picker";
 import { GenericEmpty } from "@/components/custom/empty";
 import { cn } from "@/lib/utils";
+import { SalesEmptyIllustration } from "@/components/illustrations/SalesEmptyIllustration";
 
 type Props = {
   sheetOpen?: boolean;
@@ -65,7 +66,7 @@ export const InvoicesTable = ({ onSheetOpenChange }: Props) => {
     return (
       <GenericEmpty
         className="mt-30"
-        icon={ReceiptText}
+        icon={SalesEmptyIllustration}
         title="No Invoices Found"
         description="You haven't generated any invoices yet. Start your first transaction."
         ctaText="Create Invoice"
@@ -213,13 +214,14 @@ export const InvoicesTable = ({ onSheetOpenChange }: Props) => {
 
       {/* Empty state for filtered results */}
       {total === 0 && hasFilters ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border rounded-xl border-dashed">
-          <ReceiptText className="size-8 text-muted-foreground mb-3 opacity-50" />
-          <p className="text-sm font-medium text-muted-foreground">No invoices match your filters</p>
-          <Button variant="link" size="sm" onClick={clearFilters} className="mt-1 text-xs">
-            Clear filters
-          </Button>
-        </div>
+        <GenericEmpty
+          className="py-12"
+          icon={SalesEmptyIllustration}
+          title="No Results Found"
+          description="Your filters didn't return any invoices. Try adjusting the date range or month."
+          ctaText="Clear Filters"
+          onAddChange={clearFilters}
+        />
       ) : (
         <>
           <DataTable columns={columns} data={invoices} showSearch={false} showPagination={false} />

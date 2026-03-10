@@ -4,7 +4,6 @@
  */
 
 import { useForm } from "@tanstack/react-form";
-import { zodValidator } from "@tanstack/zod-form-adapter";
 import { format, parseISO } from "date-fns";
 import { useCreateEmployee } from "@/hooks/hr/use-create-employee";
 import { createEmployeeSchema } from "@/lib/validators/hr-validators";
@@ -34,6 +33,8 @@ import {
   type AllowanceConfig,
 } from "@/lib/types/hr-types";
 import { AllowanceCard, DEDUCTION_OCCASIONS } from "@/components/hr/employees/allowance-card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 interface Props {
   onSuccess: () => void;
@@ -45,7 +46,8 @@ const newCustomAllowance = (): AllowanceConfig => ({
   amount: 0,
   deductions: {
     absent: false,
-    leave: false,
+    annualLeave: false,
+    sickLeave: false,
     specialLeave: false,
     lateArrival: false,
     earlyLeaving: false,
@@ -76,6 +78,8 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
       bankAccountNumber: "",
       standardDutyHours: 8,
       standardSalary: "",
+      commissionRate: "0",
+      isOrderBooker: false,
       // Deep clone so mutations don't affect the STANDARD_ALLOWANCES constant
       allowanceConfig: JSON.parse(
         JSON.stringify(STANDARD_ALLOWANCES)
@@ -354,35 +358,77 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
             <span className="text-sm uppercase tracking-wider">Compensation & Allowances</span>
           </div>
 
-          <form.Field name="standardSalary">
-            {(field: AnyFieldApi) => (
-              <Field>
-                <FieldLabel className="text-muted-foreground font-medium">
-                  Basic Salary (Monthly)
-                </FieldLabel>
-                <div className="relative group max-w-xs">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-xs font-bold text-muted-foreground/70 group-focus-within:text-yellow-600 transition-colors">
-                      PKR
-                    </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form.Field name="standardSalary">
+              {(field: AnyFieldApi) => (
+                <Field>
+                  <FieldLabel className="text-muted-foreground font-medium">
+                    Basic Salary (Monthly)
+                  </FieldLabel>
+                  <div className="relative group max-w-xs">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-xs font-bold text-muted-foreground/70 group-focus-within:text-yellow-600 transition-colors">
+                        PKR
+                      </span>
+                    </div>
+                    <Input
+                      type="number"
+                      placeholder="0.00"
+                      value={field.state.value as string}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      className="pl-12 bg-yellow-50/30 border-yellow-200 dark:bg-yellow-500/10 dark:border-yellow-500/30 focus-visible:ring-yellow-500 font-mono text-lg h-12 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
                   </div>
-                  <Input
-                    type="number"
-                    placeholder="0.00"
-                    value={field.state.value as string}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    className="pl-12 bg-yellow-50/30 border-yellow-200 focus-visible:ring-yellow-500 font-mono text-lg h-12 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                </div>
-                <p className="text-[11px] text-muted-foreground/60 mt-1">
-                  On absent days, a full day's worth of basic salary is cut. For late arrivals or early
-                  departures, basic salary is reduced by the exact number of minutes missed.
-                </p>
-                <FieldError errors={field.state.meta.errors} />
-              </Field>
+                  <FieldError errors={field.state.meta.errors} />
+                </Field>
+              )}
+            </form.Field>
+
+            <form.Subscribe selector={(s: any) => s.values.isOrderBooker}>
+              {(isOrderBooker) => isOrderBooker ? (
+                <form.Field name="commissionRate">
+                  {(field: AnyFieldApi) => (
+                    <Field>
+                      <FieldLabel className="text-muted-foreground font-medium">
+                        Commission Rate (%)
+                      </FieldLabel>
+                      <div className="relative group max-w-xs">
+                        <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                          <span className="text-xs font-bold text-muted-foreground/70 group-focus-within:text-blue-600 transition-colors">
+                            %
+                          </span>
+                        </div>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="100"
+                          placeholder="0.0"
+                          value={field.state.value as string}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          className="pr-10 bg-blue-50/30 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/30 focus-visible:ring-blue-500 font-mono text-lg h-12 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                      </div>
+                      <FieldError errors={field.state.meta.errors} />
+                    </Field>
+                  )}
+                </form.Field>
+              ) : null}
+            </form.Subscribe>
+          </div>
+
+          <form.Subscribe selector={(s: any) => s.values.isOrderBooker}>
+            {(isOrderBooker) => (
+              <p className="text-[11px] text-muted-foreground/60 mt-2">
+                <strong>Basic Salary:</strong> On absent days, a full day's worth is cut. 
+                {isOrderBooker && (
+                  <> <br /><strong>Commission:</strong> Order bookers receive this % on their total collected Recovery.</>
+                )}
+              </p>
             )}
-          </form.Field>
+          </form.Subscribe>
 
           {/* ── Allowances ── */}
           <div className="pt-2">

@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/ui/data-table";
-import { Badge } from "@/components/ui/badge";
+import { DataTable } from "@/components/custom/data-table";
 import { Button } from "@/components/ui/button";
-import { Edit2, ExternalLink, Clock } from "lucide-react";
-import { EditAttendanceSheet } from "./edit-attendance-sheet";
+import { Edit2, ExternalLink } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { formatDuration } from "@/lib/utils";
+import { EditAttendanceSheet } from "./edit-attendance-sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Zap, Users } from "lucide-react";
 
 interface AttendanceRecord {
   id: string;
@@ -20,10 +20,19 @@ interface AttendanceRecord {
   isLate: boolean | null;
   isNightShift: boolean | null;
   isApprovedLeave: boolean | null;
-  overtimeStatus: string | null;
+  overtimeStatus: "pending" | "approved" | "rejected" | null;
   overtimeRemarks: string | null;
-  entrySource: string | null;
+  entrySource: "biometric" | "manual" | null;
   notes: string | null;
+  areaVisited?: string | null;
+  paymentMode?: "per_km" | null;
+  distanceKm?: string | null;
+  perKmRate?: string | null;
+  saleAmount?: string | null;
+  recoveryAmount?: string | null;
+  returnAmount?: string | null;
+  slipNumbers?: string | null;
+  shopType?: "old" | "new" | null;
 }
 
 interface EmployeeWithAttendance {
@@ -32,6 +41,7 @@ interface EmployeeWithAttendance {
   firstName: string;
   lastName: string;
   designation: string;
+  isOrderBooker: boolean;
   standardDutyHours: number | null;
   attendance: AttendanceRecord[];
 }
@@ -41,27 +51,25 @@ interface Props {
   date: string;
 }
 
+
+
 export const AttendanceListTable = ({ data, date }: Props) => {
   const [selectedEmployee, setSelectedEmployee] =
     useState<EmployeeWithAttendance | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const columns: ColumnDef<EmployeeWithAttendance>[] = [
-    {
-      accessorKey: "employeeCode",
-      header: "Code",
-      cell: ({ row }) => (
-        <span className="font-mono text-xs">{row.original.employeeCode}</span>
-      ),
-    },
+  const handleEdit = (employee: EmployeeWithAttendance) => {
+    setSelectedEmployee(employee);
+    setIsDialogOpen(true);
+  };
+
+  const standardColumns: ColumnDef<EmployeeWithAttendance>[] = [
     {
       header: "Employee",
       cell: ({ row }) => (
-        <div className="flex flex-col">
-          <span className="font-medium">{`${row.original.firstName} ${row.original.lastName}`}</span>
-          <span className="text-xs text-muted-foreground">
-            {row.original.designation}
-          </span>
+        <div className="flex flex-col min-w-[120px]">
+          <span className="font-bold text-xs uppercase">{`${row.original.firstName} ${row.original.lastName}`}</span>
+          <span className="text-[10px] text-muted-foreground uppercase">{row.original.designation}</span>
         </div>
       ),
     },
@@ -69,167 +77,49 @@ export const AttendanceListTable = ({ data, date }: Props) => {
       header: "Status",
       cell: ({ row }) => {
         const record = row.original.attendance[0];
-        if (!record)
-          return (
-            <Badge variant="secondary" className="opacity-50">
-              Not Set
-            </Badge>
-          );
-
-        const statusMap = {
-          present: {
-            label: "Present",
-            variant: "default" as const,
-            class: "bg-emerald-500 hover:bg-emerald-600",
-          },
-          absent: {
-            label: "Absent",
-            variant: "destructive" as const,
-            class: "",
-          },
-          leave: {
-            label: "Leave",
-            variant: "secondary" as const,
-            class: "bg-indigo-500 text-white hover:bg-indigo-600",
-          },
-          half_day: {
-            label: "Half Day",
-            variant: "outline" as const,
-            class: "border-amber-500 text-amber-500 hover:bg-amber-50",
-          },
-          holiday: {
-            label: "Holiday",
-            variant: "outline" as const,
-            class: "border-blue-500 text-blue-500 hover:bg-blue-50",
-          },
-        };
-
-        const config = statusMap[record.status];
-        return (
-          <div className="flex items-center gap-2">
-            <Badge variant={config.variant} className={config.class}>
-              {config.label}
-            </Badge>
-            {record.isLate && (
-              <Badge
-                variant="outline"
-                className="border-rose-500 text-rose-500 bg-rose-50 border-dashed animate-pulse"
-              >
-                Late
-              </Badge>
-            )}
-          </div>
-        );
+        if (!record) return <span className="text-muted-foreground text-[10px] uppercase">N/A</span>;
+        return <span className={`text-[10px] font-bold uppercase ${record.status === 'present' ? 'text-emerald-600' : 'text-rose-600'}`}>{record.status.replace("_", " ")}</span>;
       },
     },
     {
-      header: "Timings",
-      cell: ({ row }) => {
-        const record = row.original.attendance[0];
-        if (
-          !record ||
-          record.status === "absent" ||
-          record.status === "holiday"
-        )
-          return "-";
-
-        return (
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2 text-xs font-medium">
-              <span className="w-4 text-muted-foreground text-[10px] uppercase">
-                S1
-              </span>
-              <span className="text-emerald-600 font-bold">
-                {record.checkIn || "??:??"}
-              </span>
-              <span className="text-muted-foreground opacity-50">→</span>
-              <span className="text-rose-600 font-bold">
-                {record.checkOut || "??:??"}
-              </span>
-            </div>
-            {(record.checkIn2 || record.checkOut2) && (
-              <div className="flex items-center gap-2 text-xs font-medium">
-                <span className="w-4 text-muted-foreground text-[10px] uppercase">
-                  S2
-                </span>
-                <span className="text-emerald-600 font-bold">
-                  {record.checkIn2 || "??:??"}
-                </span>
-                <span className="text-muted-foreground opacity-50">→</span>
-                <span className="text-rose-600 font-bold">
-                  {record.checkOut2 || "??:??"}
-                </span>
-              </div>
-            )}
-          </div>
-        );
-      },
+      header: "Check-In",
+      cell: ({ row }) => <span className="text-xs font-mono">{row.original.attendance[0]?.checkIn || "-"}</span>,
     },
     {
-      header: "Duty Stats",
-      cell: ({ row }) => {
-        const record = row.original.attendance[0];
-        if (
-          !record ||
-          ["absent", "leave", "holiday"].includes(record.status) ||
-          !record.dutyHours ||
-          record.dutyHours === "NaN"
-        ) {
-          return <span className="text-muted-foreground">-</span>;
-        }
-
-        const duty = parseFloat(record.dutyHours || "0");
-        const standard = row.original.standardDutyHours || 8;
-        const shortfall = Math.max(0, standard - duty);
-        const overtime = parseFloat(record.overtimeHours || "0");
-
-        return (
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-1.5 text-xs">
-              <Clock className="w-3 h-3 text-muted-foreground" />
-              <span className="font-semibold">{record.dutyHours} hr</span>
-            </div>
-            {overtime > 0 && (
-              <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-tight">
-                + {record.overtimeHours} Overtime
-              </div>
-            )}
-            {shortfall > 0.1 && (
-              <div className="text-[10px] text-rose-600 font-bold uppercase tracking-tight flex items-center gap-1">
-                <span>⚠ Short: {formatDuration(shortfall)}</span>
-              </div>
-            )}
-          </div>
-        );
-      },
+      header: "Check-Out",
+      cell: ({ row }) => <span className="text-xs font-mono">{row.original.attendance[0]?.checkOut || "-"}</span>,
+    },
+    {
+      header: "Duty (Hrs)",
+      cell: ({ row }) => <span className="text-xs font-mono">{row.original.attendance[0]?.dutyHours || "-"}</span>,
+    },
+    {
+      header: "O/T (Hrs)",
+      cell: ({ row }) => <span className="text-xs font-mono">{row.original.attendance[0]?.overtimeHours || "-"}</span>,
     },
     {
       id: "actions",
-      header: "Actions",
+      header: "",
       cell: ({ row }) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-1">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
-            onClick={() => {
-              setSelectedEmployee(row.original);
-              setIsDialogOpen(true);
-            }}
+            className="h-6 w-6 rounded-none text-muted-foreground hover:bg-muted"
+            onClick={() => handleEdit(row.original)}
+            title="Edit Attendance"
           >
-            <Edit2 className="h-4 w-4" />
+            <Edit2 className="h-3 w-3" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
+            className="h-6 w-6 rounded-none text-muted-foreground hover:bg-muted"
             asChild
-            className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
+            title="View Details"
           >
-            <Link
-              to="/hr/attendance/$employeeId"
-              params={{ employeeId: row.original.id }}
-            >
-              <ExternalLink className="h-4 w-4" />
+            <Link to="/hr/attendance/$employeeId" params={{ employeeId: row.original.id }}>
+              <ExternalLink className="h-3 w-3" />
             </Link>
           </Button>
         </div>
@@ -237,14 +127,178 @@ export const AttendanceListTable = ({ data, date }: Props) => {
     },
   ];
 
+  const orderBookerColumns: ColumnDef<EmployeeWithAttendance>[] = [
+    {
+      header: "Employee",
+      cell: ({ row }) => (
+        <div className="flex flex-col min-w-[120px]">
+          <span className="font-bold text-xs uppercase">{`${row.original.firstName} ${row.original.lastName}`}</span>
+          <span className="text-[10px] text-muted-foreground uppercase">{row.original.designation}</span>
+        </div>
+      ),
+      footer: () => <div className="text-right">TOTALS</div>,
+    },
+    {
+      header: "Status",
+      cell: ({ row }) => {
+        const record = row.original.attendance[0];
+        if (!record) return <span className="text-muted-foreground text-[10px] uppercase">N/A</span>;
+        return <span className={`text-[10px] font-bold uppercase ${record.status === 'present' ? 'text-emerald-600' : 'text-rose-600'}`}>{record.status}</span>;
+      },
+    },
+    {
+      header: "Area",
+      cell: ({ row }) => <span className="text-xs">{row.original.attendance[0]?.areaVisited || "-"}</span>,
+    },
+    {
+      header: "Mode",
+      cell: ({ row }) => {
+        const mode = row.original.attendance[0]?.paymentMode;
+        if (!mode) return "-";
+        return <span className="text-[10px] uppercase whitespace-nowrap">Per KM</span>;
+      },
+    },
+    {
+      header: "Dist. (KM)",
+      accessorFn: (row) => row.attendance[0]?.distanceKm || "0",
+      cell: ({ row }) => <span className="font-mono text-xs">{row.original.attendance[0]?.distanceKm || "-"}</span>,
+    },
+    {
+      header: "Rate",
+      cell: ({ row }) => <span className="font-mono text-xs">{row.original.attendance[0]?.perKmRate || "-"}</span>,
+    },
+    {
+      header: "Dyn. TA",
+      cell: ({ row }) => {
+        const record = row.original.attendance[0];
+        if (!record || record.paymentMode !== "per_km") return "-";
+        const ta = parseFloat(record.distanceKm || "0") * parseFloat(record.perKmRate || "0");
+        return <span className="font-mono text-xs font-bold">{ta > 0 ? ta.toLocaleString() : "-"}</span>;
+      },
+      footer: ({ table }) => {
+        const total = table.getFilteredRowModel().rows.reduce((sum, row) => {
+          const rec = row.original.attendance[0];
+          if (rec?.paymentMode === "per_km") {
+            return sum + (parseFloat(rec.distanceKm || "0") * parseFloat(rec.perKmRate || "0"));
+          }
+          return sum;
+        }, 0);
+        return <span className="font-mono text-xs text-emerald-600">{total > 0 ? total.toLocaleString() : "0"}</span>;
+      }
+    },
+    {
+      header: "Sale",
+      accessorFn: (row) => row.attendance[0]?.saleAmount || "0",
+      cell: ({ row }) => {
+        const val = parseFloat(row.original.attendance[0]?.saleAmount || "0");
+        return <span className="font-mono text-xs">{val > 0 ? val.toLocaleString() : "-"}</span>;
+      },
+      footer: ({ table }) => {
+        const total = table.getFilteredRowModel().rows.reduce((sum, row) => sum + parseFloat(row.original.attendance[0]?.saleAmount || "0"), 0);
+        return <span className="font-mono text-xs">{total > 0 ? total.toLocaleString() : "0"}</span>;
+      }
+    },
+    {
+      header: "Recovery",
+      accessorFn: (row) => row.attendance[0]?.recoveryAmount || "0",
+      cell: ({ row }) => {
+        const val = parseFloat(row.original.attendance[0]?.recoveryAmount || "0");
+        return <span className="font-mono text-xs font-bold text-blue-700 dark:text-blue-400">{val > 0 ? val.toLocaleString() : "-"}</span>;
+      },
+      footer: ({ table }) => {
+        const total = table.getFilteredRowModel().rows.reduce((sum, row) => sum + parseFloat(row.original.attendance[0]?.recoveryAmount || "0"), 0);
+        return <span className="font-mono text-xs text-blue-700 dark:text-blue-400">{total > 0 ? total.toLocaleString() : "0"}</span>;
+      }
+    },
+    {
+      header: "Return",
+      cell: ({ row }) => {
+        const val = parseFloat(row.original.attendance[0]?.returnAmount || "0");
+        return <span className="font-mono text-xs text-rose-600">{val > 0 ? val.toLocaleString() : "-"}</span>;
+      },
+    },
+    {
+      header: "Shop",
+      cell: ({ row }) => <span className="text-[10px] uppercase">{row.original.attendance[0]?.shopType || "-"}</span>,
+    },
+    {
+      header: "Slips",
+      cell: ({ row }) => {
+        const slips = row.original.attendance[0]?.slipNumbers;
+        return <span className="text-[10px] font-mono whitespace-nowrap overflow-hidden text-ellipsis max-w-[80px] inline-block" title={slips || undefined}>{slips || "-"}</span>;
+      },
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 rounded-none text-muted-foreground hover:bg-muted"
+            onClick={() => handleEdit(row.original)}
+            title="Edit Log"
+          >
+            <Edit2 className="h-3 w-3" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 rounded-none text-muted-foreground hover:bg-muted"
+            asChild
+            title="View Marketing Details"
+          >
+            <Link to="/hr/order-booker-details/$employeeId" params={{ employeeId: row.original.id }}>
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  const standardData = data.filter((e) => !e.isOrderBooker);
+  const orderBookerData = data.filter((e) => e.isOrderBooker);
+
   return (
     <div className="space-y-4">
-      <DataTable
-        columns={columns}
-        data={data}
-        className="border-none"
-        pageSize={50}
-      />
+      <Tabs defaultValue="standard" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="standard" className="gap-2">
+            <Users className="h-4 w-4" />
+            Standard Staff
+          </TabsTrigger>
+          <TabsTrigger value="orderbooker" className="gap-2">
+            <Zap className="h-4 w-4" />
+            Order Bookers
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="standard" className="mt-0 focus-visible:outline-none">
+          <DataTable
+            columns={standardColumns}
+            data={standardData}
+            className="border border-border/60 rounded-none shadow-none"
+            pageSize={100}
+            showSearch={false}
+            showPagination={false}
+            showFooter={false}
+          />
+        </TabsContent>
+
+        <TabsContent value="orderbooker" className="mt-0 focus-visible:outline-none">
+          <DataTable
+            columns={orderBookerColumns}
+            data={orderBookerData}
+            className="border border-border/60 rounded-none shadow-none"
+            pageSize={100}
+            showSearch={false}
+            showPagination={false}
+            showFooter={true}
+          />
+        </TabsContent>
+      </Tabs>
 
       {selectedEmployee && (
         <EditAttendanceSheet

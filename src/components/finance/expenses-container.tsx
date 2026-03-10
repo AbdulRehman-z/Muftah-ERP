@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { getExpensesFn, EXPENSE_CATEGORIES } from "@/server-functions/finance-fn";
 import { GenericEmpty } from "@/components/custom/empty";
 import { Badge } from "@/components/ui/badge";
+import { FinanceEmptyIllustration } from "@/components/illustrations/FinanceEmptyIllustration";
 import {
     Select,
     SelectContent,
@@ -20,7 +21,7 @@ import {
     Hash,
 } from "lucide-react";
 import { format } from "date-fns";
-import { DataTable } from "@/components/ui/data-table";
+import { DataTable } from "@/components/custom/data-table";
 import type { ColumnDef } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 
@@ -239,7 +240,7 @@ export const ExpensesContainer = () => {
                 }
                 emptyState={
                     <GenericEmpty
-                        icon={ReceiptIcon}
+                        icon={FinanceEmptyIllustration}
                         title="No Expenses Found"
                         description={
                             searchQuery || categoryFilter !== "all"

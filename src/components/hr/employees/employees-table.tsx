@@ -1,13 +1,14 @@
 import { useNavigate } from "@tanstack/react-router";
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { Eye, Pencil, Trash2 } from "lucide-react";
-import { DataTable } from "@/components/ui/data-table";
+import { Eye, Pencil, Trash2, HandCoins } from "lucide-react";
+import { DataTable } from "@/components/custom/data-table";
 import { getEmployeesFn } from "@/server-functions/hr/employees/get-employees-fn";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { EditEmployeeDialog } from "./edit-employee-dialog";
 import { useDeleteEmployee } from "@/hooks/hr/use-delete-employee";
+import { RequestAdvanceDialog } from "@/components/hr/advances/request-advance-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +30,7 @@ type Props = {
 export const EmployeesTable = ({ data }: Props) => {
   const navigate = useNavigate();
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [advanceEmployeeId, setAdvanceEmployeeId] = useState<string | null>(null);
   const deleteMutate = useDeleteEmployee();
 
   const columns: ColumnDef<Employee>[] = [
@@ -126,6 +128,7 @@ export const EmployeesTable = ({ data }: Props) => {
             <Button
               variant="ghost"
               size="icon"
+              title="View Highlights"
               onClick={() => navigate({ to: `/hr/employees/${employee.id}` })}
             >
               <Eye className="size-4" />
@@ -133,6 +136,16 @@ export const EmployeesTable = ({ data }: Props) => {
             <Button
               variant="ghost"
               size="icon"
+              title="Request Advance"
+              className="text-amber-600 hover:text-amber-700 hover:bg-amber-100 dark:hover:bg-amber-950/50"
+              onClick={() => setAdvanceEmployeeId(employee.id)}
+            >
+              <HandCoins className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Edit Profile"
               className="text-primary hover:text-primary hover:bg-primary/10"
               onClick={() => setEditingEmployee(employee)}
             >
@@ -190,6 +203,14 @@ export const EmployeesTable = ({ data }: Props) => {
           open={!!editingEmployee}
           onOpenChange={(open) => !open && setEditingEmployee(null)}
           employee={editingEmployee}
+        />
+      )}
+
+      {!!advanceEmployeeId && (
+        <RequestAdvanceDialog
+          open={!!advanceEmployeeId}
+          onOpenChange={(open) => !open && setAdvanceEmployeeId(null)}
+          defaultEmployeeId={advanceEmployeeId}
         />
       )}
     </>

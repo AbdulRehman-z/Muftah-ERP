@@ -11,6 +11,7 @@ import NotFound from "@/components/errors/404-not-found";
 import { Toaster } from "@/components/ui/sonner";
 import TanStackQueryDevtools from "../integrations/react-query/devtools";
 import appCss from "../styles.css?url";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 type MyRouterContext = {
   queryClient: QueryClient;
@@ -52,10 +53,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <ThemeProvider
           defaultTheme="light"
           // attribute="class"
-          // enableColorScheme
-          // enableSystem
+          enableColorScheme
+        // enableSystem
         >
-          {children}
+          <TooltipProvider>
+            {children}
+          </TooltipProvider>
         </ThemeProvider>
         <Toaster />
         <TanStackDevtools

@@ -1,40 +1,40 @@
-"use client";
-
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 import {
-  CircleCheckIcon,
-  InfoIcon,
-  TriangleAlertIcon,
-  OctagonXIcon,
-  Loader2Icon,
+  CheckCircle2,
+  Info,
+  AlertTriangle,
+  XCircle,
+  Loader2,
 } from "lucide-react";
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "light" } = useTheme();
+  const { theme = "system" } = useTheme();
 
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       icons={{
-        success: <CircleCheckIcon className="size-4" />,
-        info: <InfoIcon className="size-4" />,
-        warning: <TriangleAlertIcon className="size-4" />,
-        error: <OctagonXIcon className="size-4" />,
-        loading: <Loader2Icon className="size-4 animate-spin" />,
+        success: <CheckCircle2 className="size-4 text-emerald-500" />,
+        info: <Info className="size-4 text-blue-500" />,
+        warning: <AlertTriangle className="size-4 text-amber-500" />,
+        error: <XCircle className="size-4 text-destructive" />,
+        loading: <Loader2 className="size-4 text-muted-foreground animate-spin" />,
       }}
-      style={
-        {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
-        } as React.CSSProperties
-      }
       toastOptions={{
+        // Using unstyled strips Sonner's forced inline colors so Tailwind can actually do its job
+        unstyled: true,
         classNames: {
-          toast: "cn-toast",
+          toast:
+            "flex w-full items-start gap-3 rounded-md border border-border bg-background p-4 text-foreground shadow-lg transition-all",
+          title: "text-sm font-semibold text-foreground",
+          description: "text-sm text-muted-foreground mt-1",
+          actionButton:
+            "inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground",
+          cancelButton:
+            "inline-flex items-center justify-center rounded-md bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground",
+          icon: "mt-0.5 shrink-0", // Ensures the icon stays aligned at the top if the text wraps to two lines
         },
       }}
       {...props}

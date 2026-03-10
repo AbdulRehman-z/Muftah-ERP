@@ -36,6 +36,7 @@ import {
   AlertDialogTrigger,
 } from "../ui/alert-dialog";
 import { useProductionRunsSync } from "@/hooks/production/use-production-runs-sync";
+import { OperationEmptyIllustration } from "../illustrations/OperationEmptyIllustration";
 
 export const OperatorInterface = () => {
   const navigate = useNavigate();
@@ -56,9 +57,9 @@ export const OperatorInterface = () => {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <GenericEmpty
-          icon={ClipboardList}
-          title="No Active Production"
-          description="There are currently no production runs in progress. Check back later or contact your supervisor."
+          title="No Active Runs"
+          description="Currently the system has no active production runs. The system is at standby mode and will show active runs as soon as they are started."
+          icon={OperationEmptyIllustration}
         />
       </div>
     );

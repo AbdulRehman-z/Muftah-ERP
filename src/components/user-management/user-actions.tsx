@@ -63,7 +63,7 @@ const ActionsCell = ({ user, onAction }: ActionsProps) => {
           onClick={() => onAction(user, "update")}
           className="rounded-lg gap-2 cursor-pointer py-2"
         >
-          <UserCog className="size-4 text-primary/70" />
+          <UserCog className="size-4 text-primary" />
           <div className="flex flex-col">
             <span className="font-medium text-sm">Update User</span>
             <span className="text-[10px] text-muted-foreground line-clamp-1">
@@ -76,7 +76,7 @@ const ActionsCell = ({ user, onAction }: ActionsProps) => {
           onClick={() => onAction(user, "sessions")}
           className="rounded-lg gap-2 cursor-pointer py-2"
         >
-          <Monitor className="size-4 text-primary/70" />
+          <Monitor className="size-4 text-primary" />
           <div className="flex flex-col">
             <span className="font-medium text-sm">Manage Sessions</span>
             <span className="text-[10px] text-muted-foreground line-clamp-1">
@@ -89,7 +89,7 @@ const ActionsCell = ({ user, onAction }: ActionsProps) => {
           onClick={() => onAction(user, "ban")}
           className="rounded-lg gap-2 cursor-pointer py-2"
         >
-          <ShieldAlert className="size-4 text-primary/70" />
+          <ShieldAlert className="size-4 text-primary" />
           <div className="flex flex-col">
             <span className="font-medium text-sm">
               {user.banned ? "Unban Account" : "Ban Account"}
@@ -122,84 +122,84 @@ const ActionsCell = ({ user, onAction }: ActionsProps) => {
 export const columns = (
   onAction: (user: User, action: UserAction) => void,
 ): ColumnDef<User>[] => [
-  {
-    accessorKey: "user",
-    header: "User",
-    cell: ({ row }) => {
-      const user = row.original;
-      return (
-        <div className="flex items-center gap-3 py-1">
-          <Avatar className="h-8 w-8 border border-muted-foreground/5 ">
-            <AvatarImage src={user.image || ""} alt={user.name} />
-            <AvatarFallback className="bg-muted text-muted-foreground text-[10px] font-bold">
-              {user.name.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col">
-            <span className="font-medium text-sm tracking-tight leading-tight">
-              {user.name}
-            </span>
-            <span className="text-[11px] text-muted-foreground/70 font-mono tracking-tight">
-              {user.email}
+    {
+      accessorKey: "user",
+      header: "User",
+      cell: ({ row }) => {
+        const user = row.original;
+        return (
+          <div className="flex items-center gap-3 py-1">
+            <Avatar className="h-8 w-8 border border-muted-foreground/5 ">
+              <AvatarImage src={user.image || ""} alt={user.name} />
+              <AvatarFallback className="bg-muted text-muted-foreground text-[10px] font-bold">
+                {user.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <span className="font-medium text-sm tracking-tight leading-tight">
+                {user.name}
+              </span>
+              <span className="text-[11px] text-muted-foreground/70 font-mono tracking-tight">
+                {user.email}
+              </span>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "role",
+      header: "Role",
+      cell: ({ row }) => {
+        const role = row.original.role || "user";
+        return (
+          <div className="flex items-center">
+            <Badge
+              variant="outline"
+              className="capitalize px-2 py-0 h-5 border-muted-foreground/10 bg-muted/5 font-medium text-[10px] text-muted-foreground tracking-tight"
+            >
+              {role}
+            </Badge>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const isBanned = row.original.banned;
+        return (
+          <div className="flex items-center gap-1.5">
+            <div
+              className={`size-1.5 rounded-full ${isBanned ? "bg-destructive shadow-[0_0_8px_rgba(239,68,68,0.4)]" : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"}`}
+            />
+            <span
+              className={`text-[11px] font-medium uppercase tracking-wider ${isBanned ? "text-destructive/80" : "text-emerald-600/80"}`}
+            >
+              {isBanned ? "Banned" : "Active"}
             </span>
           </div>
-        </div>
-      );
+        );
+      },
     },
-  },
-  {
-    accessorKey: "role",
-    header: "Role",
-    cell: ({ row }) => {
-      const role = row.original.role || "user";
-      return (
-        <div className="flex items-center">
-          <Badge
-            variant="outline"
-            className="capitalize px-2 py-0 h-5 border-muted-foreground/10 bg-muted/5 font-medium text-[10px] text-muted-foreground tracking-tight"
-          >
-            {role}
-          </Badge>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const isBanned = row.original.banned;
-      return (
-        <div className="flex items-center gap-1.5">
-          <div
-            className={`size-1.5 rounded-full ${isBanned ? "bg-destructive shadow-[0_0_8px_rgba(239,68,68,0.4)]" : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"}`}
-          />
-          <span
-            className={`text-[11px] font-medium uppercase tracking-wider ${isBanned ? "text-destructive/80" : "text-emerald-600/80"}`}
-          >
-            {isBanned ? "Banned" : "Active"}
+    {
+      accessorKey: "createdAt",
+      header: "Joined",
+      cell: ({ row }) => {
+        return (
+          <span className="text-muted-foreground/60 text-[11px] font-mono">
+            {format(new Date(row.original.createdAt), "dd/MM/yy")}
           </span>
+        );
+      },
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => (
+        <div className="flex justify-end">
+          <ActionsCell user={row.original} onAction={onAction} />
         </div>
-      );
+      ),
     },
-  },
-  {
-    accessorKey: "createdAt",
-    header: "Joined",
-    cell: ({ row }) => {
-      return (
-        <span className="text-muted-foreground/60 text-[11px] font-mono">
-          {format(new Date(row.original.createdAt), "dd/MM/yy")}
-        </span>
-      );
-    },
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => (
-      <div className="flex justify-end">
-        <ActionsCell user={row.original} onAction={onAction} />
-      </div>
-    ),
-  },
-];
+  ];

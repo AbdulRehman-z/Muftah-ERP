@@ -14,14 +14,27 @@ interface Props {
     checkOut2?: string | null;
     dutyHours?: string | null;
     overtimeHours?: string | null;
+    // FIX: leaveType was missing — it's now threaded through correctly
+    leaveType?: "sick" | "casual" | "annual" | "unpaid" | "special" | null;
     status: "present" | "absent" | "leave" | "half_day" | "holiday";
     isLate?: boolean | null;
     isNightShift?: boolean | null;
     isApprovedLeave?: boolean | null;
-    overtimeStatus?: string | null;
+    overtimeStatus?: "pending" | "approved" | "rejected" | null;
     overtimeRemarks?: string | null;
-    entrySource?: string | null;
+    entrySource?: "biometric" | "manual" | null;
     notes?: string | null;
+
+    // Order Booker
+    areaVisited?: string | null;
+    paymentMode?: "per_km" | null;
+    distanceKm?: string | null;
+    perKmRate?: string | null;
+    saleAmount?: string | null;
+    recoveryAmount?: string | null;
+    returnAmount?: string | null;
+    slipNumbers?: string | null;
+    shopType?: "old" | "new" | null;
   } | null;
   date: string;
 }

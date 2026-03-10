@@ -34,6 +34,8 @@ export const createEmployeeFn = createServerFn()
         bankAccountNumber: data.bankAccountNumber,
         standardDutyHours: data.standardDutyHours,
         standardSalary: data.standardSalary || "0",
+        commissionRate: data.commissionRate || "0",
+        isOrderBooker: data.isOrderBooker ?? false,
         allowanceConfig: data.allowanceConfig,
       })
       .returning();

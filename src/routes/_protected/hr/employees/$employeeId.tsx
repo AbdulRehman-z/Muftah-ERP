@@ -27,7 +27,12 @@ export const Route = createFileRoute("/_protected/hr/employees/$employeeId")({
 function RouteComponent() {
   return (
     <>
-      <Suspense fallback={<GenericLoader />}>
+      <Suspense fallback={<GenericLoader
+        className="my-auto"
+        title="Loading Employee Details..."
+        description="Please wait while we load the employee details."
+
+      />}>
         <EmployeeDetailView />
       </Suspense>
     </>

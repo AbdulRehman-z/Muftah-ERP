@@ -136,6 +136,7 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
       containerPackagingId: initialRecipe?.containerPackagingId || "",
       containersPerCarton: initialRecipe?.containersPerCarton || 0,
       cartonPackagingId: initialRecipe?.cartonPackagingId || "",
+      minimumStockLevel: initialRecipe?.minimumStockLevel || 0,
       producedUnits: initialRecipe?.targetUnitsPerBatch || 0,
       ingredients:
         initialRecipe?.ingredients.map((ing) => ({
@@ -169,6 +170,7 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
           containerPackagingId: value.containerPackagingId,
           containersPerCarton: value.containersPerCarton,
           cartonPackagingId: value.cartonPackagingId || undefined,
+          minimumStockLevel: value.minimumStockLevel,
           ingredients: value.ingredients,
           additionalPackaging: value.additionalPackaging,
         };
@@ -805,6 +807,27 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                               field.handleChange(val);
                             }}
                             className="h-11 font-bold text-lg"
+                          />
+                          <FieldError errors={field.state.meta.errors} />
+                        </Field>
+                      )}
+                    </form.Field>
+
+                    <form.Field name="minimumStockLevel">
+                      {(field) => (
+                        <Field className="space-y-1.5 flex flex-col justify-end">
+                          <FieldLabel className="text-xs font-bold uppercase text-muted-foreground/80 tracking-wide">
+                            Low Stock Alert (Units)
+                          </FieldLabel>
+                          <Input
+                            type="number"
+                            value={field.state.value}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value) || 0;
+                              field.handleChange(val);
+                            }}
+                            className="h-11 font-bold text-lg"
+                            placeholder="e.g. 1000"
                           />
                           <FieldError errors={field.state.meta.errors} />
                         </Field>

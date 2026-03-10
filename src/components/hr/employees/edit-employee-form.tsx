@@ -5,7 +5,6 @@
 
 import { useMemo } from "react";
 import { useForm } from "@tanstack/react-form";
-import { zodValidator } from "@tanstack/zod-form-adapter";
 import { format, parseISO } from "date-fns";
 import { useUpdateEmployee } from "@/hooks/hr/use-update-employee";
 import { updateEmployeeSchema } from "@/lib/validators/hr-validators";
@@ -36,6 +35,8 @@ import {
   type AllowanceConfig,
 } from "@/lib/types/hr-types";
 import { AllowanceCard, DEDUCTION_OCCASIONS } from "@/components/hr/employees/allowance-card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 type Employee = Awaited<ReturnType<typeof getEmployeesFn>>[0];
 
@@ -50,7 +51,8 @@ interface Props {
 
 const FALLBACK_DEDUCTIONS: AllowanceConfig["deductions"] = {
   absent: true,
-  leave: false,
+  annualLeave: false,
+  sickLeave: false,
   specialLeave: false,
   lateArrival: false,
   earlyLeaving: false,
@@ -60,6 +62,7 @@ const FALLBACK_DEDUCTIONS: AllowanceConfig["deductions"] = {
  * Safely migrates an allowance from the DB that may be missing the
  * deductions field (saved before this feature was implemented).
  * Each sub-field is individually defaulted so partial DB objects also work.
+ * Also handles backward-compat migration from old `leave` field to `annualLeave`.
  */
 const migrateAllowance = (raw: Partial<AllowanceConfig>): AllowanceConfig => ({
   id: raw.id ?? `custom_${Date.now()}`,
@@ -68,7 +71,8 @@ const migrateAllowance = (raw: Partial<AllowanceConfig>): AllowanceConfig => ({
   lateEarlyBasis: raw.lateEarlyBasis ?? "hourly",
   deductions: {
     absent: raw.deductions?.absent ?? FALLBACK_DEDUCTIONS.absent,
-    leave: raw.deductions?.leave ?? FALLBACK_DEDUCTIONS.leave,
+    annualLeave: raw.deductions?.annualLeave ?? (raw.deductions as any)?.leave ?? FALLBACK_DEDUCTIONS.annualLeave,
+    sickLeave: raw.deductions?.sickLeave ?? FALLBACK_DEDUCTIONS.sickLeave,
     specialLeave: raw.deductions?.specialLeave ?? FALLBACK_DEDUCTIONS.specialLeave,
     lateArrival: raw.deductions?.lateArrival ?? FALLBACK_DEDUCTIONS.lateArrival,
     earlyLeaving: raw.deductions?.earlyLeaving ?? FALLBACK_DEDUCTIONS.earlyLeaving,
@@ -81,7 +85,8 @@ const newCustomAllowance = (): AllowanceConfig => ({
   amount: 0,
   deductions: {
     absent: false,
-    leave: false,
+    annualLeave: false,
+    sickLeave: false,
     specialLeave: false,
     lateArrival: false,
     earlyLeaving: false,
@@ -128,6 +133,8 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
       bankAccountNumber: employee.bankAccountNumber ?? "",
       standardDutyHours: employee.standardDutyHours ?? 8,
       standardSalary: employee.standardSalary ?? "",
+      commissionRate: employee.commissionRate ?? "0",
+      isOrderBooker: (employee as any).isOrderBooker ?? false,
       allowanceConfig: existingAllowances,
     },
     validators: {
@@ -414,7 +421,7 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
                   <FieldLabel className="text-muted-foreground font-medium">
                     Basic Salary (Monthly)
                   </FieldLabel>
-                  <div className="relative group">
+                  <div className="relative group max-w-xs">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <span className="text-xs font-bold text-muted-foreground/70 group-focus-within:text-yellow-600 transition-colors">
                         PKR
@@ -426,17 +433,62 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
                       value={field.state.value as string}
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.value)}
-                      className="pl-12 bg-yellow-50/30 border-yellow-200 focus-visible:ring-yellow-500 font-mono text-lg h-12 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="pl-12 bg-yellow-50/30 border-yellow-200 dark:bg-yellow-500/10 dark:border-yellow-500/30 focus-visible:ring-yellow-500 font-mono text-lg h-12 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
-                  <p className="text-[11px] text-muted-foreground/60 mt-1">
-                    On absent days, a full day's worth of basic salary is cut. For late arrivals or early
-                    departures, basic salary is reduced by the exact number of minutes missed.
-                  </p>
                   <FieldError errors={field.state.meta.errors} />
                 </Field>
               )}
             </form.Field>
+
+            <form.Subscribe selector={(s: any) => s.values.isOrderBooker}>
+              {(isOrderBooker) => isOrderBooker ? (
+                <form.Field name="commissionRate">
+                  {(field: AnyFieldApi) => (
+                    <Field>
+                      <FieldLabel className="text-muted-foreground font-medium">
+                        Commission Rate (%)
+                      </FieldLabel>
+                      <div className="relative group max-w-xs">
+                        <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                          <span className="text-xs font-bold text-muted-foreground/70 group-focus-within:text-blue-600 transition-colors">
+                            %
+                          </span>
+                        </div>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="100"
+                          placeholder="0.0"
+                          value={field.state.value as string}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          className="pr-10 bg-blue-50/30 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/30 focus-visible:ring-blue-500 font-mono text-lg h-12 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                      </div>
+                      <FieldError errors={field.state.meta.errors} />
+                    </Field>
+                  )}
+                </form.Field>
+              ) : null}
+            </form.Subscribe>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form.Subscribe selector={(s: any) => s.values.isOrderBooker}>
+              {(isOrderBooker) => (
+                <p className="text-[11px] text-muted-foreground/60 mt-2">
+                  <strong>Basic Salary:</strong> On absent days, a full day's worth is cut.
+                  {isOrderBooker && (
+                    <>
+                      <br />
+                      <strong>Commission:</strong> Order bookers receive this % on their total collected Recovery.
+                    </>
+                  )}
+                </p>
+              )}
+            </form.Subscribe>
 
             <form.Field name="standardDutyHours">
               {(field: AnyFieldApi) => (

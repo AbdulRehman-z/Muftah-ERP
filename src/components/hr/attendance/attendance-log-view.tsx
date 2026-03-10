@@ -3,9 +3,9 @@ import { EmployeeAttendanceLog } from "@/components/hr/attendance/employee-atten
 import { Button } from "@/components/ui/button";
 import { GenericLoader } from "@/components/custom/generic-loader";
 import { format, parseISO, startOfMonth, endOfMonth } from "date-fns";
-import { CalendarRange, Check, FilterX } from "lucide-react";
+import { ArrowLeft, CalendarRange, Check, FilterX } from "lucide-react";
 import { useState, useEffect, Suspense } from "react";
-import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import { Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 
 export const AttendanceLogView = () => {
   const { employeeId } = useParams({
@@ -52,15 +52,22 @@ export const AttendanceLogView = () => {
   return (
     <div className="p-8 pt-6 space-y-8 animate-in fade-in duration-500">
       {/* Action Bar / Filter */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-5 rounded-2xl border">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-black tracking-tight flex items-center gap-2">
-            <CalendarRange className="text-primary size-6" />
-            Attendance Log
-          </h1>
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-            Monitoring productivity & attendance records
-          </p>
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-secondary p-5 rounded-2xl border">
+        <div className="flex items-start gap-4 mt-1">
+          <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 rounded-xl bg-background transition-transform hover:-translate-x-1" asChild>
+            <Link to="/hr/attendance">
+              <ArrowLeft className="size-4" />
+            </Link>
+          </Button>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-black tracking-tight flex items-center gap-2">
+              <CalendarRange className="text-primary size-6" />
+              Attendance Log
+            </h1>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+              Monitoring productivity & attendance records
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-4">

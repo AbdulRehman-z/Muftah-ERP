@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 
-import { DataTable } from "../ui/data-table";
+import { DataTable } from "../custom/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { useMemo } from "react";
 import { ArrowUpDown } from "lucide-react";

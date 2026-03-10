@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
 } from "../ui/alert-dialog";
 import { EditProductDialog } from "@/components/recipes/edit-product-dialog";
-import { DataTable } from "../ui/data-table";
+import { DataTable } from "../custom/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { AddProductDialog } from "./add-product-dialog";
 

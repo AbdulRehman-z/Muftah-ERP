@@ -3,11 +3,12 @@ import { Spinner } from "../ui/spinner";
 type LoaderProps = {
   title?: string;
   description?: string;
+  className?: string;
 };
 
-export const GenericLoader = ({ title, description }: LoaderProps) => {
+export const GenericLoader = ({ title, description, className }: LoaderProps) => {
   return (
-    <div className="flex h-full flex-1 items-center justify-center py-4 px-8">
+    <div className={`flex h-full flex-1 items-center justify-center py-4 px-8 ${className}`}>
       <div className="flex flex-col items-center justify-center gap-y-6 p-6">
         <Spinner className="size-5" />
         <div className="flex flex-col items-center justify-center gap-y-2">

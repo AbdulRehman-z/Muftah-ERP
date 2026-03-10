@@ -38,6 +38,8 @@ export const updateEmployeeFn = createServerFn()
         bankAccountNumber: updateData.bankAccountNumber,
         standardDutyHours: updateData.standardDutyHours,
         standardSalary: updateData.standardSalary || "0",
+        commissionRate: updateData.commissionRate || "0",
+        isOrderBooker: updateData.isOrderBooker ?? false,
         allowanceConfig: updateData.allowanceConfig,
       })
       .where(eq(employees.id, id))

@@ -1,8 +1,9 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { ArrowRightLeft, BoxesIcon, PlusIcon, Pencil, Eye } from "lucide-react";
+import { ArrowRightLeft, PlusIcon, Pencil, Eye } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
 import { GenericEmpty } from "../custom/empty";
+import { InventoryEmptyIllustration } from "@/components/illustrations/InventoryEmptyIllustration";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -48,7 +49,7 @@ export const InventoryContainer = () => {
     return (
       <>
         <GenericEmpty
-          icon={BoxesIcon}
+          icon={InventoryEmptyIllustration}
           title="Ready to store Stock?"
           description="Add a warehouse facility to start managing your finished goods inventory."
           ctaText="Add Warehouse"

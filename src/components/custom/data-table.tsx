@@ -47,6 +47,7 @@ interface DataTableProps<TData, TValue> {
   actions?: React.ReactNode;
   className?: string;
   emptyState?: React.ReactNode;
+  showFooter?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -63,6 +64,7 @@ export function DataTable<TData, TValue>({
   actions,
   className,
   emptyState,
+  showFooter = false,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -198,6 +200,24 @@ export function DataTable<TData, TValue>({
               </TableRow>
             )}
           </TableBody>
+          {showFooter && (
+            <tfoot className="bg-muted/30 border-t border-border/40">
+              {table.getFooterGroups().map((footerGroup) => (
+                <TableRow key={footerGroup.id} className="hover:bg-transparent border-0">
+                  {footerGroup.headers.map((header) => (
+                    <TableCell
+                      key={header.id}
+                      className="text-[11px] font-black uppercase tracking-widest text-foreground py-3 h-auto border-none first:pl-5 last:pr-5"
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.footer, header.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </tfoot>
+          )}
         </Table>
       </div>
 

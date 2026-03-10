@@ -1,6 +1,4 @@
 import {
-  FlaskConicalIcon,
-  PackageIcon,
   Pencil,
   Plus,
   Trash2,
@@ -14,6 +12,7 @@ import { InventoryDetailsDialog } from "./inventory-details-dialog";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { GenericEmpty } from "../custom/empty";
+import { InventoryEmptyIllustration } from "@/components/illustrations/InventoryEmptyIllustration";
 import { useState, useMemo } from "react";
 import { AddRawMaterialDialog } from "./add-raw-material-sheet";
 import { AddPackagingMaterialDialog } from "./add-packaging-material-dialog";
@@ -30,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
-import { DataTable } from "../ui/data-table";
+import { DataTable } from "../custom/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { LabReportsList } from "./lab-reports/lab-reports-list";
 import {
@@ -410,7 +409,7 @@ export const StockTable = ({
     return (
       <>
         <GenericEmpty
-          icon={isChemical ? FlaskConicalIcon : PackageIcon}
+          icon={InventoryEmptyIllustration}
           title={
             selectedWarehouse?.type === "storage"
               ? "Invalid Storage Type"

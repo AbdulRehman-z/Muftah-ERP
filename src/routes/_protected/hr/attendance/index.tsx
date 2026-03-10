@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_protected/hr/attendance/")({
 function AttendancePage() {
   return (
     <div className="flex flex-col gap-4 p-8 pt-6">
-      <Suspense fallback={<GenericLoader />}>
+      <Suspense fallback={<GenericLoader className="my-auto" />}>
         <AttendanceContainer />
       </Suspense>
     </div>

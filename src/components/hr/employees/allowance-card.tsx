@@ -10,7 +10,7 @@ import type { AnyFieldApi } from "@tanstack/react-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { TooltipWrapper } from "@/components/custom/tooltip-wrapper";
-import { Trash2, UserX, CalendarX, StarOff, Clock, Timer } from "lucide-react";
+import { Trash2, UserX, CalendarX, StarOff, Clock, Timer, Thermometer } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DEDUCTION OCCASIONS
@@ -24,21 +24,32 @@ export const DEDUCTION_OCCASIONS = [
     fullLabel: "Unauthorized Absence",
     tooltip: "Deduct per day when employee is absent without approval",
     icon: UserX,
-    color: "text-rose-600",
-    activeBg: "bg-rose-50 border-rose-300",
+    color: "text-rose-600 dark:text-rose-400",
+    activeBg: "bg-rose-50 border-rose-300 dark:bg-rose-500/10 dark:border-rose-500/30",
     dotColor: "bg-rose-500",
     legendColor: "bg-rose-500",
   },
   {
-    id: "leave" as const,
-    label: "Leave",
-    fullLabel: "Casual / Annual Leave",
-    tooltip: "Deduct per day when employee is on approved casual or annual leave",
+    id: "annualLeave" as const,
+    label: "Annual",
+    fullLabel: "Annual Leave",
+    tooltip: "Deduct per day when employee is on annual leave",
     icon: CalendarX,
-    color: "text-amber-600",
-    activeBg: "bg-amber-50 border-amber-300",
+    color: "text-amber-600 dark:text-amber-400",
+    activeBg: "bg-amber-50 border-amber-300 dark:bg-amber-500/10 dark:border-amber-500/30",
     dotColor: "bg-amber-500",
     legendColor: "bg-amber-500",
+  },
+  {
+    id: "sickLeave" as const,
+    label: "Sick",
+    fullLabel: "Sick Leave",
+    tooltip: "Deduct per day when employee is on sick leave (Bradford counted)",
+    icon: Thermometer,
+    color: "text-teal-600 dark:text-teal-400",
+    activeBg: "bg-teal-50 border-teal-300 dark:bg-teal-500/10 dark:border-teal-500/30",
+    dotColor: "bg-teal-500",
+    legendColor: "bg-teal-500",
   },
   {
     id: "specialLeave" as const,
@@ -46,8 +57,8 @@ export const DEDUCTION_OCCASIONS = [
     fullLabel: "Special Leave",
     tooltip: "Deduct per day on special leave. Only Basic Salary is paid — everything else is cut.",
     icon: StarOff,
-    color: "text-orange-600",
-    activeBg: "bg-orange-50 border-orange-300",
+    color: "text-orange-600 dark:text-orange-400",
+    activeBg: "bg-orange-50 border-orange-300 dark:bg-orange-500/10 dark:border-orange-500/30",
     dotColor: "bg-orange-500",
     legendColor: "bg-orange-500",
   },
@@ -57,8 +68,8 @@ export const DEDUCTION_OCCASIONS = [
     fullLabel: "Late Arrival",
     tooltip: "Deduct proportionally per late minute, calculated on hourly basis",
     icon: Clock,
-    color: "text-blue-600",
-    activeBg: "bg-blue-50 border-blue-300",
+    color: "text-blue-600 dark:text-blue-400",
+    activeBg: "bg-blue-50 border-blue-300 dark:bg-blue-500/10 dark:border-blue-500/30",
     dotColor: "bg-blue-500",
     legendColor: "bg-blue-500",
   },
@@ -68,8 +79,8 @@ export const DEDUCTION_OCCASIONS = [
     fullLabel: "Early Leaving",
     tooltip: "Deduct proportionally per early-left minute, calculated on hourly basis",
     icon: Timer,
-    color: "text-indigo-600",
-    activeBg: "bg-indigo-50 border-indigo-300",
+    color: "text-indigo-600 dark:text-indigo-400",
+    activeBg: "bg-indigo-50 border-indigo-300 dark:bg-indigo-500/10 dark:border-indigo-500/30",
     dotColor: "bg-indigo-500",
     legendColor: "bg-indigo-500",
   },

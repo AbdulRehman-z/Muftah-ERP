@@ -20,11 +20,13 @@ import { toast } from "sonner";
 export const RequestAdvanceDialog = ({
   open,
   onOpenChange,
+  defaultEmployeeId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultEmployeeId?: string;
 }) => {
-  const [employeeId, setEmployeeId] = useState("");
+  const [employeeId, setEmployeeId] = useState(defaultEmployeeId || "");
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const mutate = useCreateSalaryAdvance();
@@ -39,11 +41,11 @@ export const RequestAdvanceDialog = ({
   // Reset when dialog opens
   useEffect(() => {
     if (open) {
-      setEmployeeId("");
+      setEmployeeId(defaultEmployeeId || "");
       setAmount("");
       setReason("");
     }
-  }, [open]);
+  }, [open, defaultEmployeeId]);
 
   const handleSubmit = async () => {
     if (!employeeId || !amount || !reason) {

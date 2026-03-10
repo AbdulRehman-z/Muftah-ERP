@@ -262,7 +262,7 @@ function ProductionRunDetailsPage() {
                       variant="outline"
                       className="bg-emerald-500/5 text-emerald-600 border-emerald-500/20 font-bold mb-2"
                     >
-                      PKR {parseFloat(run.costPerContainer || "0").toFixed(2)} /
+                      PKR {parseFloat(run.totalProductionCost || "0") > 0 && (run.completedUnits || 0) > 0 ? (parseFloat(run.totalProductionCost || "0") / run.completedUnits!).toFixed(2) : parseFloat(run.costPerContainer || "0").toFixed(2)} /
                       Unit
                     </Badge>
                     <div className="text-xs text-right">
@@ -329,7 +329,7 @@ function ProductionRunDetailsPage() {
                       <p className="font-bold text-base">
                         {Math.floor(
                           run.completedUnits! /
-                            (run.recipe.containersPerCarton || 1),
+                          (run.recipe.containersPerCarton || 1),
                         )}
                       </p>
                     </div>
@@ -373,9 +373,9 @@ function ProductionRunDetailsPage() {
                   <p className="text-sm font-medium">
                     {run.actualCompletionDate
                       ? format(
-                          new Date(run.actualCompletionDate),
-                          "MMM d, h:mm a",
-                        )
+                        new Date(run.actualCompletionDate),
+                        "MMM d, h:mm a",
+                      )
                       : "---"}
                   </p>
                 </div>

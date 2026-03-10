@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
-import { DataTable } from "../ui/data-table";
+import { DataTable } from "../custom/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
@@ -282,14 +282,26 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
             <ArrowUpDown className="ml-2 h-3 w-3" />
           </Button>
         ),
-        cell: ({ row }) => (
-          <Badge
-            variant="outline"
-            className="font-bold text-green-600 border-green-200 bg-green-50/50"
-          >
-            PKR {parseFloat(row.original.costPerContainer || "0").toFixed(2)}
-          </Badge>
-        ),
+        cell: ({ row }) => {
+          const run = row.original;
+          const totalCostNumeric = parseFloat(run.totalProductionCost || "0");
+          const hasGeneratedOutput = (run.completedUnits || 0) > 0;
+          const isStarted = run.status === "in_progress" || run.status === "completed";
+
+          const displayCost =
+            isStarted && hasGeneratedOutput
+              ? (totalCostNumeric / run.completedUnits!).toFixed(2)
+              : parseFloat(run.costPerContainer || "0").toFixed(2);
+
+          return (
+            <Badge
+              variant="outline"
+              className="font-bold text-green-600 border-green-200 bg-green-50/50"
+            >
+              PKR {displayCost}
+            </Badge>
+          );
+        },
       },
       {
         accessorKey: "createdAt",

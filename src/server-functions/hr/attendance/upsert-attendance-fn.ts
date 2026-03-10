@@ -87,11 +87,27 @@ export const upsertAttendanceFn = createServerFn()
       isNightShift: rest.isNightShift ?? false,
       isApprovedLeave: rest.isApprovedLeave ?? false,
       leaveType: rest.status === "leave" ? (rest.leaveType ?? null) : null,
+      leaveApprovalStatus:
+        rest.status === "leave"
+          ? (rest.leaveApprovalStatus ?? "pending")
+          : "none",
       earlyDepartureStatus: rest.earlyDepartureStatus ?? null,
       overtimeRemarks: rest.overtimeRemarks || null,
       overtimeStatus: rest.overtimeStatus || "pending",
       entrySource: rest.entrySource || "manual",
       notes: rest.notes || null,
+
+      // Order Booker Fields
+      areaVisited: rest.areaVisited || null,
+      paymentMode: rest.paymentMode || "per_km",
+      distanceKm: rest.distanceKm || "0",
+      perKmRate: rest.perKmRate || "0",
+      saleAmount: rest.saleAmount || "0",
+      recoveryAmount: rest.recoveryAmount || "0",
+      returnAmount: rest.returnAmount || "0",
+      slipNumbers: rest.slipNumbers || null,
+      shopType: rest.shopType || "old",
+
       updatedAt: new Date(),
     };
 

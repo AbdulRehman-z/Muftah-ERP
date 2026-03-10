@@ -37,9 +37,9 @@ export const updateRecipeFn = createServerFn()
       const chemicalsData =
         chemicalIds.length > 0
           ? await tx
-              .select()
-              .from(chemicals)
-              .where(inArray(chemicals.id, chemicalIds))
+            .select()
+            .from(chemicals)
+            .where(inArray(chemicals.id, chemicalIds))
           : [];
 
       // 3. Calculate costs
@@ -126,6 +126,7 @@ export const updateRecipeFn = createServerFn()
           estimatedPackagingCost: totalPackagingCost.toFixed(2),
           estimatedCostPerBatch: totalBatchCost.toFixed(2),
           estimatedCostPerContainer: costPerContainer.toFixed(4),
+          minimumStockLevel: data.minimumStockLevel || 0,
         })
         .where(eq(recipes.id, data.id))
         .returning();

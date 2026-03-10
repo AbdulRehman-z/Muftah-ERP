@@ -9,12 +9,12 @@ export function useOverrideBradford() {
     mutationFn: async (data: {
       payslipId: string;
       overrideScore: string | null;
+      reason: string;
     }) => {
       return await overrideBradfordFactorFn({ data });
     },
     onSuccess: () => {
-      toast.success("Bradford Factor updated successfully.");
-      // Invalidate payroll and payslip queries
+      toast.success("Bradford Factor updated. Audit log entry created.");
       queryClient.invalidateQueries({ queryKey: ["payslips"] });
       queryClient.invalidateQueries({ queryKey: ["employee-payslips"] });
     },

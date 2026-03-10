@@ -113,24 +113,10 @@ export const logProductionProgressFn = createServerFn()
       for (const pkg of addPkgs) {
         let qtyNeeded = 0;
 
-        // Logic: Sticker is for the CARTON, not the unit, if cartons are being used.
-        if (
-          pkg.packagingMaterial.type === "sticker" &&
-          recipe.containersPerCarton &&
-          recipe.containersPerCarton > 0 &&
-          recipe.cartonPackagingId
-        ) {
-          // Calculate based on Cartons
-          // data.unitsProduced is guaranteed to be a multiple of containersPerCarton by previous validation
-          const cartonsLogged = data.unitsProduced / recipe.containersPerCarton;
-          qtyNeeded =
-            parseFloat(pkg.quantityPerContainer.toString()) * cartonsLogged;
-        } else {
-          // Standard logic (Caps, Labels on bottle) -> Based on Units
-          qtyNeeded =
-            parseFloat(pkg.quantityPerContainer.toString()) *
-            data.unitsProduced;
-        }
+        // Standard logic for all additional packaging -> Based on Units. 
+        // Note: quantityPerContainer is pre-scaled by the frontend perfectly.
+        qtyNeeded =
+          parseFloat(pkg.quantityPerContainer.toString()) * data.unitsProduced;
 
         materialsToDeduct.push({
           type: "packaging",

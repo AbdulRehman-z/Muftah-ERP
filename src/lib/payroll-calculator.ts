@@ -208,7 +208,7 @@ export function calculateAbsentDeductions(
    */
   const applyOccasionDeduction = (
     fraction: number,
-    occasion: "absent" | "leave" | "specialLeave" | "lateArrival" | "earlyLeaving",
+    occasion: "absent" | "annualLeave" | "sickLeave" | "specialLeave" | "lateArrival" | "earlyLeaving",
     isLeaveType = false,
   ) => {
     let subTotal = 0;
@@ -256,17 +256,21 @@ export function calculateAbsentDeductions(
         // Special Leave: only Basic is paid, everything else deducted
         applyOccasionDeduction(1, "specialLeave", true);
       } else if (record.leaveType === "sick") {
-        // Sick Leave: Always no-deduction regardless of approval status.
+        // Sick Leave: Apply sickLeave-specific deduction rules from allowance config.
         // Bradford Factor still counts (tracked via filter elsewhere).
-        // No deduction applied — intentionally fall through without any action.
-      } else if (record.leaveType === "unpaid") {
-        // Unpaid Leave: Only conveyance is deducted (not full absent deduction).
-        applyOccasionDeduction(1, "leave", true);
+        // If an allowance has sickLeave deduction enabled, it gets deducted.
+        applyOccasionDeduction(1, "sickLeave", true);
+      } else if (record.leaveType === "annual") {
+        // Annual Leave: Apply annualLeave-specific deduction rules
+        if (!record.isApprovedLeave) {
+          applyOccasionDeduction(1, "annualLeave", true);
+        }
+        // Approved annual leave = no deduction
       } else if (!record.isApprovedLeave) {
-        // Casual/Annual leave without admin approval → conveyance deducted
-        applyOccasionDeduction(1, "leave", true);
+        // Any other leave without admin approval → use annualLeave rules as fallback
+        applyOccasionDeduction(1, "annualLeave", true);
       }
-      // Approved paid casual/annual/special = no deduction (isApprovedLeave = true)
+      // Approved paid leave = no deduction (isApprovedLeave = true)
     } else if (record.status === "present" && dutyHours < standardDutyHours) {
       // Undertime / Late Arrival / Early Leaving
       const shortHours = standardDutyHours - dutyHours;

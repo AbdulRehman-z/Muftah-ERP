@@ -137,14 +137,14 @@ export const navigations: NavigationItem[] = [
         icon: ClipboardListIcon,
       },
       {
+        title: "Approval Center",
+        url: "/hr/approvals",
+        icon: ClipboardListIcon,
+      },
+      {
         title: "Payroll",
         url: "/hr/payroll",
         icon: Banknote,
-      },
-      {
-        title: "Advances",
-        url: "/hr/advances",
-        icon: Banknote, // Can reuse Banknote or pick HandCoins if imported
       },
     ],
   },

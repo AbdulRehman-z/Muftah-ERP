@@ -34,8 +34,9 @@ function RouteComponent() {
         <Suspense
           fallback={
             <GenericLoader
-              title="Loading Production Runs"
-              description="wait..."
+              className="min-h-svh my-auto"
+              title="Loading Production Runs..."
+              description="Please wait while we load the production runs."
             />
           }
         >

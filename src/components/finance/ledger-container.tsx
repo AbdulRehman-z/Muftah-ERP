@@ -6,6 +6,7 @@ import {
 } from "@/server-functions/finance-fn";
 import { GenericEmpty } from "@/components/custom/empty";
 import { Badge } from "@/components/ui/badge";
+import { FinanceEmptyIllustration } from "@/components/illustrations/FinanceEmptyIllustration";
 import {
     Select,
     SelectContent,
@@ -14,7 +15,6 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import {
-    BookOpenIcon,
     Building2,
     BanknoteIcon,
     ArrowDownIcon,
@@ -24,7 +24,7 @@ import {
     ActivityIcon,
 } from "lucide-react";
 import { format } from "date-fns";
-import { DataTable } from "@/components/ui/data-table";
+import { DataTable } from "@/components/custom/data-table";
 import type { ColumnDef } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 
@@ -262,7 +262,7 @@ export const LedgerContainer = () => {
                 }
                 emptyState={
                     <GenericEmpty
-                        icon={BookOpenIcon}
+                        icon={FinanceEmptyIllustration}
                         title="No Transactions Found"
                         description={
                             searchQuery || walletFilter !== "all" || typeFilter !== "all"
