@@ -1,1 +1,0 @@
-ALTER TABLE "recipe_packaging" ALTER COLUMN "quantity_per_container" SET DATA TYPE numeric(10, 6);

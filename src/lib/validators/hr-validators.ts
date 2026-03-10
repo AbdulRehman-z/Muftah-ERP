@@ -84,7 +84,7 @@ export const deleteEmployeeSchema = z.object({
 export const upsertAttendanceSchema = z.object({
   employeeId: z.string().min(1, "Employee is required"),
   date: z.string().min(1, "Date is required"),
-  status: z.enum(["present", "absent", "leave", "half_day", "holiday"]),
+  status: z.enum(["present", "absent", "leave", "holiday"]),
 
   // Leave classification for Bradford Factor + balance tracking
   leaveType: z

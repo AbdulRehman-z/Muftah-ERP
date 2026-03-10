@@ -1,31 +1,42 @@
+// constants.ts
+// Navigation structure for the sidebar.
+// Icons are imported from @/lib/nav-icons — keep this file data-only.
+
 import {
-  ArrowRightLeftIcon,
-  Banknote,
-  ClipboardListIcon,
-  CookingPotIcon,
-  Factory,
-  LayoutDashboard,
-  type LucideIcon,
-  NewspaperIcon,
-  PackageSearch,
-  ScrollText,
-  Settings,
-  ShoppingCart,
-  ToolCaseIcon,
-  UserCogIcon,
-  Users,
-  UsersIcon,
+  AccountsIcon,
+  ApprovalIcon,
+  AttendanceIcon,
+  CustomersIcon,
+  DashboardIcon,
+  EmployeesIcon,
+  ExpensesIcon,
+  FactoryFloorIcon,
+  FinanceIcon,
+  HRIcon,
+  InventoryIcon,
+  InvoiceIcon,
+  LedgerIcon,
+  ManufacturingIcon,
+  OperatorIcon,
+  PayrollIcon,
+  ProductionRunIcon,
+  RecipesIcon,
+  SalesIcon,
+  SettingsIcon,
+  SuppliersIcon,
+  UserMgmtIcon,
+  UtilitiesIcon,
   WarehouseIcon,
-  WalletIcon,
-  ReceiptIcon,
-  BookOpenIcon,
-  LandmarkIcon,
-} from "lucide-react";
+} from "@/components/custom/nav-icons";
+
+import type { IconProps } from "@/components/custom/nav-icons";
+
+export type { IconProps };
 
 export interface NavigationItem {
   title: string;
   url: string;
-  icon?: LucideIcon | React.ComponentType<any>;
+  icon?: React.ComponentType<IconProps>;
   items?: NavigationItem[];
   exact?: boolean;
 }
@@ -34,29 +45,29 @@ export const navigations: NavigationItem[] = [
   {
     title: "Dashboard",
     url: "/dashboard",
-    icon: LayoutDashboard,
+    icon: DashboardIcon,
   },
   {
     title: "Manufacturing",
-    url: "/manufacturing", // Assuming this exists or is the manufacturing dashboard
-    icon: Factory,
+    url: "/manufacturing",
+    icon: ManufacturingIcon,
     items: [
       {
         title: "Production Run",
         url: "/manufacturing/productions",
-        icon: ClipboardListIcon,
+        icon: ProductionRunIcon,
       },
       {
         title: "Recipes",
         url: "/manufacturing/recipes",
-        icon: CookingPotIcon,
+        icon: RecipesIcon,
       },
     ],
   },
   {
     title: "Inventory Management",
     url: "/inventory",
-    icon: PackageSearch,
+    icon: InventoryIcon,
     items: [
       {
         title: "Warehouses",
@@ -66,101 +77,101 @@ export const navigations: NavigationItem[] = [
       {
         title: "Factory-Floor",
         url: "/inventory/factory-floor",
-        icon: ArrowRightLeftIcon,
+        icon: FactoryFloorIcon,
       },
     ],
   },
   {
     title: "Suppliers",
     url: "/suppliers",
-    icon: UserCogIcon,
+    icon: SuppliersIcon,
   },
   {
     title: "Sales",
     url: "/sales/new-invoice",
-    icon: ShoppingCart,
+    icon: SalesIcon,
     items: [
       {
         title: "New Invoice",
         url: "/sales/new-invoice",
-        icon: ScrollText,
+        icon: InvoiceIcon,
         exact: true,
       },
       {
         title: "Customers",
         url: "/sales/customers",
-        icon: UsersIcon,
+        icon: CustomersIcon,
       },
     ],
   },
   {
     title: "Finance",
     url: "/finance",
-    icon: LandmarkIcon,
+    icon: FinanceIcon,
     items: [
       {
         title: "Accounts",
         url: "/finance",
-        icon: WalletIcon,
+        icon: AccountsIcon,
         exact: true,
       },
       {
         title: "Expenses",
         url: "/finance/expenses",
-        icon: ReceiptIcon,
+        icon: ExpensesIcon,
       },
       {
         title: "Ledger",
         url: "/finance/ledger",
-        icon: BookOpenIcon,
+        icon: LedgerIcon,
       },
     ],
   },
   {
     title: "Utilities",
     url: "/utilities",
-    icon: NewspaperIcon,
+    icon: UtilitiesIcon,
   },
   {
     title: "HR & Payroll",
     url: "/hr",
-    icon: Users,
+    icon: HRIcon,
     items: [
       {
         title: "Employees",
         url: "/hr/employees",
-        icon: UsersIcon,
+        icon: EmployeesIcon,
       },
       {
         title: "Attendance",
         url: "/hr/attendance",
-        icon: ClipboardListIcon,
+        icon: AttendanceIcon,
       },
       {
         title: "Approval Center",
         url: "/hr/approvals",
-        icon: ClipboardListIcon,
+        icon: ApprovalIcon,
       },
       {
         title: "Payroll",
         url: "/hr/payroll",
-        icon: Banknote,
+        icon: PayrollIcon,
       },
     ],
   },
   {
     title: "Operator Interface",
     url: "/operator",
-    icon: ToolCaseIcon,
+    icon: OperatorIcon,
   },
   {
     title: "User Management",
     url: "/user-management",
-    icon: Users,
+    icon: UserMgmtIcon,
   },
   {
     title: "Settings",
     url: "/settings",
-    icon: Settings,
+    icon: SettingsIcon,
   },
 ];

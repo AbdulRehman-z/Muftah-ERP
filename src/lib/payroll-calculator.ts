@@ -7,7 +7,7 @@ import { type AllowanceConfig } from "@/lib/types/hr-types";
 
 export type AttendanceRecord = {
   date: string;
-  status: "present" | "absent" | "leave" | "half_day" | "holiday";
+  status: "present" | "absent" | "leave" | "holiday";
   dutyHours: string | null;
   overtimeHours: string | null;
   isNightShift: boolean;
@@ -77,7 +77,6 @@ export type PayslipCalculation = {
   daysCasualLeave: number;
   daysAnnualLeave: number;
   daysSpecialLeave: number;
-  daysHalfDay: number;
   unmarkedDays: number; // dynamically computed missing days
   totalOvertimeHours: number;
   totalUndertimeHours: number;
@@ -171,8 +170,7 @@ function getAllowanceAmount(config: AllowanceConfig[], id: string): number {
  * 1. ABSENT (no notice): full-day deduction from Basic + all allowances except Fuel & Special.
  * 2. APPROVED LEAVE: NO deduction at all.
  * 3. UNAPPROVED / UNPAID LEAVE: Deduct from Conveyance allowance only.
- * 4. HALF-DAY: 50% deduction from Basic + all allowances except Fuel, Special, AND Conveyance.
- * 5. UNDERTIME (present but short hours): hour-based deduction from Basic only.
+ * 4. UNDERTIME (present but short hours): hour-based deduction from Basic only.
  *
  * Daily rate is based on CALENDAR DAYS in the pay period's month
  * (not working days), per client requirement.
@@ -248,9 +246,6 @@ export function calculateAbsentDeductions(
 
     if (record.status === "absent") {
       applyOccasionDeduction(1, "absent");
-    } else if (record.status === "half_day") {
-      // Half-day is treated as 0.5 of an absence
-      applyOccasionDeduction(0.5, "absent");
     } else if (record.status === "leave") {
       if (record.leaveType === "special") {
         // Special Leave: only Basic is paid, everything else deducted
@@ -360,7 +355,6 @@ export function calculateOvertimePay(
  *   - sick leave    → counts toward D (no deduction but still tracked)
  *   - unpaid/special leave → counts toward D
  *   - approved paid leaes (casual/annual) → excluded from Bradford
- *   - half_day → counts as 0.5 absent-equivalent days
  */
 export function calculateBradfordFactor(
   attendanceRecords: AttendanceRecord[],
@@ -376,7 +370,6 @@ export function calculateBradfordFactor(
   for (const record of sorted) {
     const isBradfordEvent =
       record.status === "absent" ||
-      record.status === "half_day" ||
       (record.status === "leave" &&
         // Sick, special, unpaid leaves count; casual/annual approved leaves do NOT
         (record.leaveType === "sick" ||
@@ -384,8 +377,7 @@ export function calculateBradfordFactor(
           record.leaveType === "unpaid" ||
           !record.isApprovedLeave));
 
-    const dayWeight =
-      record.status === "half_day" ? 0.5 : isBradfordEvent ? 1 : 0;
+    const dayWeight = isBradfordEvent ? 1 : 0;
 
     if (isBradfordEvent) {
       totalAbsentDays += dayWeight;
@@ -464,13 +456,9 @@ export function calculatePayslip(
     (r) => r.status === "leave" && r.leaveType === "special",
   ).length;
 
-  const daysHalfDay = attendanceRecords.filter(
-    (r) => r.status === "half_day",
-  ).length;
-
   // Track any missing records
   // "unmarkedDays" occur if an admin did not input *any* attendance record for a working day
-  const unmarkedDays = Math.max(0, totalWorkingDays - (daysPresent + daysAbsent + daysLeave + daysUnapprovedLeave + daysHalfDay));
+  const unmarkedDays = Math.max(0, totalWorkingDays - (daysPresent + daysAbsent + daysLeave + daysUnapprovedLeave));
 
   // Only approved overtime counts toward pay
   const totalOvertimeHours = sumApprovedOvertimeHours(attendanceRecords);
@@ -568,7 +556,6 @@ export function calculatePayslip(
     daysCasualLeave,
     daysAnnualLeave,
     daysSpecialLeave,
-    daysHalfDay,
     unmarkedDays,
     totalOvertimeHours: +totalOvertimeHours.toFixed(2),
     totalUndertimeHours,
@@ -632,8 +619,7 @@ export function validatePayslip(payslip: PayslipCalculation): {
     payslip.daysPresent +
     payslip.daysAbsent +
     payslip.daysLeave +
-    payslip.daysUnapprovedLeave +
-    payslip.daysHalfDay;
+    payslip.daysUnapprovedLeave;
   if (totalDays > payslip.totalWorkingDays) {
     errors.push("Total attendance days exceed working days in period.");
   }

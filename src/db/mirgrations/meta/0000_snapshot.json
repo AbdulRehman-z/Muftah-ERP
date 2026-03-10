@@ -1,5 +1,5 @@
 {
-  "id": "d94b503b-dadb-46cc-9f8d-df49a4956bd4",
+  "id": "5c48793b-6112-452e-bfde-6f6927f8a2e7",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -110,8 +110,12 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -204,8 +208,12 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -215,7 +223,9 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": ["token"]
+          "columns": [
+            "token"
+          ]
         }
       },
       "policies": {},
@@ -288,8 +298,12 @@
           "name": "two_factor_user_id_user_id_fk",
           "tableFrom": "two_factor",
           "tableTo": "user",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -389,7 +403,9 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": ["email"]
+          "columns": [
+            "email"
+          ]
         }
       },
       "policies": {},
@@ -509,6 +525,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "notes": {
           "name": "notes",
           "type": "text",
@@ -599,8 +627,12 @@
           "name": "expenses_wallet_id_wallets_id_fk",
           "tableFrom": "expenses",
           "tableTo": "wallets",
-          "columnsFrom": ["wallet_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "wallet_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -608,8 +640,12 @@
           "name": "expenses_performed_by_id_user_id_fk",
           "tableFrom": "expenses",
           "tableTo": "user",
-          "columnsFrom": ["performed_by_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "performed_by_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -687,8 +723,12 @@
           "name": "transactions_wallet_id_wallets_id_fk",
           "tableFrom": "transactions",
           "tableTo": "wallets",
-          "columnsFrom": ["wallet_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "wallet_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -696,8 +736,12 @@
           "name": "transactions_performed_by_id_user_id_fk",
           "tableFrom": "transactions",
           "tableTo": "user",
-          "columnsFrom": ["performed_by_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "performed_by_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -875,6 +919,13 @@
           "notNull": false,
           "default": false
         },
+        "leave_approval_status": {
+          "name": "leave_approval_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'none'"
+        },
         "leave_type": {
           "name": "leave_type",
           "type": "leave_type",
@@ -888,6 +939,83 @@
           "primaryKey": false,
           "notNull": false,
           "default": "'manual'"
+        },
+        "area_visited": {
+          "name": "area_visited",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payment_mode": {
+          "name": "payment_mode",
+          "type": "payment_mode",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'per_km'"
+        },
+        "is_company_vehicle": {
+          "name": "is_company_vehicle",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "distance_km": {
+          "name": "distance_km",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "per_km_rate": {
+          "name": "per_km_rate",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "petrol_amount": {
+          "name": "petrol_amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "sale_amount": {
+          "name": "sale_amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "recovery_amount": {
+          "name": "recovery_amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "return_amount": {
+          "name": "return_amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "slip_numbers": {
+          "name": "slip_numbers",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shop_type": {
+          "name": "shop_type",
+          "type": "shop_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'old'"
         },
         "notes": {
           "name": "notes",
@@ -938,8 +1066,114 @@
           "name": "attendance_employee_id_employees_id_fk",
           "tableFrom": "attendance",
           "tableTo": "employees",
-          "columnsFrom": ["employee_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "employee_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bradford_audit_log": {
+      "name": "bradford_audit_log",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "payslip_id": {
+          "name": "payslip_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "employee_id": {
+          "name": "employee_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "computed_score": {
+          "name": "computed_score",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "override_score": {
+          "name": "override_score",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "performed_by": {
+          "name": "performed_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "performed_at": {
+          "name": "performed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "bradford_audit_log_payslip_id_payslips_id_fk": {
+          "name": "bradford_audit_log_payslip_id_payslips_id_fk",
+          "tableFrom": "bradford_audit_log",
+          "tableTo": "payslips",
+          "columnsFrom": [
+            "payslip_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "bradford_audit_log_employee_id_employees_id_fk": {
+          "name": "bradford_audit_log_employee_id_employees_id_fk",
+          "tableFrom": "bradford_audit_log",
+          "tableTo": "employees",
+          "columnsFrom": [
+            "employee_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "bradford_audit_log_performed_by_user_id_fk": {
+          "name": "bradford_audit_log_performed_by_user_id_fk",
+          "tableFrom": "bradford_audit_log",
+          "tableTo": "user",
+          "columnsFrom": [
+            "performed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1067,7 +1301,7 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false,
-          "default": "'[{\"id\":\"houseRent\",\"name\":\"House Rent\",\"amount\":0},{\"id\":\"utilities\",\"name\":\"Utilities\",\"amount\":0},{\"id\":\"bikeMaintenance\",\"name\":\"Bike Maintenance\",\"amount\":0},{\"id\":\"mobile\",\"name\":\"Mobile Allowance\",\"amount\":0},{\"id\":\"technical\",\"name\":\"Technical Allowance\",\"amount\":0},{\"id\":\"conveyance\",\"name\":\"Conveyance Allowance\",\"amount\":0},{\"id\":\"fuel\",\"name\":\"Fuel Allowance\",\"amount\":0},{\"id\":\"special\",\"name\":\"Special Allowance\",\"amount\":0},{\"id\":\"nightShift\",\"name\":\"Night Shift Allowance\",\"amount\":0}]'::jsonb"
+          "default": "'[{\"id\":\"houseRent\",\"name\":\"House Rent\",\"amount\":0,\"deductions\":{\"absent\":true,\"annualLeave\":false,\"sickLeave\":false,\"specialLeave\":true,\"lateArrival\":false,\"earlyLeaving\":false}},{\"id\":\"utilities\",\"name\":\"Utilities\",\"amount\":0,\"deductions\":{\"absent\":true,\"annualLeave\":false,\"sickLeave\":false,\"specialLeave\":true,\"lateArrival\":false,\"earlyLeaving\":false}},{\"id\":\"conveyance\",\"name\":\"Conveyance Allowance\",\"amount\":0,\"deductions\":{\"absent\":true,\"annualLeave\":true,\"sickLeave\":false,\"specialLeave\":true,\"lateArrival\":false,\"earlyLeaving\":false}},{\"id\":\"fuel\",\"name\":\"Fuel Allowance\",\"amount\":0,\"deductions\":{\"absent\":true,\"annualLeave\":true,\"sickLeave\":false,\"specialLeave\":true,\"lateArrival\":false,\"earlyLeaving\":false}},{\"id\":\"mobile\",\"name\":\"Mobile Allowance\",\"amount\":0,\"deductions\":{\"absent\":true,\"annualLeave\":false,\"sickLeave\":false,\"specialLeave\":true,\"lateArrival\":false,\"earlyLeaving\":false}},{\"id\":\"bikeMaintenance\",\"name\":\"Bike Maintenance\",\"amount\":0,\"deductions\":{\"absent\":true,\"annualLeave\":false,\"sickLeave\":false,\"specialLeave\":true,\"lateArrival\":false,\"earlyLeaving\":false}},{\"id\":\"technical\",\"name\":\"Technical Allowance\",\"amount\":0,\"deductions\":{\"absent\":true,\"annualLeave\":false,\"sickLeave\":false,\"specialLeave\":false,\"lateArrival\":false,\"earlyLeaving\":false}},{\"id\":\"special\",\"name\":\"Special Allowance\",\"amount\":0,\"deductions\":{\"absent\":false,\"annualLeave\":false,\"sickLeave\":false,\"specialLeave\":false,\"lateArrival\":false,\"earlyLeaving\":false}},{\"id\":\"nightShift\",\"name\":\"Night Shift Allowance\",\"amount\":0,\"deductions\":{\"absent\":false,\"annualLeave\":false,\"sickLeave\":false,\"specialLeave\":false,\"lateArrival\":false,\"earlyLeaving\":false}}]'::jsonb"
         },
         "annual_leave_balance": {
           "name": "annual_leave_balance",
@@ -1090,6 +1324,20 @@
           "notNull": false,
           "default": 5
         },
+        "is_order_booker": {
+          "name": "is_order_booker",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "commission_rate": {
+          "name": "commission_rate",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -1111,8 +1359,12 @@
           "name": "employees_user_id_user_id_fk",
           "tableFrom": "employees",
           "tableTo": "user",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1122,7 +1374,88 @@
         "employees_employee_code_unique": {
           "name": "employees_employee_code_unique",
           "nullsNotDistinct": false,
-          "columns": ["employee_code"]
+          "columns": [
+            "employee_code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.night_shift_rates": {
+      "name": "night_shift_rates",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rate_per_night": {
+          "name": "rate_per_night",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "remarks": {
+          "name": "remarks",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "set_by": {
+          "name": "set_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "night_shift_rates_set_by_user_id_fk": {
+          "name": "night_shift_rates_set_by_user_id_fk",
+          "tableFrom": "night_shift_rates",
+          "tableTo": "user",
+          "columnsFrom": [
+            "set_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "night_shift_rates_year_unique": {
+          "name": "night_shift_rates_year_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "year"
+          ]
         }
       },
       "policies": {},
@@ -1210,8 +1543,12 @@
           "name": "payrolls_processed_by_user_id_fk",
           "tableFrom": "payrolls",
           "tableTo": "user",
-          "columnsFrom": ["processed_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "processed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1425,8 +1762,12 @@
           "name": "payslips_payroll_id_payrolls_id_fk",
           "tableFrom": "payslips",
           "tableTo": "payrolls",
-          "columnsFrom": ["payroll_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "payroll_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1434,8 +1775,12 @@
           "name": "payslips_employee_id_employees_id_fk",
           "tableFrom": "payslips",
           "tableTo": "employees",
-          "columnsFrom": ["employee_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "employee_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1532,8 +1877,12 @@
           "name": "salary_advances_employee_id_employees_id_fk",
           "tableFrom": "salary_advances",
           "tableTo": "employees",
-          "columnsFrom": ["employee_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "employee_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1541,8 +1890,12 @@
           "name": "salary_advances_approved_by_user_id_fk",
           "tableFrom": "salary_advances",
           "tableTo": "user",
-          "columnsFrom": ["approved_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "approved_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1550,8 +1903,381 @@
           "name": "salary_advances_deducted_in_payslip_id_payslips_id_fk",
           "tableFrom": "salary_advances",
           "tableTo": "payslips",
-          "columnsFrom": ["deducted_in_payslip_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "deducted_in_payslip_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tada_rates": {
+      "name": "tada_rates",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "rate_per_km": {
+          "name": "rate_per_km",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "effective_from": {
+          "name": "effective_from",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "remarks": {
+          "name": "remarks",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "set_by": {
+          "name": "set_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "tada_rates_set_by_user_id_fk": {
+          "name": "tada_rates_set_by_user_id_fk",
+          "tableFrom": "tada_rates",
+          "tableTo": "user",
+          "columnsFrom": [
+            "set_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.travel_logs": {
+      "name": "travel_logs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "employee_id": {
+          "name": "employee_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "destination": {
+          "name": "destination",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "round_trip_km": {
+          "name": "round_trip_km",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rate_applied": {
+          "name": "rate_applied",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_amount": {
+          "name": "total_amount",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "purpose": {
+          "name": "purpose",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "approved_by": {
+          "name": "approved_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paid_in_payslip_id": {
+          "name": "paid_in_payslip_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "travel_logs_employee_id_employees_id_fk": {
+          "name": "travel_logs_employee_id_employees_id_fk",
+          "tableFrom": "travel_logs",
+          "tableTo": "employees",
+          "columnsFrom": [
+            "employee_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "travel_logs_approved_by_user_id_fk": {
+          "name": "travel_logs_approved_by_user_id_fk",
+          "tableFrom": "travel_logs",
+          "tableTo": "user",
+          "columnsFrom": [
+            "approved_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "travel_logs_paid_in_payslip_id_payslips_id_fk": {
+          "name": "travel_logs_paid_in_payslip_id_payslips_id_fk",
+          "tableFrom": "travel_logs",
+          "tableTo": "payslips",
+          "columnsFrom": [
+            "paid_in_payslip_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.chemical_lab_reports": {
+      "name": "chemical_lab_reports",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "chemical_id": {
+          "name": "chemical_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "product_name": {
+          "name": "product_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stock_number": {
+          "name": "stock_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lot_number": {
+          "name": "lot_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "analysis_items": {
+          "name": "analysis_items",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "certified_by": {
+          "name": "certified_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "certifier_title": {
+          "name": "certifier_title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "report_date": {
+          "name": "report_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "standard_reference": {
+          "name": "standard_reference",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by_id": {
+          "name": "created_by_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "lab_report_chemical_idx": {
+          "name": "lab_report_chemical_idx",
+          "columns": [
+            {
+              "expression": "chemical_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "lab_report_date_idx": {
+          "name": "lab_report_date_idx",
+          "columns": [
+            {
+              "expression": "report_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "chemical_lab_reports_chemical_id_chemicals_id_fk": {
+          "name": "chemical_lab_reports_chemical_id_chemicals_id_fk",
+          "tableFrom": "chemical_lab_reports",
+          "tableTo": "chemicals",
+          "columnsFrom": [
+            "chemical_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "chemical_lab_reports_created_by_id_user_id_fk": {
+          "name": "chemical_lab_reports_created_by_id_user_id_fk",
+          "tableFrom": "chemical_lab_reports",
+          "tableTo": "user",
+          "columnsFrom": [
+            "created_by_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1638,8 +2364,12 @@
           "name": "chemicals_last_supplier_id_suppliers_id_fk",
           "tableFrom": "chemicals",
           "tableTo": "suppliers",
-          "columnsFrom": ["last_supplier_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "last_supplier_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1729,8 +2459,12 @@
           "name": "finished_goods_stock_warehouse_id_warehouses_id_fk",
           "tableFrom": "finished_goods_stock",
           "tableTo": "warehouses",
-          "columnsFrom": ["warehouse_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "warehouse_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1738,8 +2472,12 @@
           "name": "finished_goods_stock_recipe_id_recipes_id_fk",
           "tableFrom": "finished_goods_stock",
           "tableTo": "recipes",
-          "columnsFrom": ["recipe_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1860,8 +2598,12 @@
           "name": "inventory_audit_log_warehouse_id_warehouses_id_fk",
           "tableFrom": "inventory_audit_log",
           "tableTo": "warehouses",
-          "columnsFrom": ["warehouse_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "warehouse_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1869,8 +2611,12 @@
           "name": "inventory_audit_log_performed_by_id_user_id_fk",
           "tableFrom": "inventory_audit_log",
           "tableTo": "user",
-          "columnsFrom": ["performed_by_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "performed_by_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1953,8 +2699,12 @@
           "name": "material_stock_warehouse_id_warehouses_id_fk",
           "tableFrom": "material_stock",
           "tableTo": "warehouses",
-          "columnsFrom": ["warehouse_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "warehouse_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1962,8 +2712,12 @@
           "name": "material_stock_chemical_id_chemicals_id_fk",
           "tableFrom": "material_stock",
           "tableTo": "chemicals",
-          "columnsFrom": ["chemical_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "chemical_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1971,8 +2725,12 @@
           "name": "material_stock_packaging_material_id_packaging_materials_id_fk",
           "tableFrom": "material_stock",
           "tableTo": "packaging_materials",
-          "columnsFrom": ["packaging_material_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "packaging_material_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2084,8 +2842,12 @@
           "name": "packaging_materials_associated_sticker_id_packaging_materials_id_fk",
           "tableFrom": "packaging_materials",
           "tableTo": "packaging_materials",
-          "columnsFrom": ["associated_sticker_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "associated_sticker_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2093,8 +2855,12 @@
           "name": "packaging_materials_last_supplier_id_suppliers_id_fk",
           "tableFrom": "packaging_materials",
           "tableTo": "suppliers",
-          "columnsFrom": ["last_supplier_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "last_supplier_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2172,8 +2938,12 @@
           "name": "production_materials_used_production_run_id_production_runs_id_fk",
           "tableFrom": "production_materials_used",
           "tableTo": "production_runs",
-          "columnsFrom": ["production_run_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "production_run_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2347,8 +3117,12 @@
           "name": "production_runs_recipe_id_recipes_id_fk",
           "tableFrom": "production_runs",
           "tableTo": "recipes",
-          "columnsFrom": ["recipe_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2356,8 +3130,12 @@
           "name": "production_runs_warehouse_id_warehouses_id_fk",
           "tableFrom": "production_runs",
           "tableTo": "warehouses",
-          "columnsFrom": ["warehouse_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "warehouse_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2365,8 +3143,12 @@
           "name": "production_runs_operator_id_user_id_fk",
           "tableFrom": "production_runs",
           "tableTo": "user",
-          "columnsFrom": ["operator_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "operator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2376,7 +3158,9 @@
         "production_runs_batch_id_unique": {
           "name": "production_runs_batch_id_unique",
           "nullsNotDistinct": false,
-          "columns": ["batch_id"]
+          "columns": [
+            "batch_id"
+          ]
         }
       },
       "policies": {},
@@ -2499,8 +3283,12 @@
           "name": "recipe_ingredients_recipe_id_recipes_id_fk",
           "tableFrom": "recipe_ingredients",
           "tableTo": "recipes",
-          "columnsFrom": ["recipe_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2508,8 +3296,12 @@
           "name": "recipe_ingredients_chemical_id_chemicals_id_fk",
           "tableFrom": "recipe_ingredients",
           "tableTo": "chemicals",
-          "columnsFrom": ["chemical_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "chemical_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2544,7 +3336,7 @@
         },
         "quantity_per_container": {
           "name": "quantity_per_container",
-          "type": "numeric(10, 3)",
+          "type": "numeric(10, 6)",
           "primaryKey": false,
           "notNull": true
         },
@@ -2592,8 +3384,12 @@
           "name": "recipe_packaging_recipe_id_recipes_id_fk",
           "tableFrom": "recipe_packaging",
           "tableTo": "recipes",
-          "columnsFrom": ["recipe_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2601,8 +3397,12 @@
           "name": "recipe_packaging_packaging_material_id_packaging_materials_id_fk",
           "tableFrom": "recipe_packaging",
           "tableTo": "packaging_materials",
-          "columnsFrom": ["packaging_material_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "packaging_material_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2728,6 +3528,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "minimum_stock_level": {
+          "name": "minimum_stock_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
         "notes": {
           "name": "notes",
           "type": "text",
@@ -2768,8 +3575,12 @@
           "name": "recipes_product_id_products_id_fk",
           "tableFrom": "recipes",
           "tableTo": "products",
-          "columnsFrom": ["product_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "product_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2777,8 +3588,12 @@
           "name": "recipes_container_packaging_id_packaging_materials_id_fk",
           "tableFrom": "recipes",
           "tableTo": "packaging_materials",
-          "columnsFrom": ["container_packaging_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "container_packaging_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2786,8 +3601,12 @@
           "name": "recipes_carton_packaging_id_packaging_materials_id_fk",
           "tableFrom": "recipes",
           "tableTo": "packaging_materials",
-          "columnsFrom": ["carton_packaging_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "carton_packaging_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2878,8 +3697,12 @@
           "name": "stock_transfers_from_warehouse_id_warehouses_id_fk",
           "tableFrom": "stock_transfers",
           "tableTo": "warehouses",
-          "columnsFrom": ["from_warehouse_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "from_warehouse_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2887,8 +3710,12 @@
           "name": "stock_transfers_to_warehouse_id_warehouses_id_fk",
           "tableFrom": "stock_transfers",
           "tableTo": "warehouses",
-          "columnsFrom": ["to_warehouse_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "to_warehouse_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2896,8 +3723,12 @@
           "name": "stock_transfers_performed_by_id_user_id_fk",
           "tableFrom": "stock_transfers",
           "tableTo": "user",
-          "columnsFrom": ["performed_by_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "performed_by_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3015,6 +3846,30 @@
         },
         "address": {
           "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cnic": {
+          "name": "cnic",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bank_account": {
+          "name": "bank_account",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -3146,6 +4001,13 @@
           "notNull": true,
           "default": 0
         },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
         "total_weight": {
           "name": "total_weight",
           "type": "numeric(12, 3)",
@@ -3208,8 +4070,12 @@
           "name": "invoice_items_invoice_id_invoices_id_fk",
           "tableFrom": "invoice_items",
           "tableTo": "invoices",
-          "columnsFrom": ["invoice_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "invoice_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3217,8 +4083,12 @@
           "name": "invoice_items_recipe_id_recipes_id_fk",
           "tableFrom": "invoice_items",
           "tableTo": "recipes",
-          "columnsFrom": ["recipe_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3356,8 +4226,12 @@
           "name": "invoices_customer_id_customers_id_fk",
           "tableFrom": "invoices",
           "tableTo": "customers",
-          "columnsFrom": ["customer_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "customer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3365,8 +4239,12 @@
           "name": "invoices_warehouse_id_warehouses_id_fk",
           "tableFrom": "invoices",
           "tableTo": "warehouses",
-          "columnsFrom": ["warehouse_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "warehouse_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3374,8 +4252,12 @@
           "name": "invoices_performed_by_id_user_id_fk",
           "tableFrom": "invoices",
           "tableTo": "user",
-          "columnsFrom": ["performed_by_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "performed_by_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3561,8 +4443,12 @@
           "name": "purchase_records_supplier_id_suppliers_id_fk",
           "tableFrom": "purchase_records",
           "tableTo": "suppliers",
-          "columnsFrom": ["supplier_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "supplier_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3570,8 +4456,12 @@
           "name": "purchase_records_warehouse_id_warehouses_id_fk",
           "tableFrom": "purchase_records",
           "tableTo": "warehouses",
-          "columnsFrom": ["warehouse_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "warehouse_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3579,8 +4469,12 @@
           "name": "purchase_records_chemical_id_chemicals_id_fk",
           "tableFrom": "purchase_records",
           "tableTo": "chemicals",
-          "columnsFrom": ["chemical_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "chemical_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3588,8 +4482,12 @@
           "name": "purchase_records_packaging_material_id_packaging_materials_id_fk",
           "tableFrom": "purchase_records",
           "tableTo": "packaging_materials",
-          "columnsFrom": ["packaging_material_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "packaging_material_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3717,8 +4615,12 @@
           "name": "supplier_payments_supplier_id_suppliers_id_fk",
           "tableFrom": "supplier_payments",
           "tableTo": "suppliers",
-          "columnsFrom": ["supplier_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "supplier_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3726,8 +4628,12 @@
           "name": "supplier_payments_purchase_id_purchase_records_id_fk",
           "tableFrom": "supplier_payments",
           "tableTo": "purchase_records",
-          "columnsFrom": ["purchase_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "purchase_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3743,22 +4649,58 @@
     "public.attendance_status": {
       "name": "attendance_status",
       "schema": "public",
-      "values": ["present", "absent", "leave", "half_day", "holiday"]
+      "values": [
+        "present",
+        "absent",
+        "leave",
+        "holiday"
+      ]
     },
     "public.employee_status": {
       "name": "employee_status",
       "schema": "public",
-      "values": ["active", "on_leave", "terminated", "resigned"]
+      "values": [
+        "active",
+        "on_leave",
+        "terminated",
+        "resigned"
+      ]
     },
     "public.employment_type": {
       "name": "employment_type",
       "schema": "public",
-      "values": ["full_time", "part_time", "contract", "intern"]
+      "values": [
+        "full_time",
+        "part_time",
+        "contract",
+        "intern"
+      ]
     },
     "public.leave_type": {
       "name": "leave_type",
       "schema": "public",
-      "values": ["sick", "casual", "annual", "unpaid", "special"]
+      "values": [
+        "sick",
+        "casual",
+        "annual",
+        "unpaid",
+        "special"
+      ]
+    },
+    "public.payment_mode": {
+      "name": "payment_mode",
+      "schema": "public",
+      "values": [
+        "per_km"
+      ]
+    },
+    "public.shop_type": {
+      "name": "shop_type",
+      "schema": "public",
+      "values": [
+        "old",
+        "new"
+      ]
     }
   },
   "schemas": {},

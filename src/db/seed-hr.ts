@@ -340,10 +340,9 @@ async function seedHR() {
       }
 
       const rand = Math.random();
-      let status: "present" | "absent" | "leave" | "half_day" = "present";
-      if (rand < 0.03) status = "absent";
-      else if (rand < 0.05) status = "leave";
-      else if (rand < 0.08) status = "half_day";
+      let status: "present" | "absent" | "leave" = "present";
+      if (rand < 0.05) status = "absent";
+      else if (rand < 0.10) status = "leave";
 
       if (status !== "present") {
         // For leave: 70% are approved paid leave (no deduction)

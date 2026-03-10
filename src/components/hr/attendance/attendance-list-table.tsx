@@ -14,7 +14,7 @@ interface AttendanceRecord {
   checkOut: string | null;
   checkIn2: string | null;
   checkOut2: string | null;
-  status: "present" | "absent" | "leave" | "half_day" | "holiday";
+  status: "present" | "absent" | "leave" | "holiday";
   dutyHours: string | null;
   overtimeHours: string | null;
   isLate: boolean | null;

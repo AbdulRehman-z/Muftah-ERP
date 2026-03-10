@@ -20,7 +20,7 @@ export const SupplierContainer = () => {
     return (
       <>
         <GenericEmpty
-          className="mt-30"
+          className="mt"
           icon={SupplierEmptyIllustration}
           title="No Suppliers Found"
           description="You haven't added any suppliers yet. First, define a supplier then you can add transactions for it."

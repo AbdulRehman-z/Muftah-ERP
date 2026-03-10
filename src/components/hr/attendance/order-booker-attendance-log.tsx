@@ -68,7 +68,7 @@ export const OrderBookerAttendanceLog = ({
       }
       return acc;
     }, 0),
-    daysPresent: records.filter((r: any) => r.status === "present" || r.status === "half_day").length,
+    daysPresent: records.filter((r: any) => r.status === "present").length,
   };
 
   const tableRows: DayRow[] = days.map((day, idx) => ({
@@ -108,7 +108,6 @@ export const OrderBookerAttendanceLog = ({
           const statusColors: Record<string, string> = {
             present: "bg-emerald-50 text-emerald-700 border-emerald-200",
             absent: "bg-rose-50 text-rose-700 border-rose-200",
-            half_day: "bg-amber-50 text-amber-700 border-amber-200",
             leave: "bg-indigo-50 text-indigo-700 border-indigo-200",
           };
           return (

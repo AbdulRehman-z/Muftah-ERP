@@ -287,7 +287,6 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                             tooltip={calculation.daysPresent > calculation.totalWorkingDays ? "Includes working on weekends/holidays" : undefined}
                         />
                         <StatCard label="Absent" value={calculation.daysAbsent} className="bg-rose-50 border-rose-100 text-rose-700" />
-                        <StatCard label="Short Days" value={calculation.daysHalfDay} />
                         <StatCard label="Unmarked Days" value={calculation.unmarkedDays} className={calculation.unmarkedDays > 0 ? "bg-rose-50 border-rose-500 text-rose-800 ring-2 ring-rose-500 animate-pulse" : ""} tooltip="Days with no attendance records! Please fix in Attendance." />
 
                         <StatCard label="Casual Leave" value={calculation.daysCasualLeave} className="bg-amber-50 border-amber-100 text-amber-700" />
@@ -593,18 +592,7 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                 </div>
                             )}
 
-                            {/* Half Day */}
-                            {calculation.daysHalfDay > 0 && (
-                                <div className="p-3 rounded-lg border border-amber-100 bg-amber-50/50 space-y-1">
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-semibold text-amber-800">Half Day</span>
-                                        <Badge variant="outline" className="text-[10px] border-amber-200 text-amber-700 bg-white">{calculation.daysHalfDay} day(s)</Badge>
-                                    </div>
-                                    <p className="text-muted-foreground font-mono leading-relaxed">
-                                        {calculation.daysHalfDay} × 50% × Per Day Rate (same components, except Conveyance)
-                                    </p>
-                                </div>
-                            )}
+
 
                             {/* Undertime */}
                             {calculation.totalUndertimeHours > 0 && (
@@ -633,7 +621,7 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                             )}
 
                             {/* Empty state */}
-                            {calculation.daysAbsent === 0 && calculation.daysHalfDay === 0 && calculation.totalUndertimeHours === 0 && calculation.daysUnapprovedLeave === 0 && (
+                            {calculation.daysAbsent === 0 && calculation.totalUndertimeHours === 0 && calculation.daysUnapprovedLeave === 0 && (
                                 <p className="text-muted-foreground italic py-2 text-center">No attendance deductions this cycle. 🎉</p>
                             )}
                         </div>

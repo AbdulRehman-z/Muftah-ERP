@@ -16,7 +16,7 @@ interface Props {
     overtimeHours?: string | null;
     // FIX: leaveType was missing — it's now threaded through correctly
     leaveType?: "sick" | "casual" | "annual" | "unpaid" | "special" | null;
-    status: "present" | "absent" | "leave" | "half_day" | "holiday";
+    status: "present" | "absent" | "leave" | "holiday";
     isLate?: boolean | null;
     isNightShift?: boolean | null;
     isApprovedLeave?: boolean | null;

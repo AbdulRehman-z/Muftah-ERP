@@ -18,6 +18,7 @@ import { type DateRange } from "react-day-picker";
 import { GenericEmpty } from "@/components/custom/empty";
 import { cn } from "@/lib/utils";
 import { SalesEmptyIllustration } from "@/components/illustrations/SalesEmptyIllustration";
+import { InvoicesEmptyIllustration } from "../illustrations/InvoicesEmptyIllustration";
 
 type Props = {
   sheetOpen?: boolean;
@@ -65,8 +66,7 @@ export const InvoicesTable = ({ onSheetOpenChange }: Props) => {
   if (total === 0 && !hasFilters) {
     return (
       <GenericEmpty
-        className="mt-30"
-        icon={SalesEmptyIllustration}
+        icon={InvoicesEmptyIllustration}
         title="No Invoices Found"
         description="You haven't generated any invoices yet. Start your first transaction."
         ctaText="Create Invoice"

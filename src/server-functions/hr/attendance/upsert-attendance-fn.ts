@@ -58,8 +58,6 @@ export const upsertAttendanceFn = createServerFn()
       finalDutyHours = totalDuty.toFixed(2);
     } else {
       if (rest.status === "present") finalDutyHours = standardHours.toFixed(2);
-      else if (rest.status === "half_day")
-        finalDutyHours = (standardHours / 2).toFixed(2);
       else finalDutyHours = "0.00";
     }
 

@@ -12,7 +12,7 @@ export const bulkMarkAttendanceFn = createServerFn()
     z.object({
       employeeIds: z.array(z.string()),
       date: z.string(),
-      status: z.enum(["present", "absent", "leave", "half_day", "holiday"]),
+      status: z.enum(["present", "absent", "leave", "holiday"]),
     }),
   )
   .handler(async ({ data }) => {
@@ -27,7 +27,6 @@ export const bulkMarkAttendanceFn = createServerFn()
       const employee = employeesList.find((e) => e.id === empId);
       const standard = employee?.standardDutyHours || 8;
       if (status === "present") return standard.toFixed(2);
-      if (status === "half_day") return (standard / 2).toFixed(2);
       return "0.00";
     };
 

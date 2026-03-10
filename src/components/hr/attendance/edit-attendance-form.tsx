@@ -78,7 +78,7 @@ interface AttendanceData {
   overtimeHours?: string | null;
   dutyHours?: string | null;
   leaveType?: "sick" | "casual" | "annual" | "unpaid" | "special" | null;
-  status: "present" | "absent" | "leave" | "half_day" | "holiday";
+  status: "present" | "absent" | "leave" | "holiday";
   isLate?: boolean | null;
   isNightShift?: boolean | null;
   isApprovedLeave?: boolean | null;
@@ -141,7 +141,6 @@ const statusConfig = {
   present: { label: "Present" },
   absent: { label: "Absent" },
   leave: { label: "On Leave" },
-  half_day: { label: "Half Day" },
   holiday: { label: "Official Holiday" },
 } as const;
 
@@ -210,9 +209,7 @@ const AutoPopulateEffect = ({
 
     form.setFieldValue("leaveApprovalStatus", "none");
 
-    const totalHours = calculateHours(ci1, co1, ci2, co2);
-    const baseStd = standardDutyHours || 8;
-    const std = status === "half_day" ? baseStd / 2 : baseStd;
+    const std = standardDutyHours || 8;
 
     if (totalHours !== null) {
       if (totalHours > std) {
@@ -233,7 +230,7 @@ const AutoPopulateEffect = ({
           form.setFieldValue("overtimeRemarks", null);
         }
       }
-    } else if (status === "present" || status === "half_day") {
+    } else if (status === "present") {
       if (!form.getFieldValue("dutyHours")) {
         form.setFieldValue("dutyHours", std.toFixed(2));
       }
@@ -257,7 +254,7 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
     defaultValues: {
       employeeId: employee.id,
       date: date,
-      status: (attendance?.status || "present") as "present" | "absent" | "leave" | "half_day" | "holiday",
+      status: (attendance?.status || "present") as "present" | "absent" | "leave" | "holiday",
       leaveType: (attendance?.leaveType ?? null) as "sick" | "casual" | "annual" | "unpaid" | "special" | null,
       checkIn: attendance?.checkIn ?? null,
       checkOut: attendance?.checkOut ?? null,
@@ -317,8 +314,8 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
             {(field) => (
               <Field>
                 <FieldLabel className="sr-only">Status</FieldLabel>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                  {(["present", "half_day", "leave", "absent", "holiday"] as const).map((s) => (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {(["present", "leave", "absent", "holiday"] as const).map((s) => (
                     <button
                       key={s}
                       type="button"
@@ -908,6 +905,5 @@ const statusPillActive: Record<string, string> = {
   present: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400",
   absent: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-400",
   leave: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400",
-  half_day: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400",
   holiday: "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300",
 };

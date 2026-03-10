@@ -54,9 +54,7 @@ export const AttendanceContainer = () => {
   const stats = {
     total: employees.length,
     present: employees.filter(
-      (e) =>
-        e.attendance[0]?.status === "present" ||
-        e.attendance[0]?.status === "half_day",
+      (e) => e.attendance[0]?.status === "present",
     ).length,
     absent: employees.filter((e) => e.attendance[0]?.status === "absent").length,
     late: employees.filter((e) => e.attendance[0]?.isLate).length,

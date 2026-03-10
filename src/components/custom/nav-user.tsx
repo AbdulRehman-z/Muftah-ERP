@@ -1,10 +1,9 @@
 import { authClient } from "@/lib/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "../ui/sidebar";
-import { ArrowLeftFromLine, Loader2 } from "lucide-react";
+import { SidebarMenu, SidebarMenuItem } from "../ui/sidebar";
+import { LogOut, Loader2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Badge } from "../ui/badge";
 
 export function NavUser() {
   const { data: session, isPending } = authClient.useSession();
@@ -31,14 +30,12 @@ export function NavUser() {
     }
   };
 
+  // ── Skeleton ───────────────────────────────────────────────────────────────
   if (isPending) {
     return (
-      <div className="flex items-center gap-3 px-3 py-2">
-        <div className="size-9 rounded-xl bg-muted animate-pulse" />
-        <div className="flex-1 space-y-2">
-          <div className="h-3 w-20 bg-muted animate-pulse rounded" />
-          <div className="h-2 w-32 bg-muted animate-pulse rounded" />
-        </div>
+      <div className="space-y-2 px-1 animate-pulse">
+        <div className="h-16 rounded-xl bg-white/5" />
+        <div className="h-10 rounded-xl bg-white/5" />
       </div>
     );
   }
@@ -46,53 +43,122 @@ export function NavUser() {
   if (!session) return null;
 
   const { user } = session;
+  const initials = user.name
+    .split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 
   return (
     <SidebarMenu className="gap-2">
+
+      {/* ── User card ────────────────────────────────────────────────────── */}
       <SidebarMenuItem>
-        <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-muted/20 border border-muted-foreground/5 mb-1 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:border-0 transition-all duration-300">
-          <Avatar className="h-9 w-9 border-2 border-background  rounded-xl shrink-0">
+        <div
+          className="
+            relative overflow-hidden
+            flex items-center gap-3 px-3 py-3 rounded-xl
+            group-data-[collapsible=icon]:justify-center
+            group-data-[collapsible=icon]:px-0
+            group-data-[collapsible=icon]:py-0
+            group-data-[collapsible=icon]:bg-transparent
+            transition-all duration-200
+          "
+          style={{
+            background: "linear-gradient(135deg, rgba(79,70,229,0.25) 0%, rgba(55,48,163,0.15) 100%)",
+            border: "1px solid rgba(99,102,241,0.3)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+          }}
+        >
+          {/* Subtle shimmer in top-right */}
+          <div
+            className="absolute -top-6 -right-6 w-20 h-20 rounded-full pointer-events-none group-data-[collapsible=icon]:hidden"
+            style={{ background: "radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%)" }}
+          />
+
+          {/* Avatar */}
+          <Avatar
+            className="size-9 rounded-xl shrink-0"
+            style={{ boxShadow: "0 0 0 2px rgba(99,102,241,0.5), 0 0 0 4px rgba(99,102,241,0.15)" }}
+          >
             <AvatarImage src={user.image || ""} alt={user.name} />
-            <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-              {user.name.charAt(0).toUpperCase()}
+            <AvatarFallback
+              className="rounded-xl text-[13px] font-bold text-white"
+              style={{ background: "linear-gradient(135deg, #4f46e5, #6366f1)" }}
+            >
+              {initials}
             </AvatarFallback>
           </Avatar>
-          <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
-            <span className="text-[13px] font-bold tracking-tight truncate">
+
+          {/* Name, email, role — stacked so email never truncates */}
+          <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
+            <p
+              className="text-[13.5px] font-semibold truncate leading-none"
+              style={{ color: "#e0e7ff" }}
+            >
               {user.name}
-            </span>
-            <span className="text-[11px] text-muted-foreground truncate leading-none mt-0.5">
+            </p>
+            <p
+              className="text-[11px] mt-1.5 leading-none break-all"
+              style={{ color: "rgba(165,180,252,0.65)" }}
+            >
               {user.email}
+            </p>
+            <span
+              className="inline-flex items-center gap-1 mt-2 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-widest"
+              style={{
+                background: "rgba(99,102,241,0.2)",
+                color: "#a5b4fc",
+                border: "1px solid rgba(99,102,241,0.3)",
+              }}
+            >
+              <ShieldCheck className="size-2.5" />
+              {user.role}
             </span>
-            <div className="mt-1 group-data-[collapsible=icon]:hidden">
-              <Badge
-                variant="outline"
-                className="h-4 text-[9px] uppercase tracking-wider font-bold bg-primary/5 text-primary/70 border-primary/10"
-              >
-                {user.role}
-              </Badge>
-            </div>
           </div>
         </div>
       </SidebarMenuItem>
 
+      {/* ── Logout button ────────────────────────────────────────────────── */}
       <SidebarMenuItem>
-        <SidebarMenuButton
-          size="lg"
-          disabled={isLoggingOut}
-          className="w-full h-11 justify-start gap-3 [&:hover_svg]:motion-preset-wobble [&:hover_svg]:motion-duration-1000 font-bold text-[13px] px-3 group-data-[collapsible=icon]:justify-center hover:bg-destructive/10 hover:text-destructive group/logout rounded-xl border border-transparent hover:border-destructive/10 transition-all uppercase tracking-widest"
+        <button
           onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="
+            w-full flex items-center gap-3 px-3 h-10 rounded-xl
+            transition-all duration-150 group/logout
+            group-data-[collapsible=icon]:justify-center
+            group-data-[collapsible=icon]:px-0
+            disabled:opacity-40 disabled:cursor-not-allowed
+          "
+          style={{
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            color: "rgba(165,180,252,0.7)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(239,68,68,0.12)";
+            e.currentTarget.style.borderColor = "rgba(239,68,68,0.25)";
+            e.currentTarget.style.color = "#f87171";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+            e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+            e.currentTarget.style.color = "rgba(165,180,252,0.7)";
+          }}
         >
           {isLoggingOut ? (
-            <Loader2 className="size-5 shrink-0 animate-spin" />
+            <Loader2 className="size-4 shrink-0 animate-spin" style={{ color: "#f87171" }} />
           ) : (
-            <ArrowLeftFromLine className="size-5 shrink-0 text-muted-foreground group-hover/logout:text-destructive transition-colors" />
+            <LogOut className="size-4 shrink-0 transition-colors duration-150" />
           )}
-          <span className="group-data-[collapsible=icon]:hidden">
-            {isLoggingOut ? "Logging out..." : "Logout"}
+          <span className="text-[12px] font-semibold uppercase tracking-widest group-data-[collapsible=icon]:hidden">
+            {isLoggingOut ? "Signing out…" : "Log out"}
           </span>
-        </SidebarMenuButton>
+        </button>
       </SidebarMenuItem>
+
     </SidebarMenu>
   );
 }

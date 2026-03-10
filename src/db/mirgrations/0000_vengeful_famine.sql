@@ -1,7 +1,9 @@
-CREATE TYPE "public"."attendance_status" AS ENUM('present', 'absent', 'leave', 'half_day', 'holiday');--> statement-breakpoint
+CREATE TYPE "public"."attendance_status" AS ENUM('present', 'absent', 'leave', 'holiday');--> statement-breakpoint
 CREATE TYPE "public"."employee_status" AS ENUM('active', 'on_leave', 'terminated', 'resigned');--> statement-breakpoint
 CREATE TYPE "public"."employment_type" AS ENUM('full_time', 'part_time', 'contract', 'intern');--> statement-breakpoint
 CREATE TYPE "public"."leave_type" AS ENUM('sick', 'casual', 'annual', 'unpaid', 'special');--> statement-breakpoint
+CREATE TYPE "public"."payment_mode" AS ENUM('per_km');--> statement-breakpoint
+CREATE TYPE "public"."shop_type" AS ENUM('old', 'new');--> statement-breakpoint
 CREATE TABLE "account" (
 	"id" text PRIMARY KEY NOT NULL,
 	"account_id" text NOT NULL,
@@ -71,6 +73,8 @@ CREATE TABLE "suppliers" (
 	"phone" text,
 	"national_id" text,
 	"address" text,
+	"city" text,
+	"state" text,
 	"notes" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
@@ -126,11 +130,34 @@ CREATE TABLE "attendance" (
 	"early_departure_status" text DEFAULT 'none',
 	"check_out_reason" text,
 	"is_approved_leave" boolean DEFAULT false,
+	"leave_approval_status" text DEFAULT 'none',
 	"leave_type" "leave_type",
 	"entry_source" text DEFAULT 'manual',
+	"area_visited" text,
+	"payment_mode" "payment_mode" DEFAULT 'per_km',
+	"is_company_vehicle" boolean DEFAULT false,
+	"distance_km" numeric(8, 2) DEFAULT '0',
+	"per_km_rate" numeric(8, 2) DEFAULT '0',
+	"petrol_amount" numeric(12, 2) DEFAULT '0',
+	"sale_amount" numeric(12, 2) DEFAULT '0',
+	"recovery_amount" numeric(12, 2) DEFAULT '0',
+	"return_amount" numeric(12, 2) DEFAULT '0',
+	"slip_numbers" text,
+	"shop_type" "shop_type" DEFAULT 'old',
 	"notes" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "bradford_audit_log" (
+	"id" text PRIMARY KEY NOT NULL,
+	"payslip_id" text NOT NULL,
+	"employee_id" text NOT NULL,
+	"computed_score" numeric(8, 2) NOT NULL,
+	"override_score" numeric(8, 2) NOT NULL,
+	"reason" text NOT NULL,
+	"performed_by" text NOT NULL,
+	"performed_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "employees" (
@@ -151,13 +178,26 @@ CREATE TABLE "employees" (
 	"bank_account_number" text,
 	"standard_duty_hours" integer DEFAULT 8 NOT NULL,
 	"standard_salary" numeric(12, 2) DEFAULT '0',
-	"allowance_config" jsonb DEFAULT '[{"id":"houseRent","name":"House Rent","amount":0},{"id":"utilities","name":"Utilities","amount":0},{"id":"bikeMaintenance","name":"Bike Maintenance","amount":0},{"id":"mobile","name":"Mobile Allowance","amount":0},{"id":"technical","name":"Technical Allowance","amount":0},{"id":"conveyance","name":"Conveyance Allowance","amount":0},{"id":"fuel","name":"Fuel Allowance","amount":0},{"id":"special","name":"Special Allowance","amount":0},{"id":"nightShift","name":"Night Shift Allowance","amount":0}]'::jsonb,
+	"allowance_config" jsonb DEFAULT '[{"id":"houseRent","name":"House Rent","amount":0,"deductions":{"absent":true,"annualLeave":false,"sickLeave":false,"specialLeave":true,"lateArrival":false,"earlyLeaving":false}},{"id":"utilities","name":"Utilities","amount":0,"deductions":{"absent":true,"annualLeave":false,"sickLeave":false,"specialLeave":true,"lateArrival":false,"earlyLeaving":false}},{"id":"conveyance","name":"Conveyance Allowance","amount":0,"deductions":{"absent":true,"annualLeave":true,"sickLeave":false,"specialLeave":true,"lateArrival":false,"earlyLeaving":false}},{"id":"fuel","name":"Fuel Allowance","amount":0,"deductions":{"absent":true,"annualLeave":true,"sickLeave":false,"specialLeave":true,"lateArrival":false,"earlyLeaving":false}},{"id":"mobile","name":"Mobile Allowance","amount":0,"deductions":{"absent":true,"annualLeave":false,"sickLeave":false,"specialLeave":true,"lateArrival":false,"earlyLeaving":false}},{"id":"bikeMaintenance","name":"Bike Maintenance","amount":0,"deductions":{"absent":true,"annualLeave":false,"sickLeave":false,"specialLeave":true,"lateArrival":false,"earlyLeaving":false}},{"id":"technical","name":"Technical Allowance","amount":0,"deductions":{"absent":true,"annualLeave":false,"sickLeave":false,"specialLeave":false,"lateArrival":false,"earlyLeaving":false}},{"id":"special","name":"Special Allowance","amount":0,"deductions":{"absent":false,"annualLeave":false,"sickLeave":false,"specialLeave":false,"lateArrival":false,"earlyLeaving":false}},{"id":"nightShift","name":"Night Shift Allowance","amount":0,"deductions":{"absent":false,"annualLeave":false,"sickLeave":false,"specialLeave":false,"lateArrival":false,"earlyLeaving":false}}]'::jsonb,
 	"annual_leave_balance" integer DEFAULT 30,
 	"sick_leave_balance" integer DEFAULT 10,
 	"casual_leave_balance" integer DEFAULT 5,
+	"is_order_booker" boolean DEFAULT false NOT NULL,
+	"commission_rate" numeric(5, 2) DEFAULT '0',
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "employees_employee_code_unique" UNIQUE("employee_code")
+);
+--> statement-breakpoint
+CREATE TABLE "night_shift_rates" (
+	"id" text PRIMARY KEY NOT NULL,
+	"year" integer NOT NULL,
+	"rate_per_night" numeric(10, 2) NOT NULL,
+	"remarks" text,
+	"set_by" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "night_shift_rates_year_unique" UNIQUE("year")
 );
 --> statement-breakpoint
 CREATE TABLE "payrolls" (
@@ -217,6 +257,50 @@ CREATE TABLE "salary_advances" (
 	"wallet_id" text,
 	"paid_at" timestamp,
 	"deducted_in_payslip_id" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "tada_rates" (
+	"id" text PRIMARY KEY NOT NULL,
+	"rate_per_km" numeric(8, 2) NOT NULL,
+	"effective_from" date NOT NULL,
+	"remarks" text,
+	"is_active" boolean DEFAULT true NOT NULL,
+	"set_by" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "travel_logs" (
+	"id" text PRIMARY KEY NOT NULL,
+	"employee_id" text NOT NULL,
+	"date" date NOT NULL,
+	"destination" text NOT NULL,
+	"round_trip_km" numeric(8, 2) NOT NULL,
+	"rate_applied" numeric(8, 2) NOT NULL,
+	"total_amount" numeric(10, 2) NOT NULL,
+	"purpose" text,
+	"status" text DEFAULT 'pending' NOT NULL,
+	"approved_by" text,
+	"paid_in_payslip_id" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "chemical_lab_reports" (
+	"id" text PRIMARY KEY NOT NULL,
+	"chemical_id" text NOT NULL,
+	"product_name" text NOT NULL,
+	"stock_number" text,
+	"lot_number" text,
+	"analysis_items" jsonb NOT NULL,
+	"certified_by" text NOT NULL,
+	"certifier_title" text,
+	"report_date" timestamp NOT NULL,
+	"standard_reference" text,
+	"notes" text,
+	"created_by_id" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
@@ -344,7 +428,7 @@ CREATE TABLE "recipe_packaging" (
 	"id" text PRIMARY KEY NOT NULL,
 	"recipe_id" text NOT NULL,
 	"packaging_material_id" text NOT NULL,
-	"quantity_per_container" numeric(10, 3) NOT NULL,
+	"quantity_per_container" numeric(10, 6) NOT NULL,
 	"is_optional" boolean DEFAULT false,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
@@ -369,6 +453,7 @@ CREATE TABLE "recipes" (
 	"estimated_packaging_cost" numeric(12, 2),
 	"min_batch_yield" numeric(5, 2),
 	"target_shelf_life" integer,
+	"minimum_stock_level" integer DEFAULT 0,
 	"notes" text,
 	"production_instructions" text,
 	"is_active" boolean DEFAULT true NOT NULL,
@@ -409,6 +494,10 @@ CREATE TABLE "customers" (
 	"s_no" serial NOT NULL,
 	"name" text NOT NULL,
 	"address" text,
+	"cnic" text,
+	"city" text,
+	"state" text,
+	"bank_account" text,
 	"mobile_number" text,
 	"total_sale" numeric(12, 2) DEFAULT '0',
 	"payment" numeric(12, 2) DEFAULT '0',
@@ -429,6 +518,7 @@ CREATE TABLE "invoice_items" (
 	"pack" text NOT NULL,
 	"recipe_id" text,
 	"number_of_cartons" integer DEFAULT 0 NOT NULL,
+	"quantity" integer DEFAULT 0 NOT NULL,
 	"total_weight" numeric(12, 3) DEFAULT '0' NOT NULL,
 	"per_carton_price" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"amount" numeric(12, 2) DEFAULT '0' NOT NULL,
@@ -505,13 +595,23 @@ ALTER TABLE "expenses" ADD CONSTRAINT "expenses_performed_by_id_user_id_fk" FORE
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_wallet_id_wallets_id_fk" FOREIGN KEY ("wallet_id") REFERENCES "public"."wallets"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_performed_by_id_user_id_fk" FOREIGN KEY ("performed_by_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "attendance" ADD CONSTRAINT "attendance_employee_id_employees_id_fk" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "bradford_audit_log" ADD CONSTRAINT "bradford_audit_log_payslip_id_payslips_id_fk" FOREIGN KEY ("payslip_id") REFERENCES "public"."payslips"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "bradford_audit_log" ADD CONSTRAINT "bradford_audit_log_employee_id_employees_id_fk" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "bradford_audit_log" ADD CONSTRAINT "bradford_audit_log_performed_by_user_id_fk" FOREIGN KEY ("performed_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "employees" ADD CONSTRAINT "employees_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "night_shift_rates" ADD CONSTRAINT "night_shift_rates_set_by_user_id_fk" FOREIGN KEY ("set_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payrolls" ADD CONSTRAINT "payrolls_processed_by_user_id_fk" FOREIGN KEY ("processed_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payslips" ADD CONSTRAINT "payslips_payroll_id_payrolls_id_fk" FOREIGN KEY ("payroll_id") REFERENCES "public"."payrolls"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payslips" ADD CONSTRAINT "payslips_employee_id_employees_id_fk" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "salary_advances" ADD CONSTRAINT "salary_advances_employee_id_employees_id_fk" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "salary_advances" ADD CONSTRAINT "salary_advances_approved_by_user_id_fk" FOREIGN KEY ("approved_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "salary_advances" ADD CONSTRAINT "salary_advances_deducted_in_payslip_id_payslips_id_fk" FOREIGN KEY ("deducted_in_payslip_id") REFERENCES "public"."payslips"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "tada_rates" ADD CONSTRAINT "tada_rates_set_by_user_id_fk" FOREIGN KEY ("set_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "travel_logs" ADD CONSTRAINT "travel_logs_employee_id_employees_id_fk" FOREIGN KEY ("employee_id") REFERENCES "public"."employees"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "travel_logs" ADD CONSTRAINT "travel_logs_approved_by_user_id_fk" FOREIGN KEY ("approved_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "travel_logs" ADD CONSTRAINT "travel_logs_paid_in_payslip_id_payslips_id_fk" FOREIGN KEY ("paid_in_payslip_id") REFERENCES "public"."payslips"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "chemical_lab_reports" ADD CONSTRAINT "chemical_lab_reports_chemical_id_chemicals_id_fk" FOREIGN KEY ("chemical_id") REFERENCES "public"."chemicals"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "chemical_lab_reports" ADD CONSTRAINT "chemical_lab_reports_created_by_id_user_id_fk" FOREIGN KEY ("created_by_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "chemicals" ADD CONSTRAINT "chemicals_last_supplier_id_suppliers_id_fk" FOREIGN KEY ("last_supplier_id") REFERENCES "public"."suppliers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "finished_goods_stock" ADD CONSTRAINT "finished_goods_stock_warehouse_id_warehouses_id_fk" FOREIGN KEY ("warehouse_id") REFERENCES "public"."warehouses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "finished_goods_stock" ADD CONSTRAINT "finished_goods_stock_recipe_id_recipes_id_fk" FOREIGN KEY ("recipe_id") REFERENCES "public"."recipes"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -553,6 +653,8 @@ CREATE INDEX "twoFactor_secret_idx" ON "two_factor" USING btree ("secret");--> s
 CREATE INDEX "twoFactor_userId_idx" ON "two_factor" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "verification_identifier_idx" ON "verification" USING btree ("identifier");--> statement-breakpoint
 CREATE INDEX "attendance_employee_date_idx" ON "attendance" USING btree ("employee_id","date");--> statement-breakpoint
+CREATE INDEX "lab_report_chemical_idx" ON "chemical_lab_reports" USING btree ("chemical_id");--> statement-breakpoint
+CREATE INDEX "lab_report_date_idx" ON "chemical_lab_reports" USING btree ("report_date");--> statement-breakpoint
 CREATE INDEX "fg_warehouse_recipe_idx" ON "finished_goods_stock" USING btree ("warehouse_id","recipe_id");--> statement-breakpoint
 CREATE INDEX "audit_warehouse_idx" ON "inventory_audit_log" USING btree ("warehouse_id");--> statement-breakpoint
 CREATE INDEX "audit_date_idx" ON "inventory_audit_log" USING btree ("created_at");--> statement-breakpoint

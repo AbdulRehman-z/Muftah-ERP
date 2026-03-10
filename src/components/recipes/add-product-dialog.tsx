@@ -1,11 +1,11 @@
 import { useForm } from "@tanstack/react-form";
-import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
-import { Input } from "../ui/input";
-import { Textarea } from "../ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useAddProduct } from "@/hooks/inventory/use-add-product";
+import { Package, AlignLeft } from "lucide-react";
 
 type Props = {
   open: boolean;
@@ -40,29 +40,41 @@ export const AddProductDialog = ({ open, onOpenChange }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[450px]">
         <DialogHeader>
           <DialogTitle>Add New Product</DialogTitle>
+          <DialogDescription>
+            Register a new product in the system catalog to begin tracking its inventory and production.
+          </DialogDescription>
         </DialogHeader>
+
         <form
-          className="space-y-4"
+          className="space-y-6 pt-2"
           onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
             form.handleSubmit();
           }}
         >
-          <FieldGroup>
+          <div className="space-y-5">
             <form.Field name="name">
               {(field) => (
                 <Field>
-                  <FieldLabel>Product Name</FieldLabel>
+                  <FieldLabel className="flex items-center gap-2 mb-1.5">
+                    <Package className="size-4 text-muted-foreground" />
+                    <span className="text-sm font-semibold">Product Name</span>
+                  </FieldLabel>
                   <Input
-                    placeholder="e.g. Dish Wash Liquid"
+                    placeholder="e.g. Dish Wash Liquid (500ml)"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
+                    className="bg-background"
+                    autoFocus
                   />
+                  <p className="text-[13px] text-muted-foreground mt-1.5">
+                    The official name of the product as it will appear on invoices and reports.
+                  </p>
                   <FieldError errors={field.state.meta.errors} />
                 </Field>
               )}
@@ -71,29 +83,42 @@ export const AddProductDialog = ({ open, onOpenChange }: Props) => {
             <form.Field name="description">
               {(field) => (
                 <Field>
-                  <FieldLabel>Description</FieldLabel>
+                  <FieldLabel className="flex items-center gap-2 mb-1.5">
+                    <AlignLeft className="size-4 text-muted-foreground" />
+                    <span className="text-sm font-semibold">Description</span>
+                  </FieldLabel>
                   <Textarea
-                    placeholder="Optional description..."
+                    placeholder="Optional details, variants, or packaging specifics..."
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
+                    className="bg-background min-h-[100px] resize-none"
                   />
+                  <p className="text-[13px] text-muted-foreground mt-1.5">
+                    Any internal notes or specifications regarding this product.
+                  </p>
+                  <FieldError errors={field.state.meta.errors} />
                 </Field>
               )}
             </form.Field>
+          </div>
 
-            <Button
-              disabled={form.state.isSubmitting}
-              type="submit"
-              className="w-full"
-            >
-              {form.state.isSubmitting ? (
-                <Loader2 className="mr-2 size-4 animate-spin" />
-              ) : (
-                "Add Product"
+          <div className="flex justify-end pt-4 border-t border-border/60">
+            {/* Using form.Subscribe ensures the button re-renders correctly 
+              during the TanStack Form submission state 
+            */}
+            <form.Subscribe selector={(s: any) => s.isSubmitting}>
+              {(isSubmitting: boolean) => (
+                <Button
+                  disabled={isSubmitting}
+                  type="submit"
+                  className="w-full md:w-auto md:min-w-[140px]"
+                >
+                  {isSubmitting ? "Adding Product..." : "Add Product"}
+                </Button>
               )}
-            </Button>
-          </FieldGroup>
+            </form.Subscribe>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
