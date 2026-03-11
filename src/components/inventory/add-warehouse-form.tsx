@@ -169,7 +169,7 @@ export const AddWarehouseForm = ({ onSuccess, forcedType }: Props) => {
           <form.Field name="latitude">
             {(field) => (
               <Field>
-                <FieldLabel>Latitude</FieldLabel>
+                <FieldLabel>Latitude (Optional)</FieldLabel>
                 <Input
                   placeholder="e.g. 40.7128"
                   value={field.state.value}
@@ -183,7 +183,7 @@ export const AddWarehouseForm = ({ onSuccess, forcedType }: Props) => {
           <form.Field name="longitude">
             {(field) => (
               <Field>
-                <FieldLabel>Longitude</FieldLabel>
+                <FieldLabel>Longitude (Optional)</FieldLabel>
                 <Input
                   placeholder="e.g. -74.0060"
                   value={field.state.value}

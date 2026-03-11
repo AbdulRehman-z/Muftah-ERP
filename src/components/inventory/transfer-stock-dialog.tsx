@@ -20,6 +20,7 @@ import { useTransferStock } from "@/hooks/stock/use-transfer-stock";
 
 import { type Warehouse } from "@/lib/types";
 import { Badge } from "../ui/badge";
+import { transferStockSchema } from "@/lib/validators/validators";
 
 interface TransferStockDialogProps {
   open: boolean;
@@ -66,6 +67,9 @@ export const TransferStockDialog = ({
       looseUnits: "0",
       notes: "",
     },
+    validators: {
+      onSubmit: transferStockSchema,
+    },
     onSubmit: async ({ value }) => {
       await mutate.mutateAsync(
         { data: value },
@@ -91,6 +95,7 @@ export const TransferStockDialog = ({
       title="Transfer Stock"
       description="Move materials or finished goods between warehouses"
       open={open}
+      className="min-w-[600px]"
       onOpenChange={onOpenChange}
       icon={ArrowRightLeft}
     >

@@ -26,13 +26,13 @@ interface AuthRouteConfig {
 
 const authRoutesConfig: Record<string, AuthRouteConfig> = {
   "/login": {
-    title: "Welcome Back to Titan Enterprises",
+    title: "Welcome Back to Muftah Chemical PVT LTD (S-WASH)",
     description:
       "Enter your system credentials below to access the administrative dashboard.",
     illustration: LoginIllustration,
   },
   "/sign-up": {
-    title: "Onboard to Titan Enterprises",
+    title: "Onboard to Muftah Chemical PVT LTD (S-WASH)",
     description:
       "Please complete the form below to register your administrative account.",
     illustration: SignupIllustration,
@@ -106,7 +106,7 @@ export function RouteComponent() {
 
         {/* Bottom wordmark / brand lock-up */}
         <p className="absolute bottom-6 text-xs font-medium text-muted-foreground/50 tracking-widest uppercase">
-          Titan Enterprises &mdash; Secure Access
+          Muftah Chemical PVT LTD (S-WASH) &mdash; Secure Access
         </p>
       </div>
 

@@ -316,9 +316,9 @@ export const transferStockSchema = z
     toWarehouseId: z.string().min(1, "Destination warehouse is required"),
     materialType: z.enum(["chemical", "packaging", "finished"]),
     materialId: z.string().min(1, "Material is required"),
-    quantity: z.string().default("0"), // Cartons (for FG) or Amount (for others)
-    looseUnits: z.string().default("0").optional(), // Loose units (only for FG)
-    notes: z.string().optional(),
+    quantity: z.string(), // Cartons (for FG) or Amount (for others)
+    looseUnits: z.string(), // Loose units (only for FG)
+    notes: z.string(),
   })
   .refine(
     (data) => {
