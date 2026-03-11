@@ -13,8 +13,8 @@ export const AddUserDialog = ({ open, onOpenChange }: Props) => {
       open={open}
       onOpenChange={onOpenChange}
       title="Add New User"
-      description="Create a new user account with specific permissions."
-      className="sm:max-w-md"
+      description="Create a new user account and assign a system role."
+      className="sm:max-w-lg"
       icon={UserPlus}
     >
       <AddUserForm onSuccess={() => onOpenChange(false)} />

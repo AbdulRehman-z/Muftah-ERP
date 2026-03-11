@@ -1,10 +1,9 @@
-/** biome-ignore-all lint/correctness/noChildrenProp: <explanation> */
 import { useForm } from "@tanstack/react-form";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, LockKeyhole } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -16,22 +15,14 @@ import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
 import { loginSchema } from "@/lib/validators";
 import { FormWrapper } from "../custom/form-wrapper";
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "../ui/field";
+import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
 import { PasswordInput } from "../custom/password-input";
 import { EmailVerification } from "./email-verification";
 
 export const LoginForm = () => {
   const navigate = useNavigate();
   const [isPending, startTransition] = useTransition();
-  const [showVerificationComponent, setShowVerificationComponent] =
-    useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [showVerificationComponent, setShowVerificationComponent] = useState(false);
 
   const form = useForm({
     defaultValues: {
@@ -43,179 +34,144 @@ export const LoginForm = () => {
     },
     onSubmit: async ({ value }) => {
       startTransition(async () => {
-        await authClient.signIn.email(
-          {
-            email: value.email,
-            password: value.password,
-          },
-          {
-            onSuccess: (context) => {
-              console.log("Login success context:", context.data);
-              const role = context.data.user.role;
-              console.log("User role:", role);
-              setUserRole(role);
-              if (context.data.twoFactorRedirect) {
-                navigate({ to: "/2-fa" });
-              } else {
-                console.log("Navigating based on role:", role);
-                if (role === "operator") {
-                  console.log("Redirecting to /operator");
-                  navigate({ to: "/operator" });
-                } else if (role === "utilities") {
-                  navigate({ to: "/utilities" });
-                } else {
-                  navigate({ to: "/dashboard" });
-                }
-              }
-            },
-            onError: (ctx) => {
-              if (ctx.error.code === "EMAIL_NOT_VERIFIED") {
-                toast.error("Email not verified");
-                setShowVerificationComponent(true);
-                return;
-              }
+        const { error } = await authClient.signIn.email({
+          email: value.email,
+          password: value.password,
+        });
 
-              toast.error(ctx.error.message || "An unknown error occurred");
-            },
-          },
-        );
+        if (error) {
+          if (error.code === "EMAIL_NOT_VERIFIED") {
+            setShowVerificationComponent(true);
+            toast.error("Please verify your email to continue.");
+            return;
+          }
+          toast.error(error.message || "Credential verification failed.");
+          return;
+        }
+
+        toast.success("Authentication successful.");
+        navigate({ to: "/dashboard" });
       });
     },
   });
 
+  if (showVerificationComponent) {
+    return <EmailVerification email={form.state.values.email} />;
+  }
+
   return (
     <FormWrapper>
-      {showVerificationComponent ? (
-        <EmailVerification email={form.getFieldValue("email")} />
-      ) : (
-        <Card className="border-0 ">
-          <CardHeader className="text-center space-y-2 pb-6">
-            <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
-              Log in to your Titan Enterprise account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                form.handleSubmit();
-              }}
-            >
-              <FieldGroup className="space-y-4">
-                <form.Field
-                  name="email"
-                  children={(field) => {
-                    const errors = field.state.meta.errors;
-                    const isInvalid =
-                      errors.length > 0 && field.state.meta.isTouched;
+      <Card className="relative border-0 sm:border sm:border-border/40 shadow-none sm:shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:sm:shadow-[0_8px_30px_rgb(0,0,0,0.1)] sm:rounded-2xl bg-transparent sm:bg-card overflow-hidden">
+        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-primary/30 to-transparent hidden sm:block" />
 
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel
-                          className="text-[13px]"
-                          htmlFor={field.name}
-                        >
-                          Email
+        <CardHeader className="space-y-2 pt-10 pb-6 text-center">
+          <CardTitle className="text-2xl font-semibold tracking-tight text-foreground">
+            Sign in to your account
+          </CardTitle>
+          <CardDescription className="text-[14px]">
+            Welcome back! Please enter your details.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="px-6 sm:px-10 pb-10">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              form.handleSubmit();
+            }}
+          >
+            <FieldGroup className="space-y-5">
+              <form.Field name="email">
+                {(field) => {
+                  const errors = field.state.meta.errors;
+                  const isInvalid = errors && errors.length > 0;
+                  return (
+                    <Field className="space-y-2">
+                      <FieldLabel className="text-[13px] font-medium text-foreground/90 flex items-center gap-2">
+                        <Mail className="size-3.5 text-muted-foreground/70" />
+                        Email Address
+                      </FieldLabel>
+                      <Input
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                        placeholder="name@company.com"
+                        className="h-11 bg-muted/30 border-border/50 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10 transition-all rounded-lg text-[14px]"
+                        autoFocus
+                      />
+                      {isInvalid && <FieldError errors={errors} />}
+                    </Field>
+                  );
+                }}
+              </form.Field>
+
+              <form.Field name="password">
+                {(field) => {
+                  const errors = field.state.meta.errors;
+                  const isInvalid = errors && errors.length > 0;
+                  return (
+                    <Field className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <FieldLabel className="text-[13px] font-medium text-foreground/90 flex items-center gap-2">
+                          <LockKeyhole className="size-3.5 text-muted-foreground/70" />
+                          Password
                         </FieldLabel>
-                        <Input
-                          className="h-11"
-                          disabled={isPending}
-                          id={field.name}
-                          name={field.name}
-                          type="email"
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          aria-invalid={isInvalid}
-                          placeholder="Enter your email"
-                        />
-                        {isInvalid && <FieldError errors={errors} />}
-                      </Field>
-                    );
-                  }}
-                />
+                        <Link
+                          to="/forgot-password"
+                          className="text-[13px] font-medium text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          Forgot password?
+                        </Link>
+                      </div>
+                      <PasswordInput
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                        placeholder="••••••••"
+                        className="h-11 bg-muted/30 border-border/50 focus-visible:bg-background focus-visible:ring-4 focus-visible:ring-primary/10 transition-all rounded-lg text-[14px]"
+                      />
+                      {isInvalid && <FieldError errors={errors} />}
+                    </Field>
+                  );
+                }}
+              </form.Field>
 
-                <form.Field
-                  name="password"
-                  children={(field) => {
-                    const errors = field.state.meta.errors;
-                    const isInvalid =
-                      errors.length > 0 && field.state.meta.isTouched;
-
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <FieldLabel
-                            className="text-[13px]"
-                            htmlFor={field.name}
-                          >
-                            Password
-                          </FieldLabel>
-                          {(!userRole ||
-                            !["operator", "finance-manager"].includes(
-                              userRole,
-                            )) && (
-                              <Link
-                                className={buttonVariants({
-                                  className:
-                                    "h-auto p-0 text-sm underline hover:text-primary",
-                                  variant: "link",
-                                })}
-                                to="/forgot-password"
-                              >
-                                Forgot password?
-                              </Link>
-                            )}
-                        </div>
-                        <PasswordInput
-                          className="h-11!"
-                          disabled={isPending}
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          aria-invalid={isInvalid}
-                          placeholder="••••••••"
-                        />
-                        {isInvalid && <FieldError errors={errors} />}
-                      </Field>
-                    );
-                  }}
-                />
-
+              <div className="pt-1">
                 <Button
                   variant="default"
                   disabled={isPending}
                   type="submit"
-                  className="w-full h-11 text-base"
+                  className="w-full h-11 font-medium text-[14px] rounded-lg shadow-sm active:scale-[0.98] transition-all"
                 >
                   {isPending ? (
                     <>
                       <Loader2 className="mr-2 size-4 animate-spin" />
-                      Logging in...
+                      Signing in...
                     </>
                   ) : (
-                    "Log in to continue"
+                    "Sign in"
                   )}
                 </Button>
+              </div>
 
-                <FieldDescription className="text-center text-base mt-6">
-                  Don't have an account?{" "}
-                  <Link
-                    to="/sign-up"
-                    className="font-semibold underline underline-offset-4 hover:text-primary"
-                  >
-                    Sign up
-                  </Link>
-                </FieldDescription>
-              </FieldGroup>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+              <div className="text-center text-[13px] text-muted-foreground pt-2">
+                Don't have an account?{" "}
+                <Link
+                  to="/sign-up"
+                  className="font-medium text-foreground hover:text-primary transition-colors"
+                >
+                  Sign up
+                </Link>
+              </div>
+            </FieldGroup>
+          </form>
+        </CardContent>
+      </Card>
     </FormWrapper>
   );
 };

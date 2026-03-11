@@ -8,111 +8,107 @@ import {
   Tablet,
   Smartphone,
   HelpCircle,
+  WifiOff,
 } from "lucide-react";
 import { Session } from "better-auth";
 
-type Props = {
-  userId: string;
-};
+type Props = { userId: string };
 
 export const UserSessionsList = ({ userId }: Props) => {
-  const { listUserSessions, revokeUserSession, revokeAllUserSessions } =
-    useUsers();
-  const { data: sessions, isLoading: isLoadingSessions } = listUserSessions(
-    userId,
-    true,
-  );
+  const { listUserSessions, revokeUserSession, revokeAllUserSessions } = useUsers();
+  const { data: sessions, isLoading } = listUserSessions(userId, true);
 
   const getDeviceIcon = (userAgent?: string) => {
-    if (!userAgent) return <HelpCircle className="size-4 opacity-50" />;
+    if (!userAgent) return <HelpCircle className="size-4 text-muted-foreground/40" />;
     const ua = userAgent.toLowerCase();
     if (ua.includes("mobi") || ua.includes("android") || ua.includes("iphone"))
-      return <Smartphone className="size-4 opacity-50" />;
+      return <Smartphone className="size-4 text-muted-foreground/60" />;
     if (ua.includes("tablet") || ua.includes("ipad"))
-      return <Tablet className="size-4 opacity-50" />;
-    return <Laptop className="size-4 opacity-50" />;
+      return <Tablet className="size-4 text-muted-foreground/60" />;
+    return <Laptop className="size-4 text-muted-foreground/60" />;
   };
 
   return (
-    <div className="space-y-4 pt-2">
-      <div className="flex items-center justify-between px-1">
-        {/* <div className="flex items-center gap-2">
-                    <div className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Live Activity</span>
-                </div> */}
-        {sessions && sessions.length > 0 && (
+    <div className="space-y-3 pt-2">
+      {/* Header row */}
+      {sessions && sessions.length > 0 && (
+        <div className="flex items-center justify-between px-0.5">
+          <span className="text-[11px] text-muted-foreground/50 font-medium">
+            {sessions.length} active session{sessions.length !== 1 ? "s" : ""}
+          </span>
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-[10px] font-bold uppercase tracking-wider text-destructive hover:bg-destructive/5"
-            onClick={() => {
-              revokeAllUserSessions.mutate({ userId });
-            }}
+            className="h-7 px-2.5 text-[11px] font-semibold text-destructive hover:bg-destructive/8 hover:text-destructive"
+            onClick={() => revokeAllUserSessions.mutate({ userId })}
             disabled={revokeAllUserSessions.isPending}
           >
-            Revoke All
+            {revokeAllUserSessions.isPending ? (
+              <><Loader2 className="mr-1.5 size-3 animate-spin" />Revoking…</>
+            ) : "Revoke All"}
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
-      <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
-        {isLoadingSessions ? (
-          <div className="flex flex-col items-center justify-center p-8 gap-3 opacity-40">
-            <Loader2 className="animate-spin size-6 text-primary" />
-            <span className="text-[10px] font-bold uppercase tracking-tighter">
-              Syncing Sessions...
-            </span>
+      {/* Session list */}
+      <div className="space-y-2 max-h-[340px] overflow-y-auto pr-0.5">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-2.5 text-muted-foreground/40">
+            <Loader2 className="animate-spin size-5" />
+            <span className="text-[11px] font-medium">Syncing sessions…</span>
           </div>
         ) : sessions && sessions.length > 0 ? (
           sessions.map((session: Session) => (
             <div
               key={session.token}
-              className="flex items-center justify-between p-3 border border-border/40 bg-muted/5 rounded-xl group transition-all hover:bg-muted/10"
+              className="group flex items-center justify-between p-3 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-border/80 transition-all"
             >
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-background border border-border/40 rounded-lg  group-hover:border-primary/20 transition-colors">
+              <div className="flex items-center gap-3 min-w-0">
+                {/* Device icon */}
+                <div className="size-8 shrink-0 rounded-lg border border-border/50 bg-background flex items-center justify-center group-hover:border-primary/20 transition-colors">
                   {getDeviceIcon(session.userAgent!)}
                 </div>
-                <div className="flex flex-col">
+                <div className="flex flex-col min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-xs truncate max-w-[150px]">
-                      {session.userAgent || "Unknown Device"}
+                    <span className="font-medium text-[12px] truncate max-w-[160px]">
+                      {session.userAgent
+                        ? session.userAgent.length > 40
+                          ? session.userAgent.slice(0, 40) + "…"
+                          : session.userAgent
+                        : "Unknown Device"}
                     </span>
                     {session.ipAddress && (
-                      <span className="text-[9px] font-mono text-muted-foreground/60 bg-muted px-1.5 py-0.5 rounded border border-border/30">
+                      <span className="shrink-0 font-mono text-[9.5px] text-muted-foreground/55 bg-muted px-1.5 py-0.5 rounded border border-border/40">
                         {session.ipAddress}
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] text-muted-foreground/70">
-                    Active since{" "}
-                    {format(new Date(session.createdAt), "MMM d, h:mm a")}
+                  <span className="text-[10.5px] text-muted-foreground/55">
+                    Active since {format(new Date(session.createdAt), "MMM d, h:mm a")}
                   </span>
                 </div>
               </div>
+
+              {/* Revoke button — visible on hover */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 rounded-full text-muted-foreground/40 hover:text-destructive hover:bg-destructive/5 transition-all opacity-0 group-hover:opacity-100"
-                onClick={() =>
-                  revokeUserSession.mutate({ sessionToken: session.token })
-                }
+                className="size-7 shrink-0 rounded-lg text-muted-foreground/30 hover:text-destructive hover:bg-destructive/8 opacity-0 group-hover:opacity-100 transition-all"
+                onClick={() => revokeUserSession.mutate({ sessionToken: session.token })}
                 disabled={revokeUserSession.isPending}
               >
-                <MonitorX className="size-4" />
+                <MonitorX className="size-3.5" />
               </Button>
             </div>
           ))
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 px-4 text-center border border-dashed rounded-xl bg-muted/5 opacity-40">
-            <div className="p-3 bg-muted rounded-full mb-3">
-              <Laptop className="size-6" />
+          <div className="flex flex-col items-center justify-center py-14 px-4 text-center rounded-xl border border-dashed border-border/50 bg-muted/10">
+            <div className="size-10 rounded-full bg-muted/60 flex items-center justify-center mb-3">
+              <WifiOff className="size-4 text-muted-foreground/40" />
             </div>
-            <p className="text-[11px] font-bold uppercase tracking-widest leading-none">
-              Access Cleared
-            </p>
-            <p className="text-[10px] mt-1">
-              No active login sessions detected for this user.
+            <p className="text-[12px] font-semibold text-muted-foreground/60">No active sessions</p>
+            <p className="text-[11px] text-muted-foreground/40 mt-0.5">
+              This user has no open login sessions.
             </p>
           </div>
         )}

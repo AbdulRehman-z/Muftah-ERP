@@ -23,18 +23,18 @@ const Toaster = ({ ...props }: ToasterProps) => {
         loading: <Loader2 className="size-4 text-muted-foreground animate-spin" />,
       }}
       toastOptions={{
-        // Using unstyled strips Sonner's forced inline colors so Tailwind can actually do its job
-        unstyled: true,
         classNames: {
+          // The group-[.toaster] selector forces Tailwind to override Sonner's default inline theme variables
           toast:
-            "flex w-full items-start gap-3 rounded-md border border-border bg-background p-4 text-foreground shadow-lg transition-all",
-          title: "text-sm font-semibold text-foreground",
-          description: "text-sm text-muted-foreground mt-1",
+            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg group-[.toaster]:border",
+          title:
+            "group-[.toast]:font-semibold group-[.toast]:text-foreground text-sm",
+          description:
+            "group-[.toast]:text-muted-foreground text-sm",
           actionButton:
-            "inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground",
+            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground group-[.toast]:font-medium group-[.toast]:rounded-md",
           cancelButton:
-            "inline-flex items-center justify-center rounded-md bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground",
-          icon: "mt-0.5 shrink-0", // Ensures the icon stays aligned at the top if the text wraps to two lines
+            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground group-[.toast]:font-medium group-[.toast]:rounded-md",
         },
       }}
       {...props}

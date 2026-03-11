@@ -6,6 +6,7 @@ import {
   MoreHorizontal,
   UserCog,
   ShieldAlert,
+  ShieldCheck,
   Monitor,
   Trash2,
 } from "lucide-react";
@@ -18,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 export type User = {
   id: string;
@@ -33,91 +35,122 @@ export type User = {
 
 export type UserAction = "update" | "sessions" | "ban" | "delete";
 
-type ActionsProps = {
+// ── Role config ────────────────────────────────────────────────────────────────
+
+const roleConfig: Record<string, { label: string; className: string }> = {
+  "super-admin": {
+    label: "Super Admin",
+    className: "border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400",
+  },
+  admin: {
+    label: "Admin",
+    className: "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400",
+  },
+  "finance-manager": {
+    label: "Finance",
+    className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+  },
+  operator: {
+    label: "Operator",
+    className: "border-orange-500/30 bg-orange-500/10 text-orange-600 dark:text-orange-400",
+  },
+};
+
+// ── Actions cell ───────────────────────────────────────────────────────────────
+
+const ActionsCell = ({
+  user,
+  onAction,
+}: {
   user: User;
   onAction: (user: User, action: UserAction) => void;
-};
-
-const ActionsCell = ({ user, onAction }: ActionsProps) => {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="h-8 w-8 p-0 hover:bg-muted/50 transition-all rounded-full"
-        >
-          <span className="sr-only">Open menu</span>
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="w-56 p-2 rounded-xl border-muted-foreground/10 "
+}) => (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-7 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-all"
       >
-        <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/70">
-          User Management
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator className="-mx-1 my-1" />
+        <span className="sr-only">Open menu</span>
+        <MoreHorizontal className="size-3.5" />
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end" className="w-52 p-1.5 rounded-xl">
+      <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
+        Actions
+      </DropdownMenuLabel>
+      <DropdownMenuSeparator className="my-1" />
 
-        <DropdownMenuItem
-          onClick={() => onAction(user, "update")}
-          className="rounded-lg gap-2 cursor-pointer py-2"
+      <DropdownMenuItem
+        onClick={() => onAction(user, "update")}
+        className="rounded-lg gap-2.5 cursor-pointer py-2 px-2.5"
+      >
+        <div className="size-6 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+          <UserCog className="size-3.5 text-primary" />
+        </div>
+        <div className="flex flex-col">
+          <span className="font-medium text-[12.5px]">Edit Profile</span>
+          <span className="text-[10px] text-muted-foreground">Name, email & role</span>
+        </div>
+      </DropdownMenuItem>
+
+      <DropdownMenuItem
+        onClick={() => onAction(user, "sessions")}
+        className="rounded-lg gap-2.5 cursor-pointer py-2 px-2.5"
+      >
+        <div className="size-6 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+          <Monitor className="size-3.5 text-primary" />
+        </div>
+        <div className="flex flex-col">
+          <span className="font-medium text-[12.5px]">Sessions</span>
+          <span className="text-[10px] text-muted-foreground">View active devices</span>
+        </div>
+      </DropdownMenuItem>
+
+      <DropdownMenuItem
+        onClick={() => onAction(user, "ban")}
+        className="rounded-lg gap-2.5 cursor-pointer py-2 px-2.5"
+      >
+        <div
+          className={cn(
+            "size-6 rounded-md flex items-center justify-center shrink-0",
+            user.banned ? "bg-emerald-500/10" : "bg-orange-500/10",
+          )}
         >
-          <UserCog className="size-4 text-primary" />
-          <div className="flex flex-col">
-            <span className="font-medium text-sm">Update User</span>
-            <span className="text-[10px] text-muted-foreground line-clamp-1">
-              Email, Password & Role
-            </span>
-          </div>
-        </DropdownMenuItem>
+          {user.banned ? (
+            <ShieldCheck className="size-3.5 text-emerald-600" />
+          ) : (
+            <ShieldAlert className="size-3.5 text-orange-500" />
+          )}
+        </div>
+        <div className="flex flex-col">
+          <span className="font-medium text-[12.5px]">
+            {user.banned ? "Unban Account" : "Ban Account"}
+          </span>
+          <span className="text-[10px] text-muted-foreground">Access control</span>
+        </div>
+      </DropdownMenuItem>
 
-        <DropdownMenuItem
-          onClick={() => onAction(user, "sessions")}
-          className="rounded-lg gap-2 cursor-pointer py-2"
-        >
-          <Monitor className="size-4 text-primary" />
-          <div className="flex flex-col">
-            <span className="font-medium text-sm">Manage Sessions</span>
-            <span className="text-[10px] text-muted-foreground line-clamp-1">
-              View active logins
-            </span>
-          </div>
-        </DropdownMenuItem>
+      <DropdownMenuSeparator className="my-1" />
 
-        <DropdownMenuItem
-          onClick={() => onAction(user, "ban")}
-          className="rounded-lg gap-2 cursor-pointer py-2"
-        >
-          <ShieldAlert className="size-4 text-primary" />
-          <div className="flex flex-col">
-            <span className="font-medium text-sm">
-              {user.banned ? "Unban Account" : "Ban Account"}
-            </span>
-            <span className="text-[10px] text-muted-foreground line-clamp-1">
-              Access control
-            </span>
-          </div>
-        </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={() => onAction(user, "delete")}
+        className="rounded-lg gap-2.5 cursor-pointer py-2 px-2.5 text-destructive focus:text-destructive focus:bg-destructive/8"
+      >
+        <div className="size-6 rounded-md bg-destructive/10 flex items-center justify-center shrink-0">
+          <Trash2 className="size-3.5 text-destructive" />
+        </div>
+        <div className="flex flex-col">
+          <span className="font-medium text-[12.5px]">Delete User</span>
+          <span className="text-[10px] opacity-60">Permanent removal</span>
+        </div>
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+);
 
-        <DropdownMenuSeparator className="-mx-1 my-1" />
-
-        <DropdownMenuItem
-          onClick={() => onAction(user, "delete")}
-          className="rounded-lg gap-2 cursor-pointer py-2 text-destructive focus:text-destructive focus:bg-destructive/5"
-        >
-          <Trash2 className="size-4" />
-          <div className="flex flex-col">
-            <span className="font-medium text-sm">Delete User</span>
-            <span className="text-[10px] opacity-70 line-clamp-1">
-              Permanent removal
-            </span>
-          </div>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
+// ── Column definitions ─────────────────────────────────────────────────────────
 
 export const columns = (
   onAction: (user: User, action: UserAction) => void,
@@ -127,19 +160,25 @@ export const columns = (
       header: "User",
       cell: ({ row }) => {
         const user = row.original;
+        const initials = user.name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2);
         return (
           <div className="flex items-center gap-3 py-1">
-            <Avatar className="h-8 w-8 border border-muted-foreground/5 ">
+            <Avatar className="size-8 border border-border/60 shrink-0">
               <AvatarImage src={user.image || ""} alt={user.name} />
-              <AvatarFallback className="bg-muted text-muted-foreground text-[10px] font-bold">
-                {user.name.charAt(0).toUpperCase()}
+              <AvatarFallback className="bg-primary/10 text-primary text-[11px] font-bold">
+                {initials}
               </AvatarFallback>
             </Avatar>
-            <div className="flex flex-col">
-              <span className="font-medium text-sm tracking-tight leading-tight">
+            <div className="flex flex-col min-w-0">
+              <span className="font-semibold text-[13px] tracking-tight truncate">
                 {user.name}
               </span>
-              <span className="text-[11px] text-muted-foreground/70 font-mono tracking-tight">
+              <span className="text-[11px] text-muted-foreground/65 font-mono truncate">
                 {user.email}
               </span>
             </div>
@@ -152,14 +191,43 @@ export const columns = (
       header: "Role",
       cell: ({ row }) => {
         const role = row.original.role || "user";
+        const config = roleConfig[role] ?? {
+          label: role,
+          className: "border-muted-foreground/20 bg-muted/40 text-muted-foreground",
+        };
         return (
-          <div className="flex items-center">
-            <Badge
-              variant="outline"
-              className="capitalize px-2 py-0 h-5 border-muted-foreground/10 bg-muted/5 font-medium text-[10px] text-muted-foreground tracking-tight"
+          <Badge
+            variant="outline"
+            className={cn("text-[10.5px] font-semibold px-2 h-5 rounded-md", config.className)}
+          >
+            {config.label}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "emailVerified",
+      header: "Verified",
+      cell: ({ row }) => {
+        const verified = row.original.emailVerified;
+        return (
+          <div className="flex items-center gap-1.5">
+            <div
+              className={cn(
+                "size-1.5 rounded-full",
+                verified
+                  ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]"
+                  : "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]",
+              )}
+            />
+            <span
+              className={cn(
+                "text-[11px] font-medium",
+                verified ? "text-emerald-600" : "text-amber-600",
+              )}
             >
-              {role}
-            </Badge>
+              {verified ? "Verified" : "Pending"}
+            </span>
           </div>
         );
       },
@@ -172,10 +240,18 @@ export const columns = (
         return (
           <div className="flex items-center gap-1.5">
             <div
-              className={`size-1.5 rounded-full ${isBanned ? "bg-destructive shadow-[0_0_8px_rgba(239,68,68,0.4)]" : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"}`}
+              className={cn(
+                "size-1.5 rounded-full",
+                isBanned
+                  ? "bg-destructive shadow-[0_0_6px_rgba(239,68,68,0.5)]"
+                  : "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]",
+              )}
             />
             <span
-              className={`text-[11px] font-medium uppercase tracking-wider ${isBanned ? "text-destructive/80" : "text-emerald-600/80"}`}
+              className={cn(
+                "text-[11px] font-medium",
+                isBanned ? "text-destructive/80" : "text-emerald-600",
+              )}
             >
               {isBanned ? "Banned" : "Active"}
             </span>
@@ -186,13 +262,11 @@ export const columns = (
     {
       accessorKey: "createdAt",
       header: "Joined",
-      cell: ({ row }) => {
-        return (
-          <span className="text-muted-foreground/60 text-[11px] font-mono">
-            {format(new Date(row.original.createdAt), "dd/MM/yy")}
-          </span>
-        );
-      },
+      cell: ({ row }) => (
+        <span className="text-[11px] text-muted-foreground/55 font-mono">
+          {format(new Date(row.original.createdAt), "dd MMM yyyy")}
+        </span>
+      ),
     },
     {
       id: "actions",

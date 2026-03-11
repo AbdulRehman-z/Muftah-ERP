@@ -1,12 +1,6 @@
-/** biome-ignore-all lint/correctness/noChildrenProp: <explanation> */
 import { useForm } from "@tanstack/react-form";
-import {
-  Link,
-  useNavigate,
-  useRouteContext,
-  useSearch,
-} from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { KeyRound, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +24,7 @@ import { PasswordInput } from "../custom/password-input";
 
 export const ResetPasswordForm = () => {
   const navigate = useNavigate();
+  // Preserved exactly how you are fetching the token from the router
   const { token } = useSearch({ from: "/_authLayout/reset-password/" });
 
   const form = useForm({
@@ -48,118 +43,112 @@ export const ResetPasswordForm = () => {
         },
         {
           onSuccess: () => {
-            toast.success("Password reset successfully");
+            toast.success("Password reset successfully. You can now log in.");
             navigate({ to: "/login" });
           },
           onError: (ctx) => {
-            toast.error(ctx.error.message || "Failed to reset password");
+            toast.error(ctx.error.message || "Failed to reset password.");
           },
-        },
+        }
       );
     },
   });
 
-  const isLoading = form.state.isSubmitting;
-
   return (
     <FormWrapper>
-      <Card className="gap-y-10">
-        <CardHeader className="text-center">
-          <CardTitle className="text-xl">Reset your password</CardTitle>
+      <Card className="border-border/60 shadow-lg">
+        <CardHeader className="text-center pb-2">
+          <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
           <CardDescription>
-            Enter your new password below to reset your account password
+            Please establish a new, secure password for your account.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <form
             onSubmit={(e) => {
               e.preventDefault();
               e.stopPropagation();
               form.handleSubmit();
             }}
+            className="space-y-6"
           >
-            <FieldGroup>
-              <form.Field
-                name="password"
-                children={(field) => {
+            <FieldGroup className="space-y-4">
+              <form.Field name="password">
+                {(field) => {
                   const errors = field.state.meta.errors;
-                  const isInvalid =
-                    errors.length > 0 && field.state.meta.isTouched;
-
+                  const isInvalid = errors && errors.length > 0;
                   return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>New Password</FieldLabel>
-                      <PasswordInput
-                        disabled={isLoading}
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={isInvalid}
-                        placeholder="********"
-                        autoComplete="new-password"
-                      />
-                      {isInvalid && <FieldError errors={errors} />}
-                    </Field>
-                  );
-                }}
-              />
-
-              <form.Field
-                name="confirmPassword"
-                children={(field) => {
-                  const errors = field.state.meta.errors;
-                  const isInvalid =
-                    errors.length > 0 && field.state.meta.isTouched;
-
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>
-                        Confirm Password
+                    <Field>
+                      <FieldLabel className="flex items-center gap-2 mb-1.5">
+                        <KeyRound className="size-4 text-muted-foreground" />
+                        <span className="text-sm font-semibold">New Password</span>
                       </FieldLabel>
                       <PasswordInput
-                        disabled={isLoading}
-                        id={field.name}
                         name={field.name}
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
                         aria-invalid={isInvalid}
-                        placeholder="********"
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                        autoFocus
+                      />
+                      {isInvalid && <FieldError errors={errors} />}
+                    </Field>
+                  );
+                }}
+              </form.Field>
+
+              <form.Field name="confirmPassword">
+                {(field) => {
+                  const errors = field.state.meta.errors;
+                  const isInvalid = errors && errors.length > 0;
+                  return (
+                    <Field>
+                      <FieldLabel className="flex items-center gap-2 mb-1.5">
+                        <ShieldCheck className="size-4 text-muted-foreground" />
+                        <span className="text-sm font-semibold">Confirm New Password</span>
+                      </FieldLabel>
+                      <PasswordInput
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                        placeholder="••••••••"
                         autoComplete="new-password"
                       />
                       {isInvalid && <FieldError errors={errors} />}
                     </Field>
                   );
                 }}
-              />
+              </form.Field>
 
-              <Field>
-                <Button
-                  disabled={isLoading}
-                  type="submit"
-                  className="w-full relative"
-                >
-                  {form.state.isSubmitting ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin" />
-                      Resetting...
-                    </>
-                  ) : (
-                    "Reset Password"
+              <div className="pt-2">
+                <form.Subscribe selector={(s: any) => s.isSubmitting}>
+                  {(isSubmitting: boolean) => (
+                    <Button
+                      disabled={isSubmitting}
+                      type="submit"
+                      className="w-full"
+                    >
+                      {isSubmitting ? "Resetting Password..." : "Update Password"}
+                    </Button>
                   )}
-                </Button>
-                <FieldDescription className="text-center mt-4">
+                </form.Subscribe>
+              </div>
+
+              <div className="text-center pt-2">
+                <FieldDescription>
                   Remembered your password?{" "}
                   <Link
                     to="/login"
-                    className="underline underline-offset-4 font-semibold"
+                    className="font-semibold text-foreground hover:underline underline-offset-4 transition-all"
                   >
-                    Login
+                    Log in
                   </Link>
                 </FieldDescription>
-              </Field>
+              </div>
             </FieldGroup>
           </form>
         </CardContent>

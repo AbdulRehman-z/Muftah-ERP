@@ -5,8 +5,30 @@ import { requireAdminMiddleware } from "@/lib/middlewares";
 export const getSuppliersFn = createServerFn()
   .middleware([requireAdminMiddleware])
   .handler(async () => {
-    const suppliers = await db.query.suppliers.findMany({
+    const suppliersData = await db.query.suppliers.findMany({
       orderBy: (suppliers, { desc }) => [desc(suppliers.createdAt)],
+      with: {
+        purchases: true,
+        payments: true,
+      },
     });
-    return suppliers;
+
+    return suppliersData.map((supplier) => {
+      const totalPurchases = supplier.purchases.reduce(
+        (acc, p) => acc + parseFloat(p.cost),
+        0,
+      );
+      const totalPayments = supplier.payments.reduce(
+        (acc, p) => acc + parseFloat(p.amount),
+        0,
+      );
+      const balance = totalPurchases - totalPayments;
+
+      return {
+        ...supplier,
+        totalPurchases,
+        totalPayments,
+        balance,
+      };
+    });
   });

@@ -54,7 +54,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           defaultTheme="light"
           // attribute="class"
           enableColorScheme
-        // enableSystem
+          enableSystem
         >
           <TooltipProvider>
             {children}

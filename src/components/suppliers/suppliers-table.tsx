@@ -86,6 +86,20 @@ export const SuppliersTable = ({ data }: Props) => {
       },
     },
     {
+      accessorKey: "balance",
+      header: "Balance",
+      cell: ({ row }) => {
+        const balance = row.original.balance;
+        return (
+          <span
+            className={`font-mono font-bold ${balance > 0 ? "text-rose-600" : "text-emerald-600"}`}
+          >
+            PKR {balance.toLocaleString()}
+          </span>
+        );
+      },
+    },
+    {
       id: "actions",
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => {

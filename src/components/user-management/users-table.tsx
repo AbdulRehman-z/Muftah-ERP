@@ -14,9 +14,6 @@ import { columns, UserAction, User } from "./user-actions";
 
 export const UsersTable = () => {
   const [search, setSearch] = useState("");
-  const pageSize = 10;
-
-  // Dialog states
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [activeAction, setActiveAction] = useState<{
     user: User;
@@ -28,121 +25,98 @@ export const UsersTable = () => {
     queryFn: () => adminGetUsersFn(),
   });
 
-  const handleAction = (user: User, type: UserAction) => {
-    setActiveAction({ user, type });
-  };
+  const handleAction = (user: User, type: UserAction) => setActiveAction({ user, type });
+  const closeAction = () => setActiveAction(null);
 
-  const tableColumns = columns(handleAction);
-
-  // Client-side filtering
   const filteredUsers = data.users.users.filter(
     (user: User) =>
       user.email.toLowerCase().includes(search.toLowerCase()) ||
       user.name.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const closeAction = () => setActiveAction(null);
-
   return (
     <div className="space-y-4">
-      <div>
-        <DataTable
-          columns={tableColumns}
-          data={filteredUsers as any}
-          searchValue={search}
-          onSearchChange={setSearch}
-          searchPlaceholder="Search managed users..."
-          showPagination={true}
-          pageSize={pageSize}
-          actions={
-            <Button
-              size="sm"
-              onClick={() => setIsAddUserOpen(true)}
-              className="h-8 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all gap-2 px-4"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              New User
-            </Button>
-          }
-        />
-      </div>
+      <DataTable
+        columns={columns(handleAction)}
+        data={filteredUsers as any}
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search by name or email…"
+        showPagination
+        pageSize={10}
+        actions={
+          <Button
+            size="sm"
+            onClick={() => setIsAddUserOpen(true)}
+            className="h-8 gap-1.5 px-3 text-[12px] font-medium rounded-lg"
+          >
+            <Plus className="size-3.5" />
+            New User
+          </Button>
+        }
+      />
 
       <AddUserDialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen} />
 
-      {/* Individual Action Dialogs */}
-
-      {/* 1. Update User Dialog */}
+      {/* Edit */}
       <ResponsiveDialog
         open={activeAction?.type === "update"}
         onOpenChange={(open) => !open && closeAction()}
-        title="Update User Profile"
-        description={`Adjusting details for ${activeAction?.user?.name}`}
+        title="Edit User"
+        description={`Updating details for ${activeAction?.user?.name ?? ""}`}
         className="sm:max-w-xl"
         icon={UserRoundPen}
       >
         {activeAction?.user && (
-          <div className="pt-2">
-            <EditUserForm
-              user={activeAction.user as any}
-              onSuccess={closeAction}
-            />
-          </div>
+          <EditUserForm user={activeAction.user as any} onSuccess={closeAction} />
         )}
       </ResponsiveDialog>
 
-      {/* 2. Manage Sessions Dialog */}
+      {/* Sessions */}
       <ResponsiveDialog
         open={activeAction?.type === "sessions"}
         onOpenChange={(open) => !open && closeAction()}
         title="Active Sessions"
-        description={`Managing login devices for ${activeAction?.user?.email}`}
+        description={`Login devices for ${activeAction?.user?.email ?? ""}`}
         className="sm:max-w-md"
         icon={MonitorDot}
       >
-        {activeAction?.user && (
-          <UserSessionsList userId={activeAction.user.id} />
-        )}
+        {activeAction?.user && <UserSessionsList userId={activeAction.user.id} />}
       </ResponsiveDialog>
 
-      {/* 3. Account Status (Ban) Dialog */}
+      {/* Ban */}
       <ResponsiveDialog
         open={activeAction?.type === "ban"}
         onOpenChange={(open) => !open && closeAction()}
-        title={
-          activeAction?.user?.banned ? "Unban Account" : "Access Restriction"
-        }
-        description={`Change account access for ${activeAction?.user?.name}`}
+        title={activeAction?.user?.banned ? "Unban Account" : "Ban Account"}
+        description={`Manage access for ${activeAction?.user?.name ?? ""}`}
         className="sm:max-w-md"
         icon={Ban}
       >
         {activeAction?.user && (
-          <div className="pt-2">
-            <UserDangerZone
-              user={activeAction.user as any}
-              onSuccess={closeAction}
-              onlyBan={true}
-            />
-          </div>
+          <UserDangerZone
+            user={activeAction.user as any}
+            onSuccess={closeAction}
+            onlyBan
+          />
         )}
       </ResponsiveDialog>
 
-      {/* 4. Delete User Dialog */}
+      {/* Delete */}
       <ResponsiveDialog
         open={activeAction?.type === "delete"}
         onOpenChange={(open) => !open && closeAction()}
-        title="Permanent Removal"
-        description="This action will delete all user records irrevocably."
-        className="sm:max-w-md text-destructive"
+        title="Delete User"
+        description="This action permanently removes all user data."
+        className="sm:max-w-md"
         icon={Trash2}
       >
         {activeAction?.user && (
-          <div className="pt-2">
-            <UserDangerZone
-              user={activeAction.user as any}
-              onSuccess={closeAction}
-              onlyDelete={true}
-            />
-          </div>
+          <UserDangerZone
+            user={activeAction.user as any}
+            onSuccess={closeAction}
+            onlyDelete
+          />
         )}
       </ResponsiveDialog>
     </div>

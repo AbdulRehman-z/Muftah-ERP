@@ -13,18 +13,24 @@ import {
 } from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { UserCircleIcon, MailIcon, KeyIcon, ShieldIcon } from "lucide-react";
+import { Loader2, UserCircle, Mail, KeyRound, ShieldCheck } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const addUserSchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  email: z.string().email("Invalid email address"),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   role: z.enum(["operator", "finance-manager", "super-admin", "admin"]),
 });
 
-type Props = {
-  onSuccess: () => void;
-};
+const roleOptions = [
+  { value: "operator", label: "Operator" },
+  { value: "finance-manager", label: "Finance Manager" },
+  { value: "admin", label: "Admin" },
+  { value: "super-admin", label: "Super Admin" },
+] as const;
+
+type Props = { onSuccess: () => void };
 
 export const AddUserForm = ({ onSuccess }: Props) => {
   const { createUser } = useUsers();
@@ -35,36 +41,20 @@ export const AddUserForm = ({ onSuccess }: Props) => {
       name: "",
       email: "",
       password: "",
-      role: "operator" as
-        | "operator"
-        | "finance-manager"
-        | "super-admin"
-        | "admin",
+      role: "operator" as "operator" | "finance-manager" | "super-admin" | "admin",
     },
-    validators: {
-      onSubmit: addUserSchema,
-    },
+    validators: { onSubmit: addUserSchema },
     onSubmit: async ({ value }) => {
-      createUser.mutate(
-        {
-          email: value.email,
-          password: value.password,
-          name: value.name,
-          role: value.role,
+      createUser.mutate(value, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+          onSuccess();
         },
-        {
-          onSuccess: () => {
-            onSuccess();
-            queryClient.invalidateQueries({
-              queryKey: ["admin-users"],
-            });
-          },
-          onError: (error: any) => {
-            console.log(error);
-            toast.error(error.message);
-          },
+        onError: (error: any) => {
+          console.error(error);
+          toast.error(error.message);
         },
-      );
+      });
     },
   });
 
@@ -75,115 +65,135 @@ export const AddUserForm = ({ onSuccess }: Props) => {
         e.stopPropagation();
         form.handleSubmit();
       }}
-      className="space-y-6 pt-2"
+      className="space-y-4 pt-2"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Full Name */}
         <form.Field name="name">
-          {(field) => (
-            <Field>
-              <FieldLabel className="flex items-center gap-2 mb-1.5">
-                <UserCircleIcon className="size-4 text-muted-foreground" />
-                <span className="text-sm font-semibold">Full Name</span>
-              </FieldLabel>
-              <Input
-                placeholder="e.g. Abdul Rehman"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                className="bg-background"
-                autoFocus
-              />
-              <p className="text-[13px] text-muted-foreground mt-1.5">
-                The official name of the employee for system records.
-              </p>
-              <FieldError errors={field.state.meta.errors} />
-            </Field>
-          )}
+          {(field) => {
+            const hasError = field.state.meta.errors.length > 0;
+            return (
+              <Field className="space-y-1.5">
+                <FieldLabel className="text-[12.5px] font-medium text-foreground/80 flex items-center gap-1.5">
+                  <UserCircle className="size-3.5 text-muted-foreground/70" />
+                  Full Name
+                </FieldLabel>
+                <Input
+                  placeholder="e.g. Abdul Rehman"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  autoFocus
+                  className={cn(
+                    "h-9 text-[13px]",
+                    hasError && "border-destructive/60 focus-visible:ring-destructive/30",
+                  )}
+                />
+                <FieldError errors={field.state.meta.errors} />
+              </Field>
+            );
+          }}
         </form.Field>
 
+        {/* Email */}
         <form.Field name="email">
-          {(field) => (
-            <Field>
-              <FieldLabel className="flex items-center gap-2 mb-1.5">
-                <MailIcon className="size-4 text-muted-foreground" />
-                <span className="text-sm font-semibold">Email Address</span>
-              </FieldLabel>
-              <Input
-                type="email"
-                placeholder="employee@company.dev"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                className="bg-background"
-              />
-              <p className="text-[13px] text-muted-foreground mt-1.5">
-                Used for account login and system notifications.
-              </p>
-              <FieldError errors={field.state.meta.errors} />
-            </Field>
-          )}
+          {(field) => {
+            const hasError = field.state.meta.errors.length > 0;
+            return (
+              <Field className="space-y-1.5">
+                <FieldLabel className="text-[12.5px] font-medium text-foreground/80 flex items-center gap-1.5">
+                  <Mail className="size-3.5 text-muted-foreground/70" />
+                  Email Address
+                </FieldLabel>
+                <Input
+                  type="email"
+                  placeholder="employee@company.dev"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  className={cn(
+                    "h-9 text-[13px]",
+                    hasError && "border-destructive/60 focus-visible:ring-destructive/30",
+                  )}
+                />
+                <FieldError errors={field.state.meta.errors} />
+              </Field>
+            );
+          }}
         </form.Field>
 
+        {/* Password */}
         <form.Field name="password">
-          {(field) => (
-            <Field>
-              <FieldLabel className="flex items-center gap-2 mb-1.5">
-                <KeyIcon className="size-4 text-muted-foreground" />
-                <span className="text-sm font-semibold">Password</span>
-              </FieldLabel>
-              <Input
-                type="password"
-                placeholder="••••••••"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                className="bg-background"
-              />
-              <p className="text-[13px] text-muted-foreground mt-1.5">
-                Must be at least 8 characters long.
-              </p>
-              <FieldError errors={field.state.meta.errors} />
-            </Field>
-          )}
+          {(field) => {
+            const hasError = field.state.meta.errors.length > 0;
+            return (
+              <Field className="space-y-1.5">
+                <FieldLabel className="text-[12.5px] font-medium text-foreground/80 flex items-center gap-1.5">
+                  <KeyRound className="size-3.5 text-muted-foreground/70" />
+                  Password
+                </FieldLabel>
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  className={cn(
+                    "h-9 text-[13px]",
+                    hasError && "border-destructive/60 focus-visible:ring-destructive/30",
+                  )}
+                />
+                <p className="text-[11px] text-muted-foreground/55">Minimum 8 characters.</p>
+                <FieldError errors={field.state.meta.errors} />
+              </Field>
+            );
+          }}
         </form.Field>
 
+        {/* Role */}
         <form.Field name="role">
           {(field) => (
-            <Field>
-              <FieldLabel className="flex items-center gap-2 mb-1.5">
-                <ShieldIcon className="size-4 text-muted-foreground" />
-                <span className="text-sm font-semibold">System Role</span>
+            <Field className="space-y-1.5">
+              <FieldLabel className="text-[12.5px] font-medium text-foreground/80 flex items-center gap-1.5">
+                <ShieldCheck className="size-3.5 text-muted-foreground/70" />
+                System Role
               </FieldLabel>
               <Select
                 value={field.state.value}
                 onValueChange={(val: any) => field.handleChange(val)}
               >
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Select role" />
+                <SelectTrigger className="h-9 text-[13px]">
+                  <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="operator">Operator</SelectItem>
-                  <SelectItem value="finance-manager">Finance Manager</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="super-admin">Super Admin</SelectItem>
+                  {roleOptions.map((r) => (
+                    <SelectItem key={r.value} value={r.value} className="text-[13px]">
+                      {r.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <p className="text-[13px] text-muted-foreground mt-1.5">
-                Determines the user's access level and permissions.
-              </p>
+              <p className="text-[11px] text-muted-foreground/55">Determines access level and permissions.</p>
               <FieldError errors={field.state.meta.errors} />
             </Field>
           )}
         </form.Field>
       </div>
 
-      <div className="flex justify-end pt-4 border-t border-border/60">
+      <div className="pt-2 border-t border-border/60">
         <Button
           type="submit"
           disabled={createUser.isPending}
-          className="w-full md:w-auto md:min-w-[140px]"
+          className="w-full h-9 text-[13px] font-medium"
         >
-          {createUser.isPending ? "Creating..." : "Create User"}
+          {createUser.isPending ? (
+            <>
+              <Loader2 className="mr-2 size-3.5 animate-spin" />
+              Creating account…
+            </>
+          ) : (
+            "Create User"
+          )}
         </Button>
       </div>
     </form>

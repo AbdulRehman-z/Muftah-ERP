@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { ChevronDown, Search, ZapIcon } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -66,6 +66,7 @@ interface NavItemProps {
 
 const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
   const { state, setOpen } = useSidebar();
+  const navigate = useNavigate();
   const hasChildren = !!(item.items && item.items.length > 0);
 
   const isActive = hasChildren
@@ -81,48 +82,44 @@ const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
     return (
       <SidebarMenuItem>
         <SidebarMenuButton
-          size="lg"
-          asChild
           isActive={isActive}
           tooltip={item.title}
+          onClick={() => navigate({ to: item.url as any })}
           className={cn(
-            // Base
-            "relative h-11 rounded-xl px-3 transition-all duration-150 group/btn",
+            "relative rounded-xl px-3 transition-all duration-150 group/btn",
+            "h-11 group-data-[collapsible=icon]:!rounded-xl",
             // Idle
-            !isActive && "text-sidebar-foreground/80 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent",
-            // Active — vivid indigo pill with glow
+            !isActive && "text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent",
+            // Active expanded — indigo pill + glow
             isActive && [
               "bg-sidebar-primary text-white font-semibold",
               "hover:bg-sidebar-primary/95",
               "shadow-[0_4px_14px_0_rgba(79,70,229,0.45)]",
             ],
+            // Active collapsed — same pill, icon centred by CVA p-0 + justify-center
+            isActive && "group-data-[collapsible=icon]:bg-sidebar-primary group-data-[collapsible=icon]:shadow-[0_4px_14px_0_rgba(79,70,229,0.45)]",
           )}
         >
-          <Link
-            to={item.url}
-            className="flex items-center w-full gap-3 group-data-[collapsible=icon]:justify-center"
-          >
-            {/* Active pill: bright left-edge bar */}
-            {isActive && (
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3.5px] h-6 rounded-r-full bg-white/70 shadow-[0_0_8px_rgba(255,255,255,0.6)] group-data-[collapsible=icon]:hidden" />
-            )}
+          {/* Left-edge bar — expanded only */}
+          {isActive && (
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3.5px] h-6 rounded-r-full bg-white/70 shadow-[0_0_8px_rgba(255,255,255,0.6)] group-data-[collapsible=icon]:hidden" />
+          )}
 
-            {item.icon && (
-              <item.icon
-                className={cn(
-                  "size-[18px] shrink-0 transition-colors duration-150",
-                  isActive
-                    ? "text-white"
-                    : "text-sidebar-foreground/60 group-hover/btn:text-sidebar-accent-foreground",
-                )}
-                isActive={isActive}
-              />
-            )}
+          {item.icon && (
+            <item.icon
+              className={cn(
+                "size-[18px] shrink-0 transition-colors duration-150",
+                isActive
+                  ? "text-white"
+                  : "text-sidebar-foreground/90 group-hover/btn:text-sidebar-accent-foreground",
+              )}
+              isActive={isActive}
+            />
+          )}
 
-            <span className="text-[13.5px] tracking-tight whitespace-nowrap group-data-[collapsible=icon]:hidden">
-              {item.title}
-            </span>
-          </Link>
+          <span className="text-[13.5px] tracking-tight whitespace-nowrap group-data-[collapsible=icon]:hidden">
+            {item.title}
+          </span>
         </SidebarMenuButton>
       </SidebarMenuItem>
     );
@@ -132,7 +129,6 @@ const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
-        size="lg"
         onClick={() => {
           if (state === "collapsed") { setOpen(true); setIsOpen(true); }
           else setIsOpen(!isOpen);
@@ -140,7 +136,7 @@ const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
         tooltip={item.title}
         className={cn(
           "relative h-11 rounded-xl px-3 transition-all duration-150 group/btn",
-          !isActive && "text-sidebar-foreground/80 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent",
+          !isActive && "text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent",
           isActive && "bg-sidebar-accent/80 text-sidebar-accent-foreground font-medium",
         )}
       >
@@ -155,7 +151,7 @@ const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
                 "size-[18px] shrink-0 transition-colors duration-150",
                 isActive
                   ? "text-sidebar-ring"
-                  : "text-sidebar-foreground/60 group-hover/btn:text-sidebar-accent-foreground",
+                  : "text-sidebar-foreground/90 group-hover/btn:text-sidebar-accent-foreground",
               )}
               isActive={isActive}
             />
@@ -166,7 +162,7 @@ const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
           <ChevronDown
             className={cn(
               "size-3.5 shrink-0 transition-transform duration-300 group-data-[collapsible=icon]:hidden",
-              isActive ? "text-sidebar-ring/70" : "text-sidebar-foreground/40",
+              isActive ? "text-sidebar-ring/80" : "text-sidebar-foreground/60",
               isOpen && "rotate-180",
             )}
           />
@@ -186,10 +182,10 @@ const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
             return (
               <SidebarMenuSubItem key={child.title}>
                 <SidebarMenuSubButton
-                  asChild
                   isActive={childActive}
+                  onClick={() => navigate({ to: child.url as any })}
                   className={cn(
-                    "relative h-9 rounded-lg px-3 transition-all duration-150 text-[13px] group/sub",
+                    "relative h-9 rounded-lg px-3 transition-all duration-150 text-[13px] group/sub cursor-pointer",
                     !childActive && "text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent",
                     childActive && [
                       "bg-sidebar-primary text-white font-semibold",
@@ -198,23 +194,21 @@ const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
                     ],
                   )}
                 >
-                  <Link to={child.url} preload={false}>
-                    {childActive && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full bg-white/60" />
-                    )}
-                    {child.icon && (
-                      <child.icon
-                        className={cn(
-                          "size-[15px] shrink-0 transition-colors",
-                          childActive
-                            ? "text-white"
-                            : "text-sidebar-foreground/55 group-hover/sub:text-sidebar-accent-foreground",
-                        )}
-                        isActive={childActive}
-                      />
-                    )}
-                    <span>{child.title}</span>
-                  </Link>
+                  {childActive && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full bg-white/60" />
+                  )}
+                  {child.icon && (
+                    <child.icon
+                      className={cn(
+                        "size-[15px] shrink-0 transition-colors",
+                        childActive
+                          ? "text-white"
+                          : "text-sidebar-foreground/85 group-hover/sub:text-sidebar-accent-foreground",
+                      )}
+                      isActive={childActive}
+                    />
+                  )}
+                  <span>{child.title}</span>
                 </SidebarMenuSubButton>
               </SidebarMenuSubItem>
             );
@@ -230,6 +224,7 @@ const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
 export const AppSidebar = () => {
   const router = useRouterState();
   const pathname = router.location.pathname;
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: session, isPending } = authClient.useSession();
@@ -237,7 +232,7 @@ export const AppSidebar = () => {
 
   if (isPending) {
     return (
-      <Sidebar collapsible="icon" variant="inset">
+      <Sidebar collapsible="icon" variant="sidebar">
         <SidebarHeader className="p-3">
           <div className="h-12 w-full animate-pulse rounded-xl bg-sidebar-accent" />
         </SidebarHeader>
@@ -269,47 +264,63 @@ export const AppSidebar = () => {
   const hasSearchQuery = searchQuery.trim().length > 0;
 
   return (
-    <Sidebar collapsible="icon" variant="floating">
+    <Sidebar collapsible="icon" variant="sidebar">
 
       {/* ── Header ────────────────────────────────────────────────────────── */}
-      <SidebarHeader className="px-3 pt-3 pb-2.5">
+      <SidebarHeader className="px-3 pt-3 pb-2.5 group-data-[collapsible=icon]:px-1.5 group-data-[collapsible=icon]:items-center">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              size="lg"
-              asChild
-              className="h-12 rounded-xl hover:bg-sidebar-accent transition-all duration-150 group/logo"
+              tooltip="Titan Enterprise"
+              onClick={() => navigate({ to: "/dashboard" })}
+              className={cn(
+                "group/logo rounded-xl transition-all duration-150",
+                // Expanded: full-width row, subtle hover
+                "h-11 px-2 hover:bg-sidebar-accent",
+                "flex items-center gap-3",
+                // Collapsed: shrink to a centred indigo pill, override ALL CVA size/padding
+                "group-data-[collapsible=icon]:!size-9 group-data-[collapsible=icon]:!p-0",
+                "group-data-[collapsible=icon]:!flex group-data-[collapsible=icon]:!items-center group-data-[collapsible=icon]:!justify-center",
+                "group-data-[collapsible=icon]:bg-sidebar-primary group-data-[collapsible=icon]:hover:bg-sidebar-primary/90",
+                "group-data-[collapsible=icon]:shadow-[0_4px_14px_rgba(79,70,229,0.55)]",
+              )}
             >
-              <Link
-                to="/dashboard"
-                className="flex items-center w-full gap-3 group-data-[collapsible=icon]:justify-center"
-              >
-                <div className="flex aspect-square size-9 shrink-0 items-center justify-center rounded-xl bg-sidebar-primary text-white transition-all group-hover/logo:scale-105 shadow-[0_4px_12px_rgba(79,70,229,0.5)] ring-1 ring-white/10">
-                  <ZapIcon className="size-4" />
-                </div>
-                <div className="flex flex-col leading-none group-data-[collapsible=icon]:hidden">
-                  <span className="font-bold text-[14px] tracking-tight text-sidebar-accent-foreground">
-                    Titan Enterprise
-                  </span>
-                  <span className="text-[10.5px] font-medium mt-0.5 text-sidebar-ring/60">
-                    Management System
-                  </span>
-                </div>
-              </Link>
+              {/* Icon — always visible */}
+              <div className={cn(
+                "shrink-0 flex items-center justify-center rounded-lg text-white transition-all",
+                "group-hover/logo:scale-105",
+                // Expanded: full indigo pill
+                "size-8 bg-sidebar-primary shadow-[0_4px_12px_rgba(79,70,229,0.45)] ring-1 ring-white/10",
+                // Collapsed: button IS the pill, so this div becomes icon-only, no bg
+                "group-data-[collapsible=icon]:size-5 group-data-[collapsible=icon]:bg-transparent",
+                "group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:ring-0",
+              )}>
+                <ZapIcon className="size-4" />
+              </div>
+
+              {/* Text — expanded only */}
+              <div className="flex flex-col leading-none group-data-[collapsible=icon]:hidden">
+                <span className="font-bold text-[14px] tracking-tight text-sidebar-accent-foreground">
+                  Titan Enterprise
+                </span>
+                <span className="text-[10.5px] font-medium mt-0.5 text-sidebar-ring/60">
+                  Management System
+                </span>
+              </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
 
         {userRole !== "operator" && (
           <div className="relative group/search group-data-[collapsible=icon]:hidden mt-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-sidebar-foreground/45 transition-colors group-focus-within/search:text-sidebar-ring" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-sidebar-foreground/70 transition-colors group-focus-within/search:text-sidebar-ring" />
             <Input
               type="search"
               placeholder="Quick find..."
               className="h-9 w-full pl-8 text-[12.5px] rounded-xl border shadow-none transition-all
                 bg-sidebar-accent/70 border-sidebar-border
                 text-sidebar-accent-foreground
-                placeholder:text-sidebar-foreground/40
+                placeholder:text-sidebar-foreground/60
                 focus-visible:border-sidebar-primary/60
                 focus-visible:ring-1 focus-visible:ring-sidebar-primary/30"
               value={searchQuery}
@@ -339,10 +350,10 @@ export const AppSidebar = () => {
               ) : (
                 <div className="px-3 py-10 text-center">
                   <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center mx-auto mb-3">
-                    <Search className="size-4 text-sidebar-foreground/45" />
+                    <Search className="size-4 text-sidebar-foreground/70" />
                   </div>
-                  <p className="text-[12.5px] font-medium text-sidebar-foreground/70">No results</p>
-                  <p className="mt-0.5 text-[11px] text-sidebar-foreground/40">Try a different keyword</p>
+                  <p className="text-[12.5px] font-medium text-sidebar-foreground">No results</p>
+                  <p className="mt-0.5 text-[11px] text-sidebar-foreground/60">Try a different keyword</p>
                 </div>
               )}
             </SidebarMenu>
@@ -354,7 +365,7 @@ export const AppSidebar = () => {
       <div className="mx-3 h-px bg-sidebar-border/60 group-data-[collapsible=icon]:mx-2" />
 
       {/* ── Footer ────────────────────────────────────────────────────────── */}
-      <SidebarFooter className="px-3 py-3">
+      <SidebarFooter className="px-2 py-2">
         <NavUser />
       </SidebarFooter>
     </Sidebar>
