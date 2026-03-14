@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { PlusIcon, Search } from "lucide-react";
 import { useState } from "react";
-import { getProductionRunsFn } from "@/server-functions/inventory/production/get-production-run-fn";
+import { getPaginatedProductionRunsFn } from "@/server-functions/inventory/production/get-paginated-production-runs-fn";
 import { GenericEmpty } from "../custom/empty";
 import { InventoryEmptyIllustration } from "@/components/illustrations/InventoryEmptyIllustration";
 import { Button } from "../ui/button";
@@ -15,31 +15,48 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import {
-  isToday,
-  isThisMonth,
-  subDays,
-  isAfter,
-  startOfDay,
-} from "date-fns";
 import { InitiateProductionSheet } from "./initiate-production-sheet";
 import { useProductionRunsSync } from "@/hooks/production/use-production-runs-sync";
 
 export const ProductionRunsContainer = () => {
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [dateFilter, setDateFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("today");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
-  const { data: runs } = useSuspenseQuery({
-    queryKey: ["production-runs"],
-    queryFn: getProductionRunsFn,
+  const { data } = useSuspenseQuery({
+    queryKey: [
+      "production-runs",
+      {
+        search: searchQuery,
+        dateFilter,
+        statusFilter,
+        pageIndex: pagination.pageIndex,
+        pageSize: pagination.pageSize,
+      },
+    ],
+    queryFn: () =>
+      getPaginatedProductionRunsFn({
+        data: {
+          search: searchQuery,
+          dateFilter,
+          statusFilter,
+          pageIndex: pagination.pageIndex,
+          pageSize: pagination.pageSize,
+        },
+      }),
   });
 
-  // Smart polling
+  const { runs, totalCount, metrics } = data;
+
+  // Smart polling — invalidates "production-runs" prefix, which matches this queryKey
   useProductionRunsSync();
 
-  if (runs.length === 0) {
+  const isFilterActive =
+    searchQuery !== "" || dateFilter !== "all" || statusFilter !== "all";
+
+  if (totalCount === 0 && !isFilterActive) {
     return (
       <>
         <GenericEmpty
@@ -57,31 +74,21 @@ export const ProductionRunsContainer = () => {
     );
   }
 
-  const filteredRuns = runs.filter((run) => {
-    // Search Filter
-    const matchesSearch =
-      run.batchId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      run.recipe.name.toLowerCase().includes(searchQuery.toLowerCase());
+  // Helper to reset pagination when filters change
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  };
 
-    if (!matchesSearch) return false;
+  const handleDateFilterChange = (val: string) => {
+    setDateFilter(val);
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  };
 
-    // Date Filter
-    if (dateFilter !== "all") {
-      const runDate = new Date(run.createdAt);
-      if (dateFilter === "today" && !isToday(runDate)) return false;
-      if (dateFilter === "this_month" && !isThisMonth(runDate)) return false;
-      if (
-        dateFilter === "last_7_days" &&
-        !isAfter(runDate, startOfDay(subDays(new Date(), 7)))
-      )
-        return false;
-    }
-
-    // Status Filter
-    if (statusFilter !== "all" && run.status !== statusFilter) return false;
-
-    return true;
-  });
+  const handleStatusFilterChange = (val: string) => {
+    setStatusFilter(val);
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  };
 
   return (
     <div className="space-y-6">
@@ -91,14 +98,14 @@ export const ProductionRunsContainer = () => {
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
-              placeholder="Search by batch ID or recipe..."
+              placeholder="Search by batch ID..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-10"
             />
           </div>
           <div className="flex items-center gap-2">
-            <Select value={dateFilter} onValueChange={setDateFilter}>
+            <Select value={dateFilter} onValueChange={handleDateFilterChange}>
               <SelectTrigger className="w-full sm:w-[150px]">
                 <SelectValue placeholder="Date Filter" />
               </SelectTrigger>
@@ -109,7 +116,7 @@ export const ProductionRunsContainer = () => {
                 <SelectItem value="this_month">This Month</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
               <SelectTrigger className="w-full sm:w-[150px]">
                 <SelectValue placeholder="Status Filter" />
               </SelectTrigger>
@@ -139,9 +146,7 @@ export const ProductionRunsContainer = () => {
             <CardTitle className="text-sm font-medium">Active Runs</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {filteredRuns.filter((r) => r.status === "in_progress").length}
-            </div>
+            <div className="text-2xl font-bold">{metrics.activeRuns}</div>
           </CardContent>
         </Card>
         <Card>
@@ -152,14 +157,7 @@ export const ProductionRunsContainer = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              PKR{" "}
-              {filteredRuns
-                .filter((r) => r.status === "completed")
-                .reduce(
-                  (sum, r) => sum + parseFloat(r.totalProductionCost || "0"),
-                  0,
-                )
-                .toLocaleString("en-PK")}
+              PKR {Number(metrics.totalCost || 0).toLocaleString("en-PK")}
             </div>
           </CardContent>
         </Card>
@@ -171,17 +169,21 @@ export const ProductionRunsContainer = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {filteredRuns
-                .filter((r) => r.status === "completed")
-                .reduce((sum, r) => sum + r.containersProduced, 0)
-                .toLocaleString()}
+              {Number(metrics.packsProduced || 0).toLocaleString()}
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Production Runs Table */}
-      <ProductionRunsTable runs={filteredRuns} />
+      <ProductionRunsTable
+        runs={runs}
+        manualPagination={true}
+        pageCount={Math.ceil(totalCount / pagination.pageSize)}
+        pagination={pagination}
+        onPaginationChange={setPagination}
+        totalRecords={totalCount}
+      />
 
       <InitiateProductionSheet
         open={isCreateDialogOpen}

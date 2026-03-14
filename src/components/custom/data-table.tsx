@@ -48,6 +48,12 @@ interface DataTableProps<TData, TValue> {
   className?: string;
   emptyState?: React.ReactNode;
   showFooter?: boolean;
+  manualPagination?: boolean;
+  pageCount?: number;
+  pagination?: { pageIndex: number; pageSize: number };
+  onPaginationChange?: (updater: any) => void;
+  autoResetPageIndex?: boolean;
+  totalRecords?: number;
 }
 
 export function DataTable<TData, TValue>({
@@ -65,6 +71,12 @@ export function DataTable<TData, TValue>({
   className,
   emptyState,
   showFooter = false,
+  manualPagination = false,
+  pageCount = -1,
+  pagination,
+  onPaginationChange,
+  autoResetPageIndex = true,
+  totalRecords,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -80,18 +92,24 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
+    manualPagination,
+    ...(pageCount !== -1 ? { pageCount } : {}),
+    ...(onPaginationChange ? { onPaginationChange } : {}),
+    autoResetPageIndex,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
+      ...(pagination !== undefined ? { pagination } : {}),
     },
     initialState: {
-      pagination: { pageSize },
+      ...(pagination === undefined ? { pagination: { pageSize } } : {}),
     },
   });
 
   const currentPage = table.getState().pagination.pageIndex;
   const totalPages = table.getPageCount();
+
   const showToolbar = showSearch || showViewOptions;
 
   return (
@@ -228,7 +246,7 @@ export function DataTable<TData, TValue>({
             Page <span className="text-foreground">{currentPage + 1}</span> of{" "}
             <span className="text-foreground">{Math.max(1, totalPages)}</span>
             <span className="mx-2 opacity-30">•</span>
-            <span className="text-foreground">{table.getFilteredRowModel().rows.length}</span> records
+            <span className="text-foreground">{totalRecords ?? table.getFilteredRowModel().rows.length}</span> records
           </p>
           <div className="flex items-center gap-2">
             <Button

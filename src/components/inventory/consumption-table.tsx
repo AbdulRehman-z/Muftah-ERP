@@ -3,9 +3,11 @@ import { Badge } from "@/components/ui/badge";
 
 import { DataTable } from "../custom/data-table";
 import { ColumnDef } from "@tanstack/react-table";
-import { useMemo } from "react";
-import { ArrowUpDown } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ArrowUpDown, Search } from "lucide-react";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { cn } from "@/lib/utils";
 
 type MaterialUsage = {
   id: string;
@@ -21,7 +23,25 @@ type MaterialUsage = {
   productionRun?: { batchId: string; recipe: { name: string } };
 };
 
-export const ConsumptionTable = ({ data }: { data: MaterialUsage[] }) => {
+export const ConsumptionTable = ({ 
+  data,
+  totalCount,
+  searchQuery,
+  onSearchChange,
+  pagination,
+  onPaginationChange,
+  isPending
+}: { 
+  data: MaterialUsage[];
+  totalCount?: number;
+  searchQuery?: string;
+  onSearchChange?: (val: string) => void;
+  pagination?: { pageIndex: number; pageSize: number };
+  onPaginationChange?: (updater: any) => void;
+  isPending?: boolean;
+}) => {
+  const [localSearch, setLocalSearch] = useState(searchQuery || "");
+
   const columns = useMemo<ColumnDef<MaterialUsage>[]>(
     () => [
       {
@@ -112,7 +132,7 @@ export const ConsumptionTable = ({ data }: { data: MaterialUsage[] }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h3 className="text-xl font-bold tracking-tight">
             Consumption History
@@ -121,15 +141,45 @@ export const ConsumptionTable = ({ data }: { data: MaterialUsage[] }) => {
             Track material usage across production runs. Search by Batch ID.
           </p>
         </div>
+
+        {onSearchChange && (
+          <div className="flex items-center gap-2">
+            <Input 
+              placeholder="Search by Batch ID..." 
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
+              className="w-full sm:w-64 bg-background h-9 text-xs"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  onSearchChange(localSearch);
+                }
+              }}
+            />
+            <Button 
+              size="sm"
+              onClick={() => onSearchChange(localSearch)} 
+              disabled={isPending}
+            >
+              <Search className="size-4 mr-2" />
+              Search
+            </Button>
+          </div>
+        )}
       </div>
 
-      <DataTable
-        pageSize={5}
-        columns={columns}
-        data={data || []}
-        searchKey="batchId"
-        searchPlaceholder="Search by Batch ID..."
-      />
+      <div className={cn("transition-opacity duration-200", isPending ? "opacity-50 pointer-events-none" : "opacity-100")}>
+        <DataTable
+          pageSize={pagination?.pageSize || 5}
+          manualPagination={true}
+          pageCount={totalCount !== undefined && pagination ? Math.ceil(Number(totalCount) / pagination.pageSize) : -1}
+          pagination={pagination}
+          onPaginationChange={onPaginationChange}
+          totalRecords={totalCount}
+          columns={columns}
+          data={data || []}
+          autoResetPageIndex={false}
+        />
+      </div>
     </div>
   );
 };

@@ -229,10 +229,23 @@ function ProductionRunDetailsPage() {
 
       <ScrollArea className="flex-1">
         <div className="p-8 pb-24 space-y-8 max-w-[1600px] mx-auto">
+          {/* Failed Run Warning Banner */}
+          {run.status === "cancelled" && (
+            <div className="bg-destructive/10 border-l-4 border-destructive p-4 rounded-r-lg shadow-sm flex items-start gap-4">
+              <AlertTriangle className="size-6 text-destructive shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-destructive font-bold text-lg">Physical Stock Return Required</h3>
+                <p className="text-destructive/90 text-sm mt-1">
+                  The system has automatically reversed chemical stock for this failed run. Please ensure physical chemicals are returned from the factory floor back to storage.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Top Stats Row */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Costs Stats */}
-            <Card className="md:col-span-2 bg-gradient-to-br from-primary/5 via-background to-background border-primary/10  relative overflow-hidden">
+            <Card className="md:col-span-2 bg-linear-to-br from-primary/5 via-background to-background border-primary/10  relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-[0.03]">
                 <Calculator className="size-32 -mr-8 -mt-8" />
               </div>
@@ -545,9 +558,8 @@ function ProductionRunDetailsPage() {
                 onChange={(e) => setCancelReason(e.target.value)}
               />
             </div>
-            <div className="text-xs text-muted-foreground p-3 bg-muted rounded-md border border-dashed">
-              Note: Any materials already consumed will remain deducted. You may
-              need to manually adjust stock if materials are salvageable.
+            <div className="text-xs text-destructive font-medium p-3 bg-destructive/10 rounded-md border border-destructive/20">
+              Note: Unused chemical materials will be automatically reversed in the warehouse stock. Please return physical stock.
             </div>
           </div>
           <DialogFooter>

@@ -111,7 +111,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                 pack: "",
                 recipeId: "",
                 unitType: "carton" as "carton" | "units",
-                numberOfCartons: 1,
+                numberOfCartons: 0,
                 numberOfUnits: 0,
                 hsnCode: "",
                 perCartonPrice: 0,
@@ -137,7 +137,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                 if (error instanceof z.ZodError) {
                     toast.error("Please fix: " + (error.issues?.[0]?.message || "Check required fields"));
                 } else {
-                    toast.error(error.message || "Failed to generate invoice");
+                    toast.error(error || "Failed to generate invoice");
                 }
             }
         },

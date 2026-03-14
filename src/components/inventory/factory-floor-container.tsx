@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 import { GenericEmpty } from "../custom/empty";
 import { AddWarehouseDialog } from "./add-warehouse-dialog";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery, keepPreviousData } from "@tanstack/react-query";
 import { StockTable } from "./stock-table";
 import { FinishedGoodsTable } from "./finished-goods-table";
 import { LowStockAlerts } from "./low-stocks-alert";
@@ -28,9 +28,19 @@ export const FactoryFloorContainer = () => {
     queryFn: getWarehousesFn,
   });
 
-  const { data: consumptionHistory } = useSuspenseQuery({
-    queryKey: ["consumption-history"],
-    queryFn: getConsumptionHistoryFn,
+  const [consumptionSearch, setConsumptionSearch] = useState("");
+  const [consumptionPagination, setConsumptionPagination] = useState({ pageIndex: 0, pageSize: 5 });
+
+  const { data: consumptionData, isFetching: isConsumptionFetching } = useQuery({
+    queryKey: ["consumption-history", consumptionSearch, consumptionPagination],
+    queryFn: () => getConsumptionHistoryFn({
+      data: {
+        search: consumptionSearch,
+        pageIndex: consumptionPagination.pageIndex,
+        pageSize: consumptionPagination.pageSize,
+      }
+    }),
+    placeholderData: keepPreviousData,
     refetchInterval: 50000,
   });
 
@@ -263,7 +273,20 @@ export const FactoryFloorContainer = () => {
         </div>
       )}
       {/* Consumption Table */}
-      {showConsumption && <ConsumptionTable data={consumptionHistory as any} />}
+      {showConsumption && (
+        <ConsumptionTable 
+          data={consumptionData?.data as any} 
+          totalCount={consumptionData?.totalCount}
+          searchQuery={consumptionSearch}
+          isPending={isConsumptionFetching}
+          onSearchChange={(val) => {
+            setConsumptionSearch(val);
+            setConsumptionPagination((prev) => ({ ...prev, pageIndex: 0 }));
+          }}
+          pagination={consumptionPagination}
+          onPaginationChange={setConsumptionPagination}
+        />
+      )}
 
       {/* Adjust Stock Dialog */}
       {adjustTarget && (

@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from "date-fns";
-import { Eye, Play, NotebookPenIcon, ArrowUpDown, Trash2 } from "lucide-react";
+import { Eye, Play, NotebookPenIcon, ArrowUpDown, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Progress } from "../ui/progress";
@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useStartProduction } from "@/hooks/production/use-start-production";
 import { useCompleteProduction } from "@/hooks/production/use-complete-production";
 import { useDeleteProductionRun } from "@/hooks/production/use-delete-production-run";
+import { useCancelProduction } from "@/hooks/production/use-cancel-production";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +18,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
+import { Label } from "../ui/label";
+import { Textarea } from "../ui/textarea";
 import { DataTable } from "../custom/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
@@ -24,22 +27,25 @@ import { Link } from "@tanstack/react-router";
 
 type ProductionRunsTableProps = {
   runs: any[];
+  manualPagination?: boolean;
+  pageCount?: number;
+  pagination?: { pageIndex: number; pageSize: number };
+  onPaginationChange?: (updater: any) => void;
+  totalRecords?: number;
 };
 
-/**
- * Fix: AlertDialogs are controlled via lifted state outside of tanstack-table columns.
- * Previously, the dialog was defined inside the column cell renderer inside useMemo.
- * When background polling invalidates ["production-runs"] and the table re-renders,
- * the column useMemo re-computed, unmounting and remounting the AlertDialogContent —
- * which caused the dialog to close itself every ~3 seconds.
- *
- * The fix is to keep ONE AlertDialog per action type outside the table,
- * and only pass the target run id into it via state.
- */
-export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
+export const ProductionRunsTable = ({
+  runs,
+  manualPagination,
+  pageCount,
+  pagination,
+  onPaginationChange,
+  totalRecords,
+}: ProductionRunsTableProps) => {
   const startProduction = useStartProduction();
   const completeProduction = useCompleteProduction();
   const deleteProductionRun = useDeleteProductionRun();
+  const cancelProduction = useCancelProduction();
 
   // Lifted dialog state — prevents re-renders from closing open dialogs
   const [startDialogRunId, setStartDialogRunId] = useState<string | null>(null);
@@ -49,6 +55,10 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
   const [deleteDialogRunId, setDeleteDialogRunId] = useState<string | null>(
     null,
   );
+  const [cancelDialogRunId, setCancelDialogRunId] = useState<string | null>(
+    null,
+  );
+  const [cancelReason, setCancelReason] = useState("");
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -348,16 +358,28 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
               )}
 
               {run.status === "in_progress" && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="h-8 text-[10px] font-black uppercase tracking-wider bg-green-600 hover:bg-green-700"
-                  disabled={completeProduction.isPending}
-                  onClick={() => setFinishDialogRunId(run.id)}
-                >
-                  <NotebookPenIcon className="size-3 mr-1.5" />
-                  Finish Run
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-[10px] font-black uppercase tracking-wider text-destructive border-destructive/30 hover:bg-destructive/10"
+                    disabled={cancelProduction.isPending}
+                    onClick={() => setCancelDialogRunId(run.id)}
+                  >
+                    <AlertTriangle className="size-3 mr-1.5" />
+                    Mark Failed
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="h-8 text-[10px] font-black uppercase tracking-wider bg-green-600 hover:bg-green-700"
+                    disabled={completeProduction.isPending}
+                    onClick={() => setFinishDialogRunId(run.id)}
+                  >
+                    <NotebookPenIcon className="size-3 mr-1.5" />
+                    Finish Run
+                  </Button>
+                </>
               )}
 
               <Button
@@ -389,7 +411,7 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
         },
       },
     ],
-    [startProduction.isPending, completeProduction.isPending, deleteProductionRun.isPending],
+    [startProduction.isPending, completeProduction.isPending, deleteProductionRun.isPending, cancelProduction.isPending],
   );
 
   return (
@@ -398,7 +420,13 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
         columns={columns}
         data={runs}
         showSearch={false}
-        pageSize={6}
+        pageSize={pagination?.pageSize || 6}
+        manualPagination={manualPagination}
+        pageCount={pageCount}
+        pagination={pagination}
+        onPaginationChange={onPaginationChange}
+        autoResetPageIndex={false}
+        totalRecords={totalRecords}
       />
 
       {/* Start Run Confirmation Dialog — lifted outside table to survive re-renders */}
@@ -410,8 +438,8 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
           <AlertDialogHeader>
             <AlertDialogTitle>Start Production?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will deduct Chemicals and packaging from the warehouse. This
-              action cannot be easily undone. Are you sure?
+              This will deduct all the Chemicals at once and the but the packaging material will be deducted as operator input logs are entered.
+              All the deductions will be from the factory-floor. This action cannot be easily undone. Are you sure?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -462,6 +490,7 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
               onClick={() => {
                 if (!finishDialogRunId) return;
                 completeProduction.mutate(
@@ -485,6 +514,66 @@ export const ProductionRunsTable = ({ runs }: ProductionRunsTableProps) => {
               }}
             >
               Complete Production
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cancel/Fail Run Confirmation Dialog */}
+      <AlertDialog
+        open={!!cancelDialogRunId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCancelDialogRunId(null);
+            setCancelReason("");
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="size-5 text-destructive" />
+              Mark Run as Failed / Cancelled
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-destructive font-medium">
+              CRITICAL: Stock auto-reversal will occur. Please physically return any unused chemical stock to the warehouse floor.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Reason for Failure / Cancellation</Label>
+              <Textarea
+                placeholder="e.g. Machine breakdown, Material shortage, etc."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Back</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={!cancelReason || cancelProduction.isPending}
+              onClick={() => {
+                if (!cancelDialogRunId) return;
+                cancelProduction.mutate(
+                  {
+                    data: {
+                      productionRunId: cancelDialogRunId,
+                      reason: cancelReason,
+                    },
+                  },
+                  {
+                    onSuccess: () => {
+                      setCancelDialogRunId(null);
+                      setCancelReason("");
+                      toast.error("Production run cancelled.");
+                    },
+                  },
+                );
+              }}
+            >
+              {cancelProduction.isPending ? "Cancelling..." : "Confirm Failure"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
