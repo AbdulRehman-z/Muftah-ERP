@@ -13,12 +13,15 @@ import {
 } from "@/components/ui/select";
 import { useGetAllCustomers } from "@/hooks/sales/use-customers";
 import { useCreateInvoice } from "@/hooks/sales/use-invoices";
+import { useWallets } from "@/hooks/finance/use-finance";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
 import {
     Loader2, Plus, Trash2, Users, UserPlus, Box, Package,
     AlertCircle, Warehouse, DollarSign, ChevronRight, CheckCircle2,
     CreditCard, Calendar,
+    Building2Icon,
+    BanknoteIcon,
 } from "lucide-react";
 import { Field, FieldError, FieldGroup, FieldLabel, FieldDescription } from "../ui/field";
 import { cn } from "@/lib/utils";
@@ -65,12 +68,13 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
         queryKey: ["inventory"],
         queryFn: () => getInventoryFn(),
     });
+    const { data: walletsData } = useWallets();
 
     const [customerMode, setCustomerMode] = useState<"existing" | "new">("existing");
     const [activeWarehouse, setActiveWarehouse] = useState<string>("");
     const [availableStock, setAvailableStock] = useState<any[]>([]);
 
-    const wallets = [{ id: "cash_wallet", name: "Main Cash Box" }];
+    const wallets = walletsData || [];
 
     const warehouses = inventoryData ?? [];
 
@@ -100,7 +104,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
             customerBankAccount: "",
             customerType: "retailer" as "distributor" | "retailer",
             warehouseId: "",
-            account: "cash_wallet",
+            account: wallets[0]?.id || "",
             cash: 0,
             credit: 0,
             creditReturnDate: "",
@@ -120,11 +124,25 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
         },
         onSubmit: async ({ value }) => {
             try {
+                const totalAmount = value.items.reduce((acc, item) => {
+                    const stock = availableStock.find((s) => s.recipe?.id === item.recipeId);
+                    const cpp = stock?.recipe?.containersPerCarton || 1;
+                    return acc + (item.unitType === "carton"
+                        ? (item.numberOfCartons || 0) * (item.perCartonPrice || 0)
+                        : (item.numberOfUnits || 0) * ((item.perCartonPrice || 0) / cpp));
+                }, 0);
+
+                const totalPayable = totalAmount + (Number(value.expenses) || 0);
+                const credit = Math.max(0, totalPayable - (Number(value.cash) || 0));
+
                 const payload = {
                     ...value,
                     customerId: customerMode === "existing" ? value.customerId : undefined,
                     warehouseId: activeWarehouse,
+                    credit,
+                    creditReturnDate: value.creditReturnDate ? new Date(value.creditReturnDate) : undefined,
                 };
+
                 const validatedData = createInvoiceSchema.parse(payload);
                 await createInvoice(validatedData as any, {
                     onSuccess: () => {
@@ -135,9 +153,11 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                 });
             } catch (error: any) {
                 if (error instanceof z.ZodError) {
-                    toast.error("Please fix: " + (error.issues?.[0]?.message || "Check required fields"));
+                    const message = error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ');
+                    toast.error("Validation failed: " + message);
+                    console.error("Validation Error:", error.issues);
                 } else {
-                    toast.error(error || "Failed to generate invoice");
+                    toast.error(error.message || "Failed to generate invoice");
                 }
             }
         },
@@ -146,6 +166,12 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
     useEffect(() => {
         form.setFieldValue("warehouseId", activeWarehouse);
     }, [activeWarehouse]);
+
+    useEffect(() => {
+        if (wallets.length > 0 && !form.getFieldValue("account")) {
+            form.setFieldValue("account", wallets[0].id);
+        }
+    }, [wallets]);
 
     useEffect(() => {
         if (customerMode === "new") {
@@ -344,8 +370,13 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                             <SelectValue placeholder="Select account" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {wallets.map((w) => (
-                                                <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                                            {wallets.map((w: any) => (
+                                                <SelectItem key={w.id} value={w.id}>
+                                                    <span className="flex items-center gap-2">
+                                                        {w.type === "bank" ? <Building2Icon className="size-3.5" /> : <BanknoteIcon className="size-3.5" />}
+                                                        {w.name}
+                                                    </span>
+                                                </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -471,6 +502,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                                                         ))}
                                                                                     </SelectContent>
                                                                                 </Select>
+                                                                                <FieldError errors={sf.state.meta.errors} />
                                                                                 <div className="text-[10px] text-muted-foreground flex gap-1">
                                                                                     <span>Stock:</span>
                                                                                     <span className="font-medium text-foreground">{stockCartons}C/{stockUnits}U</span>
@@ -506,12 +538,15 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                                     {/* HSN */}
                                                                     <form.Field name={`items[${index}].hsnCode`} validators={{ onChange: z.string().min(1, "Required") }}>
                                                                         {(sf) => (
-                                                                            <Input
-                                                                                className="h-8 text-xs"
-                                                                                placeholder="HSN"
-                                                                                value={sf.state.value}
-                                                                                onChange={(e) => sf.handleChange(e.target.value)}
-                                                                            />
+                                                                            <div className="space-y-1">
+                                                                                <Input
+                                                                                    className={cn("h-8 text-xs", sf.state.meta.errors.length > 0 && "border-destructive")}
+                                                                                    placeholder="HSN"
+                                                                                    value={sf.state.value}
+                                                                                    onChange={(e) => sf.handleChange(e.target.value)}
+                                                                                />
+                                                                                <FieldError errors={sf.state.meta.errors} />
+                                                                            </div>
                                                                         )}
                                                                     </form.Field>
 

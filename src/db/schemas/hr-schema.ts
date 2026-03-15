@@ -54,7 +54,6 @@ export const leaveTypeEnum = pgEnum("leave_type", [
   "sick",
   "casual",
   "annual",
-  "unpaid",
   "special",
 ]);
 

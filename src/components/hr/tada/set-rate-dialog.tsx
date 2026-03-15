@@ -81,7 +81,7 @@ export function SetRateDialog({ open, onOpenChange }: Props) {
                     )}
 
                     <div className="space-y-4">
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                 New Rate (PKR / KM)
                             </label>
@@ -94,7 +94,7 @@ export function SetRateDialog({ open, onOpenChange }: Props) {
                                 autoFocus
                             />
                         </div>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                 Effective From
                             </label>
@@ -105,7 +105,7 @@ export function SetRateDialog({ open, onOpenChange }: Props) {
                             />
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                 Remarks
                             </label>

@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -109,34 +109,36 @@ export function DataTable<TData, TValue>({
 
   const currentPage = table.getState().pagination.pageIndex;
   const totalPages = table.getPageCount();
-
   const showToolbar = showSearch || showViewOptions;
 
   return (
-    <div className={cn("w-full rounded-2xl border border-border/60 bg-card overflow-hidden shadow-xs", className)}>
+    <div className={cn("w-full border border-border/60 bg-card rounded-xl overflow-hidden", className)}>
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
       {showToolbar && (
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40 bg-muted/10">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50">
           {showSearch && (searchKey || onSearchChange) && (
-            <Input
-              placeholder={searchPlaceholder}
-              value={
-                searchValue ??
-                (searchKey
-                  ? (table.getColumn(searchKey)?.getFilterValue() as string)
-                  : "") ??
-                ""
-              }
-              onChange={(event) => {
-                if (onSearchChange) {
-                  onSearchChange(event.target.value);
-                } else if (searchKey) {
-                  table.getColumn(searchKey)?.setFilterValue(event.target.value);
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+              <Input
+                placeholder={searchPlaceholder}
+                value={
+                  searchValue ??
+                  (searchKey
+                    ? (table.getColumn(searchKey)?.getFilterValue() as string)
+                    : "") ??
+                  ""
                 }
-                table.setPageIndex(0);
-              }}
-              className="max-w-xs h-9 bg-background border-border/40 rounded-lg focus-visible:ring-primary/20 text-xs"
-            />
+                onChange={(event) => {
+                  if (onSearchChange) {
+                    onSearchChange(event.target.value);
+                  } else if (searchKey) {
+                    table.getColumn(searchKey)?.setFilterValue(event.target.value);
+                  }
+                  table.setPageIndex(0);
+                }}
+                className="w-[250px] h-8 pl-8 bg-background border-border/60 rounded-md focus-visible:ring-2 focus-visible:ring-primary/20 text-[13px] shadow-none"
+              />
+            </div>
           )}
           <div className="flex items-center gap-2 ml-auto">
             {actions}
@@ -146,20 +148,20 @@ export function DataTable<TData, TValue>({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 border-border/40 rounded-lg text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:bg-muted/50 transition-all gap-1.5"
+                    className="h-8 border-border/60 rounded-md text-[13px] font-medium text-foreground hover:bg-muted/50 transition-colors gap-2"
                   >
-                    <SlidersHorizontal className="h-3 w-3" />
+                    <SlidersHorizontal className="size-3.5 text-muted-foreground" />
                     View
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-[180px] rounded-xl shadow-xl border-border/40">
+                <DropdownMenuContent align="end" className="w-[180px] rounded-lg shadow-xl border-border/60">
                   {table
                     .getAllColumns()
                     .filter((column) => column.getCanHide())
                     .map((column) => (
                       <DropdownMenuCheckboxItem
                         key={column.id}
-                        className="capitalize rounded-lg m-1 font-medium text-xs py-2"
+                        className="capitalize rounded-md m-1 font-medium text-[13px] py-1.5"
                         checked={column.getIsVisible()}
                         onCheckedChange={(value) => column.toggleVisibility(!!value)}
                       >
@@ -178,11 +180,11 @@ export function DataTable<TData, TValue>({
         <Table>
           <TableHeader className="bg-muted/20">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-border/40">
+              <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-border/50">
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 py-3.5 h-auto border-none first:pl-5 last:pr-5"
+                    className="text-[12px] font-medium text-muted-foreground py-3 h-auto first:pl-5 last:pr-5 whitespace-nowrap"
                   >
                     {header.isPlaceholder
                       ? null
@@ -197,10 +199,10 @@ export function DataTable<TData, TValue>({
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  className="hover:bg-muted/20 border-b border-border/20 transition-colors last:border-0"
+                  className="hover:bg-muted/30 border-b border-border/30 transition-colors last:border-0 data-[state=selected]:bg-muted"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-3 first:pl-5 last:pr-5">
+                    <TableCell key={cell.id} className="py-2.5 first:pl-5 last:pr-5">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -208,10 +210,10 @@ export function DataTable<TData, TValue>({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-48 text-center p-0">
+                <TableCell colSpan={columns.length} className="h-32 text-center p-0">
                   {emptyState ?? (
-                    <div className="flex flex-col items-center justify-center gap-2 py-12 opacity-40">
-                      <p className="text-sm font-medium">No results found.</p>
+                    <div className="flex flex-col items-center justify-center gap-1 py-10">
+                      <p className="text-[13px] font-medium text-muted-foreground">No data available.</p>
                     </div>
                   )}
                 </TableCell>
@@ -219,13 +221,13 @@ export function DataTable<TData, TValue>({
             )}
           </TableBody>
           {showFooter && (
-            <tfoot className="bg-muted/30 border-t border-border/40">
+            <tfoot className="bg-muted/20 border-t border-border/50">
               {table.getFooterGroups().map((footerGroup) => (
                 <TableRow key={footerGroup.id} className="hover:bg-transparent border-0">
                   {footerGroup.headers.map((header) => (
                     <TableCell
                       key={header.id}
-                      className="text-[11px] font-black uppercase tracking-widest text-foreground py-3 h-auto border-none first:pl-5 last:pr-5"
+                      className="py-3 h-auto first:pl-5 last:pr-5"
                     >
                       {header.isPlaceholder
                         ? null
@@ -241,20 +243,20 @@ export function DataTable<TData, TValue>({
 
       {/* ── Pagination ──────────────────────────────────────────────────── */}
       {showPagination && (
-        <div className="flex items-center justify-between px-5 py-3 border-t border-border/40 bg-muted/10">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Page <span className="text-foreground">{currentPage + 1}</span> of{" "}
-            <span className="text-foreground">{Math.max(1, totalPages)}</span>
-            <span className="mx-2 opacity-30">•</span>
-            <span className="text-foreground">{totalRecords ?? table.getFilteredRowModel().rows.length}</span> records
-          </p>
+        <div className="flex items-center justify-between px-5 py-3 border-t border-border/50 bg-muted/10">
+          <div className="text-[13px] text-muted-foreground">
+            Page <span className="font-medium text-foreground">{currentPage + 1}</span> of{" "}
+            <span className="font-medium text-foreground">{Math.max(1, totalPages)}</span>
+            <span className="mx-2 opacity-50">•</span>
+            <span className="font-medium text-foreground">{totalRecords ?? table.getFilteredRowModel().rows.length}</span> records
+          </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="h-8 px-4 rounded-lg border-border/40 text-[10px] font-black uppercase tracking-widest hover:bg-muted/50 disabled:opacity-30 transition-all"
+              className="h-8 px-3 rounded-md border-border/60 text-[13px] font-medium hover:bg-muted/50 disabled:opacity-50 transition-all shadow-none"
             >
               Previous
             </Button>
@@ -263,7 +265,7 @@ export function DataTable<TData, TValue>({
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="h-8 px-4 rounded-lg border-border/40 text-[10px] font-black uppercase tracking-widest hover:bg-muted/50 disabled:opacity-30 transition-all"
+              className="h-8 px-3 rounded-md border-border/60 text-[13px] font-medium hover:bg-muted/50 disabled:opacity-50 transition-all shadow-none"
             >
               Next
             </Button>
