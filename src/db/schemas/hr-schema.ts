@@ -52,7 +52,6 @@ export const attendanceStatusEnum = pgEnum("attendance_status", [
 
 export const leaveTypeEnum = pgEnum("leave_type", [
   "sick",
-  "casual",
   "annual",
   "special",
 ]);
@@ -71,19 +70,19 @@ export const employees = pgTable("employees", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
-  userId: text("user_id").references(() => user.id), // Optional link to auth user
+  userId: text("user_id").references(() => user.id),
 
   // Identity
-  employeeCode: text("employee_code").notNull().unique(), // e.g., "110005"
+  employeeCode: text("employee_code").notNull().unique(),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
-  cnic: text("cnic"), // National ID
+  cnic: text("cnic"),
   phone: text("phone"),
   address: text("address"),
 
   // Job Details
-  designation: text("designation").notNull(), // e.g., "CEO", "Security Guard"
-  department: text("department"), // e.g., "Sale & Finance"
+  designation: text("designation").notNull(),
+  department: text("department"),
   status: employeeStatusEnum("status").default("active").notNull(),
   employmentType: employmentTypeEnum("employment_type")
     .default("full_time")
@@ -94,12 +93,31 @@ export const employees = pgTable("employees", {
   bankName: text("bank_name"),
   bankAccountNumber: text("bank_account_number"),
 
-  // Base Calculation Field
+  // Base Calculation Fields
   standardDutyHours: integer("standard_duty_hours").default(8).notNull(),
   standardSalary: decimal("standard_salary", {
     precision: 12,
     scale: 2,
   }).default("0"),
+
+  /**
+   * Weekly rest days — days of week this employee does NOT work.
+   * Stored as an array of integers: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat.
+   *
+   * Default [0]  → Sunday off only   (most factory/field staff)
+   * Common [0,6] → Sat + Sun off     (office staff)
+   * Empty  []    → No fixed rest day (rare: security / rotating shifts)
+   *
+   * Used by the payslip engine to:
+   *   1. Exclude rest days from Total Job Days (fixing the 28-day bug).
+   *   2. Prevent rest-day attendance entries from inflating/deflating any
+   *      summary count (present, absent, unmarked, Bradford Factor).
+   *   3. Drive the "Unmarked Days" alarm — rest days are never flagged as missing.
+   */
+  restDays: jsonb("rest_days")
+    .$type<number[]>()
+    .default([0])
+    .notNull(),
 
   // JSON configured flexible allowances
   allowanceConfig: jsonb("allowance_config")
@@ -107,12 +125,11 @@ export const employees = pgTable("employees", {
     .default(STANDARD_ALLOWANCES),
 
   // Leave & Attendance Tracking
-  annualLeaveBalance: integer("annual_leave_balance").default(30), // Days remaining
+  annualLeaveBalance: integer("annual_leave_balance").default(30),
   sickLeaveBalance: integer("sick_leave_balance").default(10),
-  casualLeaveBalance: integer("casual_leave_balance").default(5),
 
   // Incentives / Sales
-  isOrderBooker: boolean("is_order_booker").default(false).notNull(), // Identifies marketing/sales field staff
+  isOrderBooker: boolean("is_order_booker").default(false).notNull(),
   commissionRate: decimal("commission_rate", {
     precision: 5,
     scale: 2,
@@ -132,7 +149,7 @@ export const attendance = pgTable(
       .notNull()
       .references(() => employees.id),
 
-    date: date("date").notNull(), // The canonical date of attendance
+    date: date("date").notNull(),
 
     // Shift 1 (Standard)
     checkIn: time("check_in"),
@@ -154,27 +171,23 @@ export const attendance = pgTable(
     isLate: boolean("is_late").default(false),
     isNightShift: boolean("is_night_shift").default(false),
 
-    // Overtime Approval — remarks required; hours only paid when status = 'approved'
-    overtimeStatus: text("overtime_status").default("pending"), // pending, approved, rejected
-    overtimeRemarks: text("overtime_remarks"), // Required: reason entered by computer operator
+    // Overtime Approval
+    overtimeStatus: text("overtime_status").default("pending"),
+    overtimeRemarks: text("overtime_remarks"),
 
     // Early Departure
-    earlyDepartureStatus: text("early_departure_status").default("none"), // none, pending, approved, rejected
+    earlyDepartureStatus: text("early_departure_status").default("none"),
     checkOutReason: text("check_out_reason"),
 
-    // Leave approval — 'true' means paid approved leave (no deduction)
+    // Leave
     isApprovedLeave: boolean("is_approved_leave").default(false),
+    leaveApprovalStatus: text("leave_approval_status").default("none"),
+    leaveType: leaveTypeEnum("leave_type"),
 
-    // Leave approval workflow status — pending requires admin decision
-    leaveApprovalStatus: text("leave_approval_status").default("none"), // none, pending, approved, rejected
+    // Data source
+    entrySource: text("entry_source").default("manual"),
 
-    // Leave classification — determines Bradford Factor counting and balance deduction
-    leaveType: leaveTypeEnum("leave_type"), // sick | casual | annual | unpaid | special
-
-    // Data source — biometric machine feed or manual entry fallback
-    entrySource: text("entry_source").default("manual"), // 'biometric' | 'manual'
-
-    // Order Booker / Sales Logging Fields
+    // Order Booker / Sales Fields
     areaVisited: text("area_visited"),
     paymentMode: paymentModeEnum("payment_mode").default("per_km"),
     isCompanyVehicle: boolean("is_company_vehicle").default(false),
@@ -205,21 +218,18 @@ export const payrolls = pgTable("payrolls", {
     .primaryKey()
     .$defaultFn(() => createId()),
 
-  month: date("month").notNull(), // First day of the payroll month (e.g., 2026-05-01)
-  startDate: date("start_date").notNull(), // e.g., 2026-05-16 (Previous Month)
-  endDate: date("end_date").notNull(), // e.g., 2026-06-15 (Current Month)
+  month: date("month").notNull(),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
 
-  status: text("status").default("draft"), // draft, approved, paid
+  status: text("status").default("draft"),
 
-  totalAmount: decimal("total_amount", { precision: 15, scale: 2 }).default(
-    "0",
-  ),
+  totalAmount: decimal("total_amount", { precision: 15, scale: 2 }).default("0"),
 
   processedBy: text("processed_by").references(() => user.id),
 
-  // Finance Integration — wallet used to disburse salaries
-  walletId: text("wallet_id"), // FK to finance wallets; set when status → 'paid'
-  paidAt: timestamp("paid_at"), // Timestamp of disbursement
+  walletId: text("wallet_id"),
+  paidAt: timestamp("paid_at"),
 
   ...timestamps,
 });
@@ -236,7 +246,7 @@ export const payslips = pgTable("payslips", {
     .notNull()
     .references(() => employees.id),
 
-  // Attendance Summary for this period
+  // Attendance Summary
   daysPresent: integer("days_present").default(0),
   daysAbsent: integer("days_absent").default(0),
   daysLeave: integer("days_leave").default(0),
@@ -248,16 +258,13 @@ export const payslips = pgTable("payslips", {
 
   // Earnings
   basicSalary: decimal("basic_salary", { precision: 12, scale: 2 }).notNull(),
-  // Dynamic Allowances computed values mapping: { "houseRent": 12000, "bikeMaintenance": 6000 }
   allowanceBreakdown: jsonb("allowance_breakdown")
     .$type<Record<string, number>>()
     .default({}),
-
   incentiveAmount: decimal("incentive_amount", {
     precision: 12,
     scale: 2,
   }).default("0"),
-
   overtimeAmount: decimal("overtime_amount", {
     precision: 12,
     scale: 2,
@@ -266,9 +273,7 @@ export const payslips = pgTable("payslips", {
     precision: 12,
     scale: 2,
   }).default("0"),
-  bonusAmount: decimal("bonus_amount", { precision: 12, scale: 2 }).default(
-    "0",
-  ),
+  bonusAmount: decimal("bonus_amount", { precision: 12, scale: 2 }).default("0"),
 
   // Deductions
   absentDeduction: decimal("absent_deduction", {
@@ -283,15 +288,13 @@ export const payslips = pgTable("payslips", {
     precision: 12,
     scale: 2,
   }).default("0"),
-  taxDeduction: decimal("tax_deduction", { precision: 12, scale: 2 }).default(
-    "0",
-  ),
+  taxDeduction: decimal("tax_deduction", { precision: 12, scale: 2 }).default("0"),
   otherDeduction: decimal("other_deduction", {
     precision: 12,
     scale: 2,
   }).default("0"),
 
-  // Bradford Factor — computed from absences; can be manually overridden by admin
+  // Bradford Factor
   bradfordFactorScore: decimal("bradford_factor_score", {
     precision: 8,
     scale: 2,
@@ -299,8 +302,8 @@ export const payslips = pgTable("payslips", {
   bradfordFactorOverride: decimal("bradford_factor_override", {
     precision: 8,
     scale: 2,
-  }), // null = use computed
-  bradfordFactorPeriod: text("bradford_factor_period"), // e.g. "16 Jan 2026 to 15 Feb 2026"
+  }),
+  bradfordFactorPeriod: text("bradford_factor_period"),
 
   // Totals
   grossSalary: decimal("gross_salary", { precision: 12, scale: 2 }).notNull(),
@@ -310,8 +313,7 @@ export const payslips = pgTable("payslips", {
   }).notNull(),
   netSalary: decimal("net_salary", { precision: 12, scale: 2 }).notNull(),
 
-  paymentSource: text("payment_source"), // e.g. "Cash", "Bank-HBL"
-
+  paymentSource: text("payment_source"),
   remarks: text("remarks"),
 
   ...timestamps,
@@ -330,12 +332,11 @@ export const salaryAdvances = pgTable("salary_advances", {
   date: date("date").notNull(),
   reason: text("reason").notNull(),
 
-  status: text("status").default("pending").notNull(), // pending, approved (paid), rejected, deducted
+  status: text("status").default("pending").notNull(),
   approvedBy: text("approved_by").references(() => user.id),
 
-  // Finance Integration — wallet used to disburse the advance
-  walletId: text("wallet_id"), // FK to finance wallets; set when status → 'approved' (paid)
-  paidAt: timestamp("paid_at"), // Timestamp of payout
+  walletId: text("wallet_id"),
+  paidAt: timestamp("paid_at"),
 
   deductedInPayslipId: text("deducted_in_payslip_id").references(
     () => payslips.id,
@@ -344,44 +345,38 @@ export const salaryAdvances = pgTable("salary_advances", {
   ...timestamps,
 });
 
-// --- NIGHT SHIFT RATES (Annual Configuration) ---
-// Fixed rate per night, locked for the calendar year, reviewed annually.
+// --- NIGHT SHIFT RATES ---
 export const nightShiftRates = pgTable("night_shift_rates", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
 
-  year: integer("year").notNull().unique(), // e.g., 2026
-  ratePerNight: decimal("rate_per_night", { precision: 10, scale: 2 })
-    .notNull(), // e.g., "100.00" or "200.00"
+  year: integer("year").notNull().unique(),
+  ratePerNight: decimal("rate_per_night", { precision: 10, scale: 2 }).notNull(),
 
-  remarks: text("remarks"), // e.g., "Increased from 100 to 150 per board decision"
+  remarks: text("remarks"),
   setBy: text("set_by").references(() => user.id),
 
   ...timestamps,
 });
 
-// --- TA/DA RATES (Fluctuating Per-Km Rate) ---
-// Per-kilometer rate that changes based on fuel prices.
-// Only one record is "active" at a time (latest active record wins).
+// --- TA/DA RATES ---
 export const tadaRates = pgTable("tada_rates", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
 
-  ratePerKm: decimal("rate_per_km", { precision: 8, scale: 2 })
-    .notNull(), // e.g., "7.00" or "10.00"
+  ratePerKm: decimal("rate_per_km", { precision: 8, scale: 2 }).notNull(),
 
-  effectiveFrom: date("effective_from").notNull(), // When this rate kicks in
-  remarks: text("remarks"), // e.g., "Fuel price increased to PKR 280/L"
+  effectiveFrom: date("effective_from").notNull(),
+  remarks: text("remarks"),
   isActive: boolean("is_active").default(true).notNull(),
   setBy: text("set_by").references(() => user.id),
 
   ...timestamps,
 });
 
-// --- TRAVEL LOGS (Employee TA/DA Tracking) ---
-// Records individual trips for marketing/sales staff.
+// --- TRAVEL LOGS ---
 export const travelLogs = pgTable("travel_logs", {
   id: text("id")
     .primaryKey()
@@ -392,28 +387,22 @@ export const travelLogs = pgTable("travel_logs", {
     .references(() => employees.id),
 
   date: date("date").notNull(),
-  destination: text("destination").notNull(), // e.g., "Lahore", "Rawalpindi"
-  roundTripKm: decimal("round_trip_km", { precision: 8, scale: 2 })
-    .notNull(), // Total km for the round trip
+  destination: text("destination").notNull(),
+  roundTripKm: decimal("round_trip_km", { precision: 8, scale: 2 }).notNull(),
 
-  rateApplied: decimal("rate_applied", { precision: 8, scale: 2 })
-    .notNull(), // Snapshot of the rate at time of logging
-  totalAmount: decimal("total_amount", { precision: 10, scale: 2 })
-    .notNull(), // roundTripKm × rateApplied
+  rateApplied: decimal("rate_applied", { precision: 8, scale: 2 }).notNull(),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
 
-  purpose: text("purpose"), // e.g., "Client meeting", "Delivery"
-  status: text("status").default("pending").notNull(), // pending, approved, rejected
+  purpose: text("purpose"),
+  status: text("status").default("pending").notNull(),
   approvedBy: text("approved_by").references(() => user.id),
 
-  // Link to payslip when amount is paid out
   paidInPayslipId: text("paid_in_payslip_id").references(() => payslips.id),
 
   ...timestamps,
 });
 
 // --- BRADFORD FACTOR AUDIT LOG ---
-// Immutable audit trail for manual Bradford Factor overrides.
-// Only super-admins can override; every change is permanently logged.
 export const bradfordAuditLog = pgTable("bradford_audit_log", {
   id: text("id")
     .primaryKey()
@@ -427,12 +416,10 @@ export const bradfordAuditLog = pgTable("bradford_audit_log", {
     .notNull()
     .references(() => employees.id),
 
-  computedScore: decimal("computed_score", { precision: 8, scale: 2 })
-    .notNull(), // The system-calculated score at the time
-  overrideScore: decimal("override_score", { precision: 8, scale: 2 })
-    .notNull(), // The new score set by admin
+  computedScore: decimal("computed_score", { precision: 8, scale: 2 }).notNull(),
+  overrideScore: decimal("override_score", { precision: 8, scale: 2 }).notNull(),
 
-  reason: text("reason").notNull(), // Admin must provide justification
+  reason: text("reason").notNull(),
   performedBy: text("performed_by")
     .notNull()
     .references(() => user.id),

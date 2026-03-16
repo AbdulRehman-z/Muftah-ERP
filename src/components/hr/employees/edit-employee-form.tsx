@@ -34,9 +34,26 @@ import {
   STANDARD_ALLOWANCES,
   type AllowanceConfig,
 } from "@/lib/types/hr-types";
-import { AllowanceCard, DEDUCTION_OCCASIONS } from "@/components/hr/employees/allowance-card";
-import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AllowanceCard,
+  DEDUCTION_OCCASIONS,
+} from "@/components/hr/employees/allowance-card";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
+
+// ── Rest days config ──────────────────────────────────────────────────────────
+
+const DAYS_OF_WEEK = [
+  { value: 0, label: "Sun" },
+  { value: 1, label: "Mon" },
+  { value: 2, label: "Tue" },
+  { value: 3, label: "Wed" },
+  { value: 4, label: "Thu" },
+  { value: 5, label: "Fri" },
+  { value: 6, label: "Sat" },
+] as const;
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 type Employee = Awaited<ReturnType<typeof getEmployeesFn>>[0];
 
@@ -45,9 +62,7 @@ interface Props {
   onSuccess: () => void;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPERS (module-level, not recreated on every render)
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const FALLBACK_DEDUCTIONS: AllowanceConfig["deductions"] = {
   absent: true,
@@ -58,12 +73,6 @@ const FALLBACK_DEDUCTIONS: AllowanceConfig["deductions"] = {
   earlyLeaving: false,
 };
 
-/**
- * Safely migrates an allowance from the DB that may be missing the
- * deductions field (saved before this feature was implemented).
- * Each sub-field is individually defaulted so partial DB objects also work.
- * Also handles backward-compat migration from old `leave` field to `annualLeave`.
- */
 const migrateAllowance = (raw: Partial<AllowanceConfig>): AllowanceConfig => ({
   id: raw.id ?? `custom_${Date.now()}`,
   name: raw.name ?? "Allowance",
@@ -71,11 +80,16 @@ const migrateAllowance = (raw: Partial<AllowanceConfig>): AllowanceConfig => ({
   lateEarlyBasis: raw.lateEarlyBasis ?? "hourly",
   deductions: {
     absent: raw.deductions?.absent ?? FALLBACK_DEDUCTIONS.absent,
-    annualLeave: raw.deductions?.annualLeave ?? (raw.deductions as any)?.leave ?? FALLBACK_DEDUCTIONS.annualLeave,
+    annualLeave:
+      raw.deductions?.annualLeave ??
+      (raw.deductions as any)?.leave ??
+      FALLBACK_DEDUCTIONS.annualLeave,
     sickLeave: raw.deductions?.sickLeave ?? FALLBACK_DEDUCTIONS.sickLeave,
-    specialLeave: raw.deductions?.specialLeave ?? FALLBACK_DEDUCTIONS.specialLeave,
+    specialLeave:
+      raw.deductions?.specialLeave ?? FALLBACK_DEDUCTIONS.specialLeave,
     lateArrival: raw.deductions?.lateArrival ?? FALLBACK_DEDUCTIONS.lateArrival,
-    earlyLeaving: raw.deductions?.earlyLeaving ?? FALLBACK_DEDUCTIONS.earlyLeaving,
+    earlyLeaving:
+      raw.deductions?.earlyLeaving ?? FALLBACK_DEDUCTIONS.earlyLeaving,
   },
 });
 
@@ -93,23 +107,19 @@ const newCustomAllowance = (): AllowanceConfig => ({
   },
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
   const mutate = useUpdateEmployee();
 
-  /**
-   * useMemo so that if the parent re-renders with a different employee
-   * (e.g. sheet closes and re-opens), the migrated allowances correctly
-   * reflect the new employee rather than the stale one from the first render.
-   */
   const existingAllowances = useMemo<AllowanceConfig[]>(() => {
-    const raw = employee.allowanceConfig as unknown as Partial<AllowanceConfig>[] | null;
-    const source = raw ?? (JSON.parse(JSON.stringify(STANDARD_ALLOWANCES)) as AllowanceConfig[]);
+    const raw = employee.allowanceConfig as unknown as
+      | Partial<AllowanceConfig>[]
+      | null;
+    const source =
+      raw ?? (JSON.parse(JSON.stringify(STANDARD_ALLOWANCES)) as AllowanceConfig[]);
     return source.map(migrateAllowance);
-  }, [employee.id]); // re-derive only when the actual employee changes
+  }, [employee.id]);
 
   const form = useForm({
     defaultValues: {
@@ -120,7 +130,11 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
       designation: employee.designation,
       department: employee.department ?? "",
       joiningDate: employee.joiningDate,
-      status: employee.status as "active" | "on_leave" | "terminated" | "resigned",
+      status: employee.status as
+        | "active"
+        | "on_leave"
+        | "terminated"
+        | "resigned",
       employmentType: employee.employmentType as
         | "full_time"
         | "part_time"
@@ -135,6 +149,11 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
       standardSalary: employee.standardSalary ?? "",
       commissionRate: employee.commissionRate ?? "0",
       isOrderBooker: (employee as any).isOrderBooker ?? false,
+      /**
+       * Migrate from DB — existing employees without restDays get [0] (Sunday off).
+       * Once saved once through this form the value is persisted properly.
+       */
+      restDays: (employee.restDays as number[] | null) ?? [0],
       allowanceConfig: existingAllowances,
     },
     validators: {
@@ -145,13 +164,12 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
         { data: value },
         {
           onSuccess: () => {
-            toast.success("Employee records updated");
             onSuccess();
           },
           onError: () => {
             toast.error("Failed to update employee. Please try again.");
           },
-        }
+        },
       );
     },
   });
@@ -166,12 +184,13 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
       className="space-y-8 py-2"
     >
       <FieldGroup>
-
-        {/* ── SECTION: Identity Details ──────────────────────────────────── */}
+        {/* ── SECTION: Identity Details ───────────────────────────────────── */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-primary font-semibold">
             <UserCircle2 className="size-4" />
-            <span className="text-sm uppercase tracking-wider">Identity Details</span>
+            <span className="text-sm uppercase tracking-wider">
+              Identity Details
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -366,11 +385,13 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
 
         <Separator className="opacity-50" />
 
-        {/* ── SECTION: Assigned Role ─────────────────────────────────────── */}
+        {/* ── SECTION: Assigned Role ──────────────────────────────────────── */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-primary font-semibold">
             <Briefcase className="size-4" />
-            <span className="text-sm uppercase tracking-wider">Assigned Role</span>
+            <span className="text-sm uppercase tracking-wider">
+              Assigned Role
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -402,16 +423,113 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
                 </Field>
               )}
             </form.Field>
+            <form.Field name="isOrderBooker">
+              {(field: AnyFieldApi) => (
+                <label className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer">
+                  <Checkbox
+                    checked={field.state.value as boolean}
+                    onCheckedChange={(c) => field.handleChange(!!c)}
+                  />
+                  <div>
+                    <p className="text-[13px] font-medium">Order Booker / Field Sales</p>
+                    <p className="text-[12px] text-muted-foreground">
+                      Enables sales & recovery tracking in attendance
+                    </p>
+                  </div>
+                </label>
+              )}
+            </form.Field>
           </div>
+
+          {/* ── Rest Days Picker ──────────────────────────────────────────── */}
+          <form.Field name="restDays">
+            {(field: AnyFieldApi) => {
+              const currentRestDays = field.state.value as number[];
+
+              const toggleDay = (dayValue: number) => {
+                const isRest = currentRestDays.includes(dayValue);
+                const next = isRest
+                  ? currentRestDays.filter((d) => d !== dayValue)
+                  : [...currentRestDays, dayValue].sort((a, b) => a - b);
+                field.handleChange(next);
+              };
+
+              const restLabels = DAYS_OF_WEEK.filter((d) =>
+                currentRestDays.includes(d.value),
+              ).map((d) => d.label);
+
+              const summaryText =
+                restLabels.length === 0
+                  ? "No rest days — employee works every day of the week."
+                  : restLabels.length === 7
+                    ? "All days selected — employee has no working days."
+                    : `Off on: ${restLabels.join(", ")}`;
+
+              return (
+                <Field>
+                  <FieldLabel className="flex items-center justify-between">
+                    <span>Weekly Rest Days</span>
+                    <span className="text-[11px] font-normal text-muted-foreground">
+                      Highlighted = off day
+                    </span>
+                  </FieldLabel>
+
+                  <div className="flex gap-1.5">
+                    {DAYS_OF_WEEK.map((day) => {
+                      const isRest = currentRestDays.includes(day.value);
+                      return (
+                        <button
+                          key={day.value}
+                          type="button"
+                          onClick={() => toggleDay(day.value)}
+                          className={cn(
+                            "flex-1 h-9 rounded-lg text-[12px] font-semibold border transition-all duration-150",
+                            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+                            isRest
+                              ? "bg-rose-50 border-rose-200 text-rose-700 shadow-sm dark:bg-rose-950/30 dark:border-rose-800/60 dark:text-rose-400"
+                              : "bg-background border-border/60 text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+                          )}
+                        >
+                          {day.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <p
+                    className={cn(
+                      "text-[11.5px] font-medium mt-1 transition-colors",
+                      restLabels.length === 0
+                        ? "text-muted-foreground/60"
+                        : restLabels.length === 7
+                          ? "text-destructive"
+                          : "text-muted-foreground",
+                    )}
+                  >
+                    {summaryText}
+                  </p>
+
+                  <p className="text-[11px] text-muted-foreground/50 leading-relaxed mt-0.5">
+                    Rest days are excluded from Total Job Days, per-day salary
+                    rates, and unmarked-day alarms in payroll.
+                  </p>
+
+                  <FieldError errors={field.state.meta.errors} />
+                </Field>
+              );
+            }}
+          </form.Field>
         </div>
 
         <Separator className="opacity-50" />
 
-        {/* ── SECTION: Salary & Allowances ──────────────────────────────── */}
+        {/* ── SECTION: Salary & Allowances ───────────────────────────────── */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-primary font-semibold">
             <Wallet className="size-4" />
-            <span className="text-sm uppercase tracking-wider">Salary & Allowances</span>
+            <span className="text-sm uppercase tracking-wider">
+              Salary & Allowances
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -442,36 +560,38 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
             </form.Field>
 
             <form.Subscribe selector={(s: any) => s.values.isOrderBooker}>
-              {(isOrderBooker) => isOrderBooker ? (
-                <form.Field name="commissionRate">
-                  {(field: AnyFieldApi) => (
-                    <Field>
-                      <FieldLabel className="text-muted-foreground font-medium">
-                        Commission Rate (%)
-                      </FieldLabel>
-                      <div className="relative group max-w-xs">
-                        <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                          <span className="text-xs font-bold text-muted-foreground/70 group-focus-within:text-blue-600 transition-colors">
-                            %
-                          </span>
+              {(isOrderBooker) =>
+                isOrderBooker ? (
+                  <form.Field name="commissionRate">
+                    {(field: AnyFieldApi) => (
+                      <Field>
+                        <FieldLabel className="text-muted-foreground font-medium">
+                          Commission Rate (%)
+                        </FieldLabel>
+                        <div className="relative group max-w-xs">
+                          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                            <span className="text-xs font-bold text-muted-foreground/70 group-focus-within:text-blue-600 transition-colors">
+                              %
+                            </span>
+                          </div>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="100"
+                            placeholder="0.0"
+                            value={field.state.value as string}
+                            onBlur={field.handleBlur}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            className="pr-10 bg-blue-50/30 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/30 focus-visible:ring-blue-500 font-mono text-lg h-12 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
                         </div>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          max="100"
-                          placeholder="0.0"
-                          value={field.state.value as string}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          className="pr-10 bg-blue-50/30 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/30 focus-visible:ring-blue-500 font-mono text-lg h-12 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                      </div>
-                      <FieldError errors={field.state.meta.errors} />
-                    </Field>
-                  )}
-                </form.Field>
-              ) : null}
+                        <FieldError errors={field.state.meta.errors} />
+                      </Field>
+                    )}
+                  </form.Field>
+                ) : null
+              }
             </form.Subscribe>
           </div>
 
@@ -479,11 +599,13 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
             <form.Subscribe selector={(s: any) => s.values.isOrderBooker}>
               {(isOrderBooker) => (
                 <p className="text-[11px] text-muted-foreground/60 mt-2">
-                  <strong>Basic Salary:</strong> On absent days, a full day's worth is cut.
+                  <strong>Basic Salary:</strong> On absent days, a full day's
+                  worth is cut.
                   {isOrderBooker && (
                     <>
                       <br />
-                      <strong>Commission:</strong> Order bookers receive this % on their total collected Recovery.
+                      <strong>Commission:</strong> Order bookers receive this %
+                      on their total collected Recovery.
                     </>
                   )}
                 </p>
@@ -499,7 +621,9 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
                     placeholder="e.g. 8"
                     value={field.state.value as number}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    onChange={(e) =>
+                      field.handleChange(Number(e.target.value))
+                    }
                     className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <FieldError errors={field.state.meta.errors} />
@@ -508,7 +632,7 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
             </form.Field>
           </div>
 
-          {/* ── Allowances ── */}
+          {/* ── Allowances ─────────────────────────────────────────────── */}
           <div className="pt-2">
             <div className="flex justify-between items-center mb-1">
               <div>
@@ -516,26 +640,30 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
                   ALLOWANCES
                 </h4>
                 <p className="text-[11px] text-muted-foreground/60 mt-0.5">
-                  Toggle the icons on each card to configure when that allowance is deducted.
+                  Toggle the icons on each card to configure when that allowance
+                  is deducted.
                 </p>
               </div>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => form.pushFieldValue("allowanceConfig", newCustomAllowance())}
+                onClick={() =>
+                  form.pushFieldValue("allowanceConfig", newCustomAllowance())
+                }
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Custom
               </Button>
             </div>
 
-            {/* Legend — driven by DEDUCTION_OCCASIONS, never drifts out of sync */}
             <div className="flex flex-wrap items-center gap-3 py-3 px-1 mb-3 border-b border-dashed">
               {DEDUCTION_OCCASIONS.map((o) => (
                 <div key={o.id} className="flex items-center gap-1.5">
                   <div className={`size-2 rounded-full ${o.legendColor}`} />
-                  <span className="text-[10px] text-muted-foreground/70 font-medium">{o.label}</span>
+                  <span className="text-[10px] text-muted-foreground/70 font-medium">
+                    {o.label}
+                  </span>
                 </div>
               ))}
               <span className="text-[10px] text-muted-foreground/40 ml-auto">
@@ -557,7 +685,7 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
                           form.removeFieldValue("allowanceConfig", index)
                         }
                       />
-                    )
+                    ),
                   )}
                 </div>
               )}
@@ -565,11 +693,15 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
           </div>
         </div>
 
-        {/* ── Submit ────────────────────────────────────────────────────── */}
+        {/* ── Submit ──────────────────────────────────────────────────────── */}
         <div className="pt-4">
           <form.Subscribe selector={(state) => state.isSubmitting}>
             {(isSubmitting) => (
-              <Button type="submit" disabled={isSubmitting} className="w-full h-11">
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full h-11"
+              >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 size-4 animate-spin" />
@@ -582,7 +714,6 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
             )}
           </form.Subscribe>
         </div>
-
       </FieldGroup>
     </form>
   );

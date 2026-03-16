@@ -32,9 +32,26 @@ import {
   STANDARD_ALLOWANCES,
   type AllowanceConfig,
 } from "@/lib/types/hr-types";
-import { AllowanceCard, DEDUCTION_OCCASIONS } from "@/components/hr/employees/allowance-card";
-import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AllowanceCard,
+  DEDUCTION_OCCASIONS,
+} from "@/components/hr/employees/allowance-card";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
+
+// ── Rest days config ────────────────────────────────────────────────────────
+
+const DAYS_OF_WEEK = [
+  { value: 0, label: "Sun" },
+  { value: 1, label: "Mon" },
+  { value: 2, label: "Tue" },
+  { value: 3, label: "Wed" },
+  { value: 4, label: "Thu" },
+  { value: 5, label: "Fri" },
+  { value: 6, label: "Sat" },
+] as const;
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
 interface Props {
   onSuccess: () => void;
@@ -53,6 +70,8 @@ const newCustomAllowance = (): AllowanceConfig => ({
     earlyLeaving: false,
   },
 });
+
+// ── Component ────────────────────────────────────────────────────────────────
 
 export const AddEmployeeForm = ({ onSuccess }: Props) => {
   const mutate = useCreateEmployee();
@@ -80,9 +99,16 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
       standardSalary: "",
       commissionRate: "0",
       isOrderBooker: false,
+      /**
+       * Days of the week that are rest days (non-working).
+       * 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat.
+       * Default: [0] → Sunday off only.
+       * For Sat+Sun: [0, 6].
+       */
+      restDays: [0] as number[],
       // Deep clone so mutations don't affect the STANDARD_ALLOWANCES constant
       allowanceConfig: JSON.parse(
-        JSON.stringify(STANDARD_ALLOWANCES)
+        JSON.stringify(STANDARD_ALLOWANCES),
       ) as AllowanceConfig[],
     },
     validators: {
@@ -93,14 +119,13 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
         { data: value },
         {
           onSuccess: () => {
-            toast.success("Employee registered successfully");
             onSuccess();
-            form.reset();
+            // form.reset();
           },
           onError: () => {
             toast.error("Failed to register employee. Please try again.");
           },
-        }
+        },
       );
     },
   });
@@ -115,12 +140,13 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
       className="space-y-8"
     >
       <FieldGroup>
-
-        {/* ── SECTION: Identity & Personal ─────────────────────────────── */}
+        {/* ── SECTION: Identity & Personal ───────────────────────────────── */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-primary font-semibold">
             <UserPlus className="size-4" />
-            <span className="text-sm uppercase tracking-wider">Identity & Personal</span>
+            <span className="text-sm uppercase tracking-wider">
+              Identity & Personal
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -270,11 +296,13 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
 
         <Separator className="opacity-50" />
 
-        {/* ── SECTION: Job Role & Status ────────────────────────────────── */}
+        {/* ── SECTION: Job Role & Status ──────────────────────────────────── */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-primary font-semibold">
             <Briefcase className="size-4" />
-            <span className="text-sm uppercase tracking-wider">Job Role & Status</span>
+            <span className="text-sm uppercase tracking-wider">
+              Job Role & Status
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -304,6 +332,22 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
                   />
                   <FieldError errors={field.state.meta.errors} />
                 </Field>
+              )}
+            </form.Field>
+            <form.Field name="isOrderBooker">
+              {(field: AnyFieldApi) => (
+                <label className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer">
+                  <Checkbox
+                    checked={field.state.value as boolean}
+                    onCheckedChange={(c) => field.handleChange(!!c)}
+                  />
+                  <div>
+                    <p className="text-[13px] font-medium">Order Booker / Field Sales</p>
+                    <p className="text-[12px] text-muted-foreground">
+                      Enables sales & recovery tracking in attendance
+                    </p>
+                  </div>
+                </label>
               )}
             </form.Field>
           </div>
@@ -339,7 +383,9 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
                     placeholder="e.g. 8"
                     value={field.state.value as number}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    onChange={(e) =>
+                      field.handleChange(Number(e.target.value))
+                    }
                     className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <FieldError errors={field.state.meta.errors} />
@@ -347,15 +393,100 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
               )}
             </form.Field>
           </div>
+
+          {/* ── Rest Days Picker ────────────────────────────────────────── */}
+          <form.Field name="restDays">
+            {(field: AnyFieldApi) => {
+              const currentRestDays = field.state.value as number[];
+
+              const toggleDay = (dayValue: number) => {
+                const isRest = currentRestDays.includes(dayValue);
+                const next = isRest
+                  ? currentRestDays.filter((d) => d !== dayValue)
+                  : [...currentRestDays, dayValue].sort((a, b) => a - b);
+                field.handleChange(next);
+              };
+
+              // Summary label
+              const restLabels = DAYS_OF_WEEK.filter((d) =>
+                currentRestDays.includes(d.value),
+              ).map((d) => d.label);
+
+              const summaryText =
+                restLabels.length === 0
+                  ? "No rest days — employee works every day of the week."
+                  : restLabels.length === 7
+                    ? "All days selected — employee has no working days."
+                    : `Off on: ${restLabels.join(", ")}`;
+
+              return (
+                <Field>
+                  <FieldLabel className="flex items-center justify-between">
+                    <span>Weekly Rest Days</span>
+                    <span className="text-[11px] font-normal text-muted-foreground">
+                      Highlighted = off day
+                    </span>
+                  </FieldLabel>
+
+                  {/* Day toggle row */}
+                  <div className="flex gap-1.5">
+                    {DAYS_OF_WEEK.map((day) => {
+                      const isRest = currentRestDays.includes(day.value);
+                      return (
+                        <button
+                          key={day.value}
+                          type="button"
+                          onClick={() => toggleDay(day.value)}
+                          className={cn(
+                            "flex-1 h-9 rounded-lg text-[12px] font-semibold border transition-all duration-150",
+                            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+                            isRest
+                              ? "bg-rose-50 border-rose-200 text-rose-700 shadow-sm dark:bg-rose-950/30 dark:border-rose-800/60 dark:text-rose-400"
+                              : "bg-background border-border/60 text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+                          )}
+                        >
+                          {day.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Live summary */}
+                  <p
+                    className={cn(
+                      "text-[11.5px] font-medium mt-1 transition-colors",
+                      restLabels.length === 0
+                        ? "text-muted-foreground/60"
+                        : restLabels.length === 7
+                          ? "text-destructive"
+                          : "text-muted-foreground",
+                    )}
+                  >
+                    {summaryText}
+                  </p>
+
+                  {/* Deduction note */}
+                  <p className="text-[11px] text-muted-foreground/50 leading-relaxed mt-0.5">
+                    Rest days are excluded from Total Job Days, per-day salary
+                    rates, and unmarked-day alarms in payroll.
+                  </p>
+
+                  <FieldError errors={field.state.meta.errors} />
+                </Field>
+              );
+            }}
+          </form.Field>
         </div>
 
         <Separator className="opacity-50" />
 
-        {/* ── SECTION: Compensation & Allowances ───────────────────────── */}
+        {/* ── SECTION: Compensation & Allowances ─────────────────────────── */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-primary font-semibold">
             <Wallet className="size-4" />
-            <span className="text-sm uppercase tracking-wider">Compensation & Allowances</span>
+            <span className="text-sm uppercase tracking-wider">
+              Compensation & Allowances
+            </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -386,51 +517,59 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
             </form.Field>
 
             <form.Subscribe selector={(s: any) => s.values.isOrderBooker}>
-              {(isOrderBooker) => isOrderBooker ? (
-                <form.Field name="commissionRate">
-                  {(field: AnyFieldApi) => (
-                    <Field>
-                      <FieldLabel className="text-muted-foreground font-medium">
-                        Commission Rate (%)
-                      </FieldLabel>
-                      <div className="relative group max-w-xs">
-                        <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                          <span className="text-xs font-bold text-muted-foreground/70 group-focus-within:text-blue-600 transition-colors">
-                            %
-                          </span>
+              {(isOrderBooker) =>
+                isOrderBooker ? (
+                  <form.Field name="commissionRate">
+                    {(field: AnyFieldApi) => (
+                      <Field>
+                        <FieldLabel className="text-muted-foreground font-medium">
+                          Commission Rate (%)
+                        </FieldLabel>
+                        <div className="relative group max-w-xs">
+                          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                            <span className="text-xs font-bold text-muted-foreground/70 group-focus-within:text-blue-600 transition-colors">
+                              %
+                            </span>
+                          </div>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="100"
+                            placeholder="0.0"
+                            value={field.state.value as string}
+                            onBlur={field.handleBlur}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            className="pr-10 bg-blue-50/30 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/30 focus-visible:ring-blue-500 font-mono text-lg h-12 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
                         </div>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          max="100"
-                          placeholder="0.0"
-                          value={field.state.value as string}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          className="pr-10 bg-blue-50/30 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/30 focus-visible:ring-blue-500 font-mono text-lg h-12 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                      </div>
-                      <FieldError errors={field.state.meta.errors} />
-                    </Field>
-                  )}
-                </form.Field>
-              ) : null}
+                        <FieldError errors={field.state.meta.errors} />
+                      </Field>
+                    )}
+                  </form.Field>
+                ) : null
+              }
             </form.Subscribe>
           </div>
 
           <form.Subscribe selector={(s: any) => s.values.isOrderBooker}>
             {(isOrderBooker) => (
               <p className="text-[11px] text-muted-foreground/60 mt-2">
-                <strong>Basic Salary:</strong> On absent days, a full day's worth is cut. 
+                <strong>Basic Salary:</strong> On absent days, a full day's
+                worth is cut.
                 {isOrderBooker && (
-                  <> <br /><strong>Commission:</strong> Order bookers receive this % on their total collected Recovery.</>
+                  <>
+                    {" "}
+                    <br />
+                    <strong>Commission:</strong> Order bookers receive this % on
+                    their total collected Recovery.
+                  </>
                 )}
               </p>
             )}
           </form.Subscribe>
 
-          {/* ── Allowances ── */}
+          {/* ── Allowances ─────────────────────────────────────────────── */}
           <div className="pt-2">
             <div className="flex justify-between items-center mb-1">
               <div>
@@ -438,26 +577,31 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
                   ALLOWANCES
                 </h4>
                 <p className="text-[11px] text-muted-foreground/60 mt-0.5 w-3/4">
-                  Toggle the icons on each card to configure when that allowance is deducted.
+                  Toggle the icons on each card to configure when that allowance
+                  is deducted.
                 </p>
               </div>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => form.pushFieldValue("allowanceConfig", newCustomAllowance())}
+                onClick={() =>
+                  form.pushFieldValue("allowanceConfig", newCustomAllowance())
+                }
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Custom
               </Button>
             </div>
 
-            {/* Legend — driven by DEDUCTION_OCCASIONS, never drifts out of sync */}
+            {/* Legend */}
             <div className="flex flex-wrap items-center gap-3 py-3 px-1 mb-3 border-b border-dashed">
               {DEDUCTION_OCCASIONS.map((o) => (
                 <div key={o.id} className="flex items-center gap-1.5">
                   <div className={`size-2 rounded-full ${o.legendColor}`} />
-                  <span className="text-[10px] text-muted-foreground/70 font-medium">{o.label}</span>
+                  <span className="text-[10px] text-muted-foreground/70 font-medium">
+                    {o.label}
+                  </span>
                 </div>
               ))}
               <span className="text-[10px] text-muted-foreground/40 ml-auto">
@@ -479,7 +623,7 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
                           form.removeFieldValue("allowanceConfig", index)
                         }
                       />
-                    )
+                    ),
                   )}
                 </div>
               )}
@@ -487,11 +631,15 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
           </div>
         </div>
 
-        {/* ── Submit ────────────────────────────────────────────────────── */}
+        {/* ── Submit ──────────────────────────────────────────────────────── */}
         <div className="pt-4">
           <form.Subscribe selector={(state) => state.isSubmitting}>
             {(isSubmitting) => (
-              <Button type="submit" disabled={isSubmitting} className="w-full h-11">
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full h-11"
+              >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 size-4 animate-spin" />
@@ -504,7 +652,6 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
             )}
           </form.Subscribe>
         </div>
-
       </FieldGroup>
     </form>
   );

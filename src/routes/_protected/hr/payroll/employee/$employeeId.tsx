@@ -28,7 +28,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import type { PayslipData } from "@/components/hr/payroll/payslip-view";
+import { PayslipData } from "@/components/hr/payroll/payslip-view";
 
 export const Route = createFileRoute(
   "/_protected/hr/payroll/employee/$employeeId",
@@ -284,7 +284,7 @@ function EmployeePayrollHistory() {
 
   const formatCurrency = (value: number) => Math.round(value).toLocaleString();
 
-  const handleViewPayslip = (payslip: any) => {
+  const handleViewPayslip = (payslip: PayslipData) => {
     setSelectedPayslip(payslip);
     setIsPayslipOpen(true);
   };

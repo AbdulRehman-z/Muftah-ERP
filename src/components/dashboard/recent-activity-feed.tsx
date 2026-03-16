@@ -218,10 +218,12 @@ export function RecentActivityFeed({
 
                       {/* Meta row */}
                       <div className="flex items-center gap-2 flex-wrap">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 text-[10px]">
                           <Box className="size-2.5 text-muted-foreground/50" />
-                          <span className="text-[10px] font-black text-primary tabular-nums">
-                            {item.cartonsProduced.toLocaleString()} CTNs
+                          <span className="font-black text-primary tabular-nums">
+                            {item.cartonsProduced > 0
+                              ? `${item.cartonsProduced.toLocaleString()} CTNs`
+                              : `${item.containersProduced.toLocaleString()} Units`}
                           </span>
                         </div>
 

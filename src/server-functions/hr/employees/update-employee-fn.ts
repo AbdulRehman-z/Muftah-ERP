@@ -36,6 +36,7 @@ export const updateEmployeeFn = createServerFn()
         address: updateData.address,
         bankName: updateData.bankName,
         bankAccountNumber: updateData.bankAccountNumber,
+        restDays: updateData.restDays ?? [0],
         standardDutyHours: updateData.standardDutyHours,
         standardSalary: updateData.standardSalary || "0",
         commissionRate: updateData.commissionRate || "0",

@@ -31,6 +31,7 @@ export const createEmployeeFn = createServerFn()
         cnic: data.cnic,
         address: data.address,
         bankName: data.bankName,
+        restDays: data.restDays ?? [0],
         bankAccountNumber: data.bankAccountNumber,
         standardDutyHours: data.standardDutyHours,
         standardSalary: data.standardSalary || "0",

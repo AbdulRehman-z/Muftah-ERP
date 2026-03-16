@@ -15,9 +15,6 @@ const createPayrollSchema = z.object({
   processedBy: z.string(),
 });
 
-/**
- * Creates a new payroll and auto-generates payslips for all eligible employees.
- */
 export const createPayrollFn = createServerFn()
   .middleware([requireAdminMiddleware])
   .inputValidator(createPayrollSchema)

@@ -1,17 +1,90 @@
 import { db } from "@/db";
-import { employees, payslips, payrolls } from "@/db/schemas/hr-schema";
+import { employees, payslips, payrolls, attendance } from "@/db/schemas/hr-schema";
 import { requireAdminMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
-import { eq, and, sql, desc, asc } from "drizzle-orm";
-import { format, parseISO, startOfMonth, subMonths, addDays } from "date-fns";
-// import { generateEmployeePayslipCore } from "./payroll/core";
+import { eq, and, sql, desc, asc, inArray, gte, lte } from "drizzle-orm";
+import {
+  format,
+  parseISO,
+  startOfMonth,
+  subMonths,
+  addDays,
+  eachDayOfInterval,
+  isAfter,
+} from "date-fns";
 import { calculatePayslip } from "@/lib/payroll-calculator";
 import { createServerFn } from "@tanstack/react-start";
 import { generateEmployeePayslipCore } from "./core";
 
+// ── Helper ─────────────────────────────────────────────────────────────────
+
 /**
- * Get list of employees with their payroll status for a specific month.
+ * Given a cycle date range, an employee's restDays array, and their
+ * attendance records, returns the three per-employee readiness fields.
+ *
+ * "Unmarked days" = working days that have already elapsed (up to today)
+ * with zero attendance record — rest days and holidays are excluded.
  */
+function computeEmployeeReadiness(
+  startDate: string,
+  endDate: string,
+  restDays: number[],
+  empRecords: {
+    date: string;
+    status: string;
+    overtimeStatus: string | null;
+    overtimeHours: string | null;
+    leaveApprovalStatus: string | null;
+  }[],
+): {
+  unmarkedDays: number;
+  hasPendingOvertimeApprovals: boolean;
+  hasPendingLeaveApprovals: boolean;
+} {
+  const today = format(new Date(), "yyyy-MM-dd");
+
+  // Build set of dates that have a record (any status)
+  const recordedDates = new Set(empRecords.map((r) => r.date));
+
+  // Build set of holiday dates
+  const holidayDates = new Set(
+    empRecords.filter((r) => r.status === "holiday").map((r) => r.date),
+  );
+
+  // Working days that have elapsed = not a rest day, not a holiday, not in future
+  const allDays = eachDayOfInterval({
+    start: parseISO(startDate),
+    end: parseISO(endDate),
+  });
+
+  const elapsedWorkingDays = allDays.filter((d) => {
+    const dateStr = format(d, "yyyy-MM-dd");
+    return (
+      dateStr <= today &&
+      !restDays.includes(d.getDay()) &&
+      !holidayDates.has(dateStr)
+    );
+  });
+
+  const unmarkedDays = elapsedWorkingDays.filter(
+    (d) => !recordedDates.has(format(d, "yyyy-MM-dd")),
+  ).length;
+
+  const hasPendingOvertimeApprovals = empRecords.some(
+    (r) =>
+      r.overtimeStatus === "pending" &&
+      parseFloat(r.overtimeHours || "0") > 0,
+  );
+
+  const hasPendingLeaveApprovals = empRecords.some(
+    (r) => r.leaveApprovalStatus === "pending",
+  );
+
+  return { unmarkedDays, hasPendingOvertimeApprovals, hasPendingLeaveApprovals };
+}
+
+// ── Main Fn ────────────────────────────────────────────────────────────────
+
 export const getMonthlyPayrollTableFn = createServerFn()
   .middleware([requireAdminMiddleware])
   .inputValidator(
@@ -23,7 +96,7 @@ export const getMonthlyPayrollTableFn = createServerFn()
   )
   .handler(async ({ data }) => {
     const { month, limit, offset } = data;
-    // Payroll period: 16th of prev month to 15th of current month
+
     const monthDate = parseISO(`${month}-01`);
     const prevMonth = subMonths(monthDate, 1);
     const startDate = format(
@@ -32,29 +105,26 @@ export const getMonthlyPayrollTableFn = createServerFn()
     );
     const endDate = format(addDays(startOfMonth(monthDate), 14), "yyyy-MM-dd");
 
-    // Find the payroll for this month (if any)
+    // ── Payroll record for this month ──────────────────────────────────
     const payroll = await db.query.payrolls.findFirst({
       where: eq(payrolls.month, `${month}-01`),
     });
 
-    // Fetch paginated active employees
+    // ── Paginated active employees (includes restDays via schema) ──────
     const allEmployees = await db.query.employees.findMany({
       where: eq(employees.status, "active"),
-      with: {
-        user: true,
-      },
       limit,
       offset,
       orderBy: [asc(employees.employeeCode)],
     });
 
-    // Get total count for pagination
+    // ── Total active count ─────────────────────────────────────────────
     const [{ count }] = await db
       .select({ count: sql<number>`count(*)` })
       .from(employees)
       .where(eq(employees.status, "active"));
 
-    // Fetch existing payslips for this payroll (if exists)
+    // ── Existing payslips for this payroll ─────────────────────────────
     let existingPayslips: Record<string, any> = {};
     if (payroll) {
       const payslipsList = await db.query.payslips.findMany({
@@ -65,12 +135,11 @@ export const getMonthlyPayrollTableFn = createServerFn()
       });
     }
 
-    // Fetch missed payslip info for previous month
+    // ── Last-month missed payslip check ────────────────────────────────
     const lastMonthStr = format(subMonths(monthDate, 1), "yyyy-MM");
     const lastMonthPayroll = await db.query.payrolls.findFirst({
       where: eq(payrolls.month, `${lastMonthStr}-01`),
     });
-
     const lastMonthPayslips: Record<string, boolean> = {};
     if (lastMonthPayroll) {
       const list = await db.query.payslips.findMany({
@@ -80,11 +149,44 @@ export const getMonthlyPayrollTableFn = createServerFn()
       list.forEach((p) => (lastMonthPayslips[p.employeeId] = true));
     }
 
-    // Calculate total stats for the whole month (not just paginated)
+    // ── Batch-fetch attendance for ALL paginated employees in one query ─
+    // This is critical — avoids N+1 (one query per employee).
+    const employeeIds = allEmployees.map((e) => e.id);
+
+    const allAttendanceRecords =
+      employeeIds.length > 0
+        ? await db
+          .select({
+            employeeId: attendance.employeeId,
+            date: attendance.date,
+            status: attendance.status,
+            overtimeStatus: attendance.overtimeStatus,
+            overtimeHours: attendance.overtimeHours,
+            leaveApprovalStatus: attendance.leaveApprovalStatus,
+          })
+          .from(attendance)
+          .where(
+            and(
+              inArray(attendance.employeeId, employeeIds),
+              gte(attendance.date, startDate),
+              lte(attendance.date, endDate),
+            ),
+          )
+        : [];
+
+    // Group records by employeeId for O(1) lookup
+    const attendanceByEmployee = allAttendanceRecords.reduce(
+      (acc, rec) => {
+        if (!acc[rec.employeeId]) acc[rec.employeeId] = [];
+        acc[rec.employeeId].push(rec);
+        return acc;
+      },
+      {} as Record<string, typeof allAttendanceRecords>,
+    );
+
+    // ── KPI stats (whole dataset, not just page) ───────────────────────
     const totalStats = await db
-      .select({
-        totalBasic: sql<string>`sum(${employees.standardSalary})`,
-      })
+      .select({ totalBasic: sql<string>`sum(${employees.standardSalary})` })
       .from(employees)
       .where(eq(employees.status, "active"));
 
@@ -108,15 +210,23 @@ export const getMonthlyPayrollTableFn = createServerFn()
           payroll ? eq(payslips.payrollId, payroll.id) : sql`1=0`,
         ),
       )
-      .where(and(eq(employees.status, "active"), sql`${payslips.id} IS NULL`));
+      .where(
+        and(eq(employees.status, "active"), sql`${payslips.id} IS NULL`),
+      );
+
+    // ── Build table rows ───────────────────────────────────────────────
     const tableData = allEmployees.map((emp) => {
       const payslip = existingPayslips[emp.id];
-
-      // Check if joining month completed?
-      // Logic: calculated based on joiningDate vs selected month.
-      // For now, simple logic: if joining date is before period end.
       const isEligible = emp.joiningDate <= endDate;
       const missedLastMonth = lastMonthPayroll && !lastMonthPayslips[emp.id];
+
+      // Per-employee rest days — default [0] (Sunday) if not set
+      const restDays: number[] = (emp.restDays as number[] | null) ?? [0];
+
+      const empRecords = attendanceByEmployee[emp.id] ?? [];
+
+      const { unmarkedDays, hasPendingOvertimeApprovals, hasPendingLeaveApprovals } =
+        computeEmployeeReadiness(startDate, endDate, restDays, empRecords);
 
       return {
         id: emp.id,
@@ -128,7 +238,7 @@ export const getMonthlyPayrollTableFn = createServerFn()
         joiningDate: emp.joiningDate,
         standardSalary: emp.standardSalary,
 
-        // Payroll Status
+        // Payroll status
         hasPayslip: !!payslip,
         payslipId: payslip?.id,
         netSalary: payslip?.netSalary,
@@ -136,6 +246,11 @@ export const getMonthlyPayrollTableFn = createServerFn()
 
         isEligible,
         missedLastMonth,
+
+        // ── Per-employee readiness ──────────────────────────────────
+        unmarkedDays,
+        hasPendingOvertimeApprovals,
+        hasPendingLeaveApprovals,
       };
     });
 
@@ -153,23 +268,16 @@ export const getMonthlyPayrollTableFn = createServerFn()
     };
   });
 
-/**
- * Preview Payroll Calculation for Single Employee (Calculator Sheet)
- * Performs calculation on-the-fly without saving.
- */
+// ── Preview Payslip ────────────────────────────────────────────────────────
+
 export const previewEmployeePayslipFn = createServerFn()
   .middleware([requireAdminMiddleware])
   .inputValidator(
     z.object({
       employeeId: z.string(),
-      month: z.string(), // YYYY-MM
+      month: z.string(),
       manualDeductions: z
-        .array(
-          z.object({
-            description: z.string(),
-            amount: z.number(),
-          }),
-        )
+        .array(z.object({ description: z.string(), amount: z.number() }))
         .optional(),
       additionalAmounts: z
         .object({
@@ -187,7 +295,6 @@ export const previewEmployeePayslipFn = createServerFn()
   .handler(async ({ data }) => {
     const { employeeId, month } = data;
 
-    // Calculate period
     const monthDate = parseISO(`${month}-01`);
     const prevMonth = subMonths(monthDate, 1);
     const startDate = format(
@@ -195,11 +302,6 @@ export const previewEmployeePayslipFn = createServerFn()
       "yyyy-MM-dd",
     );
     const endDate = format(addDays(startOfMonth(monthDate), 14), "yyyy-MM-dd");
-
-    // Use the core logic wrapper but we need it to return the CALCULATION object,
-    // passing saving to DB.
-    // Actually, `generateEmployeePayslipCore` saves to DB.
-    // We will call `calculatePayslip` directly here.
 
     const employeeData = await db.query.employees.findFirst({
       where: eq(employees.id, employeeId),
@@ -214,7 +316,6 @@ export const previewEmployeePayslipFn = createServerFn()
           lte(table.date, endDate),
         ),
     });
-
     const formattedAttendance = attendanceRecords.map((record) => ({
       date: record.date,
       status: record.status as any,
@@ -224,30 +325,24 @@ export const previewEmployeePayslipFn = createServerFn()
       isApprovedLeave: record.isApprovedLeave ?? false,
       leaveType: record.leaveType ?? null,
       overtimeStatus: record.overtimeStatus ?? "pending",
+      isLate: record.isLate ?? false,
+      earlyDepartureStatus: record.earlyDepartureStatus ?? "none",
     }));
 
     let advanceDeduction = data.additionalAmounts?.advanceDeduction ?? 0;
-
-    // Auto-fetch pending advances if manual override is not strictly > 0
     if (advanceDeduction === 0) {
       const pendingAdvances = await db.query.salaryAdvances.findMany({
-        where: (table, { and, eq }) => and(
-          eq(table.employeeId, employeeId),
-          eq(table.status, "approved"),
-        ),
+        where: (table, { and, eq }) =>
+          and(eq(table.employeeId, employeeId), eq(table.status, "approved")),
       });
-      // Sum all approved but not deducted advances
-      const notYetDeducted = pendingAdvances.filter((a) => !a.deductedInPayslipId);
+      const notYetDeducted = pendingAdvances.filter(
+        (a) => !a.deductedInPayslipId,
+      );
       advanceDeduction = notYetDeducted.reduce(
         (sum, a) => sum + parseFloat(a.amount || "0"),
         0,
       );
     }
-
-    const mergedAdditional = {
-      ...(data.additionalAmounts || {}),
-      advanceDeduction,
-    };
 
     const calculation = calculatePayslip(
       employeeData as any,
@@ -257,10 +352,9 @@ export const previewEmployeePayslipFn = createServerFn()
         manualDeductions: data.manualDeductions || [],
         deductConveyanceOnLeave: true,
       },
-      mergedAdditional,
+      { ...(data.additionalAmounts || {}), advanceDeduction },
     );
 
-    // Fetch missed payslip info for previous month
     const lastMonthStr = format(subMonths(monthDate, 1), "yyyy-MM");
     const lastMonthPayroll = await db.query.payrolls.findFirst({
       where: eq(payrolls.month, `${lastMonthStr}-01`),
@@ -284,19 +378,14 @@ export const previewEmployeePayslipFn = createServerFn()
     };
   });
 
-/**
- * Generate (Save) Single Payslip from Preview
- * This creates/updates the payslip record.
- */
+// ── Save Payslip ───────────────────────────────────────────────────────────
+
 export const saveEmployeePayslipFn = createServerFn()
   .middleware([requireAdminMiddleware])
   .inputValidator(
     z.object({
       employeeId: z.string(),
       month: z.string(),
-      // We trust the preview data or re-calculate?
-      // Safer to RE-CALCULATE with verified inputs.
-      // So we accept the CONFIG.
       deductionConfig: z.any(),
       additionalAmounts: z.any(),
     }),
@@ -304,8 +393,6 @@ export const saveEmployeePayslipFn = createServerFn()
   .handler(async ({ data }) => {
     const { employeeId, month, deductionConfig, additionalAmounts } = data;
 
-    // 1. Ensure Payroll Run exists for this month
-    // Period logic
     const monthDate = parseISO(`${month}-01`);
     const prevMonth = subMonths(monthDate, 1);
     const startDate = format(
@@ -319,7 +406,6 @@ export const saveEmployeePayslipFn = createServerFn()
     });
 
     if (!payroll) {
-      // Create if missing
       const [newPayroll] = await db
         .insert(payrolls)
         .values({
@@ -333,35 +419,24 @@ export const saveEmployeePayslipFn = createServerFn()
       payroll = newPayroll;
     }
 
-    // 2. Call Core Generator
-    const result = await generateEmployeePayslipCore({
+    return await generateEmployeePayslipCore({
       employeeId,
       payrollId: payroll.id,
-      payrollPeriod: {
-        month: `${month}-01`,
-        startDate,
-        endDate,
-      },
+      payrollPeriod: { month: `${month}-01`, startDate, endDate },
       deductionConfig,
       additionalAmounts,
     });
-
-    return result;
   });
 
-/**
- * Get Employee Payroll History
- */
+// ── Employee Payroll History ───────────────────────────────────────────────
+
 export const getEmployeePayrollHistoryFn = createServerFn()
   .middleware([requireAdminMiddleware])
   .inputValidator(z.object({ employeeId: z.string() }))
   .handler(async ({ data }) => {
     return await db.query.payslips.findMany({
       where: eq(payslips.employeeId, data.employeeId),
-      with: {
-        payroll: true,
-        employee: true,
-      },
+      with: { payroll: true, employee: true },
       orderBy: [desc(payslips.createdAt)],
     });
   });

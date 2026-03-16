@@ -8,6 +8,13 @@
       "when": 1773139692679,
       "tag": "0000_young_prowler",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773561982824,
+      "tag": "0001_high_gladiator",
+      "breakpoints": true
     }
   ]
 }

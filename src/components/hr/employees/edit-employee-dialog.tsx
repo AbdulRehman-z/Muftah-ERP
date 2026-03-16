@@ -22,6 +22,7 @@ export const EditEmployeeDialog = ({ open, onOpenChange, employee }: Props) => {
       icon={UserRoundPen}
     >
       <EditEmployeeForm
+        key={employee.id}
         employee={employee}
         onSuccess={() => onOpenChange(false)}
       />

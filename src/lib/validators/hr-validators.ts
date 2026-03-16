@@ -4,11 +4,6 @@ import { z } from "zod";
 // SHARED SUB-SCHEMAS
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Matches AllowanceConfig.deductions exactly — required, not optional.
- * The type mismatch error was caused by .optional() being here while
- * AllowanceConfig had deductions as a required field.
- */
 const deductionsSchema = z.object({
   absent: z.boolean(),
   annualLeave: z.boolean(),
@@ -22,7 +17,7 @@ const allowanceConfigSchema = z.object({
   id: z.string().min(1, "Allowance ID is required"),
   name: z.string().min(1, "Allowance name cannot be empty"),
   amount: z.number().nonnegative("Amount must be 0 or greater"),
-  deductions: deductionsSchema, // ← required, not optional — fixes the TS error
+  deductions: deductionsSchema,
   lateEarlyBasis: z.enum(["hourly", "perDay"]).optional(),
 });
 
@@ -61,11 +56,19 @@ export const createEmployeeSchema = z.object({
 
   commissionRate: z
     .string()
-    .refine((val) => !isNaN(Number(val)) && Number(val) >= 0 && Number(val) <= 100, {
-      message: "Must be a valid percentage between 0 and 100",
-    }),
+    .refine(
+      (val) =>
+        !isNaN(Number(val)) && Number(val) >= 0 && Number(val) <= 100,
+      { message: "Must be a valid percentage between 0 and 100" },
+    ),
 
   isOrderBooker: z.boolean(),
+
+  /**
+   * Days of week this employee does NOT work.
+   * 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat.
+   */
+  restDays: z.array(z.number().int().min(0).max(6)),
   allowanceConfig: z.array(allowanceConfigSchema),
 });
 
@@ -81,78 +84,74 @@ export const deleteEmployeeSchema = z.object({
 // ATTENDANCE SCHEMA
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const upsertAttendanceSchema = z.object({
-  employeeId: z.string().min(1, "Employee is required"),
-  date: z.string().min(1, "Date is required"),
-  status: z.enum(["present", "absent", "leave", "holiday"]),
+export const upsertAttendanceSchema = z
+  .object({
+    employeeId: z.string().min(1, "Employee is required"),
+    date: z.string().min(1, "Date is required"),
+    status: z.enum(["present", "absent", "leave", "holiday"]),
 
-  // Leave classification for Bradford Factor + balance tracking
-  leaveType: z
-    .enum(["sick", "casual", "annual", "unpaid", "special"])
-    .nullable()
-    .optional(),
+    // casual and unpaid removed — use annual or special instead
+    leaveType: z
+      .enum(["sick", "annual", "special"])
+      .nullable()
+      .optional(),
 
-  checkIn: z.string().nullable(),
-  checkOut: z.string().nullable(),
-  checkIn2: z.string().nullable(),
-  checkOut2: z.string().nullable(),
-  dutyHours: z.string().nullable(),
-  overtimeHours: z.string().nullable(),
-  isLate: z.boolean().nullable(),
-  isNightShift: z.boolean().nullable(),
+    checkIn: z.string().nullable(),
+    checkOut: z.string().nullable(),
+    checkIn2: z.string().nullable(),
+    checkOut2: z.string().nullable(),
+    dutyHours: z.string().nullable(),
+    overtimeHours: z.string().nullable(),
+    isLate: z.boolean().nullable(),
+    isNightShift: z.boolean().nullable(),
 
-  // Leave policy
-  isApprovedLeave: z.boolean().nullable(),
+    isApprovedLeave: z.boolean().nullable(),
 
-  // Leave approval workflow
-  leaveApprovalStatus: z
-    .enum(["none", "pending", "approved", "rejected"])
-    .nullable()
-    .optional()
-    .default("none"),
+    leaveApprovalStatus: z
+      .enum(["none", "pending", "approved", "rejected"])
+      .nullable()
+      .optional()
+      .default("none"),
 
-  // Overtime workflow
-  overtimeRemarks: z.string().nullable(),
-  overtimeStatus: z.enum(["pending", "approved", "rejected"]).nullable(),
+    overtimeRemarks: z.string().nullable(),
+    overtimeStatus: z.enum(["pending", "approved", "rejected"]).nullable(),
 
-  // Early departure workflow
-  earlyDepartureStatus: z
-    .enum(["none", "pending", "approved", "rejected"])
-    .nullable()
-    .optional(),
+    earlyDepartureStatus: z
+      .enum(["none", "pending", "approved", "rejected"])
+      .nullable()
+      .optional(),
 
-  // Order Booker Tracking
-  areaVisited: z.string().nullable().optional(),
-  paymentMode: z.enum(["per_km"]).default("per_km"),
-  isCompanyVehicle: z.boolean().default(false),
-  distanceKm: z.string().nullable().optional(),
-  perKmRate: z.string().nullable().optional(),
-  petrolAmount: z.string().nullable().optional(),
-  saleAmount: z.string().nullable().optional(),
-  recoveryAmount: z.string().nullable().optional(),
-  returnAmount: z.string().nullable().optional(),
-  slipNumbers: z.string().nullable().optional(),
-  shopType: z.enum(["old", "new"]).nullable().optional().default("old"),
+    // Order Booker Tracking
+    areaVisited: z.string().nullable().optional(),
+    paymentMode: z.enum(["per_km"]).default("per_km"),
+    isCompanyVehicle: z.boolean().default(false),
+    distanceKm: z.string().nullable().optional(),
+    perKmRate: z.string().nullable().optional(),
+    petrolAmount: z.string().nullable().optional(),
+    saleAmount: z.string().nullable().optional(),
+    recoveryAmount: z.string().nullable().optional(),
+    returnAmount: z.string().nullable().optional(),
+    slipNumbers: z.string().nullable().optional(),
+    shopType: z.enum(["old", "new"]).nullable().optional().default("old"),
 
-  // Entry source for dual-entry system
-  entrySource: z.enum(["biometric", "manual"]).default("manual"),
-  notes: z.string().nullable(),
-}).refine(
-  (data) => {
-    const ot = parseFloat(data.overtimeHours || "0");
-    if (ot > 0 && !data.overtimeRemarks?.trim()) {
-      return false;
-    }
-    return true;
-  },
-  {
-    message: "Overtime reason is required when overtime hours are greater than 0",
-    path: ["overtimeRemarks"],
-  }
-);
+    entrySource: z.enum(["biometric", "manual"]).default("manual"),
+    notes: z.string().nullable(),
+  })
+  .refine(
+    (data) => {
+      const ot = parseFloat(data.overtimeHours || "0");
+      if (ot > 0 && !data.overtimeRemarks?.trim()) return false;
+      return true;
+    },
+    {
+      message:
+        "Overtime reason is required when overtime hours are greater than 0",
+      path: ["overtimeRemarks"],
+    },
+  );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EXPORTED TYPES — inferred directly from schemas so they always stay in sync
+// EXPORTED TYPES
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type CreateEmployeeInput = z.infer<typeof createEmployeeSchema>;

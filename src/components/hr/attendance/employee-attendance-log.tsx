@@ -15,6 +15,7 @@ import {
   Hash,
   CalendarClock,
   TrendingUp,
+  MoonStar,
 } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
 import { useParams } from "@tanstack/react-router";
@@ -22,22 +23,39 @@ import { DataTable } from "@/components/custom/data-table";
 import type { ColumnDef } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 
+// ── Types ──────────────────────────────────────────────────────────────────
+
 type Props = {
   employeeId?: string;
-  month?: string; // YYYY-MM
-  startDate?: string; // YYYY-MM-DD
-  endDate?: string; // YYYY-MM-DD
+  month?: string;
+  startDate?: string;
+  endDate?: string;
+  showHeader?: boolean;
 };
 
 type DayRow = {
   idx: number;
   dateStr: string;
   day: Date;
-  isWeekend: boolean;
+  /** True when this calendar day is a configured rest day for this employee */
+  isRestDay: boolean;
   record: any | undefined;
   standardDutyHours: number;
   hasShift2: boolean;
 };
+
+// ── Helper ─────────────────────────────────────────────────────────────────
+
+/**
+ * Returns true when the given ISO date string falls on one of the
+ * employee's configured rest days (0=Sun … 6=Sat).
+ */
+function checkIsRestDay(dateStr: string, restDays: number[]): boolean {
+  if (!restDays.length) return false;
+  return restDays.includes(parseISO(dateStr).getDay());
+}
+
+// ── Component ──────────────────────────────────────────────────────────────
 
 export const EmployeeAttendanceLog = ({
   employeeId: propId,
@@ -45,9 +63,9 @@ export const EmployeeAttendanceLog = ({
   startDate: propStartDate,
   endDate: propEndDate,
   showHeader = true,
-}: Props & { showHeader?: boolean }) => {
+}: Props) => {
   const params = useParams({ strict: false });
-  // @ts-ignore - we know employeeId might exist
+  // @ts-ignore
   const routeEmployeeId = params.employeeId;
   const employeeId = propId || routeEmployeeId;
 
@@ -71,6 +89,9 @@ export const EmployeeAttendanceLog = ({
 
   const { employee, records } = data;
 
+  // Rest days configured for this employee — default to Sunday if not set
+  const restDays: number[] = (employee as any).restDays ?? [0];
+
   const days = eachDayOfInterval({
     start: parseISO(startDate),
     end: parseISO(endDate),
@@ -78,11 +99,20 @@ export const EmployeeAttendanceLog = ({
 
   const hasShift2 = records.some((r: any) => r.checkIn2);
 
+  // ── Stats — exclude rest days from all computations ────────────────────
+  const workingRecords = records.filter(
+    (r: any) => !checkIsRestDay(r.date, restDays),
+  );
+
   const stats = {
-    totalDuty: records
-      .reduce((acc: number, r: any) => acc + (parseFloat(r.dutyHours || "0") || 0), 0)
+    totalDuty: workingRecords
+      .reduce(
+        (acc: number, r: any) =>
+          acc + (parseFloat(r.dutyHours || "0") || 0),
+        0,
+      )
       .toFixed(1),
-    totalOvertime: records
+    totalOvertime: workingRecords
       .reduce((acc: number, r: any) => {
         if (r.overtimeStatus === "approved") {
           return acc + (parseFloat(r.overtimeHours || "0") || 0);
@@ -90,7 +120,7 @@ export const EmployeeAttendanceLog = ({
         return acc;
       }, 0)
       .toFixed(1),
-    totalUndertime: records
+    totalUndertime: workingRecords
       .reduce((acc: number, r: any) => {
         const duty = parseFloat(r.dutyHours || "0");
         const standard = employee.standardDutyHours || 8;
@@ -100,28 +130,36 @@ export const EmployeeAttendanceLog = ({
         return acc;
       }, 0)
       .toFixed(1),
-    daysPresent: records.filter(
-      (r: any) => r.status === "present",
-    ).length,
+    daysPresent: workingRecords.filter((r: any) => r.status === "present")
+      .length,
   };
 
-  // Build row data for DataTable
-  const tableRows: DayRow[] = days.map((day, idx) => ({
-    idx,
-    dateStr: format(day, "yyyy-MM-dd"),
-    day,
-    isWeekend: format(day, "E") === "Sun",
-    record: records.find((r: any) => r.date === format(day, "yyyy-MM-dd")),
-    standardDutyHours: employee.standardDutyHours || 8,
-    hasShift2,
-  }));
+  // ── Table rows ─────────────────────────────────────────────────────────
+  const tableRows: DayRow[] = days.map((day, idx) => {
+    const dateStr = format(day, "yyyy-MM-dd");
+    return {
+      idx,
+      dateStr,
+      day,
+      isRestDay: checkIsRestDay(dateStr, restDays),
+      record: records.find((r: any) => r.date === dateStr),
+      standardDutyHours: employee.standardDutyHours || 8,
+      hasShift2,
+    };
+  });
 
+  // ── Columns ────────────────────────────────────────────────────────────
   const columns: ColumnDef<DayRow>[] = [
     {
       id: "no",
       header: "#",
       cell: ({ row }) => (
-        <span className="text-muted-foreground font-mono text-xs tabular-nums">
+        <span
+          className={cn(
+            "text-muted-foreground font-mono text-xs tabular-nums",
+            row.original.isRestDay && "opacity-40",
+          )}
+        >
           {row.original.idx + 1}
         </span>
       ),
@@ -129,27 +167,41 @@ export const EmployeeAttendanceLog = ({
     {
       id: "date",
       header: "Date",
-      cell: ({ row }) => (
-        <div className="flex flex-col">
-          <span className="font-semibold text-xs">
-            {format(row.original.day, "dd MMM yyyy")}
-          </span>
-          <span className="text-[10px] text-muted-foreground">
-            {format(row.original.day, "EEEE")}
-          </span>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const { day, isRestDay } = row.original;
+        return (
+          <div className="flex flex-col">
+            <span
+              className={cn(
+                "font-semibold text-xs",
+                isRestDay && "text-muted-foreground/60",
+              )}
+            >
+              {format(day, "dd MMM yyyy")}
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              {format(day, "EEEE")}
+            </span>
+          </div>
+        );
+      },
     },
     {
       id: "shift1",
       header: "Shift 1",
       cell: ({ row }) => {
+        if (row.original.isRestDay)
+          return <span className="text-muted-foreground/40 text-xs">—</span>;
         const record = row.original.record;
         return record?.checkIn ? (
           <span className="flex items-center gap-1 text-xs">
-            <span className="text-emerald-600 font-semibold">{record.checkIn}</span>
+            <span className="text-emerald-600 font-semibold">
+              {record.checkIn}
+            </span>
             <span className="text-muted-foreground">–</span>
-            <span className="text-rose-600 font-semibold">{record.checkOut}</span>
+            <span className="text-rose-600 font-semibold">
+              {record.checkOut}
+            </span>
           </span>
         ) : (
           <span className="text-muted-foreground text-xs">—</span>
@@ -162,12 +214,20 @@ export const EmployeeAttendanceLog = ({
           id: "shift2",
           header: "Shift 2",
           cell: ({ row }: { row: any }) => {
+            if (row.original.isRestDay)
+              return (
+                <span className="text-muted-foreground/40 text-xs">—</span>
+              );
             const record = row.original.record;
             return record?.checkIn2 ? (
               <span className="flex items-center gap-1 text-xs">
-                <span className="text-emerald-600 font-semibold">{record.checkIn2}</span>
+                <span className="text-emerald-600 font-semibold">
+                  {record.checkIn2}
+                </span>
                 <span className="text-muted-foreground">–</span>
-                <span className="text-rose-600 font-semibold">{record.checkOut2}</span>
+                <span className="text-rose-600 font-semibold">
+                  {record.checkOut2}
+                </span>
               </span>
             ) : (
               <span className="text-muted-foreground text-xs">—</span>
@@ -180,6 +240,8 @@ export const EmployeeAttendanceLog = ({
       id: "duty",
       header: "Duty (h)",
       cell: ({ row }) => {
+        if (row.original.isRestDay)
+          return <span className="text-muted-foreground/40 text-xs">—</span>;
         const record = row.original.record;
         const duty = parseFloat(record?.dutyHours || "0");
         const standard = row.original.standardDutyHours;
@@ -202,11 +264,14 @@ export const EmployeeAttendanceLog = ({
       id: "overtime",
       header: "OT (h)",
       cell: ({ row }) => {
+        if (row.original.isRestDay)
+          return <span className="text-muted-foreground/40 text-xs">—</span>;
         const record = row.original.record;
-        if (!record) return <span className="text-muted-foreground text-xs">—</span>;
-
+        if (!record)
+          return <span className="text-muted-foreground text-xs">—</span>;
         const ot = parseFloat(record.overtimeHours || "0");
-        if (ot <= 0) return <span className="text-muted-foreground text-xs">—</span>;
+        if (ot <= 0)
+          return <span className="text-muted-foreground text-xs">—</span>;
 
         if (record.overtimeStatus === "approved") {
           return (
@@ -220,7 +285,6 @@ export const EmployeeAttendanceLog = ({
             </div>
           );
         }
-
         if (record.overtimeStatus === "pending") {
           return (
             <div className="flex flex-col">
@@ -233,7 +297,6 @@ export const EmployeeAttendanceLog = ({
             </div>
           );
         }
-
         return (
           <div className="flex flex-col">
             <span className="text-rose-600 font-bold text-xs tabular-nums line-through opacity-70">
@@ -250,12 +313,32 @@ export const EmployeeAttendanceLog = ({
       id: "status",
       header: "Status",
       cell: ({ row }) => {
-        const { record, isWeekend } = row.original;
+        const { record, isRestDay } = row.original;
+
+        // ── Rest day — highest priority, overrides any logged record ──────
+        if (isRestDay) {
+          return (
+            <div className="flex items-center gap-1.5">
+              <MoonStar className="size-3 text-slate-400" />
+              <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">
+                Rest Day
+              </span>
+            </div>
+          );
+        }
+
         if (record) {
           const statusColors: Record<string, string> = {
-            present: "bg-emerald-50 text-emerald-700 border-emerald-200",
-            absent: "bg-rose-50 text-rose-700 border-rose-200",
-            leave: "bg-indigo-50 text-indigo-700 border-indigo-200",
+            present:
+              "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400",
+            absent:
+              "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400",
+            leave:
+              "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-400",
+            holiday:
+              "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400",
+            restDay:
+              "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-950/30 dark:text-slate-400",
           };
           return (
             <Badge
@@ -269,13 +352,7 @@ export const EmployeeAttendanceLog = ({
             </Badge>
           );
         }
-        if (isWeekend) {
-          return (
-            <span className="text-[10px] text-muted-foreground font-semibold uppercase">
-              Weekend
-            </span>
-          );
-        }
+
         return (
           <Badge
             variant="outline"
@@ -289,17 +366,20 @@ export const EmployeeAttendanceLog = ({
     {
       id: "notes",
       header: "Notes",
-      cell: ({ row }) => (
-        <span className="text-xs italic text-muted-foreground">
-          {row.original.record?.notes || ""}
-        </span>
-      ),
+      cell: ({ row }) => {
+        if (row.original.isRestDay) return null;
+        return (
+          <span className="text-xs italic text-muted-foreground">
+            {row.original.record?.notes || ""}
+          </span>
+        );
+      },
     },
   ];
 
   return (
     <div className="space-y-6">
-      {/* ── Header / Stats ─────────────────────────────────────────────── */}
+      {/* ── Header / Stats ───────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
         {showHeader && (
           <div className="md:col-span-6 lg:col-span-5 relative group overflow-hidden rounded-2xl border bg-card transition-all hover:shadow-md">
@@ -332,6 +412,22 @@ export const EmployeeAttendanceLog = ({
                   >
                     {employee.employmentType?.replace("_", " ") || "FULL TIME"}
                   </Badge>
+                  {/* Rest days badge */}
+                  {restDays.length > 0 && (
+                    <Badge
+                      variant="outline"
+                      className="bg-slate-500/10 text-slate-600 border-slate-400/20 text-[10px] font-bold tracking-wider uppercase dark:text-slate-400"
+                    >
+                      <MoonStar className="size-2.5 mr-1" />
+                      Off:{" "}
+                      {restDays
+                        .map(
+                          (d) =>
+                            ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d],
+                        )
+                        .join(", ")}
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
@@ -341,13 +437,39 @@ export const EmployeeAttendanceLog = ({
         <div
           className={cn(
             "grid grid-cols-2 lg:grid-cols-4 gap-4",
-            showHeader ? "md:col-span-6 lg:col-span-7" : "md:col-span-12",
+            showHeader
+              ? "md:col-span-6 lg:col-span-7"
+              : "md:col-span-12",
           )}
         >
-          <StatCard color="emerald" icon={Clock} label="Total Duty" value={stats.totalDuty} unit="hrs" />
-          <StatCard color="amber" icon={CalendarClock} label="Overtime" value={stats.totalOvertime} unit="hrs" />
-          <StatCard color="rose" icon={Clock} label="Undertime" value={stats.totalUndertime} unit="hrs" />
-          <StatCard color="blue" icon={TrendingUp} label="Days Present" value={String(stats.daysPresent)} unit="days" />
+          <StatCard
+            color="emerald"
+            icon={Clock}
+            label="Total Duty"
+            value={stats.totalDuty}
+            unit="hrs"
+          />
+          <StatCard
+            color="amber"
+            icon={CalendarClock}
+            label="Overtime"
+            value={stats.totalOvertime}
+            unit="hrs"
+          />
+          <StatCard
+            color="rose"
+            icon={Clock}
+            label="Undertime"
+            value={stats.totalUndertime}
+            unit="hrs"
+          />
+          <StatCard
+            color="blue"
+            icon={TrendingUp}
+            label="Days Present"
+            value={String(stats.daysPresent)}
+            unit="days"
+          />
         </div>
       </div>
 
@@ -358,6 +480,7 @@ export const EmployeeAttendanceLog = ({
         showSearch={false}
         showViewOptions={false}
         pageSize={7}
+
       />
     </div>
   );
@@ -367,11 +490,38 @@ export const EmployeeAttendanceLog = ({
 
 type StatColor = "emerald" | "amber" | "rose" | "blue";
 
-const statColorMap: Record<StatColor, { bg: string; iconBg: string; icon: string; value: string; text: string }> = {
-  emerald: { bg: "bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200/60", iconBg: "bg-emerald-100 dark:bg-emerald-900/40", icon: "text-emerald-600", value: "text-emerald-700 dark:text-emerald-400", text: "text-emerald-600/70" },
-  amber: { bg: "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/60", iconBg: "bg-amber-100 dark:bg-amber-900/40", icon: "text-amber-600", value: "text-amber-700 dark:text-amber-400", text: "text-amber-600/70" },
-  rose: { bg: "bg-rose-50/60 dark:bg-rose-950/20 border-rose-200/60", iconBg: "bg-rose-100 dark:bg-rose-900/40", icon: "text-rose-600", value: "text-rose-700 dark:text-rose-400", text: "text-rose-600/70" },
-  blue: { bg: "bg-blue-50/60 dark:bg-blue-950/20 border-blue-200/60", iconBg: "bg-blue-100 dark:bg-blue-900/40", icon: "text-blue-600", value: "text-blue-700 dark:text-blue-400", text: "text-blue-600/70" },
+const statColorMap: Record<
+  StatColor,
+  { bg: string; iconBg: string; icon: string; value: string; text: string }
+> = {
+  emerald: {
+    bg: "bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200/60",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/40",
+    icon: "text-emerald-600",
+    value: "text-emerald-700 dark:text-emerald-400",
+    text: "text-emerald-600/70",
+  },
+  amber: {
+    bg: "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/60",
+    iconBg: "bg-amber-100 dark:bg-amber-900/40",
+    icon: "text-amber-600",
+    value: "text-amber-700 dark:text-amber-400",
+    text: "text-amber-600/70",
+  },
+  rose: {
+    bg: "bg-rose-50/60 dark:bg-rose-950/20 border-rose-200/60",
+    iconBg: "bg-rose-100 dark:bg-rose-900/40",
+    icon: "text-rose-600",
+    value: "text-rose-700 dark:text-rose-400",
+    text: "text-rose-600/70",
+  },
+  blue: {
+    bg: "bg-blue-50/60 dark:bg-blue-950/20 border-blue-200/60",
+    iconBg: "bg-blue-100 dark:bg-blue-900/40",
+    icon: "text-blue-600",
+    value: "text-blue-700 dark:text-blue-400",
+    text: "text-blue-600/70",
+  },
 };
 
 function StatCard({
@@ -389,14 +539,34 @@ function StatCard({
 }) {
   const c = statColorMap[color];
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl border p-4 transition-all hover:shadow-md", c.bg)}>
-      <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center mb-3", c.iconBg)}>
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-2xl border p-4 transition-all hover:shadow-md",
+        c.bg,
+      )}
+    >
+      <div
+        className={cn(
+          "w-9 h-9 rounded-xl flex items-center justify-center mb-3",
+          c.iconBg,
+        )}
+      >
         <Icon size={18} className={c.icon} />
       </div>
-      <p className={cn("text-[10px] font-bold uppercase tracking-widest mb-1", c.text)}>
+      <p
+        className={cn(
+          "text-[10px] font-bold uppercase tracking-widest mb-1",
+          c.text,
+        )}
+      >
         {label}
       </p>
-      <p className={cn("text-2xl font-black tracking-tight leading-tight", c.value)}>
+      <p
+        className={cn(
+          "text-2xl font-black tracking-tight leading-tight",
+          c.value,
+        )}
+      >
         {value}
         <span className="text-sm font-bold ml-1 opacity-60">{unit}</span>
       </p>

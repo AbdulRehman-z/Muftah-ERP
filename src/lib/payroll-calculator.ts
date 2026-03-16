@@ -18,7 +18,7 @@ export type AttendanceRecord = {
   isApprovedLeave?: boolean;
   /**
    * Type of leave — used for Bradford Factor and leave balance deduction.
-   * sick | casual | annual | unpaid | special
+   * sick | annual | special  (casual removed from UI; kept in type for backward compat)
    */
   leaveType?: string | null;
   /**
@@ -42,6 +42,12 @@ export type EmployeeData = {
   standardSalary: string;
   allowanceConfig: AllowanceConfig[];
   standardDutyHours?: number; // fallback to 8 if absent
+  /**
+   * Days of the week treated as non-working rest days.
+   * 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+   * Default: [0] (Sunday only)
+   */
+  restDays?: number[];
 };
 
 export type DeductionConfig = {
@@ -72,17 +78,17 @@ export type PayslipCalculation = {
   daysPresent: number;
   daysAbsent: number;
   daysLeave: number; // approved paid leaves
-  daysUnapprovedLeave: number; // unpaid / unapproved
-  daysSickLeave: number; // sick leaves (no salary deduction but count in Bradford)
-  daysCasualLeave: number;
+  daysUnapprovedLeave: number; // unpaid / unapproved (kept for internal calcs; hidden from UI)
+  daysSickLeave: number;
+  daysCasualLeave: number; // kept for backward compat; hidden from UI
   daysAnnualLeave: number;
   daysSpecialLeave: number;
-  unmarkedDays: number; // dynamically computed missing days
+  unmarkedDays: number; // dynamically computed missing days on working days only
   totalOvertimeHours: number;
   totalUndertimeHours: number;
   nightShiftsCount: number;
   bradfordFactorScore: number;
-  bradfordFactorPeriod: string; // human-readable period label
+  bradfordFactorPeriod: string;
 
   // Earnings
   basicSalary: number;
@@ -95,7 +101,7 @@ export type PayslipCalculation = {
 
   // Deductions
   absentDeduction: number;
-  leaveDeduction: number; // from unapproved/unpaid leave
+  leaveDeduction: number;
   advanceDeduction: number;
   taxDeduction: number;
   manualDeductions: Array<{ description: string; amount: number }>;
@@ -111,6 +117,7 @@ export type PayslipCalculation = {
     overtimeMultiplier: number;
     overtimeRatePerHour: number;
     standardDutyHours: number;
+    restDays: number[]; // surfaced for transparency / debugging
   };
 
   // Totals
@@ -121,6 +128,10 @@ export type PayslipCalculation = {
 
   // Meta
   remarks: string;
+
+  // Arrears helpers (populated by server fn)
+  missedLastMonth?: boolean;
+  lastMonthStandardSalary?: string;
 };
 
 // ============================================================================
@@ -128,28 +139,63 @@ export type PayslipCalculation = {
 // ============================================================================
 
 /**
- * Calculates total job days dynamically based on the pay period's calendar
- * length minus whatever days the admin has marked as 'holiday' in attendance.
- * This gives HR full control over weekends/holidays.
+ * Returns the day-of-week numbers (0=Sun … 6=Sat) for every day in
+ * the given interval that is NOT a configured rest day and NOT an
+ * admin-marked holiday.
+ *
+ * This is the single source of truth for "how many days does this
+ * employee actually owe work in this pay cycle?"
  */
 export function calculateWorkingDays(
   startDate: string,
   endDate: string,
   records: AttendanceRecord[],
+  restDays: number[] = [0], // 0 = Sunday by default
 ): number {
   const start = parseISO(startDate);
   const end = parseISO(endDate);
-  const totalDaysInCycle = eachDayOfInterval({ start, end }).length;
-  // Count explicit holidays marked by the admin/system
-  const holidays = records.filter((r) => r.status === "holiday").length;
-  return Math.max(1, totalDaysInCycle - holidays); // Ensure we don't divide by 0
+  const allDaysInCycle = eachDayOfInterval({ start, end });
+
+  // 1. Strip out configured rest days (Sunday, Saturday, etc.)
+  const nonRestDays = allDaysInCycle.filter(
+    (d) => !restDays.includes(d.getDay()),
+  );
+
+  // 2. Strip any days explicitly marked as 'holiday' by admin / system
+  const holidayDates = new Set(
+    records
+      .filter((r) => r.status === "holiday")
+      .map((r) => r.date),
+  );
+  const trueWorkingDays = nonRestDays.filter(
+    (d) => !holidayDates.has(format(d, "yyyy-MM-dd")),
+  );
+
+  return Math.max(1, trueWorkingDays.length); // Guard against division-by-zero
 }
 
 /**
- * Derives the effective 'divisor' for daily payout rates (the Job Days).
- * We align this directly with working days (calendar minus holidays)
- * for straight-forward calculation.
+ * Builds a Set of ISO date strings that are rest days within the given range.
+ * Used to filter attendance records so rest-day entries never distort
+ * the summary counts or the unmarked-days alarm.
  */
+export function buildRestDayDateSet(
+  startDate: string,
+  endDate: string,
+  restDays: number[],
+): Set<string> {
+  if (restDays.length === 0) return new Set();
+  const allDays = eachDayOfInterval({
+    start: parseISO(startDate),
+    end: parseISO(endDate),
+  });
+  return new Set(
+    allDays
+      .filter((d) => restDays.includes(d.getDay()))
+      .map((d) => format(d, "yyyy-MM-dd")),
+  );
+}
+
 export function getCalendarDaysInPayPeriodMonth(
   totalWorkingDays: number,
 ): number {
@@ -165,15 +211,15 @@ function getAllowanceAmount(config: AllowanceConfig[], id: string): number {
 // ============================================================================
 
 /**
- * Deduction rules (updated):
+ * Deduction rules:
  *
- * 1. ABSENT (no notice): full-day deduction from Basic + all allowances except Fuel & Special.
+ * 1. ABSENT (no notice): full-day deduction — Basic + all allowances except Fuel & Special.
  * 2. APPROVED LEAVE: NO deduction at all.
- * 3. UNAPPROVED / UNPAID LEAVE: Deduct from Conveyance allowance only.
+ * 3. UNAPPROVED / UNPAID LEAVE: Deduct Conveyance only.
  * 4. UNDERTIME (present but short hours): hour-based deduction from Basic only.
  *
- * Daily rate is based on CALENDAR DAYS in the pay period's month
- * (not working days), per client requirement.
+ * NOTE: records passed here must already be filtered to working days only
+ * (no rest-day entries, no holiday entries) by the caller.
  */
 export function calculateAbsentDeductions(
   employee: EmployeeData,
@@ -196,35 +242,36 @@ export function calculateAbsentDeductions(
   let totalLeaveDeduction = 0;
   let totalUndertimeHours = 0;
 
-  // Adjustment accumulators (keyed by allowance id)
   const adjustments: Record<string, number> = {};
   adjustments["basicSalary"] = 0;
   for (const a of config) adjustments[a.id] = 0;
 
-  /**
-   * Helper to deduct based on specific occasions
-   */
   const applyOccasionDeduction = (
     fraction: number,
-    occasion: "absent" | "annualLeave" | "sickLeave" | "specialLeave" | "lateArrival" | "earlyLeaving",
+    occasion:
+      | "absent"
+      | "annualLeave"
+      | "sickLeave"
+      | "specialLeave"
+      | "lateArrival"
+      | "earlyLeaving",
     isLeaveType = false,
   ) => {
     let subTotal = 0;
 
-    // Basic is always deducted for absent/leave/specialLeave
     if (occasion !== "lateArrival" && occasion !== "earlyLeaving") {
       const basicDeduction = perDayBasic * fraction;
       adjustments["basicSalary"] += basicDeduction;
       subTotal += basicDeduction;
     }
 
-    // Process allowances
     for (const allowance of config) {
       const shouldDeduct = allowance.deductions?.[occasion] ?? false;
       if (shouldDeduct) {
         let amt = 0;
         if (occasion === "lateArrival" || occasion === "earlyLeaving") {
-          const perHourRate = allowance.amount / (calendarDaysInMonth * standardDutyHours);
+          const perHourRate =
+            allowance.amount / (calendarDaysInMonth * standardDutyHours);
           amt = perHourRate * fraction;
         } else {
           amt = (allowance.amount / calendarDaysInMonth) * fraction;
@@ -248,49 +295,39 @@ export function calculateAbsentDeductions(
       applyOccasionDeduction(1, "absent");
     } else if (record.status === "leave") {
       if (record.leaveType === "special") {
-        // Special Leave: only Basic is paid, everything else deducted
         applyOccasionDeduction(1, "specialLeave", true);
       } else if (record.leaveType === "sick") {
-        // Sick Leave: Apply sickLeave-specific deduction rules from allowance config.
-        // Bradford Factor still counts (tracked via filter elsewhere).
-        // If an allowance has sickLeave deduction enabled, it gets deducted.
         applyOccasionDeduction(1, "sickLeave", true);
       } else if (record.leaveType === "annual") {
-        // Annual Leave: Apply annualLeave-specific deduction rules
         if (!record.isApprovedLeave) {
           applyOccasionDeduction(1, "annualLeave", true);
         }
-        // Approved annual leave = no deduction
       } else if (!record.isApprovedLeave) {
-        // Any other leave without admin approval → use annualLeave rules as fallback
         applyOccasionDeduction(1, "annualLeave", true);
       }
-      // Approved paid leave = no deduction (isApprovedLeave = true)
-    } else if (record.status === "present" && dutyHours < standardDutyHours) {
-      // Undertime / Late Arrival / Early Leaving
+    } else if (
+      record.status === "present" &&
+      dutyHours < standardDutyHours
+    ) {
       const shortHours = standardDutyHours - dutyHours;
       totalUndertimeHours += shortHours;
 
-      // Deduct from the basic salary component at the per-hour rate.
-      // We only apply this via applyOccasionDeduction to avoid double-counting.
-      // applyOccasionDeduction for lateArrival/earlyLeaving handles the per-hour
-      // allowance deductions. For basic, we apply it separately once here.
       const basicDeduction = perHourBasic * shortHours;
-      adjustments["basicSalary"] = (adjustments["basicSalary"] || 0) + basicDeduction;
+      adjustments["basicSalary"] =
+        (adjustments["basicSalary"] || 0) + basicDeduction;
       totalAbsentDeduction += basicDeduction;
 
-      // Apply per-hour allowance deductions (does NOT touch basic, see applyOccasionDeduction).
-      // Only apply for relevant tagged records to avoid deducting allowances unjustly.
       if (record.isLate) {
         applyOccasionDeduction(shortHours, "lateArrival");
-      } else if (record.earlyDepartureStatus && record.earlyDepartureStatus !== "none") {
+      } else if (
+        record.earlyDepartureStatus &&
+        record.earlyDepartureStatus !== "none"
+      ) {
         applyOccasionDeduction(shortHours, "earlyLeaving");
       }
-      // If neither flag is set, only basic deduction is applied (already done above).
     }
   }
 
-  // Build final adjusted allowance map — clamp to 0 to prevent negative components.
   const adjustedAllowances: Record<string, number> = {};
   adjustedAllowances["basicSalary"] = Math.max(
     0,
@@ -317,12 +354,9 @@ export function calculateAbsentDeductions(
 
 /**
  * Only count overtime hours where overtimeStatus === "approved".
- * Pending / rejected overtime is ignored.
  */
 export function sumApprovedOvertimeHours(records: AttendanceRecord[]): number {
   return records.reduce((sum, r) => {
-    // Only count explicitly approved overtime (not pending or rejected).
-    // If overtimeStatus is missing/undefined, treat as pending (do NOT count).
     if (r.overtimeStatus !== "approved") return sum;
     return sum + parseFloat(r.overtimeHours || "0");
   }, 0);
@@ -351,10 +385,12 @@ export function calculateOvertimePay(
  * D = total absent-equivalent days
  *
  * What counts:
- *   - absent        → full day, full spell counting
- *   - sick leave    → counts toward D (no deduction but still tracked)
- *   - unpaid/special leave → counts toward D
- *   - approved paid leaes (casual/annual) → excluded from Bradford
+ *   - absent                   → full day, full spell counting
+ *   - sick leave               → counts toward D
+ *   - unpaid / special leave   → counts toward D
+ *   - approved paid leaves     → excluded
+ *
+ * Rest days are excluded from Bradford (they are passed in pre-filtered).
  */
 export function calculateBradfordFactor(
   attendanceRecords: AttendanceRecord[],
@@ -371,16 +407,13 @@ export function calculateBradfordFactor(
     const isBradfordEvent =
       record.status === "absent" ||
       (record.status === "leave" &&
-        // Sick, special, unpaid leaves count; casual/annual approved leaves do NOT
         (record.leaveType === "sick" ||
           record.leaveType === "special" ||
           record.leaveType === "unpaid" ||
           !record.isApprovedLeave));
 
-    const dayWeight = isBradfordEvent ? 1 : 0;
-
     if (isBradfordEvent) {
-      totalAbsentDays += dayWeight;
+      totalAbsentDays += 1;
       if (!inSpell) {
         spells++;
         inSpell = true;
@@ -418,68 +451,90 @@ export function calculatePayslip(
   const stdDutyHours = employee.standardDutyHours || 8;
   const config = employee.allowanceConfig || [];
   const basicSalaryStd = parseFloat(employee.standardSalary || "0");
+  const restDays = employee.restDays ?? [0]; // Default: Sunday off
 
-  // ── Key change: use EXACT Job Days for absolute transparent calculation ──────────────
+  // ── 1. Build a set of rest-day dates in this cycle ───────────────────────
+  // Any attendance record that falls on a rest day is excluded from ALL
+  // summary counts (present, absent, leave, unmarked, Bradford).
+  // This prevents rest-day records from distorting working-day arithmetic.
+  const restDayDateSet = buildRestDayDateSet(
+    payrollPeriod.startDate,
+    payrollPeriod.endDate,
+    restDays,
+  );
+
+  // Working-day records only — excludes rest days and holidays
+  const workingDayRecords = attendanceRecords.filter(
+    (r) => !restDayDateSet.has(r.date) && r.status !== "holiday",
+  );
+
+  // ── 2. True working days for this cycle ──────────────────────────────────
   const totalWorkingDays = calculateWorkingDays(
     payrollPeriod.startDate,
     payrollPeriod.endDate,
     attendanceRecords,
+    restDays,
   );
-  const calendarDaysInMonth = getCalendarDaysInPayPeriodMonth(totalWorkingDays);
+  const calendarDaysInMonth =
+    getCalendarDaysInPayPeriodMonth(totalWorkingDays);
 
-  // Attendance summary
-  const daysPresent = attendanceRecords.filter(
+  // ── 3. Attendance summary (working days only) ────────────────────────────
+  const daysPresent = workingDayRecords.filter(
     (r) => r.status === "present",
   ).length;
-  const daysAbsent = attendanceRecords.filter(
+
+  const daysAbsent = workingDayRecords.filter(
     (r) => r.status === "absent",
   ).length;
-  // All approved leaves combined
-  const daysLeave = attendanceRecords.filter(
+
+  const daysLeave = workingDayRecords.filter(
     (r) => r.status === "leave" && r.isApprovedLeave,
   ).length;
-  // Unapproved leaves
-  const daysUnapprovedLeave = attendanceRecords.filter(
+
+  const daysUnapprovedLeave = workingDayRecords.filter(
     (r) => r.status === "leave" && !r.isApprovedLeave,
   ).length;
-  // Specific leave type counters
-  const daysSickLeave = attendanceRecords.filter(
+
+  const daysSickLeave = workingDayRecords.filter(
     (r) => r.status === "leave" && r.leaveType === "sick",
   ).length;
-  const daysCasualLeave = attendanceRecords.filter(
+
+  const daysCasualLeave = workingDayRecords.filter(
     (r) => r.status === "leave" && r.leaveType === "casual",
   ).length;
-  const daysAnnualLeave = attendanceRecords.filter(
+
+  const daysAnnualLeave = workingDayRecords.filter(
     (r) => r.status === "leave" && r.leaveType === "annual",
   ).length;
-  const daysSpecialLeave = attendanceRecords.filter(
+
+  const daysSpecialLeave = workingDayRecords.filter(
     (r) => r.status === "leave" && r.leaveType === "special",
   ).length;
 
-  // Track any missing records
-  // "unmarkedDays" occur if an admin did not input *any* attendance record for a working day
-  const unmarkedDays = Math.max(0, totalWorkingDays - (daysPresent + daysAbsent + daysLeave + daysUnapprovedLeave));
+  // Unmarked = working days with zero attendance entry
+  // Rest days are already excluded, so this count is always accurate.
+  const accountedDays =
+    daysPresent + daysAbsent + daysLeave + daysUnapprovedLeave;
+  const unmarkedDays = Math.max(0, totalWorkingDays - accountedDays);
 
-  // Only approved overtime counts toward pay
-  const totalOvertimeHours = sumApprovedOvertimeHours(attendanceRecords);
-  const nightShiftsCount = attendanceRecords.filter(
+  const totalOvertimeHours = sumApprovedOvertimeHours(workingDayRecords);
+
+  const nightShiftsCount = workingDayRecords.filter(
     (r) => r.isNightShift,
   ).length;
-  const bradfordFactorScore = calculateBradfordFactor(attendanceRecords);
 
-  // Deductions (uses calendarDaysInMonth as the divisor)
+  // Bradford only on working-day records
+  const bradfordFactorScore = calculateBradfordFactor(workingDayRecords);
+
+  // ── 4. Deductions ─────────────────────────────────────────────────────────
   const {
     absentDeduction,
     leaveDeduction,
     totalUndertimeHours,
     adjustedAllowances,
-  } = calculateAbsentDeductions(
-    employee,
-    attendanceRecords,
-    calendarDaysInMonth,
-  );
+  } = calculateAbsentDeductions(employee, workingDayRecords, calendarDaysInMonth);
 
-  // Overtime pay
+  // ── 5. Overtime ───────────────────────────────────────────────────────────
   const overtimeMultiplier = additionalAmounts.overtimeMultiplier || 1.0;
   const overtimeAmount =
     additionalAmounts.overtimeAmount ??
@@ -491,7 +546,7 @@ export function calculatePayslip(
       overtimeMultiplier,
     );
 
-  // Night-shift allowance
+  // ── 6. Night shift ────────────────────────────────────────────────────────
   let nightShiftAllowanceAmount = additionalAmounts.nightShiftAllowance || 0;
   if (nightShiftAllowanceAmount === 0 && nightShiftsCount > 0) {
     const nightShiftRate = getAllowanceAmount(config, "nightShift");
@@ -501,7 +556,7 @@ export function calculatePayslip(
   const incentiveAmount = additionalAmounts.incentiveAmount || 0;
   const bonusAmount = additionalAmounts.bonusAmount || 0;
 
-  // Gross = sum of adjusted allowances (excl. nightShift handled above) + extras
+  // ── 7. Gross ──────────────────────────────────────────────────────────────
   let sumOfAllowances = 0;
   for (const key of Object.keys(adjustedAllowances)) {
     if (key !== "nightShift") sumOfAllowances += adjustedAllowances[key];
@@ -513,7 +568,7 @@ export function calculatePayslip(
     incentiveAmount +
     bonusAmount;
 
-  // Flat Deductions (Total flat deductions outside of attendance)
+  // ── 8. Flat deductions ────────────────────────────────────────────────────
   const manualDeductionsTotal = deductionConfig.manualDeductions.reduce(
     (s, d) => s + d.amount,
     0,
@@ -523,10 +578,9 @@ export function calculatePayslip(
   const otherDeduction = manualDeductionsTotal;
 
   const totalDeductions = advanceDeduction + taxDeduction + otherDeduction;
-
   const netSalary = Math.max(0, grossSalary - totalDeductions);
 
-  // Standard breakdown snapshot
+  // ── 9. Standard breakdown snapshot ───────────────────────────────────────
   const standardBreakdown: Record<string, number> = {};
   standardBreakdown["basicSalary"] = basicSalaryStd;
   for (const a of config) standardBreakdown[a.id] = a.amount;
@@ -591,6 +645,7 @@ export function calculatePayslip(
       overtimeMultiplier,
       overtimeRatePerHour: +(perHourBasic * overtimeMultiplier).toFixed(4),
       standardDutyHours: stdDutyHours,
+      restDays,
     },
 
     remarks: "",
@@ -615,11 +670,13 @@ export function validatePayslip(payslip: PayslipCalculation): {
   if (payslip.grossSalary === 0) {
     warnings.push("Gross salary is zero. Employee may be on unpaid leave.");
   }
+
   const totalDays =
     payslip.daysPresent +
     payslip.daysAbsent +
     payslip.daysLeave +
     payslip.daysUnapprovedLeave;
+
   if (totalDays > payslip.totalWorkingDays) {
     errors.push("Total attendance days exceed working days in period.");
   }

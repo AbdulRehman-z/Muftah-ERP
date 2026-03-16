@@ -289,11 +289,10 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                         <StatCard label="Absent" value={calculation.daysAbsent} className="bg-rose-50 border-rose-100 text-rose-700" />
                         <StatCard label="Unmarked Days" value={calculation.unmarkedDays} className={calculation.unmarkedDays > 0 ? "bg-rose-50 border-rose-500 text-rose-800 ring-2 ring-rose-500 animate-pulse" : ""} tooltip="Days with no attendance records! Please fix in Attendance." />
 
-                        <StatCard label="Casual Leave" value={calculation.daysCasualLeave} className="bg-amber-50 border-amber-100 text-amber-700" />
                         <StatCard label="Annual Leave" value={calculation.daysAnnualLeave} className="bg-amber-50 border-amber-100 text-amber-700" />
                         <StatCard label="Sick Leave" value={calculation.daysSickLeave} className="bg-amber-50 border-amber-100 text-amber-700" />
                         <StatCard label="Special Leave" value={calculation.daysSpecialLeave} className="bg-amber-50 border-amber-100 text-amber-700" />
-                        <StatCard label="Unpaid Leave" value={calculation.daysUnapprovedLeave} className="bg-rose-50 border-rose-100 text-rose-700" tooltip="Conveyance deducted" />
+                        <StatCard label="Unapproved Leave" value={calculation.daysUnapprovedLeave} className="bg-rose-50 border-rose-100 text-rose-700" tooltip="Conveyance deducted" />
                         <StatCard
                             label="Undertime (Hrs)"
                             value={calculation.totalUndertimeHours}
