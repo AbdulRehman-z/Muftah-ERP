@@ -189,7 +189,7 @@ export const verificationEmailTemplate = ({ user, url }: Input) => {
                       <p
                         style="font-size:12px;color:rgb(156,163,175);margin:0px;line-height:24px;margin-top:0px;margin-bottom:0px;margin-left:0px;margin-right:0px">
                         ©
-                        Titan Enterprise. All rights reserved. |<!-- -->
+                        Muftah Chemical PVT LTD (S-WASH). All rights reserved. |<!-- -->
                       </p>
                     </td>
                   </tr>

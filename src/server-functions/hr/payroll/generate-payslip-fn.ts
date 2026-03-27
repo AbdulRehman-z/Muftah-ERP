@@ -41,10 +41,17 @@ export const generateEmployeePayslipFn = createServerFn()
           taxDeduction: z.number().optional(),
         })
         .optional(),
+      arrears: z
+        .object({
+          arrearsAmount: z.number(),
+          arrearsFromMonths: z.array(z.string()),
+        })
+        .optional(),
+      walletId: z.string().optional(),
     }),
   )
-  .handler(async ({ data }) => {
-    return generateEmployeePayslipCore(data);
+  .handler(async ({ data, context }) => {
+    return generateEmployeePayslipCore(data, context.session.user.id);
   });
 
 /**

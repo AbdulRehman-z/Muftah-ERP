@@ -58,30 +58,31 @@ function ApprovalsPage() {
             onValueChange={(v) => setActiveTab(v as ApprovalTab)}
             className="w-full"
           >
-            <TabsList className="bg-muted/50 p-1 border mb-6 w-full sm:w-auto">
+            <TabsList className="bg-muted/50 p-1 h-10 rounded-lg border border-border/40 mb-6 w-full sm:w-auto flex">
               <TabsTrigger
                 value="overtime"
-                className="text-xs font-bold uppercase tracking-wider px-5 gap-2"
+                className="gap-2 px-4 h-8 text-[13px] font-medium text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md transition-all"
               >
-                <Clock className="size-3.5" />
+                <Clock className="size-3.5 opacity-70" />
                 Overtime
               </TabsTrigger>
+
               <TabsTrigger
                 value="leave"
-                className="text-xs font-bold uppercase tracking-wider px-5 gap-2"
+                className="gap-2 px-4 h-8 text-[13px] font-medium text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md transition-all"
               >
-                <CalendarX className="size-3.5" />
-                Leave
+                <CalendarX className="size-3.5 opacity-70" />
+                Leave Requests
               </TabsTrigger>
+
               <TabsTrigger
                 value="advances"
-                className="text-xs font-bold uppercase tracking-wider px-5 gap-2"
+                className="gap-2 px-4 h-8 text-[13px] font-medium text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md transition-all"
               >
-                <Banknote className="size-3.5" />
-                Advances
+                <Banknote className="size-3.5 opacity-70" />
+                Salary Advances
               </TabsTrigger>
             </TabsList>
-
             <TabsContent value="overtime" className="mt-0 outline-none">
               <Suspense
                 fallback={

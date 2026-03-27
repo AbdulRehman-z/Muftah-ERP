@@ -21,7 +21,7 @@ export const sendEmail = async ({
 }) => {
   try {
     await transporter.sendMail({
-      from: "Titan Enterprise",
+      from: "Muftah Chemical PVT LTD (S-WASH)",
       to: email,
       subject: subject,
       html: typeof html === "function" ? html() : html,

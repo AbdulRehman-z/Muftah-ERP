@@ -271,7 +271,7 @@ export const AppSidebar = () => {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              tooltip="Titan Enterprise"
+              tooltip="Muftah Chemical PVT LTD (S-WASH)"
               onClick={() => navigate({ to: "/dashboard" })}
               className={cn(
                 "group/logo rounded-xl transition-all duration-150",
@@ -301,7 +301,7 @@ export const AppSidebar = () => {
               {/* Text — expanded only */}
               <div className="flex flex-col leading-none group-data-[collapsible=icon]:hidden">
                 <span className="font-bold text-[14px] tracking-tight text-sidebar-accent-foreground">
-                  Titan Enterprise
+                  Muftah Chemical PVT LTD (S-WASH)
                 </span>
                 <span className="text-[10.5px] font-medium mt-0.5 text-sidebar-ring/60">
                   Management System

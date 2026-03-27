@@ -35,8 +35,10 @@ export const overrideBradfordFactorFn = createServerFn()
       });
 
       if (!payslip) throw new Error("Payslip not found");
-
-      const computedScore = payslip.bradfordFactorScore || "0";
+      const computedScore =
+        payslip.bradfordFactorOverride != null
+          ? payslip.bradfordFactorOverride
+          : payslip.bradfordFactorScore || "0";
 
       // 2. Write the immutable audit log entry
       await tx.insert(bradfordAuditLog).values({

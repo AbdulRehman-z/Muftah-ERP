@@ -111,7 +111,7 @@ export const navigations: NavigationItem[] = [
     items: [
       {
         title: "Accounts",
-        url: "/finance",
+        url: "/finance/accounts",
         icon: AccountsIcon,
         exact: true,
       },
@@ -126,11 +126,6 @@ export const navigations: NavigationItem[] = [
         icon: LedgerIcon,
       },
     ],
-  },
-  {
-    title: "Utilities",
-    url: "/utilities",
-    icon: UtilitiesIcon,
   },
   {
     title: "HR & Payroll",
@@ -168,10 +163,5 @@ export const navigations: NavigationItem[] = [
     title: "User Management",
     url: "/user-management",
     icon: UserMgmtIcon,
-  },
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: SettingsIcon,
   },
 ];

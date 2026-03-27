@@ -13,13 +13,10 @@ import { Route as ProtectedRouteRouteImport } from './routes/_protected/route'
 import { Route as AuthLayoutRouteRouteImport } from './routes/_authLayout/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvestorIndexRouteImport } from './routes/investor/index'
-import { Route as ProtectedUtilitiesIndexRouteImport } from './routes/_protected/utilities/index'
 import { Route as ProtectedUserManagementIndexRouteImport } from './routes/_protected/user-management/index'
 import { Route as ProtectedSuppliersIndexRouteImport } from './routes/_protected/suppliers/index'
-import { Route as ProtectedSettingsIndexRouteImport } from './routes/_protected/settings/index'
 import { Route as ProtectedOperatorIndexRouteImport } from './routes/_protected/operator/index'
 import { Route as ProtectedHrIndexRouteImport } from './routes/_protected/hr/index'
-import { Route as ProtectedFinanceIndexRouteImport } from './routes/_protected/finance/index'
 import { Route as ProtectedDashboardIndexRouteImport } from './routes/_protected/dashboard/index'
 import { Route as AuthLayoutSignUpIndexRouteImport } from './routes/_authLayout/sign-up/index'
 import { Route as AuthLayoutResetPasswordIndexRouteImport } from './routes/_authLayout/reset-password/index'
@@ -29,8 +26,6 @@ import { Route as AuthLayout2FaIndexRouteImport } from './routes/_authLayout/2-f
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ProtectedSuppliersSupplierIdRouteImport } from './routes/_protected/suppliers/$supplierId'
 import { Route as ProtectedOperatorRunIdRouteImport } from './routes/_protected/operator/$runId'
-import { Route as ProtectedFinanceLedgerRouteImport } from './routes/_protected/finance/ledger'
-import { Route as ProtectedFinanceExpensesRouteImport } from './routes/_protected/finance/expenses'
 import { Route as ProtectedSalesNewInvoiceIndexRouteImport } from './routes/_protected/sales/new-invoice/index'
 import { Route as ProtectedSalesCustomersIndexRouteImport } from './routes/_protected/sales/customers/index'
 import { Route as ProtectedManufacturingRecipesIndexRouteImport } from './routes/_protected/manufacturing/recipes/index'
@@ -41,11 +36,15 @@ import { Route as ProtectedHrPayrollIndexRouteImport } from './routes/_protected
 import { Route as ProtectedHrEmployeesIndexRouteImport } from './routes/_protected/hr/employees/index'
 import { Route as ProtectedHrAttendanceIndexRouteImport } from './routes/_protected/hr/attendance/index'
 import { Route as ProtectedHrApprovalsIndexRouteImport } from './routes/_protected/hr/approvals/index'
+import { Route as ProtectedFinanceLedgerIndexRouteImport } from './routes/_protected/finance/ledger/index'
+import { Route as ProtectedFinanceExpensesIndexRouteImport } from './routes/_protected/finance/expenses/index'
+import { Route as ProtectedFinanceAccountsIndexRouteImport } from './routes/_protected/finance/accounts/index'
 import { Route as ProtectedManufacturingRecipesRecipeIdRouteImport } from './routes/_protected/manufacturing/recipes/$recipeId'
 import { Route as ProtectedManufacturingProductionsRunIdRouteImport } from './routes/_protected/manufacturing/productions/$runId'
 import { Route as ProtectedHrOrderBookerDetailsEmployeeIdRouteImport } from './routes/_protected/hr/order-booker-details/$employeeId'
 import { Route as ProtectedHrEmployeesEmployeeIdRouteImport } from './routes/_protected/hr/employees/$employeeId'
 import { Route as ProtectedHrAttendanceEmployeeIdRouteImport } from './routes/_protected/hr/attendance/$employeeId'
+import { Route as ProtectedHrPayrollEmployeeIndexRouteImport } from './routes/_protected/hr/payroll/employee/index'
 import { Route as ProtectedHrPayrollEmployeeEmployeeIdRouteImport } from './routes/_protected/hr/payroll/employee/$employeeId'
 
 const ProtectedRouteRoute = ProtectedRouteRouteImport.update({
@@ -66,11 +65,6 @@ const InvestorIndexRoute = InvestorIndexRouteImport.update({
   path: '/investor/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProtectedUtilitiesIndexRoute = ProtectedUtilitiesIndexRouteImport.update({
-  id: '/utilities/',
-  path: '/utilities/',
-  getParentRoute: () => ProtectedRouteRoute,
-} as any)
 const ProtectedUserManagementIndexRoute =
   ProtectedUserManagementIndexRouteImport.update({
     id: '/user-management/',
@@ -82,11 +76,6 @@ const ProtectedSuppliersIndexRoute = ProtectedSuppliersIndexRouteImport.update({
   path: '/suppliers/',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
-const ProtectedSettingsIndexRoute = ProtectedSettingsIndexRouteImport.update({
-  id: '/settings/',
-  path: '/settings/',
-  getParentRoute: () => ProtectedRouteRoute,
-} as any)
 const ProtectedOperatorIndexRoute = ProtectedOperatorIndexRouteImport.update({
   id: '/operator/',
   path: '/operator/',
@@ -95,11 +84,6 @@ const ProtectedOperatorIndexRoute = ProtectedOperatorIndexRouteImport.update({
 const ProtectedHrIndexRoute = ProtectedHrIndexRouteImport.update({
   id: '/hr/',
   path: '/hr/',
-  getParentRoute: () => ProtectedRouteRoute,
-} as any)
-const ProtectedFinanceIndexRoute = ProtectedFinanceIndexRouteImport.update({
-  id: '/finance/',
-  path: '/finance/',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
 const ProtectedDashboardIndexRoute = ProtectedDashboardIndexRouteImport.update({
@@ -150,17 +134,6 @@ const ProtectedOperatorRunIdRoute = ProtectedOperatorRunIdRouteImport.update({
   path: '/operator/$runId',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
-const ProtectedFinanceLedgerRoute = ProtectedFinanceLedgerRouteImport.update({
-  id: '/finance/ledger',
-  path: '/finance/ledger',
-  getParentRoute: () => ProtectedRouteRoute,
-} as any)
-const ProtectedFinanceExpensesRoute =
-  ProtectedFinanceExpensesRouteImport.update({
-    id: '/finance/expenses',
-    path: '/finance/expenses',
-    getParentRoute: () => ProtectedRouteRoute,
-  } as any)
 const ProtectedSalesNewInvoiceIndexRoute =
   ProtectedSalesNewInvoiceIndexRouteImport.update({
     id: '/sales/new-invoice/',
@@ -220,6 +193,24 @@ const ProtectedHrApprovalsIndexRoute =
     path: '/hr/approvals/',
     getParentRoute: () => ProtectedRouteRoute,
   } as any)
+const ProtectedFinanceLedgerIndexRoute =
+  ProtectedFinanceLedgerIndexRouteImport.update({
+    id: '/finance/ledger/',
+    path: '/finance/ledger/',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
+const ProtectedFinanceExpensesIndexRoute =
+  ProtectedFinanceExpensesIndexRouteImport.update({
+    id: '/finance/expenses/',
+    path: '/finance/expenses/',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
+const ProtectedFinanceAccountsIndexRoute =
+  ProtectedFinanceAccountsIndexRouteImport.update({
+    id: '/finance/accounts/',
+    path: '/finance/accounts/',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
 const ProtectedManufacturingRecipesRecipeIdRoute =
   ProtectedManufacturingRecipesRecipeIdRouteImport.update({
     id: '/manufacturing/recipes/$recipeId',
@@ -250,6 +241,12 @@ const ProtectedHrAttendanceEmployeeIdRoute =
     path: '/hr/attendance/$employeeId',
     getParentRoute: () => ProtectedRouteRoute,
   } as any)
+const ProtectedHrPayrollEmployeeIndexRoute =
+  ProtectedHrPayrollEmployeeIndexRouteImport.update({
+    id: '/hr/payroll/employee/',
+    path: '/hr/payroll/employee/',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
 const ProtectedHrPayrollEmployeeEmployeeIdRoute =
   ProtectedHrPayrollEmployeeEmployeeIdRouteImport.update({
     id: '/hr/payroll/employee/$employeeId',
@@ -260,8 +257,6 @@ const ProtectedHrPayrollEmployeeEmployeeIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/investor/': typeof InvestorIndexRoute
-  '/finance/expenses': typeof ProtectedFinanceExpensesRoute
-  '/finance/ledger': typeof ProtectedFinanceLedgerRoute
   '/operator/$runId': typeof ProtectedOperatorRunIdRoute
   '/suppliers/$supplierId': typeof ProtectedSuppliersSupplierIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -271,18 +266,18 @@ export interface FileRoutesByFullPath {
   '/reset-password/': typeof AuthLayoutResetPasswordIndexRoute
   '/sign-up/': typeof AuthLayoutSignUpIndexRoute
   '/dashboard/': typeof ProtectedDashboardIndexRoute
-  '/finance/': typeof ProtectedFinanceIndexRoute
   '/hr/': typeof ProtectedHrIndexRoute
   '/operator/': typeof ProtectedOperatorIndexRoute
-  '/settings/': typeof ProtectedSettingsIndexRoute
   '/suppliers/': typeof ProtectedSuppliersIndexRoute
   '/user-management/': typeof ProtectedUserManagementIndexRoute
-  '/utilities/': typeof ProtectedUtilitiesIndexRoute
   '/hr/attendance/$employeeId': typeof ProtectedHrAttendanceEmployeeIdRoute
   '/hr/employees/$employeeId': typeof ProtectedHrEmployeesEmployeeIdRoute
   '/hr/order-booker-details/$employeeId': typeof ProtectedHrOrderBookerDetailsEmployeeIdRoute
   '/manufacturing/productions/$runId': typeof ProtectedManufacturingProductionsRunIdRoute
   '/manufacturing/recipes/$recipeId': typeof ProtectedManufacturingRecipesRecipeIdRoute
+  '/finance/accounts/': typeof ProtectedFinanceAccountsIndexRoute
+  '/finance/expenses/': typeof ProtectedFinanceExpensesIndexRoute
+  '/finance/ledger/': typeof ProtectedFinanceLedgerIndexRoute
   '/hr/approvals/': typeof ProtectedHrApprovalsIndexRoute
   '/hr/attendance/': typeof ProtectedHrAttendanceIndexRoute
   '/hr/employees/': typeof ProtectedHrEmployeesIndexRoute
@@ -294,12 +289,11 @@ export interface FileRoutesByFullPath {
   '/sales/customers/': typeof ProtectedSalesCustomersIndexRoute
   '/sales/new-invoice/': typeof ProtectedSalesNewInvoiceIndexRoute
   '/hr/payroll/employee/$employeeId': typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
+  '/hr/payroll/employee/': typeof ProtectedHrPayrollEmployeeIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/investor': typeof InvestorIndexRoute
-  '/finance/expenses': typeof ProtectedFinanceExpensesRoute
-  '/finance/ledger': typeof ProtectedFinanceLedgerRoute
   '/operator/$runId': typeof ProtectedOperatorRunIdRoute
   '/suppliers/$supplierId': typeof ProtectedSuppliersSupplierIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -309,18 +303,18 @@ export interface FileRoutesByTo {
   '/reset-password': typeof AuthLayoutResetPasswordIndexRoute
   '/sign-up': typeof AuthLayoutSignUpIndexRoute
   '/dashboard': typeof ProtectedDashboardIndexRoute
-  '/finance': typeof ProtectedFinanceIndexRoute
   '/hr': typeof ProtectedHrIndexRoute
   '/operator': typeof ProtectedOperatorIndexRoute
-  '/settings': typeof ProtectedSettingsIndexRoute
   '/suppliers': typeof ProtectedSuppliersIndexRoute
   '/user-management': typeof ProtectedUserManagementIndexRoute
-  '/utilities': typeof ProtectedUtilitiesIndexRoute
   '/hr/attendance/$employeeId': typeof ProtectedHrAttendanceEmployeeIdRoute
   '/hr/employees/$employeeId': typeof ProtectedHrEmployeesEmployeeIdRoute
   '/hr/order-booker-details/$employeeId': typeof ProtectedHrOrderBookerDetailsEmployeeIdRoute
   '/manufacturing/productions/$runId': typeof ProtectedManufacturingProductionsRunIdRoute
   '/manufacturing/recipes/$recipeId': typeof ProtectedManufacturingRecipesRecipeIdRoute
+  '/finance/accounts': typeof ProtectedFinanceAccountsIndexRoute
+  '/finance/expenses': typeof ProtectedFinanceExpensesIndexRoute
+  '/finance/ledger': typeof ProtectedFinanceLedgerIndexRoute
   '/hr/approvals': typeof ProtectedHrApprovalsIndexRoute
   '/hr/attendance': typeof ProtectedHrAttendanceIndexRoute
   '/hr/employees': typeof ProtectedHrEmployeesIndexRoute
@@ -332,6 +326,7 @@ export interface FileRoutesByTo {
   '/sales/customers': typeof ProtectedSalesCustomersIndexRoute
   '/sales/new-invoice': typeof ProtectedSalesNewInvoiceIndexRoute
   '/hr/payroll/employee/$employeeId': typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
+  '/hr/payroll/employee': typeof ProtectedHrPayrollEmployeeIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -339,8 +334,6 @@ export interface FileRoutesById {
   '/_authLayout': typeof AuthLayoutRouteRouteWithChildren
   '/_protected': typeof ProtectedRouteRouteWithChildren
   '/investor/': typeof InvestorIndexRoute
-  '/_protected/finance/expenses': typeof ProtectedFinanceExpensesRoute
-  '/_protected/finance/ledger': typeof ProtectedFinanceLedgerRoute
   '/_protected/operator/$runId': typeof ProtectedOperatorRunIdRoute
   '/_protected/suppliers/$supplierId': typeof ProtectedSuppliersSupplierIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -350,18 +343,18 @@ export interface FileRoutesById {
   '/_authLayout/reset-password/': typeof AuthLayoutResetPasswordIndexRoute
   '/_authLayout/sign-up/': typeof AuthLayoutSignUpIndexRoute
   '/_protected/dashboard/': typeof ProtectedDashboardIndexRoute
-  '/_protected/finance/': typeof ProtectedFinanceIndexRoute
   '/_protected/hr/': typeof ProtectedHrIndexRoute
   '/_protected/operator/': typeof ProtectedOperatorIndexRoute
-  '/_protected/settings/': typeof ProtectedSettingsIndexRoute
   '/_protected/suppliers/': typeof ProtectedSuppliersIndexRoute
   '/_protected/user-management/': typeof ProtectedUserManagementIndexRoute
-  '/_protected/utilities/': typeof ProtectedUtilitiesIndexRoute
   '/_protected/hr/attendance/$employeeId': typeof ProtectedHrAttendanceEmployeeIdRoute
   '/_protected/hr/employees/$employeeId': typeof ProtectedHrEmployeesEmployeeIdRoute
   '/_protected/hr/order-booker-details/$employeeId': typeof ProtectedHrOrderBookerDetailsEmployeeIdRoute
   '/_protected/manufacturing/productions/$runId': typeof ProtectedManufacturingProductionsRunIdRoute
   '/_protected/manufacturing/recipes/$recipeId': typeof ProtectedManufacturingRecipesRecipeIdRoute
+  '/_protected/finance/accounts/': typeof ProtectedFinanceAccountsIndexRoute
+  '/_protected/finance/expenses/': typeof ProtectedFinanceExpensesIndexRoute
+  '/_protected/finance/ledger/': typeof ProtectedFinanceLedgerIndexRoute
   '/_protected/hr/approvals/': typeof ProtectedHrApprovalsIndexRoute
   '/_protected/hr/attendance/': typeof ProtectedHrAttendanceIndexRoute
   '/_protected/hr/employees/': typeof ProtectedHrEmployeesIndexRoute
@@ -373,14 +366,13 @@ export interface FileRoutesById {
   '/_protected/sales/customers/': typeof ProtectedSalesCustomersIndexRoute
   '/_protected/sales/new-invoice/': typeof ProtectedSalesNewInvoiceIndexRoute
   '/_protected/hr/payroll/employee/$employeeId': typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
+  '/_protected/hr/payroll/employee/': typeof ProtectedHrPayrollEmployeeIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/investor/'
-    | '/finance/expenses'
-    | '/finance/ledger'
     | '/operator/$runId'
     | '/suppliers/$supplierId'
     | '/api/auth/$'
@@ -390,18 +382,18 @@ export interface FileRouteTypes {
     | '/reset-password/'
     | '/sign-up/'
     | '/dashboard/'
-    | '/finance/'
     | '/hr/'
     | '/operator/'
-    | '/settings/'
     | '/suppliers/'
     | '/user-management/'
-    | '/utilities/'
     | '/hr/attendance/$employeeId'
     | '/hr/employees/$employeeId'
     | '/hr/order-booker-details/$employeeId'
     | '/manufacturing/productions/$runId'
     | '/manufacturing/recipes/$recipeId'
+    | '/finance/accounts/'
+    | '/finance/expenses/'
+    | '/finance/ledger/'
     | '/hr/approvals/'
     | '/hr/attendance/'
     | '/hr/employees/'
@@ -413,12 +405,11 @@ export interface FileRouteTypes {
     | '/sales/customers/'
     | '/sales/new-invoice/'
     | '/hr/payroll/employee/$employeeId'
+    | '/hr/payroll/employee/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/investor'
-    | '/finance/expenses'
-    | '/finance/ledger'
     | '/operator/$runId'
     | '/suppliers/$supplierId'
     | '/api/auth/$'
@@ -428,18 +419,18 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sign-up'
     | '/dashboard'
-    | '/finance'
     | '/hr'
     | '/operator'
-    | '/settings'
     | '/suppliers'
     | '/user-management'
-    | '/utilities'
     | '/hr/attendance/$employeeId'
     | '/hr/employees/$employeeId'
     | '/hr/order-booker-details/$employeeId'
     | '/manufacturing/productions/$runId'
     | '/manufacturing/recipes/$recipeId'
+    | '/finance/accounts'
+    | '/finance/expenses'
+    | '/finance/ledger'
     | '/hr/approvals'
     | '/hr/attendance'
     | '/hr/employees'
@@ -451,14 +442,13 @@ export interface FileRouteTypes {
     | '/sales/customers'
     | '/sales/new-invoice'
     | '/hr/payroll/employee/$employeeId'
+    | '/hr/payroll/employee'
   id:
     | '__root__'
     | '/'
     | '/_authLayout'
     | '/_protected'
     | '/investor/'
-    | '/_protected/finance/expenses'
-    | '/_protected/finance/ledger'
     | '/_protected/operator/$runId'
     | '/_protected/suppliers/$supplierId'
     | '/api/auth/$'
@@ -468,18 +458,18 @@ export interface FileRouteTypes {
     | '/_authLayout/reset-password/'
     | '/_authLayout/sign-up/'
     | '/_protected/dashboard/'
-    | '/_protected/finance/'
     | '/_protected/hr/'
     | '/_protected/operator/'
-    | '/_protected/settings/'
     | '/_protected/suppliers/'
     | '/_protected/user-management/'
-    | '/_protected/utilities/'
     | '/_protected/hr/attendance/$employeeId'
     | '/_protected/hr/employees/$employeeId'
     | '/_protected/hr/order-booker-details/$employeeId'
     | '/_protected/manufacturing/productions/$runId'
     | '/_protected/manufacturing/recipes/$recipeId'
+    | '/_protected/finance/accounts/'
+    | '/_protected/finance/expenses/'
+    | '/_protected/finance/ledger/'
     | '/_protected/hr/approvals/'
     | '/_protected/hr/attendance/'
     | '/_protected/hr/employees/'
@@ -491,6 +481,7 @@ export interface FileRouteTypes {
     | '/_protected/sales/customers/'
     | '/_protected/sales/new-invoice/'
     | '/_protected/hr/payroll/employee/$employeeId'
+    | '/_protected/hr/payroll/employee/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -531,13 +522,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvestorIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_protected/utilities/': {
-      id: '/_protected/utilities/'
-      path: '/utilities'
-      fullPath: '/utilities/'
-      preLoaderRoute: typeof ProtectedUtilitiesIndexRouteImport
-      parentRoute: typeof ProtectedRouteRoute
-    }
     '/_protected/user-management/': {
       id: '/_protected/user-management/'
       path: '/user-management'
@@ -552,13 +536,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedSuppliersIndexRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
-    '/_protected/settings/': {
-      id: '/_protected/settings/'
-      path: '/settings'
-      fullPath: '/settings/'
-      preLoaderRoute: typeof ProtectedSettingsIndexRouteImport
-      parentRoute: typeof ProtectedRouteRoute
-    }
     '/_protected/operator/': {
       id: '/_protected/operator/'
       path: '/operator'
@@ -571,13 +548,6 @@ declare module '@tanstack/react-router' {
       path: '/hr'
       fullPath: '/hr/'
       preLoaderRoute: typeof ProtectedHrIndexRouteImport
-      parentRoute: typeof ProtectedRouteRoute
-    }
-    '/_protected/finance/': {
-      id: '/_protected/finance/'
-      path: '/finance'
-      fullPath: '/finance/'
-      preLoaderRoute: typeof ProtectedFinanceIndexRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
     '/_protected/dashboard/': {
@@ -641,20 +611,6 @@ declare module '@tanstack/react-router' {
       path: '/operator/$runId'
       fullPath: '/operator/$runId'
       preLoaderRoute: typeof ProtectedOperatorRunIdRouteImport
-      parentRoute: typeof ProtectedRouteRoute
-    }
-    '/_protected/finance/ledger': {
-      id: '/_protected/finance/ledger'
-      path: '/finance/ledger'
-      fullPath: '/finance/ledger'
-      preLoaderRoute: typeof ProtectedFinanceLedgerRouteImport
-      parentRoute: typeof ProtectedRouteRoute
-    }
-    '/_protected/finance/expenses': {
-      id: '/_protected/finance/expenses'
-      path: '/finance/expenses'
-      fullPath: '/finance/expenses'
-      preLoaderRoute: typeof ProtectedFinanceExpensesRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
     '/_protected/sales/new-invoice/': {
@@ -727,6 +683,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedHrApprovalsIndexRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
+    '/_protected/finance/ledger/': {
+      id: '/_protected/finance/ledger/'
+      path: '/finance/ledger'
+      fullPath: '/finance/ledger/'
+      preLoaderRoute: typeof ProtectedFinanceLedgerIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/finance/expenses/': {
+      id: '/_protected/finance/expenses/'
+      path: '/finance/expenses'
+      fullPath: '/finance/expenses/'
+      preLoaderRoute: typeof ProtectedFinanceExpensesIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/finance/accounts/': {
+      id: '/_protected/finance/accounts/'
+      path: '/finance/accounts'
+      fullPath: '/finance/accounts/'
+      preLoaderRoute: typeof ProtectedFinanceAccountsIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
     '/_protected/manufacturing/recipes/$recipeId': {
       id: '/_protected/manufacturing/recipes/$recipeId'
       path: '/manufacturing/recipes/$recipeId'
@@ -762,6 +739,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedHrAttendanceEmployeeIdRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
+    '/_protected/hr/payroll/employee/': {
+      id: '/_protected/hr/payroll/employee/'
+      path: '/hr/payroll/employee'
+      fullPath: '/hr/payroll/employee/'
+      preLoaderRoute: typeof ProtectedHrPayrollEmployeeIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
     '/_protected/hr/payroll/employee/$employeeId': {
       id: '/_protected/hr/payroll/employee/$employeeId'
       path: '/hr/payroll/employee/$employeeId'
@@ -793,23 +777,21 @@ const AuthLayoutRouteRouteWithChildren = AuthLayoutRouteRoute._addFileChildren(
 )
 
 interface ProtectedRouteRouteChildren {
-  ProtectedFinanceExpensesRoute: typeof ProtectedFinanceExpensesRoute
-  ProtectedFinanceLedgerRoute: typeof ProtectedFinanceLedgerRoute
   ProtectedOperatorRunIdRoute: typeof ProtectedOperatorRunIdRoute
   ProtectedSuppliersSupplierIdRoute: typeof ProtectedSuppliersSupplierIdRoute
   ProtectedDashboardIndexRoute: typeof ProtectedDashboardIndexRoute
-  ProtectedFinanceIndexRoute: typeof ProtectedFinanceIndexRoute
   ProtectedHrIndexRoute: typeof ProtectedHrIndexRoute
   ProtectedOperatorIndexRoute: typeof ProtectedOperatorIndexRoute
-  ProtectedSettingsIndexRoute: typeof ProtectedSettingsIndexRoute
   ProtectedSuppliersIndexRoute: typeof ProtectedSuppliersIndexRoute
   ProtectedUserManagementIndexRoute: typeof ProtectedUserManagementIndexRoute
-  ProtectedUtilitiesIndexRoute: typeof ProtectedUtilitiesIndexRoute
   ProtectedHrAttendanceEmployeeIdRoute: typeof ProtectedHrAttendanceEmployeeIdRoute
   ProtectedHrEmployeesEmployeeIdRoute: typeof ProtectedHrEmployeesEmployeeIdRoute
   ProtectedHrOrderBookerDetailsEmployeeIdRoute: typeof ProtectedHrOrderBookerDetailsEmployeeIdRoute
   ProtectedManufacturingProductionsRunIdRoute: typeof ProtectedManufacturingProductionsRunIdRoute
   ProtectedManufacturingRecipesRecipeIdRoute: typeof ProtectedManufacturingRecipesRecipeIdRoute
+  ProtectedFinanceAccountsIndexRoute: typeof ProtectedFinanceAccountsIndexRoute
+  ProtectedFinanceExpensesIndexRoute: typeof ProtectedFinanceExpensesIndexRoute
+  ProtectedFinanceLedgerIndexRoute: typeof ProtectedFinanceLedgerIndexRoute
   ProtectedHrApprovalsIndexRoute: typeof ProtectedHrApprovalsIndexRoute
   ProtectedHrAttendanceIndexRoute: typeof ProtectedHrAttendanceIndexRoute
   ProtectedHrEmployeesIndexRoute: typeof ProtectedHrEmployeesIndexRoute
@@ -821,21 +803,17 @@ interface ProtectedRouteRouteChildren {
   ProtectedSalesCustomersIndexRoute: typeof ProtectedSalesCustomersIndexRoute
   ProtectedSalesNewInvoiceIndexRoute: typeof ProtectedSalesNewInvoiceIndexRoute
   ProtectedHrPayrollEmployeeEmployeeIdRoute: typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
+  ProtectedHrPayrollEmployeeIndexRoute: typeof ProtectedHrPayrollEmployeeIndexRoute
 }
 
 const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
-  ProtectedFinanceExpensesRoute: ProtectedFinanceExpensesRoute,
-  ProtectedFinanceLedgerRoute: ProtectedFinanceLedgerRoute,
   ProtectedOperatorRunIdRoute: ProtectedOperatorRunIdRoute,
   ProtectedSuppliersSupplierIdRoute: ProtectedSuppliersSupplierIdRoute,
   ProtectedDashboardIndexRoute: ProtectedDashboardIndexRoute,
-  ProtectedFinanceIndexRoute: ProtectedFinanceIndexRoute,
   ProtectedHrIndexRoute: ProtectedHrIndexRoute,
   ProtectedOperatorIndexRoute: ProtectedOperatorIndexRoute,
-  ProtectedSettingsIndexRoute: ProtectedSettingsIndexRoute,
   ProtectedSuppliersIndexRoute: ProtectedSuppliersIndexRoute,
   ProtectedUserManagementIndexRoute: ProtectedUserManagementIndexRoute,
-  ProtectedUtilitiesIndexRoute: ProtectedUtilitiesIndexRoute,
   ProtectedHrAttendanceEmployeeIdRoute: ProtectedHrAttendanceEmployeeIdRoute,
   ProtectedHrEmployeesEmployeeIdRoute: ProtectedHrEmployeesEmployeeIdRoute,
   ProtectedHrOrderBookerDetailsEmployeeIdRoute:
@@ -844,6 +822,9 @@ const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
     ProtectedManufacturingProductionsRunIdRoute,
   ProtectedManufacturingRecipesRecipeIdRoute:
     ProtectedManufacturingRecipesRecipeIdRoute,
+  ProtectedFinanceAccountsIndexRoute: ProtectedFinanceAccountsIndexRoute,
+  ProtectedFinanceExpensesIndexRoute: ProtectedFinanceExpensesIndexRoute,
+  ProtectedFinanceLedgerIndexRoute: ProtectedFinanceLedgerIndexRoute,
   ProtectedHrApprovalsIndexRoute: ProtectedHrApprovalsIndexRoute,
   ProtectedHrAttendanceIndexRoute: ProtectedHrAttendanceIndexRoute,
   ProtectedHrEmployeesIndexRoute: ProtectedHrEmployeesIndexRoute,
@@ -860,6 +841,7 @@ const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
   ProtectedSalesNewInvoiceIndexRoute: ProtectedSalesNewInvoiceIndexRoute,
   ProtectedHrPayrollEmployeeEmployeeIdRoute:
     ProtectedHrPayrollEmployeeEmployeeIdRoute,
+  ProtectedHrPayrollEmployeeIndexRoute: ProtectedHrPayrollEmployeeIndexRoute,
 }
 
 const ProtectedRouteRouteWithChildren = ProtectedRouteRoute._addFileChildren(

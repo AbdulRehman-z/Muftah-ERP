@@ -1,8 +1,3 @@
-/**
- * AddEmployeeForm.tsx
- * Place at: @/components/hr/add-employee-form.tsx
- */
-
 import { useForm } from "@tanstack/react-form";
 import { format, parseISO } from "date-fns";
 import { useCreateEmployee } from "@/hooks/hr/use-create-employee";

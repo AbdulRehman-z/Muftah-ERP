@@ -5,6 +5,7 @@ import { toast } from "sonner";
 type SavePayslipInput = {
   employeeId: string;
   month: string;
+  walletId: string;
   deductionConfig: {
     manualDeductions: { description: string; amount: number }[];
     deductConveyanceOnLeave: boolean;
@@ -15,6 +16,10 @@ type SavePayslipInput = {
     taxDeduction: number;
     advanceDeduction?: number; // undefined = auto-deduct from DB
     overtimeMultiplier: number;
+  };
+  arrears?: {
+    arrearsAmount: number;
+    arrearsFromMonths: string[];
   };
 };
 

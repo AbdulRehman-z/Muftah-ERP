@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { wallets, expenses, transactions } from "@/db/schemas/finance-schema";
 import { requireAdminMiddleware } from "@/lib/middlewares";
-import { eq, sql } from "drizzle-orm";
+import { and, count, eq, SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import { createId } from "@paralleldrive/cuid2";
 
@@ -215,30 +215,40 @@ export const getExpensesFn = createServerFn()
   .middleware([requireAdminMiddleware])
   .inputValidator(
     z.object({
-      limit: z.number().optional(),
       category: z.string().optional(),
+      page: z.number().int().positive().default(1),
+      limit: z.number().int().positive().default(20),
     }),
   )
   .handler(async ({ data }) => {
-    return await db.query.expenses.findMany({
+    const offset = (data.page - 1) * data.limit;
+
+    const whereClause = data.category
+      ? eq(expenses.category, data.category)
+      : undefined;
+
+    const [{ value: total }] = await db
+      .select({ value: count() })
+      .from(expenses)
+      .where(whereClause);
+
+    const data_ = await db.query.expenses.findMany({
+      where: whereClause,
       with: {
-        wallet: {
-          columns: {
-            id: true,
-            name: true,
-            type: true,
-          },
-        },
-        performer: {
-          columns: {
-            id: true,
-            name: true,
-          },
-        },
+        wallet: { columns: { id: true, name: true, type: true } },
+        performer: { columns: { id: true, name: true } },
       },
-      orderBy: (expenses, { desc }) => [desc(expenses.createdAt)],
-      limit: data.limit ?? 50,
+      orderBy: (e, { desc }) => [desc(e.createdAt)],
+      limit: data.limit,
+      offset,
     });
+
+    return {
+      data: data_,
+      total,
+      pageCount: Math.ceil(total / data.limit),
+      page: data.page,
+    };
   });
 
 // ─────────────────────────────────────────────────────────
@@ -253,34 +263,41 @@ export const getTransactionsFn = createServerFn()
   .inputValidator(
     z.object({
       walletId: z.string().optional(),
-      limit: z.number().optional(),
+      source: z.string().optional(), // filter by source e.g. "Payroll", "Expense"
+      page: z.number().int().positive().default(1),
+      limit: z.number().int().positive().default(20),
     }),
   )
   .handler(async ({ data }) => {
-    const whereClause = data.walletId
-      ? eq(transactions.walletId, data.walletId)
-      : undefined;
+    const offset = (data.page - 1) * data.limit;
 
-    return await db.query.transactions.findMany({
+    const conditions: SQL[] = [];
+    if (data.walletId) conditions.push(eq(transactions.walletId, data.walletId));
+    if (data.source) conditions.push(eq(transactions.source, data.source));
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [{ value: total }] = await db
+      .select({ value: count() })
+      .from(transactions)
+      .where(whereClause);
+
+    const data_ = await db.query.transactions.findMany({
       where: whereClause,
       with: {
-        wallet: {
-          columns: {
-            id: true,
-            name: true,
-            type: true,
-          },
-        },
-        performer: {
-          columns: {
-            id: true,
-            name: true,
-          },
-        },
+        wallet: { columns: { id: true, name: true, type: true } },
+        performer: { columns: { id: true, name: true } },
       },
-      orderBy: (transactions, { desc }) => [desc(transactions.createdAt)],
-      limit: data.limit ?? 100,
+      orderBy: (t, { desc }) => [desc(t.createdAt)],
+      limit: data.limit,
+      offset,
     });
+
+    return {
+      data: data_,
+      total,
+      pageCount: Math.ceil(total / data.limit),
+      page: data.page,
+    };
   });
 
 // ─────────────────────────────────────────────────────────

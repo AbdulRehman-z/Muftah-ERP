@@ -18,7 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
 
-type ResponsiveDialogProps = {
+type ResponsiveSheetProps = {
   title: string;
   description: string;
   children: ReactNode;
@@ -36,7 +36,7 @@ export const ResponsiveSheet = ({
   onOpenChange,
   className,
   icon
-}: ResponsiveDialogProps) => {
+}: ResponsiveSheetProps) => {
   const isMobile = useIsMobile();
   const Icon = icon;
 

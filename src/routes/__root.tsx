@@ -51,7 +51,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <ThemeProvider
-          defaultTheme="light"
+          defaultTheme="dark"
           // attribute="class"
           enableColorScheme
           enableSystem
@@ -78,3 +78,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     </html>
   );
 }
+
+
+// Few more criticall things to consider:
+// . There should also be a clear indicators for gross period and payroll-cycle.
+// . Right now the bradfordfactor is calculated wrongly it should be calculated per calendar year. What happening right now is that lets say that an employee is registered in march then continung from march every consecutive month his bradford factor value is calculated e.g March(0), April(5), ..., December(90)etc. After december his bradford value should get reseted to 0 automatically for the next year.
+// . Currently when the employee is given advanced after its approved then in the salary slip that advance loan get populated automatically which is good but I want that there should be flexibility like lets say the employee requests that this loan should be divided by 3 or 6 or 12 months. Then that accuratly  divided amount should be populated on every month salary slip.
+// . So my employee says that they currently allow exception for 14 days 

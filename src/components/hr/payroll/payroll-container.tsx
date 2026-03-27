@@ -1,18 +1,7 @@
-"use client";
-
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { getMonthlyPayrollTableFn } from "@/server-functions/hr/payroll/dashboard-fn";
-import {
-  format,
-  startOfMonth,
-  addDays,
-  parseISO,
-  isAfter,
-  isBefore,
-  differenceInDays,
-} from "date-fns";
+import { format, parseISO, differenceInDays, isAfter, isBefore } from "date-fns";
 import { useState, useMemo } from "react";
-import { DatePicker } from "@/components/custom/date-picker";
 import {
   ColumnDef,
   useReactTable,
@@ -38,6 +27,9 @@ import {
   ClockAlert,
   CalendarX2,
   TriangleAlert,
+  Calendar,
+  Timer,
+  Banknote,
 } from "lucide-react";
 import {
   Table,
@@ -53,12 +45,21 @@ import { GenericEmpty } from "../../custom/empty";
 import { HREmptyIllustration } from "@/components/illustrations/HREmptyIllustration";
 import { cn } from "@/lib/utils";
 import { getPendingApprovalCountsFn } from "@/server-functions/hr/get-pending-approval-counts-fn";
+import { getArrearsMissedCyclesFn } from "@/server-functions/hr/payroll/arrears-fn";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  getCurrentActiveCycle,
+  getCycleFromMonthKey,
+  isInGracePeriod,
+  cycleProgressPercent,
+  daysRemainingInCycle,
+} from "@/lib/payroll-cycle";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -83,13 +84,6 @@ export type EmployeePayrollRow = {
 };
 
 // ── Cycle helpers ──────────────────────────────────────────────────────────
-
-function getPayrollCycleDates(monthStr: string) {
-  const payrollMonthDate = parseISO(`${monthStr}-01`);
-  const cycleEnd = addDays(startOfMonth(payrollMonthDate), 14);
-  const cycleStart = addDays(startOfMonth(addDays(payrollMonthDate, -1)), 15);
-  return { cycleStart, cycleEnd };
-}
 
 type Warning = { label: string; detail: string };
 
@@ -142,7 +136,7 @@ function getEmployeeReadiness(
     daysUntilEligible,
     cycleCloseDate,
     warnings,
-    isReadyToProcess: isCycleOpen && employee.isEligible,
+    isReadyToProcess: isCycleOpen,  // removed isEligible guard — all active employees can be processed
   };
 }
 
@@ -174,8 +168,7 @@ function WarningTooltipBody({ warnings, footer }: { warnings: Warning[]; footer?
 
 export function PayrollContainer() {
   const router = useRouter();
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const month = format(selectedDate, "yyyy-MM");
+  const month = getCurrentActiveCycle().payoutMonthKey;
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 7;
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
@@ -188,9 +181,17 @@ export function PayrollContainer() {
       getMonthlyPayrollTableFn({ data: { month, limit, offset: pageIndex * limit } }),
   });
 
+  const { data: missedCyclesData } = useQuery({
+    queryKey: ["payroll-missed-cycles"],
+    queryFn: () => getArrearsMissedCyclesFn({ data: { lookbackMonths: 12 } }),
+  });
+
   const employees = data.employees as (EmployeePayrollRow & { missedLastMonth: boolean })[];
-  const { cycleStart, cycleEnd } = getPayrollCycleDates(month);
+  const cycle = getCycleFromMonthKey(month);
+  const cycleStart = parseISO(cycle.cycleStart);
+  const cycleEnd = parseISO(cycle.cycleEnd);
   const now = new Date();
+  const inGrace = isInGracePeriod(now);
   const completionPct = Math.round(
     (data.payslipsGeneratedCount / Math.max(1, data.activeCount)) * 100,
   );
@@ -261,19 +262,7 @@ export function PayrollContainer() {
           const { isCycleOpen, daysUntilEligible, cycleCloseDate, warnings, joinedMidCycle } =
             getEmployeeReadiness(row.original, cycleEnd, cycleStart, now);
 
-          if (!row.original.isEligible) {
-            return (
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wide">
-                  Not Eligible
-                </span>
-                <span className="text-[10px] text-muted-foreground">
-                  Joined after cycle end
-                </span>
-              </div>
-            );
-          }
-
+          // All employees are now eligible — show mid-cycle joiner tag instead of blocking
           if (!isCycleOpen) {
             return (
               <div className="flex flex-col gap-0.5">
@@ -379,130 +368,98 @@ export function PayrollContainer() {
         header: "",
         cell: ({ row }) => {
           const emp = row.original;
-          const { isReadyToProcess, daysUntilEligible, cycleCloseDate, warnings } =
+          const { isReadyToProcess, cycleCloseDate, warnings } =
             getEmployeeReadiness(emp, cycleEnd, cycleStart, now);
 
           return (
             <div className="flex items-center gap-2 justify-end">
-              {emp.isEligible && (
-                <>
-                  {emp.hasPayslip ? (
-                    // Revise — always unlocked
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 gap-1.5 px-3"
-                            onClick={() => { setSelectedEmployeeId(emp.id); setIsCalculatorOpen(true); }}
-                          >
-                            <Edit className="size-3" />
-                            <span className="text-[10px] font-bold uppercase tracking-tight">Revise</span>
-                          </Button>
-                        </TooltipTrigger>
-                        {warnings.length > 0 && (
-                          <TooltipContent side="left" className="p-3 bg-background text-foreground border border-border shadow-lg">
-
-                            <p className="text-xs font-bold text-amber-600 mb-2">
-                              Revising with open issues:
-                            </p>
-                            <WarningTooltipBody
-                              warnings={warnings}
-                              footer="The revised slip will reflect current attendance data."
-                            />
-                          </TooltipContent>
+              {/* All active employees are processable — isEligible guard removed */}
+              {emp.hasPayslip ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 gap-1.5 px-3"
+                        onClick={() => { setSelectedEmployeeId(emp.id); setIsCalculatorOpen(true); }}
+                      >
+                        <Edit className="size-3" />
+                        <span className="text-[10px] font-bold uppercase tracking-tight">Revise</span>
+                      </Button>
+                    </TooltipTrigger>
+                    {warnings.length > 0 && (
+                      <TooltipContent side="left" className="p-3 bg-background text-foreground border border-border shadow-lg">
+                        <p className="text-xs font-bold text-amber-600 mb-2">Revising with open issues:</p>
+                        <WarningTooltipBody warnings={warnings} footer="The revised slip will reflect current attendance data." />
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              ) : isReadyToProcess ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className={cn(
+                          "h-8 gap-1.5 px-3",
+                          warnings.length > 0 && "border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400",
                         )}
-                      </Tooltip>
-                    </TooltipProvider>
-                  ) : isReadyToProcess ? (
-                    // Cycle open — process
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="default"
-                            className={cn(
-                              "h-8 gap-1.5 px-3",
-                              warnings.length > 0 &&
-                              "border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400",
-                            )}
-                            onClick={() => { setSelectedEmployeeId(emp.id); setIsCalculatorOpen(true); }}
-                          >
-                            {warnings.length > 0
-                              ? <AlertCircle className="size-3 text-amber-500" />
-                              : <Calculator className="size-3" />}
-                            <span className="text-[10px] font-bold uppercase tracking-tight">
-                              Process
-                            </span>
-                          </Button>
-                        </TooltipTrigger>
-                        {warnings.length > 0 && (
-                          <TooltipContent side="left" className="p-3 max-w-[230px] bg-background text-foreground border border-border shadow-lg">
-                            <p className="text-xs font-bold text-foreground mb-2">
-                              Cycle is open — {warnings.length} item{warnings.length !== 1 ? "s need" : " needs"} attention:
-                            </p>
-                            <WarningTooltipBody
-                              warnings={warnings}
-                              footer="You can still generate the slip. Unresolved items may cause incorrect deductions or missing overtime pay."
-                            />
-                          </TooltipContent>
-                        )}
-                      </Tooltip>
-                    </TooltipProvider>
-                  ) : (
-                    // Locked — cycle not yet closed
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 gap-1.5 px-3 opacity-50 cursor-not-allowed"
-                            disabled
-                          >
-                            <ClockAlert className="size-3" />
-                            <span className="text-[10px] font-bold uppercase tracking-tight">
-                              {daysUntilEligible}d left
-                            </span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="p-3 max-w-[230px]">
-                          <div className="flex items-start gap-2">
-                            <CalendarX2 className="size-4 text-muted-foreground shrink-0 mt-0.5" />
-                            <div className="space-y-1">
-                              <p className="text-xs font-bold">Pay cycle still in progress</p>
-                              <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                This employee's payslip cannot be generated until the cycle closes on{" "}
-                                <strong className="text-foreground">{cycleCloseDate}</strong>.{" "}
-                                Come back in{" "}
-                                <strong className="text-foreground">
-                                  {daysUntilEligible} day{daysUntilEligible !== 1 ? "s" : ""}
-                                </strong>
-                                .
-                              </p>
-                            </div>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                </>
+                        onClick={() => { setSelectedEmployeeId(emp.id); setIsCalculatorOpen(true); }}
+                      >
+                        {warnings.length > 0 ? <AlertCircle className="size-3 text-amber-500" /> : <Calculator className="size-3" />}
+                        <span className="text-[10px] font-bold uppercase tracking-tight">Process</span>
+                      </Button>
+                    </TooltipTrigger>
+                    {warnings.length > 0 && (
+                      <TooltipContent side="left" className="p-3 max-w-[230px] bg-background text-foreground border border-border shadow-lg">
+                        <p className="text-xs font-bold text-foreground mb-2">
+                          Cycle is open — {warnings.length} item{warnings.length !== 1 ? "s need" : " needs"} attention:
+                        </p>
+                        <WarningTooltipBody warnings={warnings} footer="You can still generate the slip. Unresolved items may cause incorrect deductions or missing overtime pay." />
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 gap-1.5 px-3 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700/50 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                        onClick={() => { setSelectedEmployeeId(emp.id); setIsCalculatorOpen(true); }}
+                      >
+                        <ClockAlert className="size-3" />
+                        <span className="text-[10px] font-bold uppercase tracking-tight">Process Early</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="p-3 max-w-[230px] border-amber-200 bg-amber-50 dark:bg-amber-950/90 dark:border-amber-800">
+                      <div className="flex items-start gap-2">
+                        <CalendarX2 className="size-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                          <p className="text-xs font-bold text-amber-800 dark:text-amber-300">Process Before Close</p>
+                          <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 leading-relaxed">
+                            Cycle closes on <strong className="text-amber-900 dark:text-amber-100">{cycleCloseDate}</strong>. Processing early will generate a payslip based only on attendance recorded up to today.
+                          </p>
+                        </div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 hover:bg-primary/5 hover:text-primary transition-colors"
-                asChild
-                title="View Payroll History"
-              >
+              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/5 hover:text-primary transition-colors" asChild title="View Payroll History">
                 <Link to="/hr/payroll/employee/$employeeId" params={{ employeeId: emp.id }}>
                   <Eye className="size-4" />
                 </Link>
               </Button>
             </div>
           );
+
+
         },
       },
     ],
@@ -520,6 +477,9 @@ export function PayrollContainer() {
 
   return (
     <div className="space-y-6">
+      {/* ── Cycle Banner ─────────────────────────────────────────────── */}
+      <PayrollCycleBanner cycle={cycle} inGrace={inGrace} />
+
       {/* ── Pending Approvals Warning ─────────────────────────────────── */}
       <PendingApprovalsWarning />
 
@@ -534,13 +494,6 @@ export function PayrollContainer() {
             className="pl-10 h-11 bg-card shadow-xs border-muted-foreground/20 rounded-xl"
           />
         </div>
-        <DatePicker
-          date={selectedDate}
-          onChange={(date) => { if (date) { setSelectedDate(date); setPageIndex(0); } }}
-          placeholder="Select month"
-          className="w-[180px]"
-          formatStr="MMMM yyyy"
-        />
       </div>
 
       {/* ── KPI Cards ───────────────────────────────────────────────────── */}
@@ -575,6 +528,21 @@ export function PayrollContainer() {
           progress={completionPct}
         />
       </div>
+
+      {missedCyclesData?.missed && missedCyclesData.missed.length > 0 && (
+        <Alert className="mb-6 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/40">
+          <AlertCircle className="size-4 text-amber-600 shrink-0" />
+          <div className="flex-1">
+            <AlertTitle className="text-amber-800 dark:text-amber-400 font-bold mb-1">
+              Missed Salary Cycles Detected
+            </AlertTitle>
+            <AlertDescription className="text-amber-700 dark:text-amber-500 text-sm leading-relaxed">
+              We found {missedCyclesData.missed.length} instances of employees missing historical salary payments.
+              Search for them below to roll forward their missed salary into the current cycle.
+            </AlertDescription>
+          </div>
+        </Alert>
+      )}
 
       {/* ── Table ───────────────────────────────────────────────────────── */}
       <div className="border border-border/60 rounded-2xl bg-card overflow-hidden shadow-xs">
@@ -722,6 +690,100 @@ function PendingApprovalsWarning() {
           Review Approvals
         </Button>
       </Link>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────
+// PayrollCycleBanner
+// ──────────────────────────────────────────────────────────────────
+function PayrollCycleBanner({ cycle, inGrace }: { cycle: any, inGrace: boolean }) {
+  const percent = cycleProgressPercent(cycle);
+  const remaining = daysRemainingInCycle(cycle);
+
+  // Format dates manually inside the banner
+  const startObj = new Date(cycle.cycleStart);
+  const endObj = new Date(cycle.cycleEnd);
+
+  const formattedDates = {
+    start: startObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    end: endObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    startShort: startObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    endShort: endObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  };
+
+  return (
+    <div className={cn(
+      "relative overflow-hidden rounded-2xl border p-6 transition-colors duration-500",
+      inGrace
+        ? "bg-amber-50/50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/40"
+        : "bg-linear-to-br from-indigo-50/80 to-blue-50/50 border-indigo-100 dark:from-indigo-950/30 dark:to-blue-900/10 dark:border-indigo-800/40"
+    )}>
+      <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+
+        {/* Left Side: Status & Dates */}
+        <div className="space-y-4 flex-1 w-full relative z-10">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-black uppercase tracking-widest shadow-sm",
+              inGrace
+                ? "bg-amber-100 border-amber-300 text-amber-800 dark:bg-amber-900/60 dark:border-amber-700 dark:text-amber-300"
+                : "bg-indigo-100 border-indigo-300 text-indigo-800 dark:bg-indigo-900/60 dark:border-indigo-700 dark:text-indigo-300"
+            )}>
+              {inGrace ? <Timer className="size-3.5 fill-current opacity-20 relative -top-[0.5px]" /> : <Calendar className="size-3.5 fill-current opacity-20 relative -top-[0.5px]" />}
+              {inGrace ? "Grace Period Active" : "Active Payroll Cycle"}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <h2 className="text-2xl font-black tracking-tight flex items-center gap-2">
+              <Banknote className={cn("size-6", inGrace ? "text-amber-500" : "text-indigo-500")} />
+              {formattedDates.start} — {formattedDates.end}
+            </h2>
+            <p className="text-sm text-muted-foreground font-medium leading-relaxed max-w-[600px]">
+              {inGrace
+                ? "The cycle is closed. Generating and processing payslips is now enabled until payouts occur on the 25th."
+                : "Staff attendance, leaves, and overtime are actively accruing for this period. Slips cannot be generated yet."}
+            </p>
+          </div>
+        </div>
+
+        {/* Right Side: Progress Indicator */}
+        {!inGrace && (
+          <div className="shrink-0 w-full md:w-[280px] bg-background/60 p-4 rounded-xl border shadow-sm backdrop-blur-md relative z-10">
+            <div className="flex justify-between items-end mb-3">
+              <div>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Cycle Progress</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-black leading-none text-indigo-600 dark:text-indigo-400">{Math.round(percent)}%</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5 block">Time Left</span>
+                <span className="text-sm font-bold">{remaining} day{remaining !== 1 ? 's' : ''}</span>
+              </div>
+            </div>
+
+            {/* Custom Progress Bar */}
+            <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden shadow-inner">
+              <div
+                className="h-full bg-indigo-500 rounded-full transition-all duration-1000 ease-out relative"
+                style={{ width: `${percent}%` }}
+              >
+                <div className="absolute inset-0 bg-white/20 animate-pulse" />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Decorative background elements */}
+      {!inGrace && (
+        <>
+          <div className="absolute top-0 right-0 -mr-20 -mt-20 size-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 right-40 -mb-20 size-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        </>
+      )}
     </div>
   );
 }

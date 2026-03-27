@@ -29,9 +29,7 @@ export const useCreateWallet = () => {
             queryClient.invalidateQueries({ queryKey: ["transactions"] });
             toast.success("Wallet created successfully");
         },
-        onError: (err) => {
-            toast.error("Failed to create wallet", { description: err.message });
-        },
+        onError: (err) => toast.error("Failed to create wallet", { description: err.message }),
     });
 };
 
@@ -43,9 +41,7 @@ export const useUpdateWallet = () => {
             queryClient.invalidateQueries({ queryKey: ["wallets"] });
             toast.success("Wallet updated");
         },
-        onError: (err) => {
-            toast.error("Failed to update wallet", { description: err.message });
-        },
+        onError: (err) => toast.error("Failed to update wallet", { description: err.message }),
     });
 };
 
@@ -60,9 +56,7 @@ export const useDepositToWallet = () => {
             queryClient.invalidateQueries({ queryKey: ["transactions"] });
             toast.success("Deposit recorded successfully");
         },
-        onError: (err) => {
-            toast.error("Failed to record deposit", { description: err.message });
-        },
+        onError: (err) => toast.error("Failed to record deposit", { description: err.message }),
     });
 };
 
@@ -78,25 +72,47 @@ export const useCreateExpense = () => {
             queryClient.invalidateQueries({ queryKey: ["transactions"] });
             toast.success("Expense recorded");
         },
-        onError: (err) => {
-            toast.error("Failed to record expense", { description: err.message });
-        },
+        onError: (err) => toast.error("Failed to record expense", { description: err.message }),
     });
 };
 
-export const useExpenses = () => {
+export const useExpenses = (params: {
+    page?: number;
+    limit?: number;
+    category?: string;
+} = {}) => {
+    const { page = 1, limit = 20, category } = params;
     return useQuery({
-        queryKey: ["expenses"],
-        queryFn: () => getExpensesFn({ data: {} }),
+        queryKey: ["expenses", { page, limit, category }],
+        queryFn: () => getExpensesFn({ data: { page, limit, category } }),
+        placeholderData: (prev) => prev, // keep previous page visible while fetching next
     });
 };
 
 // ── Transactions ───────────────────────────────────────────
 
-export const useTransactions = (walletId?: string) => {
+export const useTransactions = (params: {
+    walletId?: string;
+    source?: string;
+    page?: number;
+    limit?: number;
+} = {}) => {
+    const { walletId, source, page = 1, limit = 20 } = params;
     return useQuery({
-        queryKey: ["transactions", walletId],
-        queryFn: () => getTransactionsFn({ data: { walletId } }),
+        queryKey: ["transactions", { walletId, source, page, limit }],
+        queryFn: () => getTransactionsFn({ data: { walletId, source, page, limit } }),
+        placeholderData: (prev) => prev,
+    });
+};
+
+// Keep a separate hook for the finance dashboard "recent activity" strip
+// so it stays a lightweight fixed-limit fetch and doesn't share cache with
+// the paginated ledger page.
+export const useRecentTransactions = (limit = 10) => {
+    return useQuery({
+        queryKey: ["transactions-recent", limit],
+        queryFn: () => getTransactionsFn({ data: { page: 1, limit } }),
+        staleTime: 30_000,
     });
 };
 
@@ -110,8 +126,6 @@ export const useDebitWallet = () => {
             queryClient.invalidateQueries({ queryKey: ["wallets"] });
             queryClient.invalidateQueries({ queryKey: ["transactions"] });
         },
-        onError: (err) => {
-            toast.error("Payment failed", { description: err.message });
-        },
+        onError: (err) => toast.error("Payment failed", { description: err.message }),
     });
 };

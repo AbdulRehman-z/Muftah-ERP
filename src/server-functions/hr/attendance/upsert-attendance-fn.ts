@@ -75,10 +75,10 @@ export const upsertAttendanceFn = createServerFn()
 
     const updateData = {
       status: rest.status,
-      checkIn: rest.checkIn || null,
-      checkOut: rest.checkOut || null,
-      checkIn2: rest.checkIn2 || null,
-      checkOut2: rest.checkOut2 || null,
+      checkIn: rest.status === "present" ? (rest.checkIn || null) : null,
+      checkOut: rest.status === "present" ? (rest.checkOut || null) : null,
+      checkIn2: rest.status === "present" ? (rest.checkIn2 || null) : null,
+      checkOut2: rest.status === "present" ? (rest.checkOut2 || null) : null,
       dutyHours: finalDutyHours,
       overtimeHours: finalOvertimeHours,
       isLate: rest.isLate ?? false,

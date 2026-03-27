@@ -1,20 +1,50 @@
 import { Package, Beaker, Box, Wrench } from "lucide-react";
 import { useState } from "react";
+import { motion, AnimatePresence, Variants } from "framer-motion";
+import { useSuspenseQuery, useQuery, keepPreviousData } from "@tanstack/react-query";
+
 import { getFactoryFloorStockFn } from "@/server-functions/inventory/factory-floor/get-factory-floor-stocks-fn";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { getConsumptionHistoryFn } from "@/server-functions/inventory/factory-floor/get-consumption-history-fn";
+import { getWarehousesFn } from "@/server-functions/inventory/get-warehouses-fn";
+
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 import { GenericEmpty } from "../custom/empty";
 import { AddWarehouseDialog } from "./add-warehouse-dialog";
-import { useSuspenseQuery, useQuery, keepPreviousData } from "@tanstack/react-query";
 import { StockTable } from "./stock-table";
 import { FinishedGoodsTable } from "./finished-goods-table";
 import { LowStockAlerts } from "./low-stocks-alert";
 import { ConsumptionTable } from "./consumption-table";
-import { getConsumptionHistoryFn } from "@/server-functions/inventory/factory-floor/get-consumption-history-fn";
-import { getWarehousesFn } from "@/server-functions/inventory/get-warehouses-fn";
 import { AdjustStockDialog } from "./adjust-stock-dialog";
 import { Button } from "../ui/button";
 import { FactoryFloorProductionIllustration } from "../illustrations/FactoryFloorProductionIllustration";
+import { cn } from "@/lib/utils";
+
+// ── Animation Variants ─────────────────────────────────────────────────────
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.05 },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 15 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 30 },
+  },
+};
+
+const tabContentVariants: Variants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
+  exit: { opacity: 0, y: -10, transition: { duration: 0.2, ease: "easeIn" } }
+};
+
+// ── Component ──────────────────────────────────────────────────────────────
 
 export const FactoryFloorContainer = () => {
   const { data: factoryFloor } = useSuspenseQuery({
@@ -46,8 +76,6 @@ export const FactoryFloorContainer = () => {
 
   const [activeTab, setActiveTab] = useState("raw");
   const [isAddFactoryOpen, setAddFactoryOpen] = useState(false);
-
-  // Adjust Stock Dialog state
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
   const [adjustTarget, setAdjustTarget] = useState<{
     materialType: "chemical" | "packaging";
@@ -59,7 +87,7 @@ export const FactoryFloorContainer = () => {
 
   if (!factoryFloor) {
     return (
-      <>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
         <GenericEmpty
           icon={FactoryFloorProductionIllustration}
           title="No Factory Floor Configured"
@@ -67,60 +95,31 @@ export const FactoryFloorContainer = () => {
           ctaText="Add Factory Floor"
           onAddChange={setAddFactoryOpen}
         />
-        <AddWarehouseDialog
-          open={isAddFactoryOpen}
-          onOpenChange={setAddFactoryOpen}
-          forcedType="factory_floor"
-        />
-      </>
+        <AddWarehouseDialog open={isAddFactoryOpen} onOpenChange={setAddFactoryOpen} forcedType="factory_floor" />
+      </motion.div>
     );
   }
 
   const rawMaterials = factoryFloor.materialStock
     .filter((s) => s.chemicalId !== null)
-    .map((s) => ({
-      ...s,
-      warehouse: { name: factoryFloor.name, isActive: factoryFloor.isActive },
-    }));
+    .map((s) => ({ ...s, warehouse: { name: factoryFloor.name, isActive: factoryFloor.isActive } }));
 
   const packagingMaterials = factoryFloor.materialStock
-    .filter(
-      (s) =>
-        s.packagingMaterialId !== null &&
-        s.packagingMaterial?.type !== "sticker",
-    )
-    .map((s) => ({
-      ...s,
-      warehouse: { name: factoryFloor.name, isActive: factoryFloor.isActive },
-    }));
+    .filter((s) => s.packagingMaterialId !== null && s.packagingMaterial?.type !== "sticker")
+    .map((s) => ({ ...s, warehouse: { name: factoryFloor.name, isActive: factoryFloor.isActive } }));
 
   const stickers = factoryFloor.materialStock
-    .filter(
-      (s) =>
-        s.packagingMaterialId !== null &&
-        s.packagingMaterial?.type === "sticker",
-    )
-    .map((s) => ({
-      ...s,
-      warehouse: { name: factoryFloor.name, isActive: factoryFloor.isActive },
-    }));
+    .filter((s) => s.packagingMaterialId !== null && s.packagingMaterial?.type === "sticker")
+    .map((s) => ({ ...s, warehouse: { name: factoryFloor.name, isActive: factoryFloor.isActive } }));
 
   const finishedGoods = factoryFloor.finishedGoodsStock.map((fg) => ({
     ...fg,
     warehouse: { name: factoryFloor.name, isActive: factoryFloor.isActive },
   }));
 
-  const showRaw = activeTab === "raw";
-  const showPackaging = activeTab === "packaging";
-  const showFinished = activeTab === "finished";
-  const showStickers = activeTab === "stickers";
-  const showConsumption = activeTab === "consumption";
-
   const handleAdjustStock = (item: any, type: "chemical" | "packaging") => {
-    const material =
-      type === "chemical" ? item.chemical : item.packagingMaterial;
+    const material = type === "chemical" ? item.chemical : item.packagingMaterial;
     if (!material) return;
-
     setAdjustTarget({
       materialType: type,
       materialId: material.id,
@@ -132,177 +131,140 @@ export const FactoryFloorContainer = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Chemicals</CardTitle>
-            <Beaker className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{rawMaterials.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Chemicals & Ingredients
-            </p>
-          </CardContent>
-        </Card>
+    <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6">
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Packaging</CardTitle>
-            <Package className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {packagingMaterials.length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Bottles, Caps, Cartons
-            </p>
-          </CardContent>
-        </Card>
+      {/* ── Sharp KPI Cards ───────────────────────────────────────────────── */}
+      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <SharpKPICard
+          label="Chemicals"
+          value={rawMaterials.length.toString()}
+          icon={Beaker}
+          theme="blue"
+          subtext="Chemicals & Ingredients"
+        />
+        <SharpKPICard
+          label="Packaging"
+          value={packagingMaterials.length.toString()}
+          icon={Package}
+          theme="violet"
+          subtext="Bottles, Caps, Cartons"
+        />
+        <SharpKPICard
+          label="Finished Goods"
+          value={`${finishedGoods.reduce((sum, fg) => sum + fg.quantityCartons, 0)} Cartons`}
+          icon={Box}
+          theme="emerald"
+          subtext={`+ ${finishedGoods.reduce((sum, fg) => sum + fg.quantityContainers, 0)} Loose Units`}
+        />
+      </motion.div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              Finished Goods
-            </CardTitle>
-            <Box className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold flex items-baseline gap-1">
-              {finishedGoods.reduce((sum, fg) => sum + fg.quantityCartons, 0)}
-              <span className="text-sm font-normal text-muted-foreground">
-                Cartons
-              </span>
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              +{" "}
-              {finishedGoods.reduce(
-                (sum, fg) => sum + fg.quantityContainers,
-                0,
-              )}{" "}
-              Loose Units
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filter Tabs and Header Actions */}
-      <div className="flex items-center justify-between gap-4 border-b pb-4">
-        <Tabs defaultValue="raw" onValueChange={setActiveTab} className="w-fit">
-          <TabsList className="">
-            <TabsTrigger value="raw">Chemicals</TabsTrigger>
-            <TabsTrigger value="packaging">Packaging</TabsTrigger>
-            <TabsTrigger value="stickers">Stickers</TabsTrigger>
-            <TabsTrigger value="finished">Finished Goods</TabsTrigger>
-            <TabsTrigger value="consumption">Consumption</TabsTrigger>
+      {/* ── Filter Tabs and Header Actions ────────────────────────────────── */}
+      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-fit">
+          <TabsList className="bg-muted/50 rounded-none border border-border">
+            <TabsTrigger className="rounded-none" value="raw">Chemicals</TabsTrigger>
+            <TabsTrigger className="rounded-none" value="packaging">Packaging</TabsTrigger>
+            <TabsTrigger className="rounded-none" value="stickers">Stickers</TabsTrigger>
+            <TabsTrigger className="rounded-none" value="finished">Finished Goods</TabsTrigger>
+            <TabsTrigger className="rounded-none" value="consumption">Consumption</TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="flex items-center gap-2">
           <LowStockAlerts />
         </div>
-      </div>
+      </motion.div>
 
-      {/* Finished Goods Table */}
-      {showFinished && (
-        <FinishedGoodsTable
-          data={finishedGoods as any}
-          warehouses={allWarehouses as any}
-          preselectedWarehouse={factoryFloor.id}
-        />
-      )}
+      {/* ── Dynamic Tab Content ───────────────────────────────────────────── */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          variants={tabContentVariants}
+          initial="hidden"
+          animate="show"
+          exit="exit"
+          className="pt-2"
+        >
+          {activeTab === "finished" && (
+            <FinishedGoodsTable data={finishedGoods as any} warehouses={allWarehouses as any} preselectedWarehouse={factoryFloor.id} />
+          )}
 
-      {/* Chemicals Section */}
-      {showRaw && (
-        <div className="space-y-4">
-          <div className="flex justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs font-bold uppercase tracking-wide text-amber-700 border-amber-200 hover:bg-amber-50"
-              onClick={() => {
-                // Show a selection - for now user clicks on a row
-              }}
-              disabled
-            >
-              <Wrench className="size-3 mr-1.5" />
-              Select a row to adjust stock
-            </Button>
-          </div>
-          <StockTable
-            data={rawMaterials as any}
-            type="chemical"
-            warehouses={allWarehouses as any}
-            preselectedWarehouse={factoryFloor.id}
-            hideAddButton={true}
-            hideActions={true}
-            onAdjustStock={(item) => handleAdjustStock(item, "chemical")}
-          />
-        </div>
-      )}
+          {activeTab === "raw" && (
+            <div className="space-y-4">
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" className="rounded-none" disabled>
+                  <Wrench className="size-3 mr-1.5" />
+                  Select a row to adjust stock
+                </Button>
+              </div>
+              <StockTable data={rawMaterials as any} type="chemical" warehouses={allWarehouses as any} preselectedWarehouse={factoryFloor.id} hideAddButton={true} hideActions={true} onAdjustStock={(item) => handleAdjustStock(item, "chemical")} />
+            </div>
+          )}
 
-      {/* Packaging Materials Section */}
-      {showPackaging && (
-        <div className="space-y-4">
-          <StockTable
-            data={packagingMaterials as any}
-            type="packaging"
-            warehouses={allWarehouses as any}
-            preselectedWarehouse={factoryFloor.id}
-            hideAddButton={true}
-            hideActions={true}
-            onAdjustStock={(item) => handleAdjustStock(item, "packaging")}
-          />
-        </div>
-      )}
+          {activeTab === "packaging" && (
+            <StockTable data={packagingMaterials as any} type="packaging" warehouses={allWarehouses as any} preselectedWarehouse={factoryFloor.id} hideAddButton={true} hideActions={true} onAdjustStock={(item) => handleAdjustStock(item, "packaging")} />
+          )}
 
-      {/* Stickers Section */}
-      {showStickers && (
-        <div className="space-y-4">
-          <StockTable
-            data={stickers as any}
-            type="packaging"
-            warehouses={allWarehouses as any}
-            preselectedWarehouse={factoryFloor.id}
-            hideAddButton={true}
-            hideActions={true}
-            onAdjustStock={(item) => handleAdjustStock(item, "packaging")}
-          />
-        </div>
-      )}
-      {/* Consumption Table */}
-      {showConsumption && (
-        <ConsumptionTable 
-          data={consumptionData?.data as any} 
-          totalCount={consumptionData?.totalCount}
-          searchQuery={consumptionSearch}
-          isPending={isConsumptionFetching}
-          onSearchChange={(val) => {
-            setConsumptionSearch(val);
-            setConsumptionPagination((prev) => ({ ...prev, pageIndex: 0 }));
-          }}
-          pagination={consumptionPagination}
-          onPaginationChange={setConsumptionPagination}
-        />
-      )}
+          {activeTab === "stickers" && (
+            <StockTable data={stickers as any} type="packaging" warehouses={allWarehouses as any} preselectedWarehouse={factoryFloor.id} hideAddButton={true} hideActions={true} onAdjustStock={(item) => handleAdjustStock(item, "packaging")} />
+          )}
 
-      {/* Adjust Stock Dialog */}
+          {activeTab === "consumption" && (
+            <ConsumptionTable data={consumptionData?.data as any} totalCount={consumptionData?.totalCount} searchQuery={consumptionSearch} isPending={isConsumptionFetching} onSearchChange={(val) => { setConsumptionSearch(val); setConsumptionPagination((prev) => ({ ...prev, pageIndex: 0 })); }} pagination={consumptionPagination} onPaginationChange={setConsumptionPagination} />
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* ── Adjust Stock Dialog ───────────────────────────────────────────── */}
       {adjustTarget && (
-        <AdjustStockDialog
-          open={adjustDialogOpen}
-          onOpenChange={(open) => {
-            setAdjustDialogOpen(open);
-            if (!open) setAdjustTarget(null);
-          }}
-          materialType={adjustTarget.materialType}
-          materialId={adjustTarget.materialId}
-          materialName={adjustTarget.materialName}
-          currentStock={adjustTarget.currentStock}
-          unit={adjustTarget.unit}
-        />
+        <AdjustStockDialog open={adjustDialogOpen} onOpenChange={(open) => { setAdjustDialogOpen(open); if (!open) setAdjustTarget(null); }} materialType={adjustTarget.materialType} materialId={adjustTarget.materialId} materialName={adjustTarget.materialName} currentStock={adjustTarget.currentStock} unit={adjustTarget.unit} />
       )}
-    </div>
+    </motion.div>
   );
 };
+
+// ── Sharp Pixel-Perfect KPI Component ───────────────────────────────────────
+
+interface SharpKPICardProps {
+  label: string;
+  value: string;
+  icon: any;
+  theme: "blue" | "rose" | "emerald" | "violet";
+  subtext?: string;
+}
+
+const sharpThemeStyles = {
+  blue: { border: "border-t-blue-500", iconBg: "bg-blue-500/10", iconText: "text-blue-500" },
+  rose: { border: "border-t-rose-500", iconBg: "bg-rose-500/10", iconText: "text-rose-500" },
+  emerald: { border: "border-t-emerald-500", iconBg: "bg-emerald-500/10", iconText: "text-emerald-500" },
+  violet: { border: "border-t-violet-500", iconBg: "bg-violet-500/10", iconText: "text-violet-500" },
+};
+
+function SharpKPICard({ label, value, icon: Icon, theme, subtext }: SharpKPICardProps) {
+  const styles = sharpThemeStyles[theme];
+
+  return (
+    <motion.div
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      className={cn(
+        "relative flex flex-col justify-between p-5 bg-card border border-border rounded-none shadow-none",
+        "border-t-2",
+        styles.border
+      )}
+    >
+      <div
+        className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04] pointer-events-none"
+        style={{ backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`, backgroundSize: "8px 8px" }}
+      />
+      <div className="relative z-10 flex items-start justify-between mb-8">
+        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{label}</p>
+        <div className={cn("p-1.5 rounded-none", styles.iconBg)}>
+          <Icon className={cn("size-4", styles.iconText)} />
+        </div>
+      </div>
+      <div className="relative z-10 space-y-1">
+        <h3 className="text-3xl font-bold tracking-tight text-foreground">{value}</h3>
+        {subtext ? <p className="text-xs font-medium text-muted-foreground/70">{subtext}</p> : <div className="h-4" />}
+      </div>
+    </motion.div>
+  );
+}

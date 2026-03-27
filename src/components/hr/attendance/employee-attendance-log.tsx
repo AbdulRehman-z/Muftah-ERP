@@ -338,7 +338,7 @@ export const EmployeeAttendanceLog = ({
             holiday:
               "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400",
             restDay:
-              "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-950/30 dark:text-slate-400",
+              "bg-slate-50  border-slate-200 dark:bg-slate-950/30 dark:text-slate-400",
           };
           return (
             <Badge

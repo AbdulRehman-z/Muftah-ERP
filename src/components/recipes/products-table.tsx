@@ -123,7 +123,7 @@ export const ProductsTable = ({ products }: ProductsTableProps) => {
             <Button
               variant="ghost"
               size="icon"
-              className="size-7 text-slate-500 hover:bg-slate-100 hover:text-slate-700 rounded-md transition-colors"
+              className="size-7 text-slate-500 hover:bg-slate-100 hover: rounded-md transition-colors"
               onClick={() => {
                 setSelectedProduct(row.original);
                 setEditDialogOpen(true);

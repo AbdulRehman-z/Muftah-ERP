@@ -30,11 +30,7 @@ function EmployeeListPage() {
       </div>
 
       <Separator />
-      <Suspense
-        fallback={
-          <GenericLoader title="Loading Employees" description="wait..." />
-        }
-      >
+      <Suspense fallback={<GenericLoader title="Loading Employees" />}>
         <EmployeeListContainer />
       </Suspense>
     </div>

@@ -46,6 +46,7 @@ interface EmployeeWithAttendance {
   firstName: string;
   lastName: string;
   designation: string;
+  status?: string;
   isOrderBooker: boolean;
   standardDutyHours: number | null;
   /**
@@ -143,10 +144,20 @@ const EmployeeCell = ({
         {getInitials(row.firstName, row.lastName)}
       </span>
     </div>
-    <div className="flex flex-col">
-      <span className="font-semibold text-[13px] text-foreground leading-tight">
-        {row.firstName} {row.lastName}
-      </span>
+    <div className="flex flex-col items-start">
+      <div className="flex items-center gap-2">
+        <span className="font-semibold text-[13px] text-foreground leading-tight">
+          {row.firstName} {row.lastName}
+        </span>
+        {row.status === "terminated" || row.status === "resigned" ? (
+          <Badge
+            variant="outline"
+            className="text-[9px] px-1 h-4 bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900 leading-none"
+          >
+            {row.status === "terminated" ? "Terminated" : "Resigned"}
+          </Badge>
+        ) : null}
+      </div>
       <span className="text-[12px] text-muted-foreground/80 leading-tight mt-0.5">
         {row.designation}
       </span>
@@ -244,6 +255,13 @@ export const AttendanceListTable = ({ data, date }: Props) => {
       header: "",
       cell: ({ row }) => {
         const rest = isRestDay(date, row.original.restDays);
+        const inactive = row.original.status === "terminated" || row.original.status === "resigned";
+        const disabled = rest || inactive;
+
+        let title = "Edit Attendance";
+        if (inactive) title = "Cannot edit attendance for inactive employees";
+        else if (rest) title = "Cannot edit attendance on a rest day";
+
         return (
           <div className="flex items-center justify-end gap-2">
             <Button
@@ -251,13 +269,13 @@ export const AttendanceListTable = ({ data, date }: Props) => {
               size="icon"
               className={cn(
                 "size-7 rounded-md transition-colors",
-                rest
+                disabled
                   ? "text-muted-foreground/30 cursor-not-allowed pointer-events-none"
                   : "text-blue-600 hover:text-primary hover:bg-primary/10",
               )}
-              onClick={() => !rest && handleEdit(row.original)}
-              disabled={rest}
-              title={rest ? "Cannot edit attendance on a rest day" : "Edit Attendance"}
+              onClick={() => !disabled && handleEdit(row.original)}
+              disabled={disabled}
+              title={title}
             >
               <Edit2 className="size-3.5" />
             </Button>
@@ -453,6 +471,13 @@ export const AttendanceListTable = ({ data, date }: Props) => {
       header: "",
       cell: ({ row }) => {
         const rest = isRestDay(date, row.original.restDays);
+        const inactive = row.original.status === "terminated" || row.original.status === "resigned";
+        const disabled = rest || inactive;
+
+        let title = "Edit Log";
+        if (inactive) title = "Cannot edit log for inactive employees";
+        else if (rest) title = "Cannot edit attendance on a rest day";
+
         return (
           <div className="flex items-center justify-end gap-2">
             <Button
@@ -460,13 +485,13 @@ export const AttendanceListTable = ({ data, date }: Props) => {
               size="icon"
               className={cn(
                 "size-7 rounded-md transition-colors",
-                rest
+                disabled
                   ? "text-muted-foreground/30 cursor-not-allowed pointer-events-none"
                   : "text-blue-600 hover:text-primary hover:bg-primary/10",
               )}
-              onClick={() => !rest && handleEdit(row.original)}
-              disabled={rest}
-              title={rest ? "Cannot edit attendance on a rest day" : "Edit Log"}
+              onClick={() => !disabled && handleEdit(row.original)}
+              disabled={disabled}
+              title={title}
             >
               <Edit2 className="size-3.5" />
             </Button>

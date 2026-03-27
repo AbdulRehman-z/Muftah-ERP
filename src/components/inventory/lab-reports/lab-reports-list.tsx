@@ -181,7 +181,7 @@ export const LabReportsList = ({
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="size-7 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                                        className="size-7 text-slate-500 hover:bg-slate-100 hover:"
                                         onClick={() => {
                                             setEditReport(report);
                                             setCreateOpen(true);

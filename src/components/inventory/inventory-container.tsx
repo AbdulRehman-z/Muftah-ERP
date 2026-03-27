@@ -7,9 +7,10 @@ import {
   Warehouse,
   Package,
   TrendingUp,
-  MoreHorizontal,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { motion, Variants } from "framer-motion";
+
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
 import { GenericEmpty } from "../custom/empty";
 import { InventoryEmptyIllustration } from "@/components/illustrations/InventoryEmptyIllustration";
@@ -31,6 +32,27 @@ import { FinishedGoodsTable } from "./finished-goods-table";
 import { TransferStockDialog } from "./transfer-stock-dialog";
 import { TooltipWrapper } from "../custom/tooltip-wrapper";
 import { cn } from "@/lib/utils";
+
+// ── Animation Variants ─────────────────────────────────────────────────────
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.05 },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 15 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 30 },
+  },
+};
+
+// ── Component ──────────────────────────────────────────────────────────────
 
 export const InventoryContainer = () => {
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>("all");
@@ -56,7 +78,7 @@ export const InventoryContainer = () => {
 
   if (warehouses.length === 0) {
     return (
-      <>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
         <GenericEmpty
           icon={InventoryEmptyIllustration}
           title="Ready to store Stock?"
@@ -69,7 +91,7 @@ export const InventoryContainer = () => {
           open={isAddWarehouseOpen}
           forcedType="storage"
         />
-      </>
+      </motion.div>
     );
   }
 
@@ -92,29 +114,29 @@ export const InventoryContainer = () => {
       : null;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6">
 
       {/* ── Toolbar ───────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border bg-secondary">
-        <div className="flex items-center gap-3">
+      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 border border-border bg-card rounded-none shadow-none">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           {/* Warehouse Selector */}
           <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
-            <SelectTrigger className="w-[220px] h-9 bg-background border-border/60 text-[13px] font-medium rounded-lg">
+            <SelectTrigger className="w-full sm:w-[240px] h-10 bg-background border-border text-[13px] font-medium rounded-none shadow-none focus:ring-1 focus:ring-primary">
               <SelectValue placeholder="Select warehouse" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-[13px]">
+            <SelectContent className="rounded-none shadow-none border-border">
+              <SelectItem value="all" className="text-[13px] rounded-none">
                 <div className="flex items-center gap-2">
                   <Warehouse className="size-3.5 text-muted-foreground" />
                   All Warehouses
                 </div>
               </SelectItem>
               {storageWarehouses.map((w) => (
-                <SelectItem key={w.id} value={w.id} className="text-[13px]">
+                <SelectItem key={w.id} value={w.id} className="text-[13px] rounded-none">
                   <div className="flex items-center gap-2">
                     <div
                       className={cn(
-                        "size-1.5 rounded-full shrink-0",
+                        "size-1.5 rounded-none shrink-0",
                         w.isActive ? "bg-emerald-500" : "bg-slate-400",
                       )}
                     />
@@ -122,7 +144,7 @@ export const InventoryContainer = () => {
                     {!w.isActive && (
                       <Badge
                         variant="outline"
-                        className="text-[9px] h-4 px-1 text-muted-foreground ml-1"
+                        className="text-[9px] h-4 px-1 rounded-none text-muted-foreground ml-1"
                       >
                         Inactive
                       </Badge>
@@ -135,15 +157,15 @@ export const InventoryContainer = () => {
 
           {/* Per-warehouse actions */}
           {selectedWarehouse !== "all" && storageWarehouses.length > 0 && (
-            <div className="flex items-center gap-1 border-l pl-3">
+            <div className="flex items-center gap-1 sm:border-l border-border sm:pl-4">
               <TooltipWrapper tooltipContent="View Details">
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setDetailsWarehouseOpen(true)}
-                  className="size-8 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                  className="size-9 rounded-none text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                 >
-                  <Eye className="size-3.5" />
+                  <Eye className="size-4" />
                 </Button>
               </TooltipWrapper>
               <TooltipWrapper tooltipContent="Edit Warehouse">
@@ -151,9 +173,9 @@ export const InventoryContainer = () => {
                   variant="ghost"
                   size="icon"
                   onClick={() => setEditWarehouseOpen(true)}
-                  className="size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                  className="size-9 rounded-none text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
-                  <Pencil className="size-3.5" />
+                  <Pencil className="size-4" />
                 </Button>
               </TooltipWrapper>
               <ManageWarehouseStatusDialog
@@ -168,85 +190,85 @@ export const InventoryContainer = () => {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <Button
             variant="outline"
-            size="sm"
             onClick={() => setTransferOpen(true)}
-            className="h-9 gap-2 text-[13px] font-medium rounded-lg border-border/60 hover:bg-muted/50 transition-colors"
+            className="h-10 flex-1 sm:flex-none gap-2 text-[13px] font-medium rounded-none border-border hover:bg-muted transition-colors shadow-none"
           >
             <ArrowRightLeft className="size-3.5" />
             Transfer Stock
           </Button>
           <Button
-            size="sm"
             onClick={() => setAddWarehouseOpen(true)}
-            className="h-9 gap-2 text-[13px] font-medium rounded-lg"
+            className="h-10 flex-1 sm:flex-none gap-2 text-[13px] font-medium rounded-none shadow-none"
           >
             <PlusIcon className="size-3.5" />
             Add Warehouse
           </Button>
         </div>
-      </div>
+      </motion.div>
 
-      {/* ── KPI Cards ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <KPICard
+      {/* ── Sharp KPI Cards ───────────────────────────────────────────── */}
+      <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <SharpKPICard
           icon={Warehouse}
           label="Total Warehouses"
-          value={storageWarehouses.length}
+          value={storageWarehouses.length.toString()}
           subtext={`${activeWarehouseCount} active`}
-          color="blue"
+          theme="blue"
         />
-        <KPICard
+        <SharpKPICard
           icon={Package}
           label="Finished Goods"
-          value={finishedGoods.length}
+          value={finishedGoods.length.toString()}
           subtext={
             selectedWarehouse === "all"
               ? "Across all warehouses"
               : `In ${selectedWarehouseData?.name || "selected warehouse"}`
           }
-          color="emerald"
+          theme="emerald"
         />
-        <KPICard
+        <SharpKPICard
           icon={TrendingUp}
           label="Active Locations"
-          value={activeWarehouseCount}
+          value={activeWarehouseCount.toString()}
           subtext={`${storageWarehouses.length - activeWarehouseCount} inactive`}
-          color="violet"
+          theme="violet"
         />
-      </div>
+      </motion.div>
 
       {/* ── Stock Tables ───────────────────────────────────────────────── */}
-      <Tabs defaultValue="finished" className="w-full">
-        <div className="flex items-center justify-between mb-4">
-          <TabsList className="bg-muted/50 p-1 h-10 rounded-lg">
-            <TabsTrigger
-              value="finished"
-              className="gap-2 px-4 text-[13px] rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
-            >
-              <Package className="size-3.5" />
-              Finished Goods
-              {finishedGoods.length > 0 && (
-                <span className="ml-1 text-[10px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
-                  {finishedGoods.length}
-                </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
-        </div>
+      <motion.div variants={itemVariants}>
+        <Tabs defaultValue="finished" className="w-full">
+          <div className="flex items-center justify-between mb-4 border-b border-border pb-px">
+            <TabsList className="bg-transparent p-0 h-10 rounded-none w-full justify-start space-x-2">
+              <TabsTrigger
+                value="finished"
+              // className="gap-2 px-4 h-10 text-[13px] rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium"
+              >
+                <Package className="size-3.5" />
+                Finished Goods
+                {finishedGoods.length > 0 && (
+                  <span className="ml-1 text-[10px] font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-none">
+                    {finishedGoods.length}
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-        <TabsContent value="finished" className="mt-0 focus-visible:outline-none">
-          <FinishedGoodsTable
-            data={finishedGoods as any}
-            warehouses={warehouses}
-            preselectedWarehouse={
-              selectedWarehouse === "all" ? undefined : selectedWarehouse
-            }
-          />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="finished" className="mt-0 focus-visible:outline-none border border-border bg-card rounded-none shadow-none">
+            <FinishedGoodsTable
+              data={finishedGoods as any}
+              warehouses={warehouses}
+              preselectedWarehouse={
+                selectedWarehouse === "all" ? undefined : selectedWarehouse
+              }
+            />
+          </TabsContent>
+        </Tabs>
+      </motion.div>
 
       {/* ── Dialogs ─────────────────────────────────────────────────────── */}
       <AddWarehouseDialog
@@ -281,81 +303,69 @@ export const InventoryContainer = () => {
             </>
           );
         })()}
-    </div>
+    </motion.div>
   );
 };
 
-// ── KPI Card ──────────────────────────────────────────────────────────────
+// ── Sharp Pixel-Perfect KPI Component ───────────────────────────────────────
 
-type KPIColor = "blue" | "emerald" | "violet" | "amber";
+interface SharpKPICardProps {
+  label: string;
+  value: string;
+  icon: any;
+  theme: "blue" | "rose" | "emerald" | "violet";
+  subtext?: string;
+}
 
-const kpiColorMap: Record<
-  KPIColor,
-  { bg: string; iconBg: string; icon: string; value: string; text: string }
-> = {
-  blue: {
-    bg: "bg-blue-50/60 dark:bg-blue-500/10 border-blue-200/60 dark:border-blue-500/20",
-    iconBg: "bg-blue-100 dark:bg-blue-500/20",
-    icon: "text-blue-600 dark:text-blue-400",
-    value: "text-blue-700 dark:text-blue-400",
-    text: "text-blue-600/70 dark:text-blue-400/70",
-  },
-  emerald: {
-    bg: "bg-emerald-50/60 dark:bg-emerald-500/10 border-emerald-200/60 dark:border-emerald-500/20",
-    iconBg: "bg-emerald-100 dark:bg-emerald-500/20",
-    icon: "text-emerald-600 dark:text-emerald-400",
-    value: "text-emerald-700 dark:text-emerald-400",
-    text: "text-emerald-600/70 dark:text-emerald-400/70",
-  },
-  violet: {
-    bg: "bg-violet-50/60 dark:bg-violet-500/10 border-violet-200/60 dark:border-violet-500/20",
-    iconBg: "bg-violet-100 dark:bg-violet-500/20",
-    icon: "text-violet-600 dark:text-violet-400",
-    value: "text-violet-700 dark:text-violet-400",
-    text: "text-violet-600/70 dark:text-violet-400/70",
-  },
-  amber: {
-    bg: "bg-amber-50/60 dark:bg-amber-500/10 border-amber-200/60 dark:border-amber-500/20",
-    iconBg: "bg-amber-100 dark:bg-amber-500/20",
-    icon: "text-amber-600 dark:text-amber-400",
-    value: "text-amber-700 dark:text-amber-400",
-    text: "text-amber-600/70 dark:text-amber-400/70",
-  },
+const sharpThemeStyles = {
+  blue: { border: "border-t-blue-500", iconBg: "bg-blue-500/10", iconText: "text-blue-500" },
+  rose: { border: "border-t-rose-500", iconBg: "bg-rose-500/10", iconText: "text-rose-500" },
+  emerald: { border: "border-t-emerald-500", iconBg: "bg-emerald-500/10", iconText: "text-emerald-500" },
+  violet: { border: "border-t-violet-500", iconBg: "bg-violet-500/10", iconText: "text-violet-500" },
 };
 
-function KPICard({
-  icon: Icon,
-  label,
-  value,
-  subtext,
-  color,
-}: {
-  icon: any;
-  label: string;
-  value: number;
-  subtext: string;
-  color: KPIColor;
-}) {
-  const c = kpiColorMap[color];
+function SharpKPICard({ label, value, icon: Icon, theme, subtext }: SharpKPICardProps) {
+  const styles = sharpThemeStyles[theme];
+
   return (
-    <div
+    <motion.div
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
       className={cn(
-        "rounded-2xl border p-5 transition-all hover:shadow-md",
-        c.bg,
+        "relative flex flex-col justify-between p-5 bg-card border border-border rounded-none shadow-none",
+        "border-t-2",
+        styles.border
       )}
     >
-      <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center mb-4", c.iconBg)}>
-        <Icon className={cn("size-4", c.icon)} />
+      {/* Technical Grid Pattern */}
+      <div
+        className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04] pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`,
+          backgroundSize: "8px 8px"
+        }}
+      />
+
+      <div className="relative z-10 flex items-start justify-between mb-8">
+        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          {label}
+        </p>
+        <div className={cn("p-1.5 rounded-none", styles.iconBg)}>
+          <Icon className={cn("size-4", styles.iconText)} />
+        </div>
       </div>
-      <p className={cn("text-[10px] font-bold uppercase tracking-widest mb-1", c.text)}>
-        {label}
-      </p>
-      <p className={cn("text-3xl font-black tracking-tight leading-tight", c.value)}>
-        {value}
-      </p>
-      <p className="text-[11px] text-muted-foreground/70 font-medium mt-1">
-        {subtext}
-      </p>
-    </div>
+
+      <div className="relative z-10 space-y-1">
+        <h3 className="text-3xl font-bold tracking-tight text-foreground">
+          {value}
+        </h3>
+        {subtext ? (
+          <p className="text-xs font-medium text-muted-foreground/70">
+            {subtext}
+          </p>
+        ) : (
+          <div className="h-4" /> // Spacer for vertical alignment
+        )}
+      </div>
+    </motion.div>
   );
 }

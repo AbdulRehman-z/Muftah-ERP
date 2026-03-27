@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
-import { decimal, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, decimal, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
+import { createId } from "@paralleldrive/cuid2";
 
 const timestamps = {
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -9,6 +10,17 @@ const timestamps = {
     .$onUpdate(() => new Date())
     .notNull(),
 };
+
+// --- EXPENSE CATEGORIES ---
+export const expenseCategories = pgTable("expense_categories", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  name: text("name").notNull().unique(),
+  icon: text("icon"), // optional lucide icon name
+  isActive: boolean("is_active").default(true).notNull(),
+  ...timestamps,
+});
 
 // --- WALLETS (Cash vs Bank) ---
 export const wallets = pgTable("wallets", {
@@ -25,7 +37,8 @@ export const wallets = pgTable("wallets", {
 export const expenses = pgTable("expenses", {
   id: text("id").primaryKey(),
   description: text("description").notNull(),
-  category: text("category").notNull(), // "Electricity", "Fuel", "Rent", "Misc"
+  category: text("category").notNull(), // references expense_categories.name for display
+  categoryId: text("category_id").references(() => expenseCategories.id),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
 
   walletId: text("wallet_id")
@@ -57,6 +70,10 @@ export const transactions = pgTable("transactions", {
 });
 
 // --- RELATIONS ---
+
+export const expenseCategoriesRelations = relations(expenseCategories, ({ many }) => ({
+  expenses: many(expenses),
+}));
 
 export const walletsRelations = relations(wallets, ({ many }) => ({
   expenses: many(expenses),

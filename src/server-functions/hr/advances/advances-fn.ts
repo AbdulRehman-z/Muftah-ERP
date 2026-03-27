@@ -48,9 +48,12 @@ export const createSalaryAdvanceFn = createServerFn()
       amount: z.number().positive(),
       date: z.string(), // YYYY-MM-DD
       reason: z.string(),
+      installmentMonths: z.number().int().min(1).default(1), // 1, 3, 6, or 12
     }),
   )
   .handler(async ({ data }) => {
+    const installmentMonths = data.installmentMonths || 1;
+    const installmentAmount = +(data.amount / installmentMonths).toFixed(2);
     const [inserted] = await db
       .insert(salaryAdvances)
       .values({
@@ -58,6 +61,9 @@ export const createSalaryAdvanceFn = createServerFn()
         amount: data.amount.toString(),
         date: data.date,
         reason: data.reason,
+        installmentMonths,
+        installmentAmount: installmentAmount.toString(),
+        installmentsPaid: 0,
       })
       .returning();
     return inserted;

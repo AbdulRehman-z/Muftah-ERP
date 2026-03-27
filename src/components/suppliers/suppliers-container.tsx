@@ -13,6 +13,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { useState } from "react";
+import { motion, Variants } from "framer-motion";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import {
@@ -22,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Card, CardContent } from "../ui/card";
 import {
   isToday,
   isThisMonth,
@@ -31,6 +31,35 @@ import {
   startOfDay,
   subMonths,
 } from "date-fns";
+import { cn } from "@/lib/utils";
+
+// ── Animation Variants ─────────────────────────────────────────────────────
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 15 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 30,
+    },
+  },
+};
+
+// ── Component ──────────────────────────────────────────────────────────────
 
 export const SupplierContainer = () => {
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -44,7 +73,11 @@ export const SupplierContainer = () => {
 
   if (suppliers.length === 0) {
     return (
-      <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
+      >
         <GenericEmpty
           className="mt"
           icon={SupplierEmptyIllustration}
@@ -54,12 +87,11 @@ export const SupplierContainer = () => {
           onAddChange={setIsAddOpen}
         />
         <AddSupplierDialog open={isAddOpen} onOpenChange={setIsAddOpen} />
-      </>
+      </motion.div>
     );
   }
 
   const filteredSuppliers = suppliers.filter((supplier) => {
-    // Search Filter
     const matchesSearch =
       supplier.supplierName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (supplier.supplierShopName || "")
@@ -69,7 +101,6 @@ export const SupplierContainer = () => {
 
     if (!matchesSearch) return false;
 
-    // Date Filter
     if (dateFilter !== "all") {
       const createdAt = new Date(supplier.createdAt);
       if (dateFilter === "today" && !isToday(createdAt)) return false;
@@ -102,9 +133,17 @@ export const SupplierContainer = () => {
   ).length;
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="space-y-6"
+    >
       {/* Header Actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <motion.div
+        variants={itemVariants}
+        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+      >
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-1 w-full">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -112,15 +151,15 @@ export const SupplierContainer = () => {
               placeholder="Search by name, shop, or phone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 rounded-none shadow-none focus-visible:ring-1 focus-visible:ring-primary border-border"
             />
           </div>
           <div className="flex items-center gap-2">
             <Select value={dateFilter} onValueChange={setDateFilter}>
-              <SelectTrigger className="w-full sm:w-[160px]">
+              <SelectTrigger className="w-full sm:w-[160px] rounded-none shadow-none border-border focus:ring-1 focus:ring-primary">
                 <SelectValue placeholder="Date Added" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-none shadow-none border border-border">
                 <SelectItem value="all">All Time</SelectItem>
                 <SelectItem value="today">Today</SelectItem>
                 <SelectItem value="last_7_days">Last 7 Days</SelectItem>
@@ -134,97 +173,130 @@ export const SupplierContainer = () => {
           <Plus className="size-4 mr-2" />
           Add Supplier
         </Button>
-      </div>
+      </motion.div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
+      {/* Sharp KPI Cards */}
+      <motion.div
+        variants={itemVariants}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
+        <SharpKPICard
           label="Total Suppliers"
           value={filteredSuppliers.length.toString()}
           icon={Users}
-          color="text-blue-600"
-          bgColor="bg-blue-50 dark:bg-blue-950/20"
+          theme="blue"
         />
-        <KPICard
+        <SharpKPICard
           label="Total Outstanding"
           value={`₨ ${totalOutstanding.toLocaleString()}`}
           icon={Wallet}
-          color="text-rose-600"
-          bgColor="bg-rose-50 dark:bg-rose-950/20"
+          theme="rose"
         />
-        <KPICard
+        <SharpKPICard
           label="Active Suppliers"
           value={activeSuppliers.toString()}
           icon={Activity}
-          color="text-emerald-600"
-          bgColor="bg-emerald-50 dark:bg-emerald-950/20"
-          subtext="Suppliers with purchases"
+          theme="emerald"
+          subtext="With purchases"
         />
-        <KPICard
+        <SharpKPICard
           label="New This Month"
           value={recentlyAdded.toString()}
           icon={CalendarDays}
-          color="text-violet-600"
-          bgColor="bg-violet-50 dark:bg-violet-950/20"
-          subtext="Added in last 30 days"
+          theme="violet"
+          subtext="Last 30 days"
         />
-      </div>
+      </motion.div>
 
       {/* Suppliers Table */}
-      <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
+      <motion.div
+        variants={itemVariants}
+        className="bg-card border border-border rounded-none shadow-none"
+      >
         <SuppliersTable data={filteredSuppliers} />
-      </div>
+      </motion.div>
 
       <AddSupplierDialog open={isAddOpen} onOpenChange={setIsAddOpen} />
-    </div>
+    </motion.div>
   );
 };
 
-// Internal KPI Card component for consistent premium look
-function KPICard({
-  label,
-  value,
-  icon: Icon,
-  color,
-  bgColor,
-  subtext,
-}: {
+// ── Sharp Pixel-Perfect KPI Component ───────────────────────────────────────
+
+interface SharpKPICardProps {
   label: string;
   value: string;
   icon: any;
-  color: string;
-  bgColor: string;
+  theme: "blue" | "rose" | "emerald" | "violet";
   subtext?: string;
-}) {
+}
+
+const sharpThemeStyles = {
+  blue: {
+    border: "border-t-blue-500",
+    iconBg: "bg-blue-500/10",
+    iconText: "text-blue-500",
+  },
+  rose: {
+    border: "border-t-rose-500",
+    iconBg: "bg-rose-500/10",
+    iconText: "text-rose-500",
+  },
+  emerald: {
+    border: "border-t-emerald-500",
+    iconBg: "bg-emerald-500/10",
+    iconText: "text-emerald-500",
+  },
+  violet: {
+    border: "border-t-violet-500",
+    iconBg: "bg-violet-500/10",
+    iconText: "text-violet-500",
+  },
+};
+
+function SharpKPICard({ label, value, icon: Icon, theme, subtext }: SharpKPICardProps) {
+  const styles = sharpThemeStyles[theme];
+
   return (
-    <Card className="overflow-hidden border-none shadow-sm bg-card/50 backdrop-blur-sm border-muted-foreground/5">
-      <CardContent className="p-0">
-        <div className="p-5 relative overflow-hidden">
-          <div className="flex justify-between items-start mb-3">
-            <div className={`p-2 rounded-xl ${bgColor}`}>
-              <Icon className={`size-5 ${color}`} />
-            </div>
-          </div>
-          <div className="space-y-1">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-              {label}
-            </p>
-            <h3 className={`text-2xl font-black tracking-tight ${color}`}>
-              {value}
-            </h3>
-            {subtext && (
-              <p className="text-[10px] font-semibold tracking-tight text-muted-foreground/70">
-                {subtext}
-              </p>
-            )}
-          </div>
-          {/* Decorative subtle background element */}
-          <div
-            className={`absolute -bottom-2 -right-2 size-16 rounded-full opacity-10 ${bgColor}`}
-          />
+    <motion.div
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      className={cn(
+        "relative flex flex-col justify-between p-5 bg-card border border-border rounded-none shadow-none",
+        "border-t-2", // Accent top border
+        styles.border
+      )}
+    >
+      {/* Technical Grid Pattern */}
+      <div
+        className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04] pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`,
+          backgroundSize: "8px 8px"
+        }}
+      />
+
+      <div className="relative z-10 flex items-start justify-between mb-8">
+        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          {label}
+        </p>
+        <div className={cn("p-1.5 rounded-none", styles.iconBg)}>
+          <Icon className={cn("size-4", styles.iconText)} />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      <div className="relative z-10 space-y-1">
+        <h3 className="text-3xl font-bold tracking-tight text-foreground">
+          {value}
+        </h3>
+        {subtext ? (
+          <p className="text-xs font-medium text-muted-foreground/70">
+            {subtext}
+          </p>
+        ) : (
+          <div className="h-4" /> // Spacer for alignment
+        )}
+      </div>
+    </motion.div>
   );
 }
 

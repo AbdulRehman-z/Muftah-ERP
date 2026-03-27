@@ -111,13 +111,15 @@ export const EmployeeDetailView = () => {
   const { data: employee } = useSuspenseQuery({
     queryKey: ["employee", employeeId],
     queryFn: () => getEmployeeFn({ data: { id: employeeId } }),
-    staleTime: 2 * 60 * 1000,
+    staleTime: 0,
+    gcTime: 0,
   });
 
-  const { data: payrollHistory } = useSuspenseQuery({
-    queryKey: ["employee-payroll-history", employeeId],
-    queryFn: () => getEmployeePayrollHistoryFn({ data: { employeeId } }),
-    staleTime: 5 * 60 * 1000,
+  const { data: { history: payrollHistory } } = useSuspenseQuery({
+    queryKey: ["employee-payroll-history", employeeId, "last12", undefined],
+    queryFn: () => getEmployeePayrollHistoryFn({ data: { employeeId, filterMode: "last12" } }),
+    staleTime: 0,
+    gcTime: 0,
   });
 
   // ── Salary calculations ──────────────────────────────────────────────────
@@ -154,7 +156,7 @@ export const EmployeeDetailView = () => {
     : "—";
 
   return (
-    <div className="space-y-6 pb-10 container mx-auto max-w-7xl">
+    <div className="space-y-6 pb-10 container mx-auto max-w-full">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">

@@ -132,6 +132,13 @@ export type PayslipCalculation = {
   // Arrears helpers (populated by server fn)
   missedLastMonth?: boolean;
   lastMonthStandardSalary?: string;
+
+  // Yearly Bradford (calendar year Jan–Dec, populated by server fn)
+  yearlyBradfordScore?: number;
+
+  // Annual leave (populated by server fn)
+  annualLeaveRemaining?: number;
+  annualLeaveAllowance?: number;
 };
 
 // ============================================================================
@@ -289,6 +296,13 @@ export function calculateAbsentDeductions(
   };
 
   for (const record of attendanceRecords) {
+    const recordDate = parseISO(record.date);
+    const dayOfWeek = recordDate.getDay();
+    const isRestDay = (employee.restDays ?? [0]).includes(dayOfWeek);
+
+    // Completely skip deductions for rest days to ensure no false penalisation
+    if (isRestDay) continue;
+
     const dutyHours = parseFloat(record.dutyHours || "0");
 
     if (record.status === "absent") {
@@ -424,6 +438,20 @@ export function calculateBradfordFactor(
   }
 
   return Math.round(Math.pow(spells, 2) * totalAbsentDays);
+}
+
+/**
+ * Yearly Bradford Factor: same S² × D formula but evaluated across
+ * ALL attendance records from Jan 1 to Dec 31 of a given calendar year.
+ *
+ * Pass the full year's attendance to get the cumulative score.
+ * Auto-resets on Jan 1 each year because the previous year's records
+ * are no longer included in the query window.
+ */
+export function calculateYearlyBradfordFactor(
+  allYearRecords: AttendanceRecord[],
+): number {
+  return calculateBradfordFactor(allYearRecords);
 }
 
 // ============================================================================

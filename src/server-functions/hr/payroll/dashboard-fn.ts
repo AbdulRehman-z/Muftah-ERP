@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { employees, payslips, payrolls, attendance } from "@/db/schemas/hr-schema";
+import { employees, payslips, payrolls, attendance, bradfordAuditLog } from "@/db/schemas/hr-schema";
 import { requireAdminMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 import { eq, and, sql, desc, asc, inArray, gte, lte } from "drizzle-orm";
@@ -290,6 +290,12 @@ export const previewEmployeePayslipFn = createServerFn()
           overtimeMultiplier: z.number().optional(),
         })
         .optional(),
+      arrears: z
+        .object({
+          arrearsAmount: z.number(),
+          arrearsFromMonths: z.array(z.string()),
+        })
+        .optional(),
     }),
   )
   .handler(async ({ data }) => {
@@ -355,31 +361,67 @@ export const previewEmployeePayslipFn = createServerFn()
       { ...(data.additionalAmounts || {}), advanceDeduction },
     );
 
-    const lastMonthStr = format(subMonths(monthDate, 1), "yyyy-MM");
-    const lastMonthPayroll = await db.query.payrolls.findFirst({
-      where: eq(payrolls.month, `${lastMonthStr}-01`),
+    // Apply arrears to the preview net salary if provided
+    const arrearsAmt = data.arrears?.arrearsAmount ?? 0;
+    const netWithArrears = calculation.netSalary + arrearsAmt;
+
+    // ── 8. Check missed cycles (12-month lookback) ──────────────────────────
+    const lookbackMonths = 12;
+    const missedCycles: { monthKey: string; label: string; amount: number }[] = [];
+
+    // All previously settled arrears for this employee (to avoid double payment)
+    const settledArrears = await db
+      .select({ arrearsFromMonths: payslips.arrearsFromMonths })
+      .from(payslips)
+      .where(
+        and(
+          eq(payslips.employeeId, employeeId),
+          sql`json_array_length(${payslips.arrearsFromMonths}::json) > 0`,
+        ),
+      );
+    const settledSet = new Set<string>();
+    settledArrears.forEach((row) => {
+      (row.arrearsFromMonths as string[] || []).forEach((m) => settledSet.add(m));
     });
 
-    let missedLastMonth = false;
-    if (lastMonthPayroll) {
-      const lastPayslip = await db.query.payslips.findFirst({
-        where: and(
-          eq(payslips.payrollId, lastMonthPayroll.id),
-          eq(payslips.employeeId, employeeId),
-        ),
+    for (let i = 1; i <= lookbackMonths; i++) {
+      const d = subMonths(monthDate, i);
+      const year = d.getFullYear();
+      const month = d.getMonth() + 1;
+      const cycle = getCycleForPayoutMonth(year, month);
+      const key = cycle.payoutMonthKey;
+
+      if (settledSet.has(key) || employeeData.joiningDate > cycle.cycleEnd) continue;
+
+      const payrollRec = await db.query.payrolls.findFirst({
+        where: eq(payrolls.month, `${key}-01`),
       });
-      missedLastMonth = !lastPayslip;
+
+      let hasSlip = false;
+      if (payrollRec) {
+        const slip = await db.query.payslips.findFirst({
+          where: and(eq(payslips.payrollId, payrollRec.id), eq(payslips.employeeId, employeeId)),
+        });
+        hasSlip = !!slip;
+      }
+      if (!hasSlip) {
+        missedCycles.push({
+          monthKey: key,
+          label: cycle.slipLabel,
+          amount: parseFloat(employeeData.standardSalary || "0"),
+        });
+      }
     }
 
     return {
       ...calculation,
-      missedLastMonth,
-      lastMonthStandardSalary: employeeData.standardSalary || "0",
+      netSalary: netWithArrears,
+      arrearsAmount: arrearsAmt,
+      missedCycles,
     };
   });
 
 // ── Save Payslip ───────────────────────────────────────────────────────────
-
 export const saveEmployeePayslipFn = createServerFn()
   .middleware([requireAdminMiddleware])
   .inputValidator(
@@ -388,17 +430,23 @@ export const saveEmployeePayslipFn = createServerFn()
       month: z.string(),
       deductionConfig: z.any(),
       additionalAmounts: z.any(),
+      arrears: z
+        .object({
+          arrearsAmount: z.number(),
+          arrearsFromMonths: z.array(z.string()),
+        })
+        .optional(),
+      // Which wallet to debit net salary from.
+      // Optional — if not provided, payslip is saved with no wallet debit.
+      walletId: z.string().optional(),
     }),
   )
-  .handler(async ({ data }) => {
-    const { employeeId, month, deductionConfig, additionalAmounts } = data;
+  .handler(async ({ data, context }) => {
+    const { employeeId, month, deductionConfig, additionalAmounts, arrears, walletId } = data;
 
     const monthDate = parseISO(`${month}-01`);
     const prevMonth = subMonths(monthDate, 1);
-    const startDate = format(
-      addDays(startOfMonth(prevMonth), 15),
-      "yyyy-MM-dd",
-    );
+    const startDate = format(addDays(startOfMonth(prevMonth), 15), "yyyy-MM-dd");
     const endDate = format(addDays(startOfMonth(monthDate), 14), "yyyy-MM-dd");
 
     let payroll = await db.query.payrolls.findFirst({
@@ -419,24 +467,127 @@ export const saveEmployeePayslipFn = createServerFn()
       payroll = newPayroll;
     }
 
-    return await generateEmployeePayslipCore({
-      employeeId,
-      payrollId: payroll.id,
-      payrollPeriod: { month: `${month}-01`, startDate, endDate },
-      deductionConfig,
-      additionalAmounts,
-    });
+    return await generateEmployeePayslipCore(
+      {
+        employeeId,
+        payrollId: payroll.id,
+        payrollPeriod: { month: `${month}-01`, startDate, endDate },
+        deductionConfig,
+        additionalAmounts,
+        arrears,
+        walletId,
+      },
+      // Pass the admin's userId for the transaction journal entry
+      context.session.user.id,
+    );
   });
-
 // ── Employee Payroll History ───────────────────────────────────────────────
-
+// Handles two filter modes:
+//   "last12" → rolling 12-month window (default)
+//   "year"   → full calendar year
 export const getEmployeePayrollHistoryFn = createServerFn()
   .middleware([requireAdminMiddleware])
-  .inputValidator(z.object({ employeeId: z.string() }))
+  .inputValidator(
+    z.object({
+      employeeId: z.string(),
+      filterMode: z.enum(["last12", "year"]).default("last12"),
+      year: z.number().optional(),
+    }),
+  )
   .handler(async ({ data }) => {
-    return await db.query.payslips.findMany({
-      where: eq(payslips.employeeId, data.employeeId),
-      with: { payroll: true, employee: true },
-      orderBy: [desc(payslips.createdAt)],
+    const { employeeId, filterMode } = data;
+
+    // ── Compute date window ────────────────────────────────────────────────
+    let windowStart: string;
+    let windowEnd: string;
+
+    if (filterMode === "last12") {
+      const now = new Date();
+      windowEnd = format(now, "yyyy-MM-dd");
+      windowStart = format(subMonths(now, 12), "yyyy-MM-dd");
+    } else {
+      const selectedYear = data.year || new Date().getFullYear();
+      windowStart = `${selectedYear}-01-01`;
+      windowEnd = `${selectedYear}-12-31`;
+    }
+
+    // ── Employee ───────────────────────────────────────────────────────────
+    const employeeData = await db.query.employees.findFirst({
+      where: eq(employees.id, employeeId),
     });
+
+    // ── Payroll IDs within the window ──────────────────────────────────────
+    // payrolls.month is stored as a date column (yyyy-MM-dd first-of-month)
+    // so a simple gte/lte range covers the selected window correctly.
+    const payrollsInWindow = await db
+      .select({ id: payrolls.id })
+      .from(payrolls)
+      .where(
+        and(
+          gte(payrolls.month, windowStart),
+          lte(payrolls.month, windowEnd),
+        ),
+      );
+
+    const payrollIds = payrollsInWindow.map((p) => p.id);
+
+    // ── Payslips ───────────────────────────────────────────────────────────
+    const history =
+      payrollIds.length > 0
+        ? await db.query.payslips.findMany({
+          where: and(
+            eq(payslips.employeeId, employeeId),
+            inArray(payslips.payrollId, payrollIds),
+          ),
+          with: {
+            payroll: true,
+            employee: {
+              columns: {
+                id: true,
+                employeeCode: true,
+                firstName: true,
+                lastName: true,
+                designation: true,
+                cnic: true,
+                bankName: true,
+                bankAccountNumber: true,
+              },
+            },
+          },
+          orderBy: [desc(payslips.createdAt)],
+        })
+        : [];
+
+    // ── Bradford audit logs (same window) ─────────────────────────────────
+    const auditLogs = await db.query.bradfordAuditLog.findMany({
+      where: and(
+        eq(bradfordAuditLog.employeeId, employeeId),
+        gte(bradfordAuditLog.performedAt, new Date(`${windowStart}T00:00:00Z`)),
+        lte(bradfordAuditLog.performedAt, new Date(`${windowEnd}T23:59:59Z`)),
+      ),
+      with: {
+        performer: {
+          columns: { name: true },
+        },
+        payslip: {
+          columns: { payrollId: true },
+          with: {
+            payroll: {
+              columns: { month: true },
+            },
+          },
+        },
+      },
+      orderBy: [desc(bradfordAuditLog.performedAt)],
+    });
+
+    return {
+      employee: employeeData,
+      history,
+      auditLogs,
+      filterMode,
+      appliedYear: data.year,
+      windowStart,
+      windowEnd,
+    };
   });

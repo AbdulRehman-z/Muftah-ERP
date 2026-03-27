@@ -1,11 +1,11 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
     getWalletsListFn,
     getTransactionsFn,
     getExpensesFn,
-    EXPENSE_CATEGORIES,
 } from "@/server-functions/finance-fn";
+import { listExpenseCategoriesFn } from "@/server-functions/finance/expense-categories-fn";
 import {
     useCreateWallet,
     useDepositToWallet,
@@ -51,12 +51,12 @@ export const FinanceContainer = () => {
         queryFn: getWalletsListFn,
     });
 
-    const { data: recentTransactions } = useSuspenseQuery({
+    const { data: recentTransactions, isFetching: isTransactionsFetching } = useSuspenseQuery({
         queryKey: ["transactions"],
         queryFn: () => getTransactionsFn({ data: { limit: 20 } }),
     });
 
-    const { data: expenses } = useSuspenseQuery({
+    const { data: expenses, isFetching: isExpensesFetching } = useSuspenseQuery({
         queryKey: ["expenses"],
         queryFn: () => getExpensesFn({ data: {} }),
     });
@@ -77,11 +77,9 @@ export const FinanceContainer = () => {
     const bankBalance = wallets
         .filter((w) => w.type === "bank")
         .reduce((sum, w) => sum + parseFloat(w.balance || "0"), 0);
-    const totalExpenses = expenses.reduce(
-        (sum, e) => sum + parseFloat(e.amount || "0"),
-        0,
+    const totalExpenses = expenses.data.reduce(
+        (sum: number, e) => sum + parseFloat(e.amount || "0"), 0,
     );
-
     return (
         <div className="space-y-6">
             {/* Toolbar */}
@@ -142,11 +140,11 @@ export const FinanceContainer = () => {
                 />
                 <KPICard
                     label="Total Expenses"
-                    value={`₨ ${totalExpenses.toLocaleString()}`}
+                    value={isExpensesFetching ? "—" : `₨ ${totalExpenses.toLocaleString()}`}
                     icon={ReceiptIcon}
                     color="text-rose-600"
                     bgColor="bg-rose-50 dark:bg-rose-950/20"
-                    subtext={`${expenses.length} recorded`}
+                    subtext={`${expenses.total} recorded`}
                 />
             </div>
 
@@ -186,12 +184,13 @@ export const FinanceContainer = () => {
                     <h2 className="text-xl font-extrabold tracking-tight flex items-center gap-2">
                         <ClockIcon className="size-5 text-muted-foreground/70" />
                         Recent Activity
+                        {isTransactionsFetching && <Loader2 className="size-4 animate-spin" />}
                     </h2>
                     <Badge variant="secondary" className="font-semibold text-xs">
-                        {recentTransactions.length} entries
+                        {isTransactionsFetching ? "—" : `${recentTransactions.data.length} entries`}
                     </Badge>
                 </div>
-                {recentTransactions.length === 0 ? (
+                {recentTransactions.data.length === 0 ? (
                     <Card className="border-dashed">
                         <CardContent className="py-8">
                             <GenericEmpty
@@ -204,7 +203,7 @@ export const FinanceContainer = () => {
                 ) : (
                     <div className="border border-muted-foreground/10 rounded-2xl bg-card overflow-hidden">
                         <div className="divide-y divide-muted-foreground/5">
-                            {recentTransactions.map((txn) => (
+                            {recentTransactions.data.map((txn) => (
                                 <TransactionRow key={txn.id} txn={txn} />
                             ))}
                         </div>
@@ -310,8 +309,8 @@ function WalletCard({
             {/* Gradient accent strip */}
             <div
                 className={`absolute inset-x-0 top-0 h-1.5 ${wallet.type === "bank"
-                        ? "bg-gradient-to-r from-blue-500 to-cyan-400"
-                        : "bg-gradient-to-r from-violet-500 to-fuchsia-400"
+                    ? "bg-gradient-to-r from-blue-500 to-cyan-400"
+                    : "bg-gradient-to-r from-violet-500 to-fuchsia-400"
                     }`}
             />
             {/* Decorative blur circle */}
@@ -325,8 +324,8 @@ function WalletCard({
                     <div className="flex items-center gap-3">
                         <div
                             className={`p-2.5 rounded-xl shadow-sm ${wallet.type === "bank"
-                                    ? "bg-linear-to-br from-blue-100 to-cyan-50 dark:from-blue-900/40 dark:to-cyan-900/20"
-                                    : "bg-linear-to-br from-violet-100 to-fuchsia-50 dark:from-violet-900/40 dark:to-fuchsia-900/20"
+                                ? "bg-linear-to-br from-blue-100 to-cyan-50 dark:from-blue-900/40 dark:to-cyan-900/20"
+                                : "bg-linear-to-br from-violet-100 to-fuchsia-50 dark:from-violet-900/40 dark:to-fuchsia-900/20"
                                 }`}
                         >
                             {wallet.type === "bank" ? (
@@ -406,8 +405,8 @@ function TransactionRow({ txn }: { txn: any }) {
             <div className="flex items-center gap-3">
                 <div
                     className={`p-2 rounded-xl transition-colors ${isCredit
-                            ? "bg-emerald-50 dark:bg-emerald-950/30 group-hover:bg-emerald-100"
-                            : "bg-rose-50 dark:bg-rose-950/30 group-hover:bg-rose-100"
+                        ? "bg-emerald-50 dark:bg-emerald-950/30 group-hover:bg-emerald-100"
+                        : "bg-rose-50 dark:bg-rose-950/30 group-hover:bg-rose-100"
                         }`}
                 >
                     {isCredit ? (
@@ -511,8 +510,8 @@ function CreateWalletSheet({
                             type="button"
                             onClick={() => setType("cash")}
                             className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${type === "cash"
-                                    ? "border-violet-500 bg-violet-50 dark:bg-violet-950/20 shadow-sm"
-                                    : "border-muted-foreground/10 hover:border-muted-foreground/20"
+                                ? "border-violet-500 bg-violet-50 dark:bg-violet-950/20 shadow-sm"
+                                : "border-muted-foreground/10 hover:border-muted-foreground/20"
                                 }`}
                         >
                             <BanknoteIcon
@@ -531,8 +530,8 @@ function CreateWalletSheet({
                             type="button"
                             onClick={() => setType("bank")}
                             className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${type === "bank"
-                                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20 shadow-sm"
-                                    : "border-muted-foreground/10 hover:border-muted-foreground/20"
+                                ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20 shadow-sm"
+                                : "border-muted-foreground/10 hover:border-muted-foreground/20"
                                 }`}
                         >
                             <Building2
@@ -779,6 +778,11 @@ function ExpenseSheet({
     const parsedAmount = parseFloat(amount) || 0;
     const insufficientFunds = parsedAmount > 0 && parsedAmount > currentBalance;
 
+    const { data: categories = [], isLoading: isLoadingCategories } = useQuery({
+        queryKey: ["expense-categories", "active"],
+        queryFn: () => listExpenseCategoriesFn(),
+    });
+
     const handleSubmit = () => {
         if (!effectiveWalletId) {
             toast.error("Please select a payment source");
@@ -864,8 +868,8 @@ function ExpenseSheet({
                     {selectedWallet && (
                         <div
                             className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${insufficientFunds
-                                    ? "bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800"
-                                    : "bg-muted/30 border-muted-foreground/5"
+                                ? "bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800"
+                                : "bg-muted/30 border-muted-foreground/5"
                                 }`}
                         >
                             <span className="text-xs font-semibold text-muted-foreground">
@@ -895,12 +899,12 @@ function ExpenseSheet({
                     </Label>
                     <Select value={category} onValueChange={setCategory}>
                         <SelectTrigger className="h-11">
-                            <SelectValue placeholder="Select expense category..." />
+                            <SelectValue placeholder={isLoadingCategories ? "Loading categories..." : "Select expense category..."} />
                         </SelectTrigger>
                         <SelectContent>
-                            {EXPENSE_CATEGORIES.map((cat) => (
-                                <SelectItem key={cat} value={cat}>
-                                    {cat}
+                            {categories.map((cat: any) => (
+                                <SelectItem key={cat.id} value={cat.name}>
+                                    {cat.name}
                                 </SelectItem>
                             ))}
                         </SelectContent>

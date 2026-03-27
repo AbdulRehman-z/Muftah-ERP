@@ -125,7 +125,9 @@ export const employees = pgTable("employees", {
     .default(STANDARD_ALLOWANCES),
 
   // Leave & Attendance Tracking
-  annualLeaveBalance: integer("annual_leave_balance").default(30),
+  annualLeaveBalance: integer("annual_leave_balance").default(14),
+  annualLeaveAllowance: integer("annual_leave_allowance").default(14), // total yearly entitlement cap
+  leaveYearStart: date("leave_year_start"), // tracks which year current leave balance belongs to
   sickLeaveBalance: integer("sick_leave_balance").default(10),
 
   // Incentives / Sales
@@ -304,6 +306,10 @@ export const payslips = pgTable("payslips", {
     scale: 2,
   }),
   bradfordFactorPeriod: text("bradford_factor_period"),
+  yearlyBradfordScore: decimal("yearly_bradford_score", {
+    precision: 8,
+    scale: 2,
+  }).default("0"), // cumulative Jan–Dec Bradford score
 
   // Totals
   grossSalary: decimal("gross_salary", { precision: 12, scale: 2 }).notNull(),
@@ -312,6 +318,16 @@ export const payslips = pgTable("payslips", {
     scale: 2,
   }).notNull(),
   netSalary: decimal("net_salary", { precision: 12, scale: 2 }).notNull(),
+
+  // Arrears Roll-Forward
+  // When a missed prior-cycle salary is included in this slip, these fields
+  // record the total arrears amount and which months they originate from.
+  // e.g. arrearsFromMonths = ["2026-02", "2026-01"] means two missed months
+  // were rolled into this payslip.
+  arrearsAmount: decimal("arrears_amount", { precision: 12, scale: 2 }).default("0"),
+  arrearsFromMonths: jsonb("arrears_from_months")
+    .$type<string[]>()
+    .default([]),
 
   paymentSource: text("payment_source"),
   remarks: text("remarks"),
@@ -338,9 +354,15 @@ export const salaryAdvances = pgTable("salary_advances", {
   walletId: text("wallet_id"),
   paidAt: timestamp("paid_at"),
 
+  // Legacy single-shot deduction (kept for backward compat)
   deductedInPayslipId: text("deducted_in_payslip_id").references(
     () => payslips.id,
   ),
+
+  // Installment plan
+  installmentMonths: integer("installment_months").default(1).notNull(), // 1, 3, 6, or 12
+  installmentAmount: decimal("installment_amount", { precision: 12, scale: 2 }), // amount / installmentMonths
+  installmentsPaid: integer("installments_paid").default(0).notNull(), // how many deducted so far
 
   ...timestamps,
 });
@@ -398,6 +420,26 @@ export const travelLogs = pgTable("travel_logs", {
   approvedBy: text("approved_by").references(() => user.id),
 
   paidInPayslipId: text("paid_in_payslip_id").references(() => payslips.id),
+
+  ...timestamps,
+});
+
+// --- ADVANCE INSTALLMENTS ---
+export const advanceInstallments = pgTable("advance_installments", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
+
+  advanceId: text("advance_id")
+    .notNull()
+    .references(() => salaryAdvances.id),
+
+  payslipId: text("payslip_id")
+    .notNull()
+    .references(() => payslips.id),
+
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  installmentNo: integer("installment_no").notNull(), // 1, 2, 3...
 
   ...timestamps,
 });
@@ -463,7 +505,7 @@ export const payslipRelations = relations(payslips, ({ one }) => ({
   }),
 }));
 
-export const salaryAdvanceRelations = relations(salaryAdvances, ({ one }) => ({
+export const salaryAdvanceRelations = relations(salaryAdvances, ({ one, many }) => ({
   employee: one(employees, {
     fields: [salaryAdvances.employeeId],
     references: [employees.id],
@@ -475,6 +517,18 @@ export const salaryAdvanceRelations = relations(salaryAdvances, ({ one }) => ({
   approver: one(user, {
     fields: [salaryAdvances.approvedBy],
     references: [user.id],
+  }),
+  installments: many(advanceInstallments),
+}));
+
+export const advanceInstallmentRelations = relations(advanceInstallments, ({ one }) => ({
+  advance: one(salaryAdvances, {
+    fields: [advanceInstallments.advanceId],
+    references: [salaryAdvances.id],
+  }),
+  payslip: one(payslips, {
+    fields: [advanceInstallments.payslipId],
+    references: [payslips.id],
   }),
 }));
 

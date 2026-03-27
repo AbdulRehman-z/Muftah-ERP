@@ -36,6 +36,7 @@ import {
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  isLoading?: boolean;
   searchKey?: string;
   searchPlaceholder?: string;
   searchValue?: string;
@@ -47,6 +48,7 @@ interface DataTableProps<TData, TValue> {
   actions?: React.ReactNode;
   className?: string;
   emptyState?: React.ReactNode;
+  loadingStateComponent?: React.ReactNode;
   showFooter?: boolean;
   manualPagination?: boolean;
   pageCount?: number;
@@ -62,6 +64,7 @@ export function DataTable<TData, TValue>({
   searchKey,
   searchPlaceholder = "Filter...",
   searchValue,
+  isLoading = false,
   onSearchChange,
   showSearch = true,
   showViewOptions = true,
@@ -70,6 +73,7 @@ export function DataTable<TData, TValue>({
   actions,
   className,
   emptyState,
+  loadingStateComponent,
   showFooter = false,
   manualPagination = false,
   pageCount = -1,
@@ -211,11 +215,14 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-32 text-center p-0">
-                  {emptyState ?? (
+                  {/* {emptyState ?? (
                     <div className="flex flex-col items-center justify-center gap-1 py-10">
                       <p className="text-[13px] font-medium text-muted-foreground">No data available.</p>
                     </div>
-                  )}
+                  )} */}
+                  {
+                    isLoading ? loadingStateComponent : emptyState
+                  }
                 </TableCell>
               </TableRow>
             )}

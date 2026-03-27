@@ -415,7 +415,7 @@ export const PayslipView = ({
                                 <path d="M9 12l2 2 4-4" stroke="#eab308" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                             <div>
-                                <div class="company-name">TITAN ENTERPRISE</div>
+                                <div class="company-name">Muftah Chemical PVT LTD (S-WASH)</div>
                                 <div class="company-sub">Confidential Payslip</div>
                             </div>
                         </div>
@@ -518,7 +518,7 @@ export const PayslipView = ({
 
                     <!-- Footer -->
                     <div class="footer">
-                        System Generated Slip • Titan Enterprise
+                        System Generated Slip • Muftah Chemical PVT LTD (S-WASH)
                     </div>
                 </div>
             </body>
@@ -628,7 +628,7 @@ export const PayslipView = ({
                                     letterSpacing: 0.5,
                                 }}
                             >
-                                TITAN ENTERPRISE
+                                Muftah Chemical PVT LTD (S-WASH)
                             </div>
                             <div
                                 style={{ fontSize: 10, color: "#6b7280", fontStyle: "italic" }}
@@ -888,7 +888,7 @@ export const PayslipView = ({
                         letterSpacing: 2,
                     }}
                 >
-                    System Generated Slip • Titan Enterprise
+                    System Generated Slip • Muftah Chemical PVT LTD (S-WASH)
                 </div>
             </div>
             {/* end printRef */}

@@ -32,7 +32,7 @@ export function GenericEmpty({
     >
       <EmptyHeader className="space-y-2">
         <EmptyMedia variant="default">
-          <Icon className="size-10" />
+          <Icon className="" />
         </EmptyMedia>
         <EmptyTitle>{title}</EmptyTitle>
         <EmptyDescription>{description}</EmptyDescription>

@@ -1,27 +1,33 @@
 import { useForm, useStore } from "@tanstack/react-form";
-import { Loader2, Plus, Trash2, AlertCircle, Calculator, Info } from "lucide-react";
+import { Loader2, Plus, Trash2, AlertCircle, Calculator, Info, Building2, BanknoteIcon, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { usePreviewPayslip } from "@/hooks/hr/use-preview-payslip";
 import { useSavePayslip } from "@/hooks/hr/use-save-payslip";
+import { useWallets } from "@/hooks/finance/use-finance";
 import { format, parseISO } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import React, { useState, type ChangeEvent } from "react";
+import React, { useEffect, useState, type ChangeEvent } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { STANDARD_ALLOWANCES } from "@/lib/types/hr-types";
 import { Badge } from "@/components/ui/badge";
 import { ShieldAlert } from "lucide-react";
+import { toast } from "sonner";
 
 // ── Allowance display name resolver ──────────────────────────────────────────
-// Builds a lookup from the STANDARD_ALLOWANCES constant. Falls back to
-// a title-cased version of the raw ID so custom/future allowances still
-// render nicely without requiring a code change.
 const ALLOWANCE_LABELS: Record<string, string> = Object.fromEntries(
     STANDARD_ALLOWANCES.map((a) => [a.id, a.name]),
 );
@@ -34,7 +40,6 @@ function getAllowanceLabel(id: string): string {
     );
 }
 
-/** Classify allowances that are never deducted for absences/leaves */
 const NON_DEDUCTIBLE_IDS = new Set(["fuel", "special", "nightShift"]);
 
 type SalaryCalculatorFormProps = {
@@ -46,9 +51,11 @@ type SalaryCalculatorFormProps = {
 
 export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: SalaryCalculatorFormProps) => {
     const [activeTab, setActiveTab] = useState("overview");
+    const [selectedWalletId, setSelectedWalletId] = useState<string>("");
+    const [selectedArrearsKeys, setSelectedArrearsKeys] = useState<Set<string>>(new Set());
 
-    // Save Mutation
     const saveMutation = useSavePayslip(onSuccess);
+    const { data: wallets = [] } = useWallets();
 
     const form = useForm({
         defaultValues: {
@@ -59,21 +66,17 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
             overtimeMultiplier: "1.0",
             manualDeductions: [] as { description: string; amount: string }[],
         },
-        onSubmit: async () => {
-            // Logic handled in handleSave
-        },
+        onSubmit: async () => { },
     });
 
-    // Watch form values for preview
     const formValues = useStore(form.store, (state: any) => state.values);
 
-    // Fetch Preview Calculation
     const { data: calculation, isFetching, isLoading, isError, error } = usePreviewPayslip({
-        employeeId: employeeId,
+        employeeId,
         month,
         manualDeductions: formValues.manualDeductions.map((d: any) => ({
             description: d.description,
-            amount: parseFloat(d.amount) || 0
+            amount: parseFloat(d.amount) || 0,
         })),
         additionalAmounts: {
             bonusAmount: parseFloat(formValues.bonus) || 0,
@@ -81,26 +84,68 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
             taxDeduction: parseFloat(formValues.tax) || 0,
             advanceDeduction: formValues.advance === "" ? undefined : (parseFloat(formValues.advance) || 0),
             overtimeMultiplier: parseFloat(formValues.overtimeMultiplier) || 1.0,
-        }
+        },
+        arrears: selectedArrearsKeys.size > 0 ? {
+            arrearsFromMonths: Array.from(selectedArrearsKeys),
+            arrearsAmount: Array.from(selectedArrearsKeys).reduce((sum, key) => {
+                const missed = calculation?.missedCycles?.find(m => m.monthKey === key);
+                return sum + (missed?.amount || 0);
+            }, 0),
+        } : undefined,
     }, isOpen);
 
-    const handleAddArrears = () => {
-        if (calculation?.missedLastMonth) {
-            const arrears = Math.round(parseFloat(calculation.lastMonthStandardSalary));
-            const currentIncentive = parseFloat(formValues.incentive) || 0;
-            form.setFieldValue("incentive", (currentIncentive + arrears).toString());
+    // Smart wallet suggestion: match employee's bank name to a wallet
+    useEffect(() => {
+        if (!selectedWalletId && wallets.length > 0 && calculation?.bankName) {
+            const bankName = calculation.bankName.toLowerCase();
+            const matched = wallets.find((w) =>
+                bankName && w.name.toLowerCase().includes(bankName),
+            );
+            setSelectedWalletId(matched?.id ?? "");
         }
+    }, [wallets, calculation?.bankName]);
+
+    const handleToggleArrears = (monthKey: string) => {
+        setSelectedArrearsKeys(prev => {
+            const next = new Set(prev);
+            if (next.has(monthKey)) next.delete(monthKey);
+            else next.add(monthKey);
+            return next;
+        });
     };
+
+    // ── Wallet derived values ─────────────────────────────────────────────────
+    const selectedWallet = wallets.find((w) => w.id === selectedWalletId);
+    const walletBalance = parseFloat(selectedWallet?.balance || "0");
+    const netSalary = Math.round(calculation?.netSalary ?? 0);
+    const insufficientFunds = !!selectedWallet && walletBalance < netSalary;
+    const afterBalance = walletBalance - netSalary;
 
     const handleSave = () => {
         if (!calculation) return;
+
+        if (!selectedWalletId) {
+            toast.error("Please select a payment account before finalizing.");
+            return;
+        }
+
+        if (insufficientFunds) {
+            toast.error(
+                `Insufficient balance in "${selectedWallet?.name}". ` +
+                `Available: PKR ${Math.round(walletBalance).toLocaleString()}, ` +
+                `Required: PKR ${netSalary.toLocaleString()}.`,
+            );
+            return;
+        }
+
         saveMutation.mutate({
-            employeeId: employeeId,
+            employeeId,
             month,
+            walletId: selectedWalletId,
             deductionConfig: {
                 manualDeductions: formValues.manualDeductions.map((d: any) => ({
                     description: d.description,
-                    amount: parseFloat(d.amount) || 0
+                    amount: parseFloat(d.amount) || 0,
                 })),
                 deductConveyanceOnLeave: true,
             },
@@ -110,7 +155,14 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                 taxDeduction: Math.round(parseFloat(formValues.tax) || 0),
                 advanceDeduction: formValues.advance === "" ? undefined : (parseFloat(formValues.advance) || 0),
                 overtimeMultiplier: parseFloat(formValues.overtimeMultiplier) || 1.0,
-            }
+            },
+            arrears: selectedArrearsKeys.size > 0 ? {
+                arrearsFromMonths: Array.from(selectedArrearsKeys),
+                arrearsAmount: Array.from(selectedArrearsKeys).reduce((sum, key) => {
+                    const missed = calculation?.missedCycles?.find(m => m.monthKey === key);
+                    return sum + (missed?.amount || 0);
+                }, 0),
+            } : undefined,
         });
     };
 
@@ -136,8 +188,8 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
     const totalAttendanceDeduction = calculation.absentDeduction + calculation.leaveDeduction;
 
     return (
-        <div className="space-y-6 pb-20 relative">
-            {/* Overlay loader for refetching */}
+        <div className="space-y-6 pb-4 relative">
+            {/* Refetch spinner */}
             {isFetching && calculation && (
                 <div className="absolute top-0 right-0 p-2 z-50">
                     <Loader2 className="size-4 animate-spin text-primary opacity-70" />
@@ -160,21 +212,39 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                 </div>
 
                 {/* Arrears Alert */}
-                {calculation.missedLastMonth && (
+                {calculation.missedCycles && calculation.missedCycles.length > 0 && (
                     <Alert className="bg-amber-50 border-amber-200">
                         <AlertCircle className="h-4 w-4 text-amber-600" />
-                        <AlertTitle className="text-amber-800 font-semibold mb-1">Unpaid Cycle Detected</AlertTitle>
-                        <AlertDescription className="text-amber-700 flex flex-col gap-2">
-                            <p>This employee was not paid in the previous month. Amount: PKR {Math.round(parseFloat(calculation.lastMonthStandardSalary)).toLocaleString()}</p>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                className="w-fit h-7 text-xs bg-white border-amber-300 text-amber-900 hover:bg-amber-100"
-                                onClick={handleAddArrears}
-                            >
-                                <Plus className="size-3 mr-1" />
-                                Add as Incentive
-                            </Button>
+                        <AlertTitle className="text-amber-800 font-semibold mb-1">Unpaid Cycles Detected</AlertTitle>
+                        <AlertDescription className="text-amber-700 flex flex-col gap-3">
+                            <p className="text-xs">The following historical cycles for this employee are still unpaid. You can roll them forward into this payslip.</p>
+                            <div className="flex flex-wrap gap-2">
+                                {calculation.missedCycles.map((cycle) => {
+                                    const isSelected = selectedArrearsKeys.has(cycle.monthKey);
+                                    return (
+                                        <Button
+                                            key={cycle.monthKey}
+                                            size="sm"
+                                            variant={isSelected ? "default" : "outline"}
+                                            className={cn(
+                                                "h-8 text-xs shrink-0",
+                                                isSelected
+                                                    ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-600"
+                                                    : "bg-white border-amber-300 text-amber-900 hover:bg-amber-100"
+                                            )}
+                                            onClick={() => handleToggleArrears(cycle.monthKey)}
+                                        >
+                                            {isSelected ? <CheckCircle2 className="size-3 mr-1" /> : <Plus className="size-3 mr-1" />}
+                                            {cycle.label}
+                                        </Button>
+                                    );
+                                })}
+                            </div>
+                            {selectedArrearsKeys.size > 0 && (
+                                <p className="text-[10px] font-bold text-amber-800 uppercase tracking-tight">
+                                    + PKR {Math.round(Array.from(selectedArrearsKeys).reduce((sum, key) => sum + (calculation.missedCycles?.find(m => m.monthKey === key)?.amount || 0), 0)).toLocaleString()} Total Arrears
+                                </p>
+                            )}
                         </AlertDescription>
                     </Alert>
                 )}
@@ -190,7 +260,6 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
 
                 {/* OVERVIEW TAB */}
                 <TabsContent value="overview" className="space-y-6">
-                    {/* Basic Earnings Summary */}
                     <Card>
                         <CardHeader className="py-2 px-4 border-b bg-muted/30">
                             <CardTitle className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Earnings Summary</CardTitle>
@@ -203,7 +272,6 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                         value={Object.values(calculation.standardBreakdown).reduce((a, b) => a + b, 0)}
                                         tooltip="Sum of all fixed salary components"
                                     />
-                                    {/* Dynamic non-deductible allowances (fuel, special, etc.) */}
                                     {(() => {
                                         const nonDeductibleTotal = Object.entries(calculation.allowanceBreakdown)
                                             .filter(([id]) => NON_DEDUCTIBLE_IDS.has(id))
@@ -223,7 +291,6 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                         </CardContent>
                     </Card>
 
-                    {/* All Deductions Card */}
                     <Card>
                         <CardHeader className="py-2 px-4 border-b bg-muted/30">
                             <CardTitle className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Deductions Breakdown</CardTitle>
@@ -287,8 +354,12 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                             tooltip={calculation.daysPresent > calculation.totalWorkingDays ? "Includes working on weekends/holidays" : undefined}
                         />
                         <StatCard label="Absent" value={calculation.daysAbsent} className="bg-rose-50 border-rose-100 text-rose-700" />
-                        <StatCard label="Unmarked Days" value={calculation.unmarkedDays} className={calculation.unmarkedDays > 0 ? "bg-rose-50 border-rose-500 text-rose-800 ring-2 ring-rose-500 animate-pulse" : ""} tooltip="Days with no attendance records! Please fix in Attendance." />
-
+                        <StatCard
+                            label="Unmarked Days"
+                            value={calculation.unmarkedDays}
+                            className={calculation.unmarkedDays > 0 ? "bg-rose-50 border-rose-500 text-rose-800 ring-2 ring-rose-500 animate-pulse" : ""}
+                            tooltip="Days with no attendance records! Please fix in Attendance."
+                        />
                         <StatCard label="Annual Leave" value={calculation.daysAnnualLeave} className="bg-amber-50 border-amber-100 text-amber-700" />
                         <StatCard label="Sick Leave" value={calculation.daysSickLeave} className="bg-amber-50 border-amber-100 text-amber-700" />
                         <StatCard label="Special Leave" value={calculation.daysSpecialLeave} className="bg-amber-50 border-amber-100 text-amber-700" />
@@ -320,9 +391,7 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                             <div className="flex items-center justify-between">
                                 <div className="space-y-1">
                                     <p className="text-xs text-muted-foreground">Absence pattern score (B = S² × D)</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Period: {calculation.bradfordFactorPeriod}
-                                    </p>
+                                    <p className="text-xs text-muted-foreground">Period: {calculation.bradfordFactorPeriod}</p>
                                 </div>
                                 <div className="text-right">
                                     <p className={cn(
@@ -500,7 +569,9 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                                 </Button>
                                             </div>
                                         ))}
-                                        {field.state.value.length === 0 && <p className="text-xs text-muted-foreground italic">No manual deductions added.</p>}
+                                        {field.state.value.length === 0 && (
+                                            <p className="text-xs text-muted-foreground italic">No manual deductions added.</p>
+                                        )}
                                     </div>
                                 )}
                             </form.Field>
@@ -510,11 +581,10 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
 
                 {/* CALCULATIONS TAB */}
                 <TabsContent value="calculations" className="space-y-5 text-sm">
-                    {/* Step 0: Base Rates */}
                     <CalcSection step="Step 1" title="Base Rates" color="blue">
                         <CalcRow
                             label="Standard Salary (Contract)"
-                            formula={`All components combined`}
+                            formula="All components combined"
                             result={`PKR ${Math.round(Object.values(calculation.standardBreakdown).reduce((a, b) => a + b, 0)).toLocaleString()}`}
                         />
                         <CalcRow
@@ -534,7 +604,6 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                         </div>
                     </CalcSection>
 
-                    {/* Step 2: Salary Component Breakdown — fully dynamic */}
                     <CalcSection step="Step 2" title="Salary Component Breakdown" color="slate">
                         <div className="overflow-x-auto">
                             <table className="w-full text-xs border-collapse">
@@ -572,13 +641,10 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                 </tbody>
                             </table>
                         </div>
-
                     </CalcSection>
 
-                    {/* Step 3: Attendance Deductions Breakdown — clean stacked layout */}
                     <CalcSection step="Step 3" title="Attendance Deduction Rules Applied" color="rose">
                         <div className="space-y-3 text-xs">
-                            {/* Full Day Absent */}
                             {calculation.daysAbsent > 0 && (
                                 <div className="p-3 rounded-lg border border-rose-100 bg-rose-50/50 space-y-1">
                                     <div className="flex items-center justify-between">
@@ -590,10 +656,6 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                     </p>
                                 </div>
                             )}
-
-
-
-                            {/* Undertime */}
                             {calculation.totalUndertimeHours > 0 && (
                                 <div className="p-3 rounded-lg border border-orange-100 bg-orange-50/50 space-y-1">
                                     <div className="flex items-center justify-between">
@@ -605,8 +667,6 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                     </p>
                                 </div>
                             )}
-
-                            {/* Unpaid Leave */}
                             {calculation.daysUnapprovedLeave > 0 && (
                                 <div className="p-3 rounded-lg border border-violet-100 bg-violet-50/50 space-y-1">
                                     <div className="flex items-center justify-between">
@@ -618,8 +678,6 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                     </p>
                                 </div>
                             )}
-
-                            {/* Empty state */}
                             {calculation.daysAbsent === 0 && calculation.totalUndertimeHours === 0 && calculation.daysUnapprovedLeave === 0 && (
                                 <p className="text-muted-foreground italic py-2 text-center">No attendance deductions this cycle. 🎉</p>
                             )}
@@ -630,7 +688,6 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                         </div>
                     </CalcSection>
 
-                    {/* Step 4: Overtime */}
                     {calculation.totalOvertimeHours > 0 && (
                         <CalcSection step="Step 4" title="Overtime Calculation" color="blue">
                             <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg font-mono text-xs space-y-1 text-blue-900">
@@ -648,10 +705,8 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                         </CalcSection>
                     )}
 
-                    {/* Step 5: Gross Salary Build-up */}
                     <CalcSection step={calculation.totalOvertimeHours > 0 ? "Step 5" : "Step 4"} title="Gross Salary Build-up" color="emerald">
                         <div className="space-y-1 text-xs font-mono">
-                            {/* Dynamic: all adjusted allowances from allowanceBreakdown */}
                             {Object.entries(calculation.allowanceBreakdown)
                                 .filter(([id, val]) => val > 0 && id !== "nightShift")
                                 .map(([id, val]) => (
@@ -660,7 +715,6 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                         <span>{Math.round(val).toLocaleString()}</span>
                                     </div>
                                 ))}
-                            {/* Extras: overtime, night shift, incentive, bonus */}
                             {[
                                 { label: "Overtime Pay", val: calculation.overtimeAmount },
                                 { label: "Night Shift Allowance", val: calculation.nightShiftAllowanceAmount },
@@ -679,7 +733,6 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                         </div>
                     </CalcSection>
 
-                    {/* Step 6: Flat Deductions */}
                     <CalcSection step={calculation.totalOvertimeHours > 0 ? "Step 6" : "Step 5"} title="Flat Deductions (from Gross)" color="rose">
                         <div className="space-y-1 text-xs font-mono">
                             {calculation.taxDeduction > 0 && (
@@ -712,7 +765,6 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                         )}
                     </CalcSection>
 
-                    {/* Step 7: Net Salary */}
                     <div className="p-4 bg-primary/5 border-2 border-primary/30 rounded-xl space-y-2">
                         <p className="text-xs font-bold uppercase tracking-widest text-primary">{calculation.totalOvertimeHours > 0 ? "Step 7" : "Step 6"}: Net Salary</p>
                         <div className="font-mono text-xs text-muted-foreground space-y-0.5">
@@ -726,25 +778,91 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                 </TabsContent>
             </Tabs>
 
-            {/* Footer Actions */}
-            <div className="flex flex-col gap-3 pt-6 border-t mt-auto sticky bottom-0 bg-background/80 backdrop-blur-sm pb-4">
-                <Button variant="outline" className="w-full" onClick={onSuccess} disabled={saveMutation.isPending}>
-                    Cancel
-                </Button>
-                <Button
-                    className="w-full"
-                    onClick={handleSave}
-                    disabled={saveMutation.isPending || !calculation}
-                >
-                    {saveMutation.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Calculator className="mr-2 size-4" />}
-                    Finalize & Generate Slip
-                </Button>
+            {/* ── Payment Account + Footer ───────────────────────────────────── */}
+            <div className="space-y-4 pt-4 border-t sticky bottom-0 bg-background/95 backdrop-blur-sm pb-4">
+                {/* Wallet selector */}
+                <div className="rounded-xl border bg-muted/20 p-4 space-y-3">
+                    <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                        Payment Account <span className="text-destructive">*</span>
+                    </p>
+
+                    <Select value={selectedWalletId} onValueChange={setSelectedWalletId}>
+                        <SelectTrigger className={cn("h-11 bg-background", insufficientFunds && "border-destructive focus-visible:ring-destructive")}>
+                            <SelectValue placeholder="Select account to debit salary from…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {wallets.length === 0 && (
+                                <div className="px-3 py-4 text-xs text-muted-foreground text-center">
+                                    No accounts found. Create one in Finance.
+                                </div>
+                            )}
+                            {wallets.map((w) => {
+                                const bal = parseFloat(w.balance || "0");
+                                const low = bal < netSalary;
+                                return (
+                                    <SelectItem key={w.id} value={w.id}>
+                                        <div className="flex items-center gap-2 w-full min-w-[220px]">
+                                            {w.type === "bank"
+                                                ? <Building2 className="size-3.5 text-blue-600 shrink-0" />
+                                                : <BanknoteIcon className="size-3.5 text-violet-600 shrink-0" />}
+                                            <span className="font-medium flex-1">{w.name}</span>
+                                            <span className={cn("text-[11px] tabular-nums ml-2", low ? "text-destructive font-bold" : "text-muted-foreground")}>
+                                                PKR {Math.round(bal).toLocaleString()}
+                                            </span>
+                                            {low && (
+                                                <span className="text-[9px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-bold uppercase ml-1">
+                                                    Low
+                                                </span>
+                                            )}
+                                        </div>
+                                    </SelectItem>
+                                );
+                            })}
+                        </SelectContent>
+                    </Select>
+
+                    {/* Balance feedback */}
+                    {selectedWallet && (
+                        <div className={cn(
+                            "flex items-center justify-between p-2.5 rounded-lg border text-[12px]",
+                            insufficientFunds
+                                ? "bg-destructive/5 border-destructive/30"
+                                : "bg-emerald-50/50 border-emerald-200/50 dark:bg-emerald-950/20 dark:border-emerald-900/30",
+                        )}>
+                            <span className="font-medium text-muted-foreground">
+                                {insufficientFunds ? "Shortfall" : "Balance after deduction"}
+                            </span>
+                            <span className={cn("font-black tabular-nums", insufficientFunds ? "text-destructive" : "text-emerald-700 dark:text-emerald-400")}>
+                                {insufficientFunds
+                                    ? `PKR ${Math.round(netSalary - walletBalance).toLocaleString()} needed`
+                                    : `PKR ${Math.round(afterBalance).toLocaleString()}`}
+                            </span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-2.5">
+                    <Button variant="outline" className="flex-1" onClick={onSuccess} disabled={saveMutation.isPending}>
+                        Cancel
+                    </Button>
+                    <Button
+                        className="flex-1"
+                        onClick={handleSave}
+                        disabled={saveMutation.isPending || !calculation || !selectedWalletId || insufficientFunds}
+                    >
+                        {saveMutation.isPending
+                            ? <><Loader2 className="mr-2 size-4 animate-spin" /> Processing…</>
+                            : <><Calculator className="mr-2 size-4" /> Finalize & Generate Slip</>}
+                    </Button>
+                </div>
             </div>
         </div>
     );
 };
 
-// Helper Components
+// ── Helper Components ─────────────────────────────────────────────────────────
+
 function SummaryRow({ label, value, isDeduction, highlight, tooltip }: { label: string; value: number; isDeduction?: boolean; highlight?: boolean; tooltip?: string }) {
     if (value === 0 && !highlight) return null;
     return (
@@ -758,9 +876,7 @@ function SummaryRow({ label, value, isDeduction, highlight, tooltip }: { label: 
                                 <TooltipTrigger asChild>
                                     <Info className="size-3.5 opacity-0 group-hover:opacity-50 transition-opacity cursor-help" />
                                 </TooltipTrigger>
-                                <TooltipContent side="right">
-                                    <p className="text-xs">{tooltip}</p>
-                                </TooltipContent>
+                                <TooltipContent side="right"><p className="text-xs">{tooltip}</p></TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
                     )}
@@ -780,22 +896,16 @@ function StatCard({ label, value, className, tooltip }: { label: string; value: 
             <p className="text-[10px] text-muted-foreground uppercase mt-1 font-bold tracking-wider">{label}</p>
         </div>
     );
-
     if (tooltip) {
         return (
             <TooltipProvider>
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        {content}
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p className="text-xs">{tooltip}</p>
-                    </TooltipContent>
+                    <TooltipTrigger asChild>{content}</TooltipTrigger>
+                    <TooltipContent><p className="text-xs">{tooltip}</p></TooltipContent>
                 </Tooltip>
             </TooltipProvider>
         );
     }
-
     return content;
 }
 
@@ -814,9 +924,7 @@ function CalcSection({ step, title, color, children }: { step: string; title: st
                 <span className="text-[10px] font-extrabold uppercase tracking-widest opacity-70">{step}</span>
                 <span className="text-xs font-bold">{title}</span>
             </div>
-            <div className="p-4 space-y-2 bg-card">
-                {children}
-            </div>
+            <div className="p-4 space-y-2 bg-card">{children}</div>
         </div>
     );
 }

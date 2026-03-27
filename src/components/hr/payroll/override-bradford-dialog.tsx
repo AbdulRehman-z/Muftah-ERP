@@ -67,7 +67,7 @@ export const OverrideBradfordDialog = ({
         </div>
 
         {/* Score Input */}
-        <div className="space-y-2">
+        <div className="flex flex-col space-y-2">
           <label className="text-sm font-semibold text-foreground">
             New Score
           </label>
@@ -85,7 +85,7 @@ export const OverrideBradfordDialog = ({
         </div>
 
         {/* Reason Input (mandatory) */}
-        <div className="space-y-2">
+        <div className="flex flex-col space-y-2">
           <label className="text-sm font-semibold text-foreground">
             Justification <span className="text-rose-500">*</span>
           </label>

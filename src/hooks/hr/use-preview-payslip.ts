@@ -12,6 +12,10 @@ interface PreviewPayslipInput {
     advanceDeduction?: number; // undefined = auto-pull approved advances from DB
     overtimeMultiplier: number;
   };
+  arrears?: {
+    arrearsAmount: number;
+    arrearsFromMonths: string[];
+  };
 }
 
 export function usePreviewPayslip(

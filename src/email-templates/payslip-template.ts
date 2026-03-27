@@ -1,9 +1,9 @@
 import { format, parseISO } from "date-fns";
 
 export function generatePayslipEmailHtml(payslip: any) {
-  const { employee, payroll } = payslip;
+    const { employee, payroll } = payslip;
 
-  return `
+    return `
     <!DOCTYPE html>
     <html>
     <head>
@@ -57,7 +57,7 @@ export function generatePayslipEmailHtml(payslip: any) {
 
             <div class="footer">
                 <p>This is an automated payslip. If you have any queries, please contact the HR department.</p>
-                <p>&copy; ${new Date().getFullYear()} Titan Enterprise</p>
+                <p>&copy; ${new Date().getFullYear()} Muftah Chemical PVT LTD (S-WASH)</p>
             </div>
         </div>
     </body>
