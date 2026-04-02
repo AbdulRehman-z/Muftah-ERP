@@ -160,7 +160,7 @@ export function SetRateDialog({ open, onOpenChange }: Props) {
                                         className={cn(
                                             "p-4 rounded-md border transition-colors duration-200",
                                             h.isActive
-                                                ? "bg-primary/5 border-primary/20 shadow-sm"
+                                                ? "bg-primary/5 border-primary/20 "
                                                 : "bg-background hover:bg-muted/30"
                                         )}
                                     >

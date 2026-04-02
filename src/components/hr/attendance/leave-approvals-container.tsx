@@ -5,18 +5,34 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { GenericEmpty } from "@/components/custom/empty";
 import { HREmptyIllustration } from "@/components/illustrations/HREmptyIllustration";
-import {
-    CalendarX,
-    Check,
-    X,
-    FileClock,
-} from "lucide-react";
+import { CalendarX, Check, X, FileClock, Clock } from "lucide-react";
 import { useProcessLeaveApproval } from "@/hooks/hr/use-process-leave-approval";
 import { format, parseISO } from "date-fns";
 import { DataTable } from "@/components/custom/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { motion, Variants } from "framer-motion";
+import { SharpInteractiveKPICard } from "./SharpINteractiveKpiCard";
+
+// ── Animation Variants ─────────────────────────────────────────────────────
+
+const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: { staggerChildren: 0.1, delayChildren: 0.05 },
+    },
+};
+
+const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 15 },
+    show: {
+        opacity: 1,
+        y: 0,
+        transition: { type: "spring", stiffness: 300, damping: 30 },
+    },
+};
 
 type FilterStatus = "pending" | "approved" | "rejected" | "all";
 
@@ -52,7 +68,7 @@ export function LeaveApprovalsContainer() {
                 accessorKey: "employeeCode",
                 header: "Code",
                 cell: ({ row }) => (
-                    <span className="font-mono text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                    <span className="font-mono text-[11px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-none border border-border">
                         {row.original.employeeCode}
                     </span>
                 ),
@@ -63,10 +79,10 @@ export function LeaveApprovalsContainer() {
                 header: "Employee",
                 cell: ({ row }) => (
                     <div className="flex flex-col">
-                        <span className="font-bold text-sm leading-tight">
+                        <span className="font-bold text-[13px] leading-tight text-foreground">
                             {row.original.firstName} {row.original.lastName}
                         </span>
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-tighter">
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
                             {row.original.designation}
                         </span>
                     </div>
@@ -76,7 +92,7 @@ export function LeaveApprovalsContainer() {
                 accessorKey: "date",
                 header: "Date",
                 cell: ({ row }) => (
-                    <span className="text-xs font-medium">
+                    <span className="text-[13px] font-bold tabular-nums uppercase tracking-widest text-foreground">
                         {format(parseISO(row.original.date), "dd MMM yyyy")}
                     </span>
                 ),
@@ -89,7 +105,7 @@ export function LeaveApprovalsContainer() {
                     return (
                         <Badge
                             variant="outline"
-                            className="text-[10px] font-bold uppercase"
+                            className="text-[9px] font-bold uppercase tracking-widest rounded-none border-border"
                         >
                             {lt ? LEAVE_TYPE_LABELS[lt] || lt : "—"}
                         </Badge>
@@ -102,7 +118,7 @@ export function LeaveApprovalsContainer() {
                 cell: ({ row }) => (
                     <div className="max-w-[200px]">
                         <span
-                            className="text-xs text-muted-foreground line-clamp-2"
+                            className="text-xs font-medium text-muted-foreground line-clamp-2"
                             title={row.original.notes}
                         >
                             {row.original.notes || "—"}
@@ -117,27 +133,18 @@ export function LeaveApprovalsContainer() {
                     const s = row.original.leaveApprovalStatus;
                     if (s === "approved")
                         return (
-                            <Badge
-                                variant="outline"
-                                className="bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 font-bold uppercase text-[10px]"
-                            >
+                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-bold uppercase tracking-widest text-[9px] rounded-none px-2 py-0.5">
                                 Approved
                             </Badge>
                         );
                     if (s === "rejected")
                         return (
-                            <Badge
-                                variant="outline"
-                                className="bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20 font-bold uppercase text-[10px]"
-                            >
+                            <Badge variant="outline" className="bg-rose-500/10 text-rose-600 border-rose-500/20 font-bold uppercase tracking-widest text-[9px] rounded-none px-2 py-0.5">
                                 Rejected
                             </Badge>
                         );
                     return (
-                        <Badge
-                            variant="outline"
-                            className="bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20 font-bold uppercase text-[10px] animate-pulse"
-                        >
+                        <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 font-bold uppercase tracking-widest text-[9px] rounded-none px-2 py-0.5 animate-pulse">
                             Pending
                         </Badge>
                     );
@@ -156,10 +163,8 @@ export function LeaveApprovalsContainer() {
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        className="h-7 px-2 border-emerald-500/30 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/20 dark:hover:bg-emerald-900/30"
-                                        onClick={() =>
-                                            handleProcess(row.original.id, "approved")
-                                        }
+                                        className="h-8 px-2.5 rounded-none shadow-none border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-400 bg-emerald-500/5"
+                                        onClick={() => handleProcess(row.original.id, "approved")}
                                         disabled={mutation.isPending}
                                         title="Approve Leave (no deduction)"
                                     >
@@ -168,10 +173,8 @@ export function LeaveApprovalsContainer() {
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        className="h-7 px-2 border-rose-500/30 text-rose-600 hover:bg-rose-50 hover:text-rose-700 bg-rose-50/50 dark:bg-rose-950/20 dark:hover:bg-rose-900/30"
-                                        onClick={() =>
-                                            handleProcess(row.original.id, "rejected")
-                                        }
+                                        className="h-8 px-2.5 rounded-none shadow-none border-rose-500/30 text-rose-600 hover:bg-rose-500/10 hover:text-rose-700 dark:hover:text-rose-400 bg-rose-500/5"
+                                        onClick={() => handleProcess(row.original.id, "rejected")}
                                         disabled={mutation.isPending}
                                         title="Reject Leave (deduction applies)"
                                     >
@@ -182,13 +185,11 @@ export function LeaveApprovalsContainer() {
                                 <Button
                                     size="sm"
                                     variant="ghost"
-                                    className="h-7 text-xs font-semibold text-muted-foreground hover:text-primary"
-                                    onClick={() =>
-                                        handleProcess(row.original.id, "pending")
-                                    }
+                                    className="h-8 text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:text-primary rounded-none"
+                                    onClick={() => handleProcess(row.original.id, "pending")}
                                     disabled={mutation.isPending}
                                 >
-                                    Reset to Pending
+                                    Reset
                                 </Button>
                             )}
                         </div>
@@ -199,92 +200,128 @@ export function LeaveApprovalsContainer() {
         [mutation.isPending] // eslint-disable-line react-hooks/exhaustive-deps
     );
 
-    return (
-        <div className="space-y-6">
-            {/* Quick stats */}
-            <div className="grid grid-cols-3 gap-3">
-                {[
-                    { label: "Pending", count: stats.pendingCount, color: "amber" },
-                    { label: "Approved", count: stats.approvedCount, color: "emerald" },
-                    { label: "Rejected", count: stats.rejectedCount, color: "rose" },
-                ].map((s) => (
-                    <div
-                        key={s.label}
-                        className={cn(
-                            "flex items-center justify-between p-3 rounded-xl border transition-all",
-                            s.label.toLowerCase() === status
-                                ? `ring-2 ring-${s.color}-500 ring-offset-1 dark:ring-offset-background`
-                                : "border-border/60 hover:border-primary/30"
-                        )}
-                        onClick={() =>
-                            setStatus(s.label.toLowerCase() as FilterStatus)
-                        }
-                        role="button"
-                    >
-                        <div>
-                            <p className="text-2xl font-black tabular-nums">{s.count}</p>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                                {s.label}
-                            </p>
-                        </div>
-                        <CalendarX
-                            className={cn(
-                                "size-5",
-                                s.color === "amber" && "text-amber-500",
-                                s.color === "emerald" && "text-emerald-500",
-                                s.color === "rose" && "text-rose-500"
-                            )}
-                        />
-                    </div>
-                ))}
-            </div>
+    // Reusable sleek tab trigger classes
+    const tabTriggerStyles = "relative h-12 rounded-none border-none bg-transparent px-0 pb-4 pt-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none focus-visible:ring-0 focus-visible:outline-none outline-none after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-transparent data-[state=active]:after:bg-foreground transition-colors";
 
-            <div className="bg-card border rounded-2xl p-4 shadow-sm">
-                <Tabs
-                    value={status}
-                    onValueChange={(v) => setStatus(v as FilterStatus)}
-                    className="w-full"
-                >
-                    <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-4">
-                        <TabsList className="bg-muted/50 p-1 border">
+    return (
+        <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6 font-sans antialiased">
+
+            {/* ── Sharp Interactive KPI Cards ───────────────────────────────── */}
+            <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <SharpInteractiveKPICard
+                    title="Pending"
+                    value={stats.pendingCount.toString()}
+                    subtext="Awaiting review"
+                    icon={Clock}
+                    theme="amber"
+                    active={status === "pending"}
+                    onClick={() => setStatus("pending")}
+                />
+                <SharpInteractiveKPICard
+                    title="Approved"
+                    value={stats.approvedCount.toString()}
+                    subtext="Leave granted"
+                    icon={Check}
+                    theme="emerald"
+                    active={status === "approved"}
+                    onClick={() => setStatus("approved")}
+                />
+                <SharpInteractiveKPICard
+                    title="Rejected"
+                    value={stats.rejectedCount.toString()}
+                    subtext="Leave denied"
+                    icon={CalendarX}
+                    theme="rose"
+                    active={status === "rejected"}
+                    onClick={() => setStatus("rejected")}
+                />
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+                <Tabs value={status} onValueChange={(v) => setStatus(v as FilterStatus)} className="w-full">
+                    <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4 border-b border-border/50 pb-px">
+                        <TabsList className="h-auto p-0 bg-transparent gap-2 sm:gap-6">
                             <TabsTrigger
                                 value="pending"
-                                className="text-xs font-bold uppercase tracking-wider px-4"
+                                className={cn(
+                                    tabTriggerStyles,
+                                    "group data-[state=active]:after:bg-amber-500"
+                                )}
                             >
-                                Pending
+                                <div className="flex items-center gap-2">
+                                    <Clock className="size-3.5 group-data-[state=active]:text-amber-500 transition-colors" />
+                                    <span>Pending</span>
+                                    <Badge
+                                        variant="secondary"
+                                        className="ml-1 h-4.5 px-1.5 text-[10px] font-black rounded-none bg-amber-500/10 text-amber-600 border-amber-500/20 group-data-[state=active]:bg-amber-500 group-data-[state=active]:text-white transition-colors"
+                                    >
+                                        {stats.pendingCount}
+                                    </Badge>
+                                </div>
                             </TabsTrigger>
                             <TabsTrigger
                                 value="approved"
-                                className="text-xs font-bold uppercase tracking-wider px-4"
+                                className={cn(
+                                    tabTriggerStyles,
+                                    "group data-[state=active]:after:bg-emerald-500"
+                                )}
                             >
-                                Approved
+                                <div className="flex items-center gap-2">
+                                    <Check className="size-3.5 group-data-[state=active]:text-emerald-500 transition-colors" />
+                                    <span>Approved</span>
+                                    <Badge
+                                        variant="secondary"
+                                        className="ml-1 h-4.5 px-1.5 text-[10px] font-black rounded-none bg-emerald-500/10 text-emerald-600 border-emerald-500/20 group-data-[state=active]:bg-emerald-500 group-data-[state=active]:text-white transition-colors"
+                                    >
+                                        {stats.approvedCount}
+                                    </Badge>
+                                </div>
                             </TabsTrigger>
                             <TabsTrigger
                                 value="rejected"
-                                className="text-xs font-bold uppercase tracking-wider px-4"
+                                className={cn(
+                                    tabTriggerStyles,
+                                    "group data-[state=active]:after:bg-rose-500"
+                                )}
                             >
-                                Rejected
+                                <div className="flex items-center gap-2">
+                                    <CalendarX className="size-3.5 group-data-[state=active]:text-rose-500 transition-colors" />
+                                    <span>Rejected</span>
+                                    <Badge
+                                        variant="secondary"
+                                        className="ml-1 h-4.5 px-1.5 text-[10px] font-black rounded-none bg-rose-500/10 text-rose-600 border-rose-500/20 group-data-[state=active]:bg-rose-500 group-data-[state=active]:text-white transition-colors"
+                                    >
+                                        {stats.rejectedCount}
+                                    </Badge>
+                                </div>
                             </TabsTrigger>
                             <TabsTrigger
                                 value="all"
-                                className="text-xs font-bold uppercase tracking-wider px-4"
+                                className={cn(
+                                    tabTriggerStyles,
+                                    "group data-[state=active]:after:bg-foreground"
+                                )}
                             >
-                                All
+                                <div className="flex items-center gap-2">
+                                    <FileClock className="size-3.5 transition-colors" />
+                                    <span>All History</span>
+                                </div>
                             </TabsTrigger>
                         </TabsList>
-                        <div className="text-xs text-muted-foreground font-medium flex items-center gap-2">
-                            <FileClock className="size-4" />
-                            Showing <strong>{status.toUpperCase()}</strong> leave requests
+
+                        <div className="hidden sm:flex text-[10px] text-muted-foreground font-bold uppercase tracking-widest items-center gap-2 pb-4">
+                            <FileClock className="size-3.5 text-primary" />
+                            Leave <span className="text-foreground">Management Console</span>
                         </div>
                     </div>
 
-                    <TabsContent value={status} className="mt-0 outline-none">
+                    <TabsContent value={status} className="mt-0 outline-none border border-border bg-card rounded-none shadow-none">
                         {records.length === 0 ? (
-                            <div className="py-12 border rounded-xl bg-muted/20">
+                            <div className="py-16 bg-muted/10">
                                 <GenericEmpty
                                     icon={HREmptyIllustration}
                                     title="All caught up!"
-                                    description={`No ${status !== "all" ? status : ""} leave requests found.`}
+                                    description={`No ${status !== "all" ? status : ""} leave requests found in this view.`}
                                 />
                             </div>
                         ) : (
@@ -294,12 +331,12 @@ export function LeaveApprovalsContainer() {
                                 searchKey="employee"
                                 searchPlaceholder="Search by employee name..."
                                 pageSize={10}
-                                className="border-none shadow-none"
+                                className="border-none shadow-none rounded-none"
                             />
                         )}
                     </TabsContent>
                 </Tabs>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     );
 }

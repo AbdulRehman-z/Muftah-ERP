@@ -170,7 +170,7 @@ export const EmployeeDetailView = () => {
           </Button>
 
           <div className="flex items-center gap-4">
-            <Avatar className="h-14 w-14 border-2 border-border shadow-sm">
+            <Avatar className="h-14 w-14 border-2 border-border ">
               <AvatarFallback className="text-lg font-black bg-primary/10 text-primary">
                 {employee.firstName[0]}
                 {employee.lastName[0]}

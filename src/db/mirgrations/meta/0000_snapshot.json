@@ -1,5 +1,5 @@
 {
-  "id": "52ece1d5-d726-4592-99b8-346bf138431d",
+  "id": "14727450-d5bf-4256-96fe-da3086db7dd3",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1911,6 +1911,20 @@
           "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": true
+        },
+        "arrears_amount": {
+          "name": "arrears_amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'0'"
+        },
+        "arrears_from_months": {
+          "name": "arrears_from_months",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'[]'::jsonb"
         },
         "payment_source": {
           "name": "payment_source",

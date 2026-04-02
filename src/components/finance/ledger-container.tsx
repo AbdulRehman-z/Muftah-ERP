@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
+import { motion, Variants } from "framer-motion";
 import { getWalletsListFn } from "@/server-functions/finance-fn";
 import { useTransactions } from "@/hooks/finance/use-finance";
 import { GenericEmpty } from "@/components/custom/empty";
@@ -20,14 +21,23 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 import { GenericLoader } from "../custom/generic-loader";
 
-type KPIColor = "emerald" | "rose" | "blue" | "amber" | "violet";
+// ── Animation Variants ─────────────────────────────────────────────────────
 
-const kpiColorMap: Record<KPIColor, { bg: string; iconBg: string; icon: string; value: string }> = {
-    emerald: { bg: "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-800/30", iconBg: "bg-emerald-100 dark:bg-emerald-900/40", icon: "text-emerald-600", value: "text-emerald-700 dark:text-emerald-400" },
-    rose: { bg: "bg-rose-50 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-800/30", iconBg: "bg-rose-100 dark:bg-rose-900/40", icon: "text-rose-600", value: "text-rose-700 dark:text-rose-400" },
-    blue: { bg: "bg-blue-50 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/30", iconBg: "bg-blue-100 dark:bg-blue-900/40", icon: "text-blue-600", value: "text-blue-700 dark:text-blue-400" },
-    amber: { bg: "bg-amber-50 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/30", iconBg: "bg-amber-100 dark:bg-amber-900/40", icon: "text-amber-600", value: "text-amber-700 dark:text-amber-400" },
-    violet: { bg: "bg-violet-50 dark:bg-violet-950/20 border-violet-200/60 dark:border-violet-800/30", iconBg: "bg-violet-100 dark:bg-violet-900/40", icon: "text-violet-600", value: "text-violet-700 dark:text-violet-400" },
+const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: { staggerChildren: 0.1, delayChildren: 0.05 },
+    },
+};
+
+const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 15 },
+    show: {
+        opacity: 1,
+        y: 0,
+        transition: { type: "spring", stiffness: 300, damping: 30 },
+    },
 };
 
 const LIMIT = 20;
@@ -38,7 +48,7 @@ export const LedgerContainer = () => {
     const [typeFilter, setTypeFilter] = useState<"all" | "credit" | "debit">("all");
     const [sourceFilter, setSourceFilter] = useState<string>("all");
 
-    // Server-side paginated fetch — only loads LIMIT rows at a time
+    // Server-side paginated fetch
     const { data, isFetching } = useTransactions({
         walletId: walletFilter === "all" ? undefined : walletFilter,
         source: sourceFilter === "all" ? undefined : sourceFilter,
@@ -55,9 +65,7 @@ export const LedgerContainer = () => {
     const total = data?.total ?? 0;
     const pageCount = data?.pageCount ?? 1;
 
-    // KPIs: run against the current page only (server computes full totals separately)
-    // For accurate totals across all pages, these are approximate — based on visible data.
-    // A separate aggregate query would be needed for exact lifetime totals.
+    // KPIs: run against the current page only
     const totalCredits = transactions.filter(t => t.type === "credit").reduce((s, t) => s + parseFloat(t.amount || "0"), 0);
     const totalDebits = transactions.filter(t => t.type === "debit").reduce((s, t) => s + parseFloat(t.amount || "0"), 0);
     const netFlow = totalCredits - totalDebits;
@@ -76,7 +84,10 @@ export const LedgerContainer = () => {
             cell: ({ row }) => {
                 const isCredit = row.original.type === "credit";
                 return (
-                    <div className={cn("p-1.5 rounded-lg w-fit", isCredit ? "bg-emerald-50 dark:bg-emerald-950/30" : "bg-rose-50 dark:bg-rose-950/30")}>
+                    <div className={cn(
+                        "p-1.5 rounded-none border w-fit",
+                        isCredit ? "bg-emerald-500/10 border-emerald-500/20" : "bg-rose-500/10 border-rose-500/20"
+                    )}>
                         {isCredit ? <ArrowDownIcon className="size-3.5 text-emerald-600" /> : <ArrowUpIcon className="size-3.5 text-rose-500" />}
                     </div>
                 );
@@ -87,15 +98,15 @@ export const LedgerContainer = () => {
             header: "Date & Time",
             cell: ({ row }) => (
                 <div className="flex flex-col">
-                    <span className="text-sm font-medium tabular-nums">{format(new Date(row.original.createdAt), "dd MMM yyyy")}</span>
-                    <span className="text-[10px] text-muted-foreground tabular-nums">{format(new Date(row.original.createdAt), "hh:mm a")}</span>
+                    <span className="text-sm font-bold tabular-nums text-foreground">{format(new Date(row.original.createdAt), "dd MMM yyyy")}</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums uppercase tracking-widest font-semibold">{format(new Date(row.original.createdAt), "hh:mm a")}</span>
                 </div>
             ),
         },
         {
             accessorKey: "source",
             header: "Source",
-            cell: ({ row }) => <span className="font-bold text-sm">{row.original.source}</span>,
+            cell: ({ row }) => <span className="font-bold text-sm text-foreground">{row.original.source}</span>,
         },
         {
             accessorKey: "wallet",
@@ -129,121 +140,172 @@ export const LedgerContainer = () => {
     ], []);
 
     return (
-        <div className="space-y-6">
-            {/* KPI Cards — page-scoped */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <KPICard title="Credits (this page)" value={`+ ₨ ${Math.round(totalCredits).toLocaleString()}`} subtext={`${transactions.filter(t => t.type === "credit").length} entries shown`} icon={TrendingUpIcon} color="emerald" />
-                <KPICard title="Debits (this page)" value={`− ₨ ${Math.round(totalDebits).toLocaleString()}`} subtext={`${transactions.filter(t => t.type === "debit").length} entries shown`} icon={TrendingDownIcon} color="rose" />
-                <KPICard title="Net Flow (this page)" value={`${netFlow >= 0 ? "+" : "−"} ₨ ${Math.abs(Math.round(netFlow)).toLocaleString()}`} subtext={netFlow >= 0 ? "Positive" : "Negative"} icon={ActivityIcon} color={netFlow >= 0 ? "blue" : "amber"} />
-            </div>
+        <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6 font-sans antialiased">
 
-            {/* Table */}
-            <DataTable
-                columns={columns}
-                data={transactions}
-                showSearch={false}
-                showPagination={false}
-                // isLoading={isFetching}
-                actions={
-                    <div className="flex items-center gap-2">
-                        {/* Wallet filter */}
-                        <Select value={walletFilter} onValueChange={handleWalletFilter}>
-                            <SelectTrigger className="w-[170px] h-8 text-xs border-border/40 rounded-lg">
-                                <SelectValue placeholder="All accounts" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Accounts</SelectItem>
-                                {wallets.map((w) => (
-                                    <SelectItem key={w.id} value={w.id}>
-                                        <div className="flex items-center gap-2">
-                                            {w.type === "bank" ? <Building2 className="size-3.5 text-blue-600" /> : <BanknoteIcon className="size-3.5 text-violet-600" />}
-                                            {w.name}
-                                        </div>
+            {/* ── Sharp KPI Cards ───────────────────────────────────────────── */}
+            <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <SharpKPICard
+                    title="Credits (this page)"
+                    value={`+ ₨ ${Math.round(totalCredits).toLocaleString()}`}
+                    subtext={`${transactions.filter(t => t.type === "credit").length} entries shown`}
+                    icon={TrendingUpIcon}
+                    theme="emerald"
+                />
+                <SharpKPICard
+                    title="Debits (this page)"
+                    value={`− ₨ ${Math.round(totalDebits).toLocaleString()}`}
+                    subtext={`${transactions.filter(t => t.type === "debit").length} entries shown`}
+                    icon={TrendingDownIcon}
+                    theme="rose"
+                />
+                <SharpKPICard
+                    title="Net Flow (this page)"
+                    value={`${netFlow >= 0 ? "+" : "−"} ₨ ${Math.abs(Math.round(netFlow)).toLocaleString()}`}
+                    subtext={netFlow >= 0 ? "Positive" : "Negative"}
+                    icon={ActivityIcon}
+                    theme={netFlow >= 0 ? "blue" : "amber"}
+                />
+            </motion.div>
+
+            {/* ── Table & Filters ───────────────────────────────────────────── */}
+            <motion.div variants={itemVariants} className="bg-card border border-border rounded-none shadow-none">
+                <DataTable
+                    columns={columns}
+                    data={transactions}
+                    showSearch={false}
+                    showPagination={false}
+                    actions={
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                            {/* Wallet filter */}
+                            <Select value={walletFilter} onValueChange={handleWalletFilter}>
+                                <SelectTrigger className="w-full sm:w-[170px] h-10 text-[13px] border-border rounded-none shadow-none focus:ring-1 focus:ring-primary">
+                                    <SelectValue placeholder="All accounts" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-none shadow-none border-border">
+                                    <SelectItem value="all" className="rounded-none">All Accounts</SelectItem>
+                                    {wallets.map((w) => (
+                                        <SelectItem key={w.id} value={w.id} className="rounded-none">
+                                            <div className="flex items-center gap-2">
+                                                {w.type === "bank" ? <Building2 className="size-3.5 text-blue-500" /> : <BanknoteIcon className="size-3.5 text-violet-500" />}
+                                                <span className="font-semibold">{w.name}</span>
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            {/* Source filter */}
+                            <Select value={sourceFilter} onValueChange={handleSourceFilter}>
+                                <SelectTrigger className="w-full sm:w-[160px] h-10 text-[13px] border-border rounded-none shadow-none focus:ring-1 focus:ring-primary">
+                                    <SelectValue placeholder="All sources" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-none shadow-none border-border">
+                                    <SelectItem value="all" className="rounded-none">All Sources</SelectItem>
+                                    <SelectItem value="Sale" className="rounded-none">Sale</SelectItem>
+                                    <SelectItem value="Payroll" className="rounded-none">Payroll</SelectItem>
+                                    <SelectItem value="Expense" className="rounded-none">Expense</SelectItem>
+                                    <SelectItem value="Opening Balance" className="rounded-none">Opening Balance</SelectItem>
+                                    <SelectItem value="Manual Adjustment" className="rounded-none">Manual Adjustment</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            {/* Type filter */}
+                            <Select value={typeFilter} onValueChange={handleTypeFilter}>
+                                <SelectTrigger className="w-full sm:w-[140px] h-10 text-[13px] border-border rounded-none shadow-none focus:ring-1 focus:ring-primary">
+                                    <SelectValue placeholder="All types" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-none shadow-none border-border">
+                                    <SelectItem value="all" className="rounded-none">All Types</SelectItem>
+                                    <SelectItem value="credit" className="rounded-none">
+                                        <span className="flex items-center gap-2 text-emerald-600 font-bold"><ArrowDownIcon className="size-3" /> Credits</span>
                                     </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                                    <SelectItem value="debit" className="rounded-none">
+                                        <span className="flex items-center gap-2 text-rose-500 font-bold"><ArrowUpIcon className="size-3" /> Debits</span>
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
 
-                        {/* Source filter */}
-                        <Select value={sourceFilter} onValueChange={handleSourceFilter}>
-                            <SelectTrigger className="w-[160px] h-8 text-xs border-border/40 rounded-lg">
-                                <SelectValue placeholder="All sources" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Sources</SelectItem>
-                                <SelectItem value="Sale">Sale</SelectItem>
-                                <SelectItem value="Payroll">Payroll</SelectItem>
-                                <SelectItem value="Expense">Expense</SelectItem>
-                                <SelectItem value="Opening Balance">Opening Balance</SelectItem>
-                                <SelectItem value="Manual Adjustment">Manual Adjustment</SelectItem>
-                            </SelectContent>
-                        </Select>
+                            <Badge variant="outline" className="h-10 px-3 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap rounded-none border-border">
+                                {total} total
+                            </Badge>
+                        </div>
+                    }
+                    isLoading={isFetching}
+                    loadingStateComponent={
+                        <GenericLoader
+                            title="Loading Transactions"
+                            description="Please wait while we load the transactions."
+                        />
+                    }
+                    emptyState={
+                        <GenericEmpty
+                            icon={FinanceEmptyIllustration}
+                            title="No Transactions Found"
+                            description="No transactions match your current filters."
+                        />
+                    }
+                />
+            </motion.div>
 
-                        {/* Type filter */}
-                        <Select value={typeFilter} onValueChange={handleTypeFilter}>
-                            <SelectTrigger className="w-[130px] h-8 text-xs border-border/40 rounded-lg">
-                                <SelectValue placeholder="All types" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Types</SelectItem>
-                                <SelectItem value="credit">
-                                    <span className="flex items-center gap-2 text-emerald-600 font-semibold"><ArrowDownIcon className="size-3" /> Credits</span>
-                                </SelectItem>
-                                <SelectItem value="debit">
-                                    <span className="flex items-center gap-2 text-rose-500 font-semibold"><ArrowUpIcon className="size-3" /> Debits</span>
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-
-                        <Badge variant="secondary" className="h-8 px-3 text-xs font-bold whitespace-nowrap">
-                            {total} total
-                        </Badge>
-                    </div>
-                }
-                isLoading={isFetching}
-                loadingStateComponent={
-                    <GenericLoader
-                        title="Loading Transactions"
-                        description="Please wait while we load the transactions."
-                    />
-                }
-                emptyState={
-                    <GenericEmpty
-                        icon={FinanceEmptyIllustration}
-                        title="No Transactions Found"
-                        description="No transactions match your current filters."
-                    />
-                }
-            />
-
-            {/* Pagination */}
-            <div className="flex items-center justify-between px-1">
-                <span className="text-xs text-muted-foreground tabular-nums">
-                    Page <strong>{page}</strong> of <strong>{pageCount}</strong> · {total} total
+            {/* ── Pagination ────────────────────────────────────────────────── */}
+            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-center justify-between px-1 gap-4">
+                <span className="text-xs text-muted-foreground tabular-nums uppercase tracking-widest font-semibold">
+                    Page <span className="text-foreground">{page}</span> of <span className="text-foreground">{pageCount}</span> · {total} total
                 </span>
-                <div className="flex items-center gap-1.5">
-                    <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="h-8 px-3">
-                        <ChevronLeft className="size-3.5 mr-0.5" /> Prev
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <Button variant="outline" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="h-10 px-4 rounded-none shadow-none border-border flex-1 sm:flex-none">
+                        <ChevronLeft className="size-3.5 mr-1" /> Prev
                     </Button>
-                    <Button variant="outline" size="sm" disabled={page >= pageCount} onClick={() => setPage(p => p + 1)} className="h-8 px-3">
-                        Next <ChevronRight className="size-3.5 ml-0.5" />
+                    <Button variant="outline" disabled={page >= pageCount} onClick={() => setPage(p => p + 1)} className="h-10 px-4 rounded-none shadow-none border-border flex-1 sm:flex-none">
+                        Next <ChevronRight className="size-3.5 ml-1" />
                     </Button>
                 </div>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     );
 };
 
-function KPICard({ title, value, subtext, icon: Icon, color = "blue" }: { title: string; value: string; subtext: string; icon: any; color?: KPIColor }) {
-    const c = kpiColorMap[color];
+// ── Sharp Pixel-Perfect KPI Component ───────────────────────────────────────
+
+type KPITheme = "blue" | "rose" | "emerald" | "violet" | "amber";
+
+const sharpThemeStyles = {
+    blue: { border: "border-t-blue-500", iconBg: "bg-blue-500/10", iconText: "text-blue-500" },
+    rose: { border: "border-t-rose-500", iconBg: "bg-rose-500/10", iconText: "text-rose-500" },
+    emerald: { border: "border-t-emerald-500", iconBg: "bg-emerald-500/10", iconText: "text-emerald-500" },
+    violet: { border: "border-t-violet-500", iconBg: "bg-violet-500/10", iconText: "text-violet-500" },
+    amber: { border: "border-t-amber-500", iconBg: "bg-amber-500/10", iconText: "text-amber-500" },
+};
+
+function SharpKPICard({ title, value, subtext, icon: Icon, theme }: { title: string; value: string; subtext: string; icon: any; theme: KPITheme }) {
+    const styles = sharpThemeStyles[theme];
+
     return (
-        <div className={cn("rounded-2xl border p-4 transition-all hover:shadow-md", c.bg)}>
-            <div className={cn("p-2 rounded-xl w-fit mb-3", c.iconBg)}>
-                <Icon className={cn("size-4", c.icon)} />
+        <motion.div
+            whileHover={{ y: -2, transition: { duration: 0.2 } }}
+            className={cn(
+                "relative flex flex-col justify-between p-5 bg-card border border-border rounded-none shadow-none",
+                "border-t-2",
+                styles.border
+            )}
+        >
+            {/* Technical Grid Pattern */}
+            <div
+                className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04] pointer-events-none"
+                style={{ backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`, backgroundSize: "8px 8px" }}
+            />
+
+            <div className="relative z-10 flex items-start justify-between mb-8">
+                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{title}</p>
+                <div className={cn("p-1.5 rounded-none", styles.iconBg)}>
+                    <Icon className={cn("size-4", styles.iconText)} />
+                </div>
             </div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{title}</p>
-            <p className={cn("text-xl font-black tracking-tight leading-tight mb-1 tabular-nums", c.value)}>{value}</p>
-            <p className="text-[10px] font-medium text-muted-foreground/70">{subtext}</p>
-        </div>
+
+            <div className="relative z-10 space-y-1">
+                <h3 className="text-3xl font-bold tracking-tight text-foreground tabular-nums">{value}</h3>
+                <p className="text-xs font-medium text-muted-foreground/70">{subtext}</p>
+            </div>
+        </motion.div>
     );
 }

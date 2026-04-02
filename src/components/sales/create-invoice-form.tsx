@@ -48,7 +48,7 @@ const Section = ({
     children: React.ReactNode;
     className?: string;
 }) => (
-    <div className={cn("rounded-xl border bg-card shadow-sm overflow-hidden", className)}>
+    <div className={cn("rounded-xl border bg-card  overflow-hidden", className)}>
         <div className="flex items-center gap-3 px-5 py-3.5 border-b bg-muted/30">
             <div className="flex size-7 items-center justify-center rounded-md bg-primary/10">
                 <Icon className="size-4 text-primary" />
@@ -208,7 +208,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                 className={cn(
                                     "flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-all",
                                     customerMode === mode
-                                        ? "bg-background shadow-sm text-foreground"
+                                        ? "bg-background  text-foreground"
                                         : "text-muted-foreground hover:text-foreground",
                                 )}
                             >

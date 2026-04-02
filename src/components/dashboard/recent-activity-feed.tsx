@@ -1,245 +1,85 @@
-import {
-  Activity,
-  Package,
-  CheckCircle2,
-  Clock,
-  XCircle,
-  PlayCircle,
-  Box,
-  User2,
-  ArrowRight,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Package, Activity, Beaker, CheckCircle2, Clock, XCircle, PlayCircle, ArrowRight } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format, parseISO, isValid } from "date-fns";
 import { cn } from "@/lib/utils";
 
-interface ActivityItem {
-  id: string;
-  batchId: string;
-  productName: string;
-  recipeName: string;
-  cartonsProduced: number;
-  containersProduced: number;
-  status: string;
-  operatorName: string;
-  date: Date | string;
-}
-
-interface RecentActivityFeedProps {
-  data: ActivityItem[];
-  className?: string;
-}
-
-const statusConfig: Record<
-  string,
-  {
-    label: string;
-    icon: React.ElementType;
-    badgeClass: string;
-    iconClass: string;
-    bgClass: string;
-    ringClass: string;
-  }
-> = {
-  completed: {
-    label: "Completed",
-    icon: CheckCircle2,
-    badgeClass:
-      "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800",
-    iconClass: "text-emerald-600 dark:text-emerald-400",
-    bgClass: "bg-emerald-50 dark:bg-emerald-950/30",
-    ringClass: "ring-emerald-200 dark:ring-emerald-800",
-  },
-  in_progress: {
-    label: "In Progress",
-    icon: PlayCircle,
-    badgeClass:
-      "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800",
-    iconClass: "text-blue-600 dark:text-blue-400",
-    bgClass: "bg-blue-50 dark:bg-blue-950/30",
-    ringClass: "ring-blue-200 dark:ring-blue-800",
-  },
-  scheduled: {
-    label: "Scheduled",
-    icon: Clock,
-    badgeClass:
-      "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800",
-    iconClass: "text-amber-600 dark:text-amber-400",
-    bgClass: "bg-amber-50 dark:bg-amber-950/30",
-    ringClass: "ring-amber-200 dark:ring-amber-800",
-  },
-  cancelled: {
-    label: "Cancelled",
-    icon: XCircle,
-    badgeClass:
-      "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800",
-    iconClass: "text-rose-600 dark:text-rose-400",
-    bgClass: "bg-rose-50 dark:bg-rose-950/30",
-    ringClass: "ring-rose-200 dark:ring-rose-800",
-  },
-};
-
-// BUG FIX: The original used parseISO on all strings without validating the result.
-// parseISO("Unknown") or other non-ISO strings silently produce Invalid Date, which
-// then crashes format(). This helper safely falls back to a dash.
-function safeFormatDate(date: Date | string): string {
-  try {
-    const parsed = typeof date === "string" ? parseISO(date) : date;
-    if (!isValid(parsed)) return "—";
-    return format(parsed, "dd MMM, HH:mm");
-  } catch {
-    return "—";
-  }
-}
-
-// Fallback config for unknown statuses so we never blow up on a missing key
-const fallbackConfig = statusConfig.scheduled;
-
-export function RecentActivityFeed({
-  data,
-  className,
-}: RecentActivityFeedProps) {
-  const inProgress = data.filter((d) => d.status === "in_progress").length;
+export function RecentActivityFeed({ data, className }: any) {
+  const inProgress = data?.filter((d: any) => d.status === "in_progress").length || 0;
+  const hasData = data && data.length > 0;
 
   return (
-    <div
-      className={cn(
-        "border border-border/60 rounded-xl overflow-hidden flex flex-col bg-card",
-        className,
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border/40 bg-muted/20 shrink-0">
-        <div className="p-2 rounded-xl bg-primary/10 border border-primary/10">
-          <Activity className="size-4 text-primary" />
-        </div>
+    <div className={cn("relative border border-border/60 bg-card flex flex-col rounded-2xl  overflow-hidden", className)}>
 
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-black uppercase tracking-widest leading-none">
-            Production Activity
-          </p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">
-            Latest runs
+      {/* ── Lab Tracking Header ─────────────────────────────────────────── */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border/50 bg-card/80 backdrop-blur-xl shrink-0 relative z-10">
+        <div className="flex items-center gap-3">
+          <div className="p-2 border border-primary/20 bg-primary/10 rounded-xl">
+            <Beaker className="size-4 text-primary" />
+          </div>
+          <p className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-1.5 leading-none">
+            Batch Tracking
           </p>
         </div>
-
-        <div className="flex items-center gap-1.5 shrink-0">
-          {inProgress > 0 && (
-            <Badge
-              variant="outline"
-              className="text-[9px] font-bold bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-400 gap-1"
-            >
-              <span className="size-1.5 rounded-full bg-blue-500 animate-pulse inline-block" />
-              {inProgress} live
-            </Badge>
-          )}
-          {data.length > 0 && (
-            <Badge
-              variant="outline"
-              className="text-[9px] font-bold bg-primary/5 border-primary/20 text-primary"
-            >
-              {data.length}
-            </Badge>
-          )}
+        <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          {inProgress > 0 ? (
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
+              <span className="size-1.5 bg-blue-500 animate-pulse rounded-full" />
+              {inProgress} Active
+            </span>
+          ) : (<span className="px-3 py-1 rounded-full bg-muted/50 border border-border/50">{data?.length || 0} Runs</span>)}
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 min-h-0">
-        {data.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 px-6 text-center h-full">
-            <div className="p-4 rounded-2xl bg-muted/40 mb-4 ring-1 ring-border/50">
-              <Package className="size-8 text-muted-foreground/40" />
-            </div>
-            <p className="text-xs font-bold text-muted-foreground">
-              No production runs yet
-            </p>
-            <p className="text-[10px] text-muted-foreground/60 mt-1 max-w-[160px]">
-              Activity will appear here once production starts.
-            </p>
+      {/* ── Log Output Area ─────────────────────────────────────────────── */}
+      <div className="flex-1 min-h-[300px] bg-background/50 relative z-10">
+        {!hasData ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="p-4 rounded-full bg-muted/30 mb-3"><Activity className="size-6 text-muted-foreground/40" /></div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">System Standby</p>
           </div>
         ) : (
-          <ScrollArea className="h-[300px]">
-            <div className="divide-y divide-border/30">
-              {data.map((item) => {
-                const config = statusConfig[item.status] ?? fallbackConfig;
-                const StatusIcon = config.icon;
-                const dateStr = safeFormatDate(item.date);
-                // Last 4 chars of batchId as a readable reference
-                const batchRef =
-                  item.batchId?.slice(-4).toUpperCase() ?? "????";
-
+          <ScrollArea className="h-full max-h-[440px]">
+            <div className="flex flex-col p-2 gap-2">
+              {data.map((item: any) => {
+                const isActive = item.status === 'in_progress';
                 return (
-                  <div
-                    key={item.id}
-                    className="group flex items-start gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors cursor-default"
-                  >
-                    {/* Status icon */}
-                    <div
-                      className={cn(
-                        "p-2 rounded-xl mt-0.5 shrink-0 ring-1 transition-all duration-200",
-                        "group-hover:scale-105 group-hover:",
-                        config.bgClass,
-                        config.ringClass,
-                      )}
-                    >
-                      <StatusIcon
-                        className={cn(
-                          "size-3.5",
-                          config.iconClass,
-                          item.status === "in_progress" && "animate-pulse",
-                        )}
-                      />
+                  <div key={item.id} className={cn(
+                    "flex flex-col gap-2.5 px-4 py-3.5 rounded-xl border transition-all duration-300",
+                    isActive ? "bg-blue-500/5 border-blue-500/20 shadow-[0_0_15px_-3px_rgba(59,130,246,0.1)]" : "bg-card border-border/50 hover:border-border hover:"
+                  )}>
+                    <div className="flex items-center justify-between text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        {/* Soft Glowing Status Light */}
+                        <div className={cn(
+                          "size-2 rounded-full",
+                          item.status === 'completed' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" :
+                            isActive ? "bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]" :
+                              item.status === 'scheduled' ? "bg-amber-500" : "bg-rose-500"
+                        )} />
+                        <span className={cn("font-mono text-[10px] font-bold uppercase", isActive ? "text-blue-500" : "text-muted-foreground")}>Batch #{item.batchId?.slice(-6).toUpperCase() || "000000"}</span>
+                      </div>
+                      {(() => {
+                        const dateObj = typeof item.date === 'string' ? parseISO(item.date) : new Date(item.date);
+                        return (
+                          <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase">
+                            {isValid(dateObj) ? format(dateObj, "dd MMM HH:mm") : "--:--"}
+                          </span>
+                        );
+                      })()}
                     </div>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0 space-y-1.5">
-                      {/* Title row */}
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold truncate leading-tight">
-                            {item.recipeName}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground truncate">
-                            {item.productName}
-                          </p>
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "text-[9px] px-1.5 h-4 shrink-0 font-bold",
-                            config.badgeClass,
-                          )}
-                        >
-                          {config.label}
-                        </Badge>
+                    <div className="flex items-start justify-between gap-4 pt-1">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold leading-tight text-foreground">{item.recipeName}</span>
+                        <span className="text-[10px] font-bold text-muted-foreground mt-1">{item.productName}</span>
                       </div>
-
-                      {/* Meta row */}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <div className="flex items-center gap-1 text-[10px]">
-                          <Box className="size-2.5 text-muted-foreground/50" />
-                          <span className="font-black text-primary tabular-nums">
-                            {item.cartonsProduced > 0
-                              ? `${item.cartonsProduced.toLocaleString()} CTNs`
-                              : `${item.containersProduced.toLocaleString()} Units`}
-                          </span>
-                        </div>
-
-                        <ArrowRight className="size-2.5 text-muted-foreground/30 shrink-0" />
-
-                        <div className="flex items-center gap-1">
-                          <User2 className="size-2.5 text-muted-foreground/50" />
-                          <span className="text-[10px] text-muted-foreground font-medium truncate max-w-[80px]">
-                            {item.operatorName !== "Unassigned"
-                              ? item.operatorName
-                              : `#${batchRef}`}
-                          </span>
-                        </div>
-
-                        <span className="text-[10px] text-muted-foreground/50 ml-auto font-medium tabular-nums">
-                          {dateStr}
+                      <div className="text-right shrink-0 flex flex-col items-end">
+                        <span className={cn("text-sm font-black tabular-nums flex items-center gap-1", isActive ? "text-blue-500" : "text-foreground")}>
+                          {item.cartonsProduced > 0 ? `${item.cartonsProduced.toLocaleString()} CTN` : `${item.containersProduced.toLocaleString()} EA`}
+                        </span>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mt-1 flex items-center gap-1">
+                          <ArrowRight className="size-2.5" />
+                          {item.operatorName !== "Unassigned" ? item.operatorName : "Automated"}
                         </span>
                       </div>
                     </div>

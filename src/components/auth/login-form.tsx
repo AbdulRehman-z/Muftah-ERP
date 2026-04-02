@@ -146,7 +146,7 @@ export const LoginForm = () => {
                   variant="default"
                   disabled={isPending}
                   type="submit"
-                  className="w-full h-11 font-medium text-[14px] rounded-lg shadow-sm active:scale-[0.98] transition-all"
+                  className="w-full h-11 font-medium text-[14px] rounded-lg  active:scale-[0.98] transition-all"
                 >
                   {isPending ? (
                     <>

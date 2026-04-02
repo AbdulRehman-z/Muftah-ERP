@@ -56,7 +56,7 @@ export const ResetPasswordForm = () => {
 
   return (
     <FormWrapper>
-      <Card className="border-border/60 shadow-lg">
+      <Card className="border-border/60 ">
         <CardHeader className="text-center pb-2">
           <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
           <CardDescription>

@@ -92,7 +92,7 @@ export const EmailVerification = ({ email }: Props) => {
             onClick={handleResendEmail}
             disabled={!canResend}
             variant={canResend ? "default" : "secondary"}
-            className="w-full h-10 font-medium text-[14px] rounded-lg shadow-sm active:scale-[0.98] transition-all"
+            className="w-full h-10 font-medium text-[14px] rounded-lg  active:scale-[0.98] transition-all"
           >
             {canResend ? "Resend Verification Email" : `Resend in ${timeToNextResend}s`}
           </Button>

@@ -108,7 +108,7 @@ export const ForgotPasswordForm = () => {
                       variant="default"
                       disabled={isPending}
                       type="submit"
-                      className="w-full h-10 font-medium text-[14px] rounded-lg shadow-sm active:scale-[0.98] transition-all"
+                      className="w-full h-10 font-medium text-[14px] rounded-lg  active:scale-[0.98] transition-all"
                     >
                       {isPending ? (
                         <>
@@ -143,7 +143,7 @@ export const ForgotPasswordForm = () => {
                 <Link
                   className={buttonVariants({
                     variant: "default",
-                    className: "w-full h-10 font-medium text-[14px] rounded-lg shadow-sm",
+                    className: "w-full h-10 font-medium text-[14px] rounded-lg ",
                   })}
                   to="/login"
                 >

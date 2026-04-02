@@ -10,73 +10,28 @@ import {
   Plus,
 } from "lucide-react";
 import { useState } from "react";
+import { motion, Variants } from "framer-motion";
 import { EmployeesTable } from "./employees-table";
 import { AddEmployeeSheet } from "./add-employee-sheet";
 import { cn } from "@/lib/utils";
 
-// ── Stat card ──────────────────────────────────────────────────────────────
+// ── Animation Variants ─────────────────────────────────────────────────────
 
-const StatCard = ({
-  icon: Icon,
-  label,
-  value,
-  sub,
-  accent,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: React.ReactNode;
-  sub: string;
-  accent: "blue" | "emerald" | "violet";
-}) => {
-  const accents = {
-    blue: {
-      wrap: "border-blue-100 dark:border-blue-900/40",
-      iconWrap: "bg-blue-100 dark:bg-blue-950/60",
-      icon: "text-blue-600 dark:text-blue-400",
-      strip: "bg-blue-500",
-    },
-    emerald: {
-      wrap: "border-emerald-100 dark:border-emerald-900/40",
-      iconWrap: "bg-emerald-100 dark:bg-emerald-950/60",
-      icon: "text-emerald-600 dark:text-emerald-400",
-      strip: "bg-emerald-500",
-    },
-    violet: {
-      wrap: "border-violet-100 dark:border-violet-900/40",
-      iconWrap: "bg-violet-100 dark:bg-violet-950/60",
-      icon: "text-violet-600 dark:text-violet-400",
-      strip: "bg-violet-500",
-    },
-  };
-  const a = accents[accent];
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.05 },
+  },
+};
 
-  return (
-    <div
-      className={cn(
-        "relative overflow-hidden rounded-2xl border bg-card p-5 transition-shadow hover:shadow-md",
-        a.wrap
-      )}
-    >
-      {/* Top accent strip */}
-      <div className={cn("absolute top-0 left-5 right-5 h-[2px] rounded-b-full opacity-60", a.strip)} />
-
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-3">
-          <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
-            {label}
-          </p>
-          <p className="text-3xl font-black tracking-tight text-foreground">
-            {value}
-          </p>
-          <p className="text-xs text-muted-foreground">{sub}</p>
-        </div>
-        <div className={cn("rounded-xl p-2.5 shrink-0", a.iconWrap)}>
-          <Icon className={cn("size-5", a.icon)} strokeWidth={2} />
-        </div>
-      </div>
-    </div>
-  );
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 15 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 30 },
+  },
 };
 
 // ── Container ──────────────────────────────────────────────────────────────
@@ -103,81 +58,147 @@ export const EmployeeListContainer = () => {
     .reduce((acc, curr) => acc + parseFloat(curr.standardSalary || "0"), 0);
 
   return (
-    <div className="space-y-6">
+    <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6 font-sans antialiased">
 
       {/* ── Page header ─────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border bg-card px-6 py-5">
-        <div className="space-y-0.5">
-          <h1 className="text-xl font-black tracking-tight flex items-center gap-2.5">
-            <Users className="size-5 text-primary" />
+      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-none border border-border bg-card px-6 py-5 shadow-none">
+        <div className="space-y-1.5">
+          <h1 className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2.5">
+            <div className="p-1.5 bg-primary/10 border border-primary/20">
+              <Users className="size-4 text-primary" />
+            </div>
             Employee Directory
           </h1>
-          <p className="text-xs text-muted-foreground font-medium">
-            {employees.length} employees &middot; {activeCount} active
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+            <span>{employees.length} total</span>
+            <span>&middot;</span>
+            <span className="text-emerald-600 dark:text-emerald-500">{activeCount} active</span>
             {inactiveCount > 0 && (
-              <span className="text-rose-500 dark:text-rose-400">
-                {" "}&middot; {inactiveCount} inactive
-              </span>
+              <>
+                <span>&middot;</span>
+                <span className="text-rose-500 dark:text-rose-400">
+                  {inactiveCount} inactive
+                </span>
+              </>
             )}
           </p>
         </div>
 
         <Button
           onClick={() => setOpenAddSheet(true)}
-          className="sm:w-auto gap-2 h-9 font-bold text-sm"
+          className="sm:w-auto gap-2 h-10 px-5 rounded-none shadow-none font-bold text-[13px]"
         >
           <Plus className="size-4" strokeWidth={2.5} />
           Add Employee
         </Button>
-      </div>
+      </motion.div>
 
-      {/* ── Stat cards ──────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard
+      {/* ── Sharp KPI Cards ─────────────────────────────────────────── */}
+      <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <SharpKPICard
           icon={UserCheck}
-          accent="blue"
+          theme="blue"
           label="Total Employees"
           value={employees.length}
-          sub={`${activeCount} active · ${inactiveCount} inactive`}
+          subtext={`${activeCount} active · ${inactiveCount} inactive`}
         />
-        <StatCard
+        <SharpKPICard
           icon={UserPlus}
-          accent="emerald"
+          theme="emerald"
           label="New Hires This Month"
           value={newHires}
-          sub={newHires === 0 ? "No new hires yet" : "Recently onboarded"}
+          subtext={newHires === 0 ? "No new hires yet" : "Recently onboarded"}
         />
-        <StatCard
+        <SharpKPICard
           icon={Wallet}
-          accent="violet"
+          theme="violet"
           label="Est. Monthly Payroll"
           value={
-            <span className="text-2xl">
-              <span className="text-base font-bold text-muted-foreground mr-1">PKR</span>
-              {totalPayroll.toLocaleString()}
-            </span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-sm font-bold text-muted-foreground">PKR</span>
+              <span>{totalPayroll.toLocaleString()}</span>
+            </div>
           }
-          sub="Active employees only"
+          subtext="Active employees only"
         />
-      </div>
+      </motion.div>
 
       {/* ── Table ───────────────────────────────────────────────────── */}
-      <div className="rounded-2xl border bg-card overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b bg-muted/20">
+      <motion.div variants={itemVariants} className="rounded-none border border-border bg-card shadow-none">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-transparent">
           <div>
-            <p className="text-sm font-bold">All Employees</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-xs font-bold uppercase tracking-widest text-foreground">All Employees</p>
+            <p className="text-[10px] font-semibold text-muted-foreground mt-1 uppercase tracking-widest">
               Manage roles, compensation, and team details.
             </p>
           </div>
-          <TrendingUp className="size-4 text-muted-foreground/40" />
+          <div className="p-2 border border-border bg-muted/10">
+            <TrendingUp className="size-4 text-muted-foreground" />
+          </div>
         </div>
-        <div className="p-4">
+        <div className="p-0 sm:p-4">
           <EmployeesTable data={employees} />
+        </div>
+      </motion.div>
+
+      <AddEmployeeSheet open={openAddSheet} onOpenChange={setOpenAddSheet} />
+    </motion.div>
+  );
+};
+
+// ── Sharp Pixel-Perfect KPI Component ───────────────────────────────────────
+
+type KPITheme = "blue" | "rose" | "emerald" | "violet" | "amber";
+
+const sharpThemeStyles = {
+  blue: { border: "border-t-blue-500", iconBg: "bg-blue-500/10", iconText: "text-blue-500" },
+  rose: { border: "border-t-rose-500", iconBg: "bg-rose-500/10", iconText: "text-rose-500" },
+  emerald: { border: "border-t-emerald-500", iconBg: "bg-emerald-500/10", iconText: "text-emerald-500" },
+  violet: { border: "border-t-violet-500", iconBg: "bg-violet-500/10", iconText: "text-violet-500" },
+  amber: { border: "border-t-amber-500", iconBg: "bg-amber-500/10", iconText: "text-amber-500" },
+};
+
+function SharpKPICard({
+  label,
+  value,
+  subtext,
+  icon: Icon,
+  theme
+}: {
+  label: string;
+  value: React.ReactNode;
+  subtext: string;
+  icon: any;
+  theme: KPITheme
+}) {
+  const styles = sharpThemeStyles[theme];
+
+  return (
+    <motion.div
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      className={cn(
+        "relative flex flex-col justify-between p-5 bg-card border border-border rounded-none shadow-none",
+        "border-t-2",
+        styles.border
+      )}
+    >
+      {/* Technical Grid Pattern */}
+      <div
+        className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04] pointer-events-none"
+        style={{ backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`, backgroundSize: "8px 8px" }}
+      />
+
+      <div className="relative z-10 flex items-start justify-between mb-8">
+        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{label}</p>
+        <div className={cn("p-1.5 rounded-none", styles.iconBg)}>
+          <Icon className={cn("size-4", styles.iconText)} />
         </div>
       </div>
 
-      <AddEmployeeSheet open={openAddSheet} onOpenChange={setOpenAddSheet} />
-    </div>
+      <div className="relative z-10 space-y-1">
+        <div className="text-3xl font-bold tracking-tight text-foreground">{value}</div>
+        <p className="text-xs font-medium text-muted-foreground/70">{subtext}</p>
+      </div>
+    </motion.div>
   );
-};
+}

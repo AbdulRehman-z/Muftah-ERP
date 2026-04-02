@@ -68,10 +68,10 @@ interface Props {
 // ── Status config ──────────────────────────────────────────────────────────
 
 const STATUS_OPTIONS = [
-    { value: "present", label: "Present", color: "text-emerald-600 dark:text-emerald-500", activeBg: "bg-background shadow-sm border border-border/40 text-emerald-600" },
-    { value: "absent", label: "Absent", color: "text-rose-600 dark:text-rose-500", activeBg: "bg-background shadow-sm border border-border/40 text-rose-600" },
-    { value: "leave", label: "On Leave", color: "text-amber-600 dark:text-amber-500", activeBg: "bg-background shadow-sm border border-border/40 text-amber-600" },
-    { value: "holiday", label: "Holiday", color: "text-blue-600 dark:text-blue-500", activeBg: "bg-background shadow-sm border border-border/40 text-blue-600" },
+    { value: "present", label: "Present", color: "text-emerald-600 dark:text-emerald-500", activeBg: "bg-background  border border-border/40 text-emerald-600" },
+    { value: "absent", label: "Absent", color: "text-rose-600 dark:text-rose-500", activeBg: "bg-background  border border-border/40 text-rose-600" },
+    { value: "leave", label: "On Leave", color: "text-amber-600 dark:text-amber-500", activeBg: "bg-background  border border-border/40 text-amber-600" },
+    { value: "holiday", label: "Holiday", color: "text-blue-600 dark:text-blue-500", activeBg: "bg-background  border border-border/40 text-blue-600" },
 ] as const;
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -375,7 +375,7 @@ export const BulkAttendanceSheet = ({
                                     className={cn(
                                         "flex-1 rounded-md py-1.5 text-[12px] font-semibold transition-all duration-150 focus:outline-none",
                                         conflictStrategy === strategy
-                                            ? "bg-background text-foreground shadow-sm border border-border/40"
+                                            ? "bg-background text-foreground  border border-border/40"
                                             : "text-muted-foreground hover:text-foreground border border-transparent",
                                     )}
                                 >

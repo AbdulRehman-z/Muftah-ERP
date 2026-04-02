@@ -67,7 +67,7 @@ export const OperatorInterface = () => {
       {activeRuns.map((run) => (
         <Card
           key={run.id}
-          className="overflow-hidden border-border/60 shadow-sm"
+          className="overflow-hidden border-border/60 "
         >
           {/* Refined Header Block */}
           <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 px-5 bg-muted/20 border-b border-border/50">
@@ -96,7 +96,7 @@ export const OperatorInterface = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
 
               {/* Sleek Data Metrics */}
-              <div className="flex flex-col p-4 rounded-xl border border-border/60 bg-background shadow-sm">
+              <div className="flex flex-col p-4 rounded-xl border border-border/60 bg-background ">
                 <div className="flex items-center gap-1.5 text-muted-foreground mb-2">
                   <ClipboardList className="size-4" />
                   <span className="text-[12.5px] font-medium uppercase tracking-wide">Recipe Assigned</span>
@@ -106,7 +106,7 @@ export const OperatorInterface = () => {
                 </p>
               </div>
 
-              <div className="flex flex-col p-4 rounded-xl border border-border/60 bg-background shadow-sm">
+              <div className="flex flex-col p-4 rounded-xl border border-border/60 bg-background ">
                 <div className="flex items-center gap-1.5 text-muted-foreground mb-2">
                   <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-500" />
                   <span className="text-[12.5px] font-medium uppercase tracking-wide">Target Output</span>
@@ -169,7 +169,7 @@ export const OperatorInterface = () => {
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
-                    className="h-10 px-6 text-[13px] font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-transform active:scale-[0.98]"
+                    className="h-10 px-6 text-[13px] font-medium bg-emerald-600 hover:bg-emerald-700 text-white  transition-transform active:scale-[0.98]"
                     disabled={completeProduction.isPending}
                   >
                     {completeProduction.isPending ? (

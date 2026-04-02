@@ -319,7 +319,7 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
                       className={cn(
                         "rounded-md py-1.5 text-[13px] font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         field.state.value === s
-                          ? `bg-background shadow-sm border border-border/40 ${statusConfig[s].color}`
+                          ? `bg-background  border border-border/40 ${statusConfig[s].color}`
                           : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-transparent"
                       )}
                     >
@@ -636,7 +636,7 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
                                   className={cn(
                                     "flex-1 rounded-md py-1.5 text-[13px] font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                                     field.state.value === value
-                                      ? "bg-background text-foreground shadow-sm border border-border/40"
+                                      ? "bg-background text-foreground  border border-border/40"
                                       : "text-muted-foreground hover:text-foreground border border-transparent"
                                   )}
                                 >
@@ -837,7 +837,7 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-10 text-[13px] font-medium rounded-lg shadow-sm active:scale-[0.99] transition-all duration-200"
+              className="w-full h-10 text-[13px] font-medium rounded-lg  active:scale-[0.99] transition-all duration-200"
             >
               {isSubmitting ? (
                 <>

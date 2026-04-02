@@ -486,7 +486,7 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
                             "flex-1 h-9 rounded-lg text-[12px] font-semibold border transition-all duration-150",
                             "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
                             isRest
-                              ? "bg-rose-50 border-rose-200 text-rose-700 shadow-sm dark:bg-rose-950/30 dark:border-rose-800/60 dark:text-rose-400"
+                              ? "bg-rose-50 border-rose-200 text-rose-700  dark:bg-rose-950/30 dark:border-rose-800/60 dark:text-rose-400"
                               : "bg-background border-border/60 text-muted-foreground hover:bg-muted/40 hover:text-foreground",
                           )}
                         >

@@ -1,19 +1,15 @@
-import {
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  DollarSign,
-  ChartNoAxesColumnIncreasing,
-  Wallet,
-  Users,
-  Factory,
-  Package,
-  Boxes,
-  Warehouse,
-  Receipt,
-  HandCoins,
-} from "lucide-react";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  IsoMixingVat,
+  IsoBottlingLine,
+  IsoExpenseSilo,
+  IsoYieldPacker,
+  IsoNetYieldChart,
+  IsoStaffTerminal,
+  IsoStockDrums,
+  IsoWarehouseRack
+} from "@/components/illustrations/dashboard-isometric";
 
 function formatPKR(value: number): string {
   const sign = value < 0 ? "-" : "";
@@ -23,7 +19,7 @@ function formatPKR(value: number): string {
   return `${sign}₨ ${abs.toLocaleString()}`;
 }
 
-interface KpiData {
+export interface KpiData {
   totalRevenue: number;
   invoiceCount: number;
   activeProductionRuns: number;
@@ -39,250 +35,145 @@ interface KpiData {
   activeEmployees: number;
 }
 
-interface DashboardKpiCardsProps {
-  data: KpiData;
-}
-
-export function DashboardKpiCards({ data }: DashboardKpiCardsProps) {
+export function DashboardKpiCards({ data }: { data: KpiData }) {
   const profitPositive = data.netProfit > 0;
-  const profitNeutral = data.netProfit === 0;
-
-  const profitMargin =
-    data.totalRevenue > 0
-      ? ((data.netProfit / data.totalRevenue) * 100).toFixed(1)
-      : data.netProfit < 0
-        ? "-100"
-        : "0.0";
+  const profitMargin = data.totalRevenue > 0 ? ((data.netProfit / data.totalRevenue) * 100).toFixed(1) : "0.0";
 
   return (
     <div className="space-y-4">
-      {/* Row 1: Financial KPIs — highlighted */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <KpiCard
-          title="Total Revenue"
+      {/* ── Top Row: Physical Manufacturing Operations ─────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <PremiumSaaSCard
+          title="Gross Revenue"
           value={formatPKR(data.totalRevenue)}
-          subtext={`${data.invoiceCount} paid invoice${data.invoiceCount !== 1 ? "s" : ""} this period`}
+          trendLabel={data.totalRevenue > 0 ? "Earning" : "Idle"}
           trend={data.totalRevenue > 0 ? "up" : "neutral"}
-          trendLabel={data.totalRevenue > 0 ? "Earning" : "No sales"}
-          icon={DollarSign}
-          accent="emerald"
+          theme="emerald"
+          Illustration={IsoMixingVat}
         />
-        <KpiCard
-          title="Net Profit / Loss"
-          value={formatPKR(data.netProfit)}
-          subtext={
-            profitNeutral
-              ? "Break-even"
-              : profitPositive
-                ? `${profitMargin}% profit margin`
-                : `Revenue doesn't cover expenses`
-          }
-          trend={profitPositive ? "up" : profitNeutral ? "neutral" : "down"}
-          trendLabel={
-            profitPositive
-              ? `+${profitMargin}%`
-              : profitNeutral
-                ? "Break-even"
-                : "Loss"
-          }
-          icon={ChartNoAxesColumnIncreasing}
-          accent={profitPositive ? "emerald" : profitNeutral ? "amber" : "rose"}
-          highlighted={!profitNeutral}
+        <PremiumSaaSCard
+          title="Production Runs"
+          value={data.activeProductionRuns.toString()}
+          trendLabel={data.activeProductionRuns > 0 ? "Running" : "Standby"}
+          trend={data.activeProductionRuns > 0 ? "up" : "neutral"}
+          theme="blue"
+          Illustration={IsoBottlingLine}
         />
-        <KpiCard
-          title="Expenses"
+        <PremiumSaaSCard
+          title="Operational Burn"
           value={formatPKR(data.totalExpenses)}
-          subtext={`Non-payroll operational costs`}
+          trendLabel="Non-Payroll"
           trend="neutral"
-          trendLabel="Operational"
-          icon={Receipt}
-          accent="amber"
+          theme="rose"
+          Illustration={IsoExpenseSilo}
         />
-        <KpiCard
-          title="Payroll Cost"
-          value={formatPKR(data.totalPayrollCost)}
-          subtext={`${data.activeEmployees} active employee${data.activeEmployees !== 1 ? "s" : ""}`}
-          trend="neutral"
-          trendLabel={`₨ ${data.activeEmployees > 0 ? Math.round(data.totalPayrollCost / data.activeEmployees).toLocaleString() : 0}/head`}
-          icon={HandCoins}
-          accent="violet"
+        <PremiumSaaSCard
+          title="Cartons Yield"
+          value={data.totalCartonsProduced.toLocaleString()}
+          trendLabel="Output Vol"
+          trend={data.totalCartonsProduced > 0 ? "up" : "neutral"}
+          theme="cyan"
+          Illustration={IsoYieldPacker}
         />
       </div>
 
-      {/* Row 2: Operational KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <KpiCard
-          title="Production Runs"
-          value={data.activeProductionRuns.toString()}
-          subtext={`${data.completedProductionRuns} completed this period`}
-          trend={data.activeProductionRuns > 0 ? "up" : "neutral"}
-          trendLabel={data.activeProductionRuns > 0 ? "In progress" : "Idle"}
-          icon={Factory}
-          accent="sky"
+      {/* ── Bottom Row: Fiscal & Resource Analytics ────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <PremiumSaaSCard
+          title="Net Yield / Deficit"
+          value={formatPKR(data.netProfit)}
+          trendLabel={profitPositive ? `${profitMargin}% Margin` : "Loss"}
+          trend={profitPositive ? "up" : "down"}
+          theme={profitPositive ? "emerald" : "rose"}
+          Illustration={IsoNetYieldChart}
         />
-        <KpiCard
-          title="Cartons Produced"
-          value={data.totalCartonsProduced.toLocaleString()}
-          subtext="This period"
-          trend={data.totalCartonsProduced > 0 ? "up" : "neutral"}
-          trendLabel={data.totalCartonsProduced > 0 ? "On track" : "None yet"}
-          icon={Package}
-          accent="emerald"
-        />
-        <KpiCard
-          title="Raw Stock Value"
-          value={formatPKR(data.rawStockValue)}
-          subtext="Chemicals + packaging"
+        <PremiumSaaSCard
+          title="Payroll Liabilities"
+          value={formatPKR(data.totalPayrollCost)}
+          trendLabel={`${data.activeEmployees} Staff`}
           trend="neutral"
-          trendLabel="Current"
-          icon={Boxes}
-          accent="amber"
+          theme="violet"
+          Illustration={IsoStaffTerminal}
         />
-        <KpiCard
-          title="Finished Goods"
+        <PremiumSaaSCard
+          title="Raw Stock Capital"
+          value={formatPKR(data.rawStockValue)}
+          trendLabel="Materials"
+          trend="neutral"
+          theme="amber"
+          Illustration={IsoStockDrums}
+        />
+        <PremiumSaaSCard
+          title="Finished Goods Asset"
           value={formatPKR(data.finishedStockValue)}
-          subtext="Warehouse stock value"
+          trendLabel="Warehouse"
           trend={data.finishedStockValue > 0 ? "up" : "neutral"}
-          trendLabel={data.finishedStockValue > 0 ? "In stock" : "Empty"}
-          icon={Warehouse}
-          accent="sky"
+          theme="sky"
+          Illustration={IsoWarehouseRack}
         />
       </div>
     </div>
   );
 }
 
-type Accent = "emerald" | "rose" | "amber" | "sky" | "violet";
+// ─────────────────────────────────────────────────────────────────────────────
+// UNIFIED PREMIUM SAAS CARD UI
+// ─────────────────────────────────────────────────────────────────────────────
 
-const accentStyles: Record<
-  Accent,
-  {
-    icon: string;
-    badge: string;
-    badgeText: string;
-    iconBg: string;
-    gradient: string;
-  }
-> = {
-  emerald: {
-    icon: "text-emerald-600 dark:text-emerald-400",
-    iconBg: "bg-emerald-100/80 dark:bg-emerald-950/50",
-    badge:
-      "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800",
-    badgeText: "text-emerald-700 dark:text-emerald-400",
-    gradient: "from-emerald-500/10 via-transparent to-transparent",
-  },
-  rose: {
-    icon: "text-rose-600 dark:text-rose-400",
-    iconBg: "bg-rose-100/80 dark:bg-rose-950/50",
-    badge:
-      "bg-rose-50 border-rose-200 dark:bg-rose-950/40 dark:border-rose-800",
-    badgeText: "text-rose-700 dark:text-rose-400",
-    gradient: "from-rose-500/10 via-transparent to-transparent",
-  },
-  amber: {
-    icon: "text-amber-600 dark:text-amber-400",
-    iconBg: "bg-amber-100/80 dark:bg-amber-950/50",
-    badge:
-      "bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800",
-    badgeText: "text-amber-700 dark:text-amber-400",
-    gradient: "from-amber-500/10 via-transparent to-transparent",
-  },
-  sky: {
-    icon: "text-sky-600 dark:text-sky-400",
-    iconBg: "bg-sky-100/80 dark:bg-sky-950/50",
-    badge: "bg-sky-50 border-sky-200 dark:bg-sky-950/40 dark:border-sky-800",
-    badgeText: "text-sky-700 dark:text-sky-400",
-    gradient: "from-sky-500/10 via-transparent to-transparent",
-  },
-  violet: {
-    icon: "text-violet-600 dark:text-violet-400",
-    iconBg: "bg-violet-100/80 dark:bg-violet-950/50",
-    badge:
-      "bg-violet-50 border-violet-200 dark:bg-violet-950/40 dark:border-violet-800",
-    badgeText: "text-violet-700 dark:text-violet-400",
-    gradient: "from-violet-500/10 via-transparent to-transparent",
-  },
-};
-
-function KpiCard({
-  title,
-  value,
-  subtext,
-  trend,
-  trendLabel,
-  icon: Icon,
-  accent,
-  highlighted,
-}: {
+interface PremiumSaaSCardProps {
   title: string;
   value: string;
-  subtext: string;
-  trend: "up" | "down" | "neutral";
   trendLabel: string;
-  icon: React.ElementType;
-  accent: Accent;
-  highlighted?: boolean;
-}) {
-  const TrendIcon =
-    trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Minus;
+  trend: "up" | "down" | "neutral";
+  theme: "emerald" | "blue" | "rose" | "cyan" | "violet" | "amber" | "sky";
+  Illustration: React.ElementType;
+}
 
-  const colors = accentStyles[accent];
+function PremiumSaaSCard({ title, value, trend, trendLabel, theme, Illustration }: PremiumSaaSCardProps) {
+  const TrendIcon = trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Minus;
+
+  // Extremely clean, modern aesthetic. Light/Dark mode compatible.
+  // We use very subtle top borders to hint at the color theme, keeping the rest of the card pristine.
+  const styleMap: Record<PremiumSaaSCardProps["theme"], string> = {
+    emerald: "border-t-emerald-500 text-emerald-600 dark:text-emerald-500",
+    blue: "border-t-blue-500 text-blue-600 dark:text-blue-500",
+    rose: "border-t-rose-500 text-rose-600 dark:text-rose-500",
+    cyan: "border-t-cyan-500 text-cyan-600 dark:text-cyan-500",
+    violet: "border-t-violet-500 text-violet-600 dark:text-violet-500",
+    amber: "border-t-amber-500 text-amber-600 dark:text-amber-500",
+    sky: "border-t-sky-500 text-sky-600 dark:text-sky-500",
+  };
+
+  const colors = styleMap[theme];
 
   return (
-    <div
-      className={cn(
-        "relative rounded-xl border bg-card p-4 flex flex-col gap-3 group",
-        "hover:shadow-md transition-all duration-300 ease-out",
-        "overflow-hidden",
-        highlighted
-          ? "border-2 shadow-sm"
-          : "border-border/60",
-        highlighted && accent === "rose" && "border-rose-300 dark:border-rose-800",
-        highlighted && accent === "emerald" && "border-emerald-300 dark:border-emerald-800",
-      )}
-    >
-      {/* Gradient accent background */}
-      <div
-        className={cn(
-          "absolute inset-0 bg-gradient-to-br opacity-50 pointer-events-none",
-          colors.gradient,
-        )}
-      />
+    <div className={cn(
+      "relative h-[180px] bg-card border border-border rounded-xl p-5 flex flex-col justify-between overflow-hidden group  hover:shadow-md transition-all duration-300 border-t-2",
+      colors.split(" ")[0] // Applies the specific border-t color
+    )}>
 
-      {/* Top row: icon + trend badge */}
-      <div className="relative flex items-center justify-between">
-        <div className={cn("p-2.5 rounded-xl", colors.iconBg)}>
-          <Icon className={cn("size-4.5", colors.icon)} />
-        </div>
+      {/* 3D Scene Container (Right aligned, slightly scaled up for depth) */}
+      <div className="absolute right-[-10%] bottom-[-5%] w-[200px] h-[200px] pointer-events-none z-0 group-hover:scale-105 transition-transform duration-500 ease-out">
+        <Illustration />
+      </div>
 
-        <div
-          className={cn(
-            "flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border",
-            colors.badge,
-            colors.badgeText,
-          )}
-        >
-          <TrendIcon className="size-2.5" />
-          {trendLabel}
+      {/* Top Badge */}
+      <div className="relative z-10 flex items-start">
+        <div className={cn(
+          "flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border bg-background/80 backdrop-blur-sm",
+          colors.split(" ")[1], // Text color
+          colors.split(" ")[2]  // Dark mode text color
+        )}>
+          <TrendIcon className="size-3" />
+          <span className="text-[9px] font-bold uppercase tracking-widest">{trendLabel}</span>
         </div>
       </div>
 
-      {/* Value */}
-      <div className="relative">
-        <p className="text-2xl font-black tracking-tight tabular-nums leading-none mb-1">
-          {value}
-        </p>
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-          {title}
-        </p>
+      {/* Typography */}
+      <div className="relative z-10 mt-auto">
+        <h3 className="text-2xl font-black tracking-tight text-foreground mb-1 tabular-nums drop-">{value}</h3>
+        <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{title}</p>
       </div>
-
-      {/* Divider */}
-      <div className="h-px bg-border/40" />
-
-      {/* Subtext */}
-      <p className="relative text-xs text-muted-foreground leading-snug">{subtext}</p>
     </div>
   );
 }

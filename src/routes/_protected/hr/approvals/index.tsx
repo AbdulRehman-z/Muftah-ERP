@@ -61,7 +61,7 @@ function ApprovalsPage() {
             <TabsList className="bg-muted/50 p-1 h-10 rounded-lg border border-border/40 mb-6 w-full sm:w-auto flex">
               <TabsTrigger
                 value="overtime"
-                className="gap-2 px-4 h-8 text-[13px] font-medium text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md transition-all"
+                className="gap-2 px-4 h-8 text-[13px] font-medium text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-background data-[state=active]: rounded-md transition-all"
               >
                 <Clock className="size-3.5 opacity-70" />
                 Overtime
@@ -69,7 +69,7 @@ function ApprovalsPage() {
 
               <TabsTrigger
                 value="leave"
-                className="gap-2 px-4 h-8 text-[13px] font-medium text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md transition-all"
+                className="gap-2 px-4 h-8 text-[13px] font-medium text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-background data-[state=active]: rounded-md transition-all"
               >
                 <CalendarX className="size-3.5 opacity-70" />
                 Leave Requests
@@ -77,7 +77,7 @@ function ApprovalsPage() {
 
               <TabsTrigger
                 value="advances"
-                className="gap-2 px-4 h-8 text-[13px] font-medium text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md transition-all"
+                className="gap-2 px-4 h-8 text-[13px] font-medium text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-background data-[state=active]: rounded-md transition-all"
               >
                 <Banknote className="size-3.5 opacity-70" />
                 Salary Advances

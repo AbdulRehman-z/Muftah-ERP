@@ -100,12 +100,11 @@ export const supplierSchema = z.object({
   supplierName: z.string().min(2, "Name is required"),
   supplierShopName: z.string().min(2, "Name is required"),
   email: z
-    .string()
     .email("Invalid email")
     .optional()
     .or(z.literal(""))
     .nullable(),
-  nationalId: z.string().min(1, "National ID is required"),
+  nationalId: z.string().min(1, "National ID is required").optional(),
   phone: z.string().min(1, "Phone is required"),
   address: z.string().min(1, "Address is required"),
   city: z.string().optional(),

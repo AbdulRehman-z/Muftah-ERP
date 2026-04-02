@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, UserRoundPen, MonitorDot, Ban, Trash2, Users } from "lucide-react";
 import { DataTable } from "@/components/custom/data-table";
 import { AddUserDialog } from "@/components/user-management/add-user-dialog";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -9,8 +9,30 @@ import { ResponsiveDialog } from "@/components/custom/responsive-dialog";
 import { EditUserForm } from "@/components/user-management/edit-user-form";
 import { UserSessionsList } from "@/components/user-management/user-sessions-list";
 import { UserDangerZone } from "@/components/user-management/user-danger-zone";
-import { UserRoundPen, MonitorDot, Ban, Trash2 } from "lucide-react";
 import { columns, UserAction, User } from "./user-actions";
+import { motion, Variants } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+// ── Animation Variants ─────────────────────────────────────────────────────
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.05 },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 15 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 30 },
+  },
+};
+
+// ── Component ──────────────────────────────────────────────────────────────
 
 export const UsersTable = () => {
   const [search, setSearch] = useState("");
@@ -35,27 +57,33 @@ export const UsersTable = () => {
   );
 
   return (
-    <div className="space-y-4">
-      <DataTable
-        columns={columns(handleAction)}
-        data={filteredUsers as any}
-        searchValue={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Search by name or email…"
-        showPagination
-        pageSize={10}
-        actions={
-          <Button
-            size="sm"
-            onClick={() => setIsAddUserOpen(true)}
-            className="h-8 gap-1.5 px-3 text-[12px] font-medium rounded-lg"
-          >
-            <Plus className="size-3.5" />
-            New User
-          </Button>
-        }
-      />
+    <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6 font-sans antialiased">
 
+      {/* ── Table Container ───────────────────────────────────────────── */}
+      <motion.div variants={itemVariants} className="border border-border bg-card rounded-none shadow-none overflow-hidden">
+        <div className="p-0 sm:p-2">
+          <DataTable
+            columns={columns(handleAction)}
+            data={filteredUsers as any}
+            searchValue={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search by name or email…"
+            showPagination
+            pageSize={10}
+            className="border-none shadow-none rounded-none"
+            actions={
+              <Button
+                onClick={() => setIsAddUserOpen(true)}
+              >
+                <Plus className="size-4" />
+                New User
+              </Button>
+            }
+          />
+        </div>
+      </motion.div>
+
+      {/* ── Modals / Dialogs ──────────────────────────────────────────── */}
       <AddUserDialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen} />
 
       {/* Edit */}
@@ -64,7 +92,7 @@ export const UsersTable = () => {
         onOpenChange={(open) => !open && closeAction()}
         title="Edit User"
         description={`Updating details for ${activeAction?.user?.name ?? ""}`}
-        className="sm:max-w-xl"
+        className="sm:max-w-xl rounded-none border-border shadow-none"
         icon={UserRoundPen}
       >
         {activeAction?.user && (
@@ -78,7 +106,7 @@ export const UsersTable = () => {
         onOpenChange={(open) => !open && closeAction()}
         title="Active Sessions"
         description={`Login devices for ${activeAction?.user?.email ?? ""}`}
-        className="sm:max-w-md"
+        className="sm:max-w-md rounded-none border-border shadow-none"
         icon={MonitorDot}
       >
         {activeAction?.user && <UserSessionsList userId={activeAction.user.id} />}
@@ -90,7 +118,7 @@ export const UsersTable = () => {
         onOpenChange={(open) => !open && closeAction()}
         title={activeAction?.user?.banned ? "Unban Account" : "Ban Account"}
         description={`Manage access for ${activeAction?.user?.name ?? ""}`}
-        className="sm:max-w-md"
+        className="sm:max-w-md rounded-none border-border shadow-none"
         icon={Ban}
       >
         {activeAction?.user && (
@@ -108,7 +136,7 @@ export const UsersTable = () => {
         onOpenChange={(open) => !open && closeAction()}
         title="Delete User"
         description="This action permanently removes all user data."
-        className="sm:max-w-md"
+        className="sm:max-w-md rounded-none border-border shadow-none"
         icon={Trash2}
       >
         {activeAction?.user && (
@@ -119,6 +147,6 @@ export const UsersTable = () => {
           />
         )}
       </ResponsiveDialog>
-    </div>
+    </motion.div>
   );
 };

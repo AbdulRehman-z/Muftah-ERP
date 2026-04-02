@@ -264,6 +264,8 @@ CREATE TABLE "payslips" (
 	"gross_salary" numeric(12, 2) NOT NULL,
 	"total_deductions" numeric(12, 2) NOT NULL,
 	"net_salary" numeric(12, 2) NOT NULL,
+	"arrears_amount" numeric(12, 2) DEFAULT '0',
+	"arrears_from_months" jsonb DEFAULT '[]'::jsonb,
 	"payment_source" text,
 	"remarks" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,

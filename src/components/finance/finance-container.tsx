@@ -1,5 +1,6 @@
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { motion, Variants } from "framer-motion";
 import {
     getWalletsListFn,
     getTransactionsFn,
@@ -18,7 +19,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 import {
     Select,
     SelectContent,
@@ -44,6 +44,26 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+// ── Animation Variants ─────────────────────────────────────────────────────
+
+const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: { staggerChildren: 0.1, delayChildren: 0.05 },
+    },
+};
+
+const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 15 },
+    show: {
+        opacity: 1,
+        y: 0,
+        transition: { type: "spring", stiffness: 300, damping: 30 },
+    },
+};
 
 export const FinanceContainer = () => {
     const { data: wallets } = useSuspenseQuery({
@@ -80,15 +100,16 @@ export const FinanceContainer = () => {
     const totalExpenses = expenses.data.reduce(
         (sum: number, e) => sum + parseFloat(e.amount || "0"), 0,
     );
+
     return (
-        <div className="space-y-6">
-            {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6 font-sans antialiased">
+            {/* ── Toolbar ───────────────────────────────────────────────────── */}
+            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-2 flex-wrap">
                     <Button
                         variant="outline"
                         size="sm"
-                        className="h-9 gap-2 font-semibold"
+                        className="h-10 px-4 rounded-none shadow-none border-border hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition-colors gap-2 font-bold"
                         onClick={() => setIsDepositOpen(true)}
                         disabled={wallets.length === 0}
                     >
@@ -97,121 +118,119 @@ export const FinanceContainer = () => {
                     <Button
                         variant="outline"
                         size="sm"
-                        className="h-9 gap-2 font-semibold"
+                        className="h-10 px-4 rounded-none shadow-none border-border hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition-colors gap-2 font-bold"
                         onClick={() => setIsExpenseOpen(true)}
                         disabled={wallets.length === 0}
                     >
-                        <ReceiptIcon className="size-3.5 text-amber-600" /> Record Expense
+                        <ReceiptIcon className="size-3.5 text-rose-600" /> Record Expense
                     </Button>
                 </div>
                 <Button
                     size="sm"
-                    className="h-9 gap-2 font-semibold"
+                    className="h-10 px-4 rounded-none shadow-none gap-2 font-bold"
                     onClick={() => setIsCreateWalletOpen(true)}
                 >
                     <PlusIcon className="size-3.5" /> New Account
                 </Button>
-            </div>
+            </motion.div>
 
-            {/* KPI Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <KPICard
+            {/* ── Sharp KPI Summary Cards ────────────────────────────────────── */}
+            <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <SharpKPICard
                     label="Total Balance"
                     value={`₨ ${totalBalance.toLocaleString()}`}
                     icon={TrendingUpIcon}
-                    color="text-emerald-600"
-                    bgColor="bg-emerald-50 dark:bg-emerald-950/20"
+                    theme="emerald"
                 />
-                <KPICard
+                <SharpKPICard
                     label="Cash Balance"
                     value={`₨ ${cashBalance.toLocaleString()}`}
                     icon={BanknoteIcon}
-                    color="text-violet-600"
-                    bgColor="bg-violet-50 dark:bg-violet-950/20"
+                    theme="violet"
                     subtext={`${wallets.filter((w) => w.type === "cash").length} cash account(s)`}
                 />
-                <KPICard
+                <SharpKPICard
                     label="Bank Balance"
                     value={`₨ ${bankBalance.toLocaleString()}`}
                     icon={Building2}
-                    color="text-blue-600"
-                    bgColor="bg-blue-50 dark:bg-blue-950/20"
+                    theme="blue"
                     subtext={`${wallets.filter((w) => w.type === "bank").length} bank account(s)`}
                 />
-                <KPICard
+                <SharpKPICard
                     label="Total Expenses"
                     value={isExpensesFetching ? "—" : `₨ ${totalExpenses.toLocaleString()}`}
                     icon={ReceiptIcon}
-                    color="text-rose-600"
-                    bgColor="bg-rose-50 dark:bg-rose-950/20"
+                    theme="rose"
                     subtext={`${expenses.total} recorded`}
                 />
-            </div>
+            </motion.div>
 
-            {/* Wallet Cards Grid */}
-            {wallets.length === 0 ? (
-                <Card className="border-dashed">
-                    <CardContent className="py-16">
-                        <GenericEmpty
-                            icon={FinanceEmptyIllustration}
-                            title="No Accounts Yet"
-                            description='Create your first account (Cash Box or Bank Account) to start tracking finances. Click "New Account" above.'
-                        />
-                    </CardContent>
-                </Card>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {wallets.map((wallet) => (
-                        <WalletCard
-                            key={wallet.id}
-                            wallet={wallet}
-                            onDeposit={() => {
-                                setSelectedWalletId(wallet.id);
-                                setIsDepositOpen(true);
-                            }}
-                            onExpense={() => {
-                                setSelectedWalletId(wallet.id);
-                                setIsExpenseOpen(true);
-                            }}
-                        />
-                    ))}
-                </div>
-            )}
+            {/* ── Wallet Cards Grid ─────────────────────────────────────────── */}
+            <motion.div variants={itemVariants}>
+                {wallets.length === 0 ? (
+                    <div className="border border-dashed border-border bg-muted/10">
+                        <div className="py-16">
+                            <GenericEmpty
+                                icon={FinanceEmptyIllustration}
+                                title="No Accounts Yet"
+                                description='Create your first account (Cash Box or Bank Account) to start tracking finances. Click "New Account" above.'
+                            />
+                        </div>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {wallets.map((wallet) => (
+                            <WalletCard
+                                key={wallet.id}
+                                wallet={wallet}
+                                onDeposit={() => {
+                                    setSelectedWalletId(wallet.id);
+                                    setIsDepositOpen(true);
+                                }}
+                                onExpense={() => {
+                                    setSelectedWalletId(wallet.id);
+                                    setIsExpenseOpen(true);
+                                }}
+                            />
+                        ))}
+                    </div>
+                )}
+            </motion.div>
 
-            {/* Recent Transactions */}
-            <div>
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-extrabold tracking-tight flex items-center gap-2">
-                        <ClockIcon className="size-5 text-muted-foreground/70" />
+            {/* ── Recent Transactions ───────────────────────────────────────── */}
+            <motion.div variants={itemVariants}>
+                <div className="flex items-center justify-between mb-4 border-b border-border pb-2">
+                    <h2 className="text-sm font-bold tracking-widest uppercase flex items-center gap-2 text-muted-foreground">
+                        <ClockIcon className="size-4" />
                         Recent Activity
-                        {isTransactionsFetching && <Loader2 className="size-4 animate-spin" />}
+                        {isTransactionsFetching && <Loader2 className="size-3.5 animate-spin" />}
                     </h2>
-                    <Badge variant="secondary" className="font-semibold text-xs">
+                    <Badge variant="outline" className="font-bold text-[10px] rounded-none border-border tracking-widest uppercase">
                         {isTransactionsFetching ? "—" : `${recentTransactions.data.length} entries`}
                     </Badge>
                 </div>
                 {recentTransactions.data.length === 0 ? (
-                    <Card className="border-dashed">
-                        <CardContent className="py-8">
+                    <div className="border border-dashed border-border bg-muted/10">
+                        <div className="py-8">
                             <GenericEmpty
                                 icon={FinanceEmptyIllustration}
                                 title="No Transactions"
                                 description="Transactions will appear here when you deposit, withdraw, or record expenses."
                             />
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 ) : (
-                    <div className="border border-muted-foreground/10 rounded-2xl bg-card overflow-hidden">
-                        <div className="divide-y divide-muted-foreground/5">
+                    <div className="border border-border bg-card shadow-none">
+                        <div className="divide-y divide-border">
                             {recentTransactions.data.map((txn) => (
                                 <TransactionRow key={txn.id} txn={txn} />
                             ))}
                         </div>
                     </div>
                 )}
-            </div>
+            </motion.div>
 
-            {/* Sheets */}
+            {/* ── Sheets ────────────────────────────────────────────────────── */}
             <CreateWalletSheet
                 open={isCreateWalletOpen}
                 onOpenChange={setIsCreateWalletOpen}
@@ -234,59 +253,56 @@ export const FinanceContainer = () => {
                 wallets={wallets}
                 preselectedWalletId={selectedWalletId}
             />
-        </div>
+        </motion.div>
     );
 };
 
 // ────────────────────────────────────────────────────────
-// KPI Card
+// Sharp KPI Card
 // ────────────────────────────────────────────────────────
 
-function KPICard({
-    label,
-    value,
-    icon: Icon,
-    color,
-    bgColor,
-    subtext,
-}: {
-    label: string;
-    value: string;
-    icon: any;
-    color: string;
-    bgColor: string;
-    subtext?: string;
-}) {
+type KPITheme = "blue" | "rose" | "emerald" | "violet" | "amber";
+
+const sharpThemeStyles = {
+    blue: { border: "border-t-blue-500", iconBg: "bg-blue-500/10", iconText: "text-blue-500" },
+    rose: { border: "border-t-rose-500", iconBg: "bg-rose-500/10", iconText: "text-rose-500" },
+    emerald: { border: "border-t-emerald-500", iconBg: "bg-emerald-500/10", iconText: "text-emerald-500" },
+    violet: { border: "border-t-violet-500", iconBg: "bg-violet-500/10", iconText: "text-violet-500" },
+    amber: { border: "border-t-amber-500", iconBg: "bg-amber-500/10", iconText: "text-amber-500" },
+};
+
+function SharpKPICard({ label, value, subtext, icon: Icon, theme }: { label: string; value: string; subtext?: string; icon: any; theme: KPITheme }) {
+    const styles = sharpThemeStyles[theme];
+
     return (
-        <Card>
-            <CardContent className="p-0">
-                <div className="p-6 relative overflow-hidden">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className={`p-2.5 rounded-xl ${bgColor}`}>
-                            <Icon className={`size-5 ${color}`} />
-                        </div>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                            {label}
-                        </p>
-                        <h3 className={`text-2xl font-black tracking-tight ${color}`}>
-                            {value}
-                        </h3>
-                        {subtext && (
-                            <p className="text-xs font-semibold tracking-tight text-muted-foreground/70">
-                                {subtext}
-                            </p>
-                        )}
-                    </div>
+        <motion.div
+            whileHover={{ y: -2, transition: { duration: 0.2 } }}
+            className={cn(
+                "relative flex flex-col justify-between p-5 bg-card border border-border rounded-none shadow-none",
+                "border-t-2",
+                styles.border
+            )}
+        >
+            <div
+                className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04] pointer-events-none"
+                style={{ backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`, backgroundSize: "8px 8px" }}
+            />
+            <div className="relative z-10 flex items-start justify-between mb-8">
+                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{label}</p>
+                <div className={cn("p-1.5 rounded-none", styles.iconBg)}>
+                    <Icon className={cn("size-4", styles.iconText)} />
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+            <div className="relative z-10 space-y-1">
+                <h3 className="text-3xl font-bold tracking-tight text-foreground">{value}</h3>
+                {subtext ? <p className="text-xs font-medium text-muted-foreground/70">{subtext}</p> : <div className="h-4" />}
+            </div>
+        </motion.div>
     );
 }
 
 // ────────────────────────────────────────────────────────
-// Wallet Card
+// Sharp Wallet Card
 // ────────────────────────────────────────────────────────
 
 function WalletCard({
@@ -300,100 +316,87 @@ function WalletCard({
 }) {
     const balance = parseFloat(wallet.balance || "0");
     const isLowBalance = balance < 5000;
+    const isBank = wallet.type === "bank";
 
     return (
-        <Card
-            className={`relative overflow-hidden group hover:shadow-lg transition-all duration-300 ${isLowBalance ? "border-amber-300/50" : ""
-                }`}
+        <motion.div
+            whileHover={{ y: -2, transition: { duration: 0.2 } }}
+            className={cn(
+                "relative flex flex-col p-5 bg-card border rounded-none shadow-none border-t-2",
+                isLowBalance ? "border-t-amber-500 border-x-amber-500/20 border-b-amber-500/20" : isBank ? "border-t-blue-500 border-border" : "border-t-violet-500 border-border"
+            )}
         >
-            {/* Gradient accent strip */}
             <div
-                className={`absolute inset-x-0 top-0 h-1.5 ${wallet.type === "bank"
-                    ? "bg-gradient-to-r from-blue-500 to-cyan-400"
-                    : "bg-gradient-to-r from-violet-500 to-fuchsia-400"
-                    }`}
-            />
-            {/* Decorative blur circle */}
-            <div
-                className={`absolute -top-10 -right-10 size-32 rounded-full blur-3xl opacity-[0.04] group-hover:opacity-[0.08] transition-opacity duration-500 ${wallet.type === "bank" ? "bg-blue-400" : "bg-violet-400"
-                    }`}
+                className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04] pointer-events-none"
+                style={{ backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`, backgroundSize: "8px 8px" }}
             />
 
-            <CardContent className="p-5 pt-7 relative">
-                <div className="flex items-start justify-between mb-5">
-                    <div className="flex items-center gap-3">
-                        <div
-                            className={`p-2.5 rounded-xl shadow-sm ${wallet.type === "bank"
-                                ? "bg-linear-to-br from-blue-100 to-cyan-50 dark:from-blue-900/40 dark:to-cyan-900/20"
-                                : "bg-linear-to-br from-violet-100 to-fuchsia-50 dark:from-violet-900/40 dark:to-fuchsia-900/20"
-                                }`}
-                        >
-                            {wallet.type === "bank" ? (
-                                <Building2 className="size-5 text-blue-600" />
-                            ) : (
-                                <BanknoteIcon className="size-5 text-violet-600" />
-                            )}
-                        </div>
-                        <div>
-                            <h3 className="font-bold text-sm leading-tight">{wallet.name}</h3>
-                            <Badge
-                                variant="secondary"
-                                className="text-[9px] font-bold uppercase tracking-widest mt-1 px-2"
-                            >
-                                {wallet.type === "bank" ? "Bank Account" : "Cash Box"}
-                            </Badge>
-                        </div>
+            <div className="relative z-10 flex items-start justify-between mb-6">
+                <div className="flex items-center gap-3">
+                    <div className={cn("p-2 rounded-none", isBank ? "bg-blue-500/10" : "bg-violet-500/10")}>
+                        {isBank ? (
+                            <Building2 className={cn("size-5", isBank ? "text-blue-500" : "text-violet-500")} />
+                        ) : (
+                            <BanknoteIcon className={cn("size-5", isBank ? "text-blue-500" : "text-violet-500")} />
+                        )}
                     </div>
-                    {isLowBalance && (
-                        <div className="flex items-center gap-1 text-amber-500">
-                            <AlertTriangleIcon className="size-4" />
-                        </div>
-                    )}
+                    <div>
+                        <h3 className="font-bold text-sm leading-tight text-foreground">{wallet.name}</h3>
+                        <Badge
+                            variant="outline"
+                            className="text-[9px] font-bold uppercase tracking-widest mt-1 px-1.5 rounded-none border-border"
+                        >
+                            {isBank ? "Bank Account" : "Cash Box"}
+                        </Badge>
+                    </div>
                 </div>
+                {isLowBalance && (
+                    <div className="flex items-center gap-1 text-amber-500">
+                        <AlertTriangleIcon className="size-4" />
+                    </div>
+                )}
+            </div>
 
-                <div className="mb-5">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                        Current Balance
+            <div className="relative z-10 mb-6">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Current Balance
+                </p>
+                <p className={cn("text-3xl font-black tracking-tight mt-1 tabular-nums", isLowBalance ? "text-amber-500" : "text-foreground")}>
+                    ₨ {balance.toLocaleString()}
+                </p>
+                {isLowBalance ? (
+                    <p className="text-[10px] text-amber-500 font-bold mt-1.5 flex items-center gap-1 uppercase tracking-wider">
+                        <AlertTriangleIcon className="size-3" /> Low balance warning
                     </p>
-                    <p
-                        className={`text-3xl font-black tracking-tight mt-1 tabular-nums ${isLowBalance ? "text-amber-600" : ""
-                            }`}
-                    >
-                        ₨ {balance.toLocaleString()}
-                    </p>
-                    {isLowBalance && (
-                        <p className="text-[10px] text-amber-600 font-semibold mt-1 flex items-center gap-1">
-                            <AlertTriangleIcon className="size-2.5" /> Low balance — consider
-                            depositing
-                        </p>
-                    )}
-                </div>
+                ) : (
+                    <div className="h-5" />
+                )}
+            </div>
 
-                <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 h-9 text-xs font-bold gap-1.5 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 dark:hover:bg-emerald-950/20 transition-colors"
-                        onClick={onDeposit}
-                    >
-                        <ArrowDownIcon className="size-3.5 text-emerald-600" /> Deposit
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 h-9 text-xs font-bold gap-1.5 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 dark:hover:bg-rose-950/20 transition-colors"
-                        onClick={onExpense}
-                    >
-                        <ArrowUpIcon className="size-3.5 text-rose-500" /> Expense
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
+            <div className="relative z-10 flex gap-2">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 h-9 rounded-none shadow-none text-xs font-bold gap-1.5 border-border hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 transition-colors"
+                    onClick={onDeposit}
+                >
+                    <ArrowDownIcon className="size-3.5 text-emerald-600" /> Deposit
+                </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 h-9 rounded-none shadow-none text-xs font-bold gap-1.5 border-border hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 transition-colors"
+                    onClick={onExpense}
+                >
+                    <ArrowUpIcon className="size-3.5 text-rose-500" /> Expense
+                </Button>
+            </div>
+        </motion.div>
     );
 }
 
 // ────────────────────────────────────────────────────────
-// Transaction Row
+// Sharp Transaction Row
 // ────────────────────────────────────────────────────────
 
 function TransactionRow({ txn }: { txn: any }) {
@@ -401,13 +404,15 @@ function TransactionRow({ txn }: { txn: any }) {
     const amount = parseFloat(txn.amount || "0");
 
     return (
-        <div className="flex items-center justify-between px-5 py-3.5 hover:bg-muted/20 transition-colors group">
-            <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between px-5 py-4 bg-card hover:bg-muted/30 transition-colors group">
+            <div className="flex items-center gap-4">
                 <div
-                    className={`p-2 rounded-xl transition-colors ${isCredit
-                        ? "bg-emerald-50 dark:bg-emerald-950/30 group-hover:bg-emerald-100"
-                        : "bg-rose-50 dark:bg-rose-950/30 group-hover:bg-rose-100"
-                        }`}
+                    className={cn(
+                        "p-2 rounded-none transition-colors border",
+                        isCredit
+                            ? "bg-emerald-500/10 border-emerald-500/20 group-hover:bg-emerald-500/20"
+                            : "bg-rose-500/10 border-rose-500/20 group-hover:bg-rose-500/20"
+                    )}
                 >
                     {isCredit ? (
                         <ArrowDownIcon className="size-4 text-emerald-600" />
@@ -416,34 +421,28 @@ function TransactionRow({ txn }: { txn: any }) {
                     )}
                 </div>
                 <div>
-                    <p className="text-sm font-bold leading-tight">{txn.source}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
+                    <p className="text-sm font-bold leading-tight text-foreground">{txn.source}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest flex items-center gap-1">
                             {txn.wallet?.type === "bank" ? (
-                                <Building2 className="size-2.5" />
+                                <Building2 className="size-3" />
                             ) : (
-                                <BanknoteIcon className="size-2.5" />
+                                <BanknoteIcon className="size-3" />
                             )}{" "}
                             {txn.wallet?.name}
                         </span>
                         <span className="text-muted-foreground/30">•</span>
-                        <span className="text-[10px] text-muted-foreground">
-                            {format(new Date(txn.createdAt), "dd MMM yyyy, hh:mm a")}
+                        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                            {format(new Date(txn.createdAt), "dd MMM yyyy")}
                         </span>
-                        {txn.performer?.name && (
-                            <>
-                                <span className="text-muted-foreground/30">•</span>
-                                <span className="text-[10px] text-muted-foreground">
-                                    {txn.performer.name}
-                                </span>
-                            </>
-                        )}
                     </div>
                 </div>
             </div>
             <span
-                className={`font-black text-sm tabular-nums ${isCredit ? "text-emerald-600" : "text-rose-500"
-                    }`}
+                className={cn(
+                    "font-black text-sm tabular-nums",
+                    isCredit ? "text-emerald-600" : "text-rose-500"
+                )}
             >
                 {isCredit ? "+" : "−"} ₨ {amount.toLocaleString()}
             </span>
@@ -452,26 +451,17 @@ function TransactionRow({ txn }: { txn: any }) {
 }
 
 // ────────────────────────────────────────────────────────
-// SHEETS
+// SHEETS (Sharp Inputs & Buttons enforced)
 // ────────────────────────────────────────────────────────
 
-function CreateWalletSheet({
-    open,
-    onOpenChange,
-}: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-}) {
+function CreateWalletSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
     const [name, setName] = useState("");
     const [type, setType] = useState<"cash" | "bank">("cash");
     const [initialBalance, setInitialBalance] = useState("");
     const mutation = useCreateWallet();
 
     const handleSubmit = () => {
-        if (!name.trim()) {
-            toast.error("Please provide an account name");
-            return;
-        }
+        if (!name.trim()) return toast.error("Please provide an account name");
         mutation.mutate(
             {
                 data: {
@@ -499,100 +489,66 @@ function CreateWalletSheet({
             description="Add a cash box or bank account to track your finances."
             icon={WalletIcon}
         >
-            <div className="space-y-5 py-4">
+            <div className="space-y-6 py-4">
                 {/* Account Type */}
-                <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Account Type
-                    </Label>
+                <div className="space-y-3">
+                    <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Account Type</Label>
                     <div className="grid grid-cols-2 gap-3">
                         <button
                             type="button"
                             onClick={() => setType("cash")}
-                            className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${type === "cash"
-                                ? "border-violet-500 bg-violet-50 dark:bg-violet-950/20 shadow-sm"
-                                : "border-muted-foreground/10 hover:border-muted-foreground/20"
-                                }`}
+                            className={cn(
+                                "flex flex-col items-center gap-2 p-4 rounded-none border-2 transition-all duration-200 cursor-pointer",
+                                type === "cash"
+                                    ? "border-violet-500 bg-violet-500/5 shadow-none"
+                                    : "border-border hover:border-muted-foreground/30 bg-transparent"
+                            )}
                         >
-                            <BanknoteIcon
-                                className={`size-6 ${type === "cash" ? "text-violet-600" : "text-muted-foreground"}`}
-                            />
-                            <span
-                                className={`text-sm font-bold ${type === "cash" ? "text-violet-700 dark:text-violet-400" : "text-muted-foreground"}`}
-                            >
-                                Cash Box
-                            </span>
-                            <span className="text-[10px] text-muted-foreground/70 text-center">
-                                Physical cash drawer
-                            </span>
+                            <BanknoteIcon className={cn("size-6", type === "cash" ? "text-violet-500" : "text-muted-foreground")} />
+                            <span className={cn("text-xs font-bold uppercase tracking-widest", type === "cash" ? "text-violet-600" : "text-muted-foreground")}>Cash Box</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => setType("bank")}
-                            className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${type === "bank"
-                                ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20 shadow-sm"
-                                : "border-muted-foreground/10 hover:border-muted-foreground/20"
-                                }`}
+                            className={cn(
+                                "flex flex-col items-center gap-2 p-4 rounded-none border-2 transition-all duration-200 cursor-pointer",
+                                type === "bank"
+                                    ? "border-blue-500 bg-blue-500/5 shadow-none"
+                                    : "border-border hover:border-muted-foreground/30 bg-transparent"
+                            )}
                         >
-                            <Building2
-                                className={`size-6 ${type === "bank" ? "text-blue-600" : "text-muted-foreground"}`}
-                            />
-                            <span
-                                className={`text-sm font-bold ${type === "bank" ? "text-blue-700 dark:text-blue-400" : "text-muted-foreground"}`}
-                            >
-                                Bank Account
-                            </span>
-                            <span className="text-[10px] text-muted-foreground/70 text-center">
-                                HBL, Meezan, etc.
-                            </span>
+                            <Building2 className={cn("size-6", type === "bank" ? "text-blue-500" : "text-muted-foreground")} />
+                            <span className={cn("text-xs font-bold uppercase tracking-widest", type === "bank" ? "text-blue-600" : "text-muted-foreground")}>Bank Account</span>
                         </button>
                     </div>
                 </div>
 
-                {/* Name */}
-                <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Account Name
-                    </Label>
+                <div className="space-y-3">
+                    <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Account Name</Label>
                     <Input
-                        placeholder={
-                            type === "bank"
-                                ? "e.g., HBL Business Account"
-                                : "e.g., Main Cash Drawer"
-                        }
+                        placeholder={type === "bank" ? "e.g., HBL Business Account" : "e.g., Main Cash Drawer"}
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="h-11"
+                        className="h-11 rounded-none shadow-none border-border focus-visible:ring-1 focus-visible:ring-primary"
                     />
                 </div>
 
-                {/* Opening Balance */}
-                <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Opening Balance (PKR)
-                    </Label>
+                <div className="space-y-3">
+                    <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Opening Balance (PKR)</Label>
                     <Input
                         type="number"
                         min="0"
                         placeholder="0"
                         value={initialBalance}
                         onChange={(e) => setInitialBalance(e.target.value)}
-                        className="h-11 text-lg font-mono"
+                        className="h-11 text-lg font-mono rounded-none shadow-none border-border focus-visible:ring-1 focus-visible:ring-primary"
                     />
-                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                        <SparklesIcon className="size-3" />
-                        Leave 0 if starting fresh. You can deposit later.
-                    </p>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                    <Button variant="ghost" onClick={() => onOpenChange(false)}>
-                        Cancel
-                    </Button>
-                    <Button onClick={handleSubmit} disabled={mutation.isPending}>
-                        {mutation.isPending && (
-                            <Loader2 className="size-4 mr-2 animate-spin" />
-                        )}
+                <div className="flex justify-end gap-3 pt-6 border-t border-border">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-none shadow-none border-border">Cancel</Button>
+                    <Button onClick={handleSubmit} disabled={mutation.isPending} className="rounded-none shadow-none">
+                        {mutation.isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
                         Create Account
                     </Button>
                 </div>
@@ -601,17 +557,7 @@ function CreateWalletSheet({
     );
 }
 
-function DepositSheet({
-    open,
-    onOpenChange,
-    wallets,
-    preselectedWalletId,
-}: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    wallets: any[];
-    preselectedWalletId: string | null;
-}) {
+function DepositSheet({ open, onOpenChange, wallets, preselectedWalletId }: { open: boolean; onOpenChange: (open: boolean) => void; wallets: any[]; preselectedWalletId: string | null; }) {
     const [walletId, setWalletId] = useState(preselectedWalletId || "");
     const [amount, setAmount] = useState("");
     const [description, setDescription] = useState("");
@@ -622,14 +568,9 @@ function DepositSheet({
 
     const handleSubmit = () => {
         const parsedAmount = parseFloat(amount);
-        if (!effectiveWalletId) {
-            toast.error("Please select an account");
-            return;
-        }
-        if (!parsedAmount || parsedAmount <= 0) {
-            toast.error("Please enter a valid amount");
-            return;
-        }
+        if (!effectiveWalletId) return toast.error("Please select an account");
+        if (!parsedAmount || parsedAmount <= 0) return toast.error("Please enter a valid amount");
+
         mutation.mutate(
             {
                 data: {
@@ -658,95 +599,64 @@ function DepositSheet({
             description="Add funds to a cash box or bank account."
             icon={ArrowDownIcon}
         >
-            <div className="space-y-5 py-4">
-                {/* Wallet selection */}
-                <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Deposit Into
-                    </Label>
+            <div className="space-y-6 py-4">
+                <div className="space-y-3">
+                    <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Deposit Into</Label>
                     <Select value={effectiveWalletId} onValueChange={setWalletId}>
-                        <SelectTrigger className="h-11">
+                        <SelectTrigger className="h-11 rounded-none shadow-none border-border focus:ring-1 focus:ring-primary">
                             <SelectValue placeholder="Select account..." />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="rounded-none shadow-none border-border">
                             {wallets.map((w) => (
-                                <SelectItem key={w.id} value={w.id}>
+                                <SelectItem key={w.id} value={w.id} className="rounded-none">
                                     <div className="flex items-center gap-2">
-                                        {w.type === "bank" ? (
-                                            <Building2 className="size-3.5 text-blue-600" />
-                                        ) : (
-                                            <BanknoteIcon className="size-3.5 text-violet-600" />
-                                        )}
-                                        <span className="font-medium">{w.name}</span>
-                                        <span className="text-xs text-muted-foreground ml-2 tabular-nums">
-                                            ₨ {parseFloat(w.balance || "0").toLocaleString()}
-                                        </span>
+                                        {w.type === "bank" ? <Building2 className="size-3.5 text-blue-500" /> : <BanknoteIcon className="size-3.5 text-violet-500" />}
+                                        <span className="font-bold">{w.name}</span>
                                     </div>
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
                     {selectedWallet && (
-                        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-muted-foreground/5">
-                            <span className="text-xs font-semibold text-muted-foreground">
-                                Current Balance
-                            </span>
-                            <span className="text-sm font-black tabular-nums">
-                                ₨ {parseFloat(selectedWallet.balance || "0").toLocaleString()}
-                            </span>
+                        <div className="flex items-center justify-between p-3 bg-muted/20 border border-border">
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Current Balance</span>
+                            <span className="text-sm font-black tabular-nums">₨ {parseFloat(selectedWallet.balance || "0").toLocaleString()}</span>
                         </div>
                     )}
                 </div>
 
-                {/* Amount */}
-                <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Amount (PKR)
-                    </Label>
+                <div className="space-y-3">
+                    <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Amount (PKR)</Label>
                     <Input
                         type="number"
                         min="1"
                         placeholder="Enter amount..."
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        className="h-11 text-lg font-mono"
+                        className="h-11 text-lg font-mono rounded-none shadow-none border-border focus-visible:ring-1 focus-visible:ring-primary"
                     />
                     {selectedWallet && parseFloat(amount) > 0 && (
-                        <p className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                        <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest flex items-center gap-1">
                             <CheckCircle2Icon className="size-3" />
-                            New balance: ₨{" "}
-                            {(
-                                parseFloat(selectedWallet.balance || "0") + parseFloat(amount)
-                            ).toLocaleString()}
+                            New balance: ₨ {(parseFloat(selectedWallet.balance || "0") + parseFloat(amount)).toLocaleString()}
                         </p>
                     )}
                 </div>
 
-                {/* Description */}
-                <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Description (Optional)
-                    </Label>
+                <div className="space-y-3">
+                    <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Description (Optional)</Label>
                     <Input
                         placeholder="e.g., Sales revenue, Bank deposit..."
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        className="h-11"
+                        className="h-11 rounded-none shadow-none border-border focus-visible:ring-1 focus-visible:ring-primary"
                     />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                    <Button variant="ghost" onClick={() => onOpenChange(false)}>
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleSubmit}
-                        disabled={mutation.isPending}
-                        className="bg-emerald-600 hover:bg-emerald-700"
-                    >
-                        {mutation.isPending && (
-                            <Loader2 className="size-4 mr-2 animate-spin" />
-                        )}
+                <div className="flex justify-end gap-3 pt-6 border-t border-border">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-none shadow-none border-border">Cancel</Button>
+                    <Button onClick={handleSubmit} disabled={mutation.isPending} className="rounded-none shadow-none bg-emerald-600 hover:bg-emerald-700 text-white">
+                        {mutation.isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
                         Confirm Deposit
                     </Button>
                 </div>
@@ -755,17 +665,7 @@ function DepositSheet({
     );
 }
 
-function ExpenseSheet({
-    open,
-    onOpenChange,
-    wallets,
-    preselectedWalletId,
-}: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    wallets: any[];
-    preselectedWalletId: string | null;
-}) {
+function ExpenseSheet({ open, onOpenChange, wallets, preselectedWalletId }: { open: boolean; onOpenChange: (open: boolean) => void; wallets: any[]; preselectedWalletId: string | null; }) {
     const [walletId, setWalletId] = useState(preselectedWalletId || "");
     const [amount, setAmount] = useState("");
     const [category, setCategory] = useState("");
@@ -784,28 +684,12 @@ function ExpenseSheet({
     });
 
     const handleSubmit = () => {
-        if (!effectiveWalletId) {
-            toast.error("Please select a payment source");
-            return;
-        }
-        if (!category) {
-            toast.error("Please select a category");
-            return;
-        }
-        if (!parsedAmount || parsedAmount <= 0) {
-            toast.error("Please enter a valid amount");
-            return;
-        }
-        if (!description.trim()) {
-            toast.error("Please provide a description");
-            return;
-        }
-        if (insufficientFunds) {
-            toast.error(
-                `Insufficient balance in "${selectedWallet?.name}". Available: ₨ ${currentBalance.toLocaleString()}`,
-            );
-            return;
-        }
+        if (!effectiveWalletId) return toast.error("Please select a payment source");
+        if (!category) return toast.error("Please select a category");
+        if (!parsedAmount || parsedAmount <= 0) return toast.error("Please enter a valid amount");
+        if (!description.trim()) return toast.error("Please provide a description");
+        if (insufficientFunds) return toast.error(`Insufficient balance in "${selectedWallet?.name}". Available: ₨ ${currentBalance.toLocaleString()}`);
+
         mutation.mutate(
             {
                 data: {
@@ -835,75 +719,49 @@ function ExpenseSheet({
             description="Record an expense and debit from an account."
             icon={ReceiptIcon}
         >
-            <div className="space-y-5 py-4">
-                {/* Pay From */}
-                <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Pay From
-                    </Label>
+            <div className="space-y-6 py-4">
+                <div className="space-y-3">
+                    <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Pay From</Label>
                     <Select value={effectiveWalletId} onValueChange={setWalletId}>
-                        <SelectTrigger className="h-11">
+                        <SelectTrigger className="h-11 rounded-none shadow-none border-border focus:ring-1 focus:ring-primary">
                             <SelectValue placeholder="Select payment source..." />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="rounded-none shadow-none border-border">
                             {wallets.map((w) => (
-                                <SelectItem key={w.id} value={w.id}>
+                                <SelectItem key={w.id} value={w.id} className="rounded-none">
                                     <div className="flex items-center gap-2">
-                                        {w.type === "bank" ? (
-                                            <Building2 className="size-3.5 text-blue-600" />
-                                        ) : (
-                                            <BanknoteIcon className="size-3.5 text-violet-600" />
-                                        )}
-                                        <span className="font-medium">{w.name}</span>
-                                        <span className="text-xs text-muted-foreground ml-2 tabular-nums">
-                                            ₨ {parseFloat(w.balance || "0").toLocaleString()}
-                                        </span>
+                                        {w.type === "bank" ? <Building2 className="size-3.5 text-blue-500" /> : <BanknoteIcon className="size-3.5 text-violet-500" />}
+                                        <span className="font-bold">{w.name}</span>
                                     </div>
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
 
-                    {/* Balance indicator with real-time validation */}
                     {selectedWallet && (
-                        <div
-                            className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${insufficientFunds
-                                ? "bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800"
-                                : "bg-muted/30 border-muted-foreground/5"
-                                }`}
-                        >
-                            <span className="text-xs font-semibold text-muted-foreground">
-                                Available Balance
-                            </span>
-                            <span
-                                className={`text-sm font-black tabular-nums ${insufficientFunds ? "text-rose-600" : ""
-                                    }`}
-                            >
+                        <div className={cn("flex items-center justify-between p-3 border", insufficientFunds ? "bg-rose-500/10 border-rose-500/20" : "bg-muted/20 border-border")}>
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Available Balance</span>
+                            <span className={cn("text-sm font-black tabular-nums", insufficientFunds && "text-rose-500")}>
                                 ₨ {currentBalance.toLocaleString()}
                             </span>
                         </div>
                     )}
                     {insufficientFunds && (
-                        <div className="flex items-center gap-2 text-rose-600 text-xs font-bold p-2 bg-rose-50 dark:bg-rose-950/20 rounded-lg">
-                            <AlertTriangleIcon className="size-3.5 shrink-0" />
-                            Insufficient funds! You need ₨{" "}
-                            {(parsedAmount - currentBalance).toLocaleString()} more.
+                        <div className="flex items-center gap-2 text-rose-500 text-[10px] font-bold uppercase tracking-widest p-2 bg-rose-500/10 border border-rose-500/20">
+                            <AlertTriangleIcon className="size-3.5 shrink-0" /> Insufficient funds! You need ₨ {(parsedAmount - currentBalance).toLocaleString()} more.
                         </div>
                     )}
                 </div>
 
-                {/* Category */}
-                <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Category
-                    </Label>
+                <div className="space-y-3">
+                    <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Category</Label>
                     <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger className="h-11">
+                        <SelectTrigger className="h-11 rounded-none shadow-none border-border focus:ring-1 focus:ring-primary">
                             <SelectValue placeholder={isLoadingCategories ? "Loading categories..." : "Select expense category..."} />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="rounded-none shadow-none border-border">
                             {categories.map((cat: any) => (
-                                <SelectItem key={cat.id} value={cat.name}>
+                                <SelectItem key={cat.id} value={cat.name} className="rounded-none">
                                     {cat.name}
                                 </SelectItem>
                             ))}
@@ -911,62 +769,41 @@ function ExpenseSheet({
                     </Select>
                 </div>
 
-                {/* Amount */}
-                <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Amount (PKR)
-                    </Label>
+                <div className="space-y-3">
+                    <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Amount (PKR)</Label>
                     <Input
                         type="number"
                         min="1"
                         placeholder="Enter amount..."
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        className="h-11 text-lg font-mono"
+                        className="h-11 text-lg font-mono rounded-none shadow-none border-border focus-visible:ring-1 focus-visible:ring-primary"
                     />
                     {selectedWallet && parsedAmount > 0 && !insufficientFunds && (
-                        <p className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                        <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest flex items-center gap-1">
                             <CheckCircle2Icon className="size-3" />
-                            After expense: ₨{" "}
-                            {(currentBalance - parsedAmount).toLocaleString()} remaining
+                            After expense: ₨ {(currentBalance - parsedAmount).toLocaleString()} remaining
                         </p>
                     )}
                 </div>
 
-                {/* Description */}
-                <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <div className="space-y-3">
+                    <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                         Description
-                        <Badge variant="destructive" className="ml-2 text-[9px]">
-                            Required
-                        </Badge>
+                        <Badge variant="destructive" className="rounded-none text-[9px] px-1 py-0 shadow-none">Required</Badge>
                     </Label>
                     <Textarea
                         placeholder="e.g., February 2026 electricity bill from LESCO..."
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        className="min-h-[80px]"
+                        className="min-h-[80px] rounded-none shadow-none border-border focus-visible:ring-1 focus-visible:ring-primary"
                     />
                 </div>
 
-                {/* Audit warning */}
-                <div className="text-xs text-muted-foreground p-3 bg-amber-50/50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/30 rounded-lg">
-                    ⚠️ All expenses are <strong>permanently recorded</strong> in the
-                    ledger with your name, timestamp, and details.
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                    <Button variant="ghost" onClick={() => onOpenChange(false)}>
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleSubmit}
-                        disabled={mutation.isPending || insufficientFunds}
-                        variant="destructive"
-                    >
-                        {mutation.isPending && (
-                            <Loader2 className="size-4 mr-2 animate-spin" />
-                        )}
+                <div className="flex justify-end gap-3 pt-6 border-t border-border">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-none shadow-none border-border">Cancel</Button>
+                    <Button onClick={handleSubmit} disabled={mutation.isPending || insufficientFunds} variant="destructive" className="rounded-none shadow-none">
+                        {mutation.isPending && <Loader2 className="size-4 mr-2 animate-spin" />}
                         Record Expense
                     </Button>
                 </div>

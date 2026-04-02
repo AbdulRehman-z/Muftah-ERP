@@ -225,7 +225,7 @@ function SupplierDetailsPage() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-start gap-4">
           {/* Avatar */}
-          <div className="size-14 shrink-0 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center shadow-sm">
+          <div className="size-14 shrink-0 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center ">
             <Building2 className="size-6 text-primary" />
           </div>
 

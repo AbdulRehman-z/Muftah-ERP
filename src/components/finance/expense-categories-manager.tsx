@@ -161,7 +161,7 @@ export function ExpenseCategoriesManager() {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col h-full min-h-[500px] w-full bg-background border rounded-lg overflow-hidden shadow-sm relative">
+      <div className="flex flex-col h-full min-h-[500px] w-full bg-background border rounded-lg overflow-hidden  relative">
         {/* Header */}
         <header className="px-6 py-4 border-b bg-muted/30 flex items-center justify-between">
           <div className="flex items-center gap-3">

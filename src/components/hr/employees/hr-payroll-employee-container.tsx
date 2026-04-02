@@ -355,7 +355,7 @@ export function EmployeePayrollHistoryContainer({ employeeId }: EmployeePayrollH
                             className={cn(
                                 "px-3 py-1.5 rounded-md text-[12px] font-semibold transition-all duration-150 focus:outline-none",
                                 pendingMode === mode
-                                    ? "bg-background shadow-sm text-foreground border border-border/40"
+                                    ? "bg-background  text-foreground border border-border/40"
                                     : "text-muted-foreground hover:text-foreground",
                             )}
                         >
@@ -674,7 +674,7 @@ export function EmployeePayrollHistoryContainer({ employeeId }: EmployeePayrollH
                                                 </TooltipTrigger>
                                                 <TooltipContent
                                                     side="left"
-                                                    className="max-w-[300px] text-xs bg-background text-foreground border border-border shadow-lg"
+                                                    className="max-w-[300px] text-xs bg-background text-foreground border border-border "
                                                 >
                                                     {log.reason}
                                                 </TooltipContent>

@@ -1,296 +1,160 @@
 import { useState, useMemo } from "react";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine } from "recharts";
+import { TrendingUp, TrendingDown, Activity, Crosshair, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface ChartDataPoint {
-  month: string;
-  revenue: number;
-  expenses: number;
-  payroll: number;
-}
-
-interface RevenueExpenseChartProps {
-  data: ChartDataPoint[];
-  className?: string;
-}
-
-type TimeRange = "all" | "6m" | "3m";
-
-const ranges: { value: TimeRange; label: string }[] = [
-  { value: "3m", label: "3M" },
-  { value: "6m", label: "6M" },
-  { value: "all", label: "All" },
-];
-
-function formatPKR(value: number): string {
-  const sign = value < 0 ? "-" : "";
-  const abs = Math.abs(value);
-  if (abs >= 1_000_000) return `${sign}PKR ${(abs / 1_000_000).toFixed(1)}M`;
-  if (abs >= 1_000) return `${sign}PKR ${(abs / 1_000).toFixed(0)}K`;
-  return `${sign}PKR ${abs.toLocaleString()}`;
-}
-
-function CustomTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
-
-  const revenue = payload.find((p: any) => p.dataKey === "revenue")?.value ?? 0;
-  const expenses =
-    payload.find((p: any) => p.dataKey === "expenses")?.value ?? 0;
-  const net = revenue - expenses;
-  const isProfit = net >= 0;
-
-  return (
-    <div className="rounded-xl border border-border bg-popover  p-3 min-w-[168px] text-popover-foreground">
-      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2.5">
-        {label}
-      </p>
-      <div className="space-y-1.5 mb-2.5">
-        <div className="flex items-center justify-between gap-8">
-          <div className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
-            <span className="text-xs text-muted-foreground">Revenue</span>
-          </div>
-          <span className="text-xs font-bold tabular-nums">
-            {formatPKR(revenue)}
-          </span>
-        </div>
-        <div className="flex items-center justify-between gap-8">
-          <div className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-rose-500 shrink-0" />
-            <span className="text-xs text-muted-foreground">Expenses</span>
-          </div>
-          <span className="text-xs font-bold tabular-nums">
-            {formatPKR(expenses)}
-          </span>
-        </div>
-      </div>
-      <div className="h-px bg-border mb-2.5" />
-      <div className="flex items-center justify-between gap-8">
-        <span className="text-xs text-muted-foreground">Net</span>
-        <span
-          className={cn(
-            "text-xs font-black tabular-nums",
-            isProfit
-              ? "text-emerald-600 dark:text-emerald-400"
-              : "text-rose-600 dark:text-rose-400",
-          )}
-        >
-          {isProfit ? "+" : ""}
-          {formatPKR(net)}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-export function RevenueExpenseChart({
-  data,
-  className,
-}: RevenueExpenseChartProps) {
-  const [timeRange, setTimeRange] = useState<TimeRange>("all");
+export function RevenueExpenseChart({ data, className }: any) {
+  const [timeRange, setTimeRange] = useState("all");
 
   const filteredData = useMemo(() => {
-    if (timeRange === "all" || data.length === 0) return data;
+    if (timeRange === "all" || data?.length === 0) return data || [];
     return data.slice(-(timeRange === "6m" ? 6 : 3));
   }, [data, timeRange]);
 
   const totals = useMemo(() => {
-    const rev = filteredData.reduce((s, d) => s + d.revenue, 0);
-    const exp = filteredData.reduce((s, d) => s + d.expenses, 0);
+    const rev = filteredData.reduce((s: number, d: any) => s + (d.revenue || 0), 0);
+    const exp = filteredData.reduce((s: number, d: any) => s + (d.expenses || 0), 0);
     const net = rev - exp;
-    const margin = rev > 0 ? ((net / rev) * 100).toFixed(1) : null;
-    return { rev, exp, net, margin };
+    return { rev, exp, net };
   }, [filteredData]);
 
   const isProfit = totals.net >= 0;
+  const hasData = filteredData.length > 0;
 
   return (
-    <Card
-      className={cn(
-        "border border-border/60 rounded-xl overflow-hidden",
-        className,
-      )}
-    >
-      {/* Header */}
-      <CardHeader className="px-5 py-4 pb-3 border-b border-border/40 space-y-3">
-        {/* Top row: title + range control */}
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground leading-none mb-1">
-              Financial Overview
-            </p>
-            <h3 className="text-base font-black tracking-tight leading-none">
-              Revenue vs Expenses
-            </h3>
+    <div className={cn("relative border border-border/60 bg-card flex flex-col rounded-2xl  overflow-hidden group", className)}>
+
+      {/* ── Dashboard Header ── */}
+      <div className="border-b border-border/50 relative z-10 bg-card/80 backdrop-blur-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 relative overflow-hidden">
+              <Activity className="size-4 text-primary relative z-10" />
+              <div className="absolute inset-0 bg-primary/20 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-tighter text-foreground leading-none flex items-center gap-2">
+                Flow Telemetry
+                <span className="px-1.5 py-0.5 rounded-sm bg-emerald-500/10 text-emerald-500 text-[8px] font-bold border border-emerald-500/20 uppercase tracking-widest">Live_Link</span>
+              </h3>
+              <p className="text-[10px] font-bold text-muted-foreground mt-1.5 font-mono">OPEX_VS_REVENUE_METRIC_PROBE</p>
+            </div>
           </div>
 
-          {/* Segmented range picker */}
-          <div className="flex items-center bg-muted rounded-lg p-1 gap-0.5 shrink-0">
-            {ranges.map((r) => (
+          <div className="flex border border-border/50 rounded-xl p-1 bg-muted/30 mt-4 sm:mt-0">
+            {["3m", "6m", "all"].map((r) => (
               <button
-                key={r.value}
-                onClick={() => setTimeRange(r.value)}
+                key={r}
+                onClick={() => setTimeRange(r)}
                 className={cn(
-                  "text-[11px] font-black px-3 h-6 rounded-md transition-all duration-150 tracking-wide",
-                  timeRange === r.value
-                    ? "bg-background text-foreground  ring-1 ring-border/40"
-                    : "text-muted-foreground hover:text-foreground",
+                  "text-[10px] font-bold uppercase tracking-widest px-4 py-1.5 transition-all rounded-lg outline-none",
+                  timeRange === r ? "bg-background text-foreground  border border-border/50" : "text-muted-foreground hover:text-foreground border border-transparent"
                 )}
               >
-                {r.label}
+                {r}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
-            <span className="text-[10px] text-muted-foreground font-semibold">
-              Revenue
-            </span>
-            <span className="text-xs font-black tabular-nums">
-              {formatPKR(totals.rev)}
-            </span>
+        {/* ── High-Density Stats Bar ── */}
+        <div className="flex flex-wrap items-center gap-8 px-6 pb-5 border-t border-border/10 pt-4">
+          <div className="flex flex-col">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500/70 mb-1 font-mono">SYS_INFLOW</span>
+            <span className="text-xl font-black tabular-nums text-foreground">PKR {totals.rev.toLocaleString()}</span>
           </div>
-          <div className="h-3 w-px bg-border/60" />
-          <div className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-rose-500 shrink-0" />
-            <span className="text-[10px] text-muted-foreground font-semibold">
-              Expenses
-            </span>
-            <span className="text-xs font-black tabular-nums">
-              {formatPKR(totals.exp)}
-            </span>
+          <div className="w-px h-8 bg-border/50" />
+          <div className="flex flex-col">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-rose-500/70 mb-1 font-mono">SYS_OUTFLOW</span>
+            <span className="text-xl font-black tabular-nums text-foreground">PKR {totals.exp.toLocaleString()}</span>
           </div>
-          <div className="h-3 w-px bg-border/60" />
-          <div
-            className={cn(
-              "flex items-center gap-1 text-xs font-black",
-              isProfit
-                ? "text-emerald-600 dark:text-emerald-400"
-                : "text-rose-600 dark:text-rose-400",
-            )}
-          >
-            {isProfit ? (
-              <TrendingUp className="size-3.5" />
-            ) : (
-              <TrendingDown className="size-3.5" />
-            )}
-            <span className="tabular-nums">
-              {isProfit ? "+" : ""}
-              {formatPKR(totals.net)}{totals.margin !== null ? ` · ${totals.margin}% margin` : " · No revenue"}
+          <div className="w-px h-8 bg-border/50" />
+          <div className="flex flex-col">
+            <span className={cn("text-[9px] font-bold uppercase tracking-widest mb-1 font-mono", isProfit ? "text-emerald-500/70" : "text-rose-500/70")}>NET_EFFICIENCY</span>
+            <span className={cn("text-xl font-black tabular-nums flex items-center gap-2", isProfit ? "text-emerald-500" : "text-rose-500")}>
+              {isProfit ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />}
+              PKR {totals.net.toLocaleString()}
             </span>
           </div>
         </div>
-      </CardHeader>
+      </div>
 
-      {/* Chart */}
-      <CardContent className="p-0 pt-4 pb-3 px-2">
-        <ResponsiveContainer width="100%" height={230}>
-          <AreaChart
-            data={filteredData}
-            margin={{ top: 4, right: 16, left: 0, bottom: 0 }}
-          >
-            <defs>
-              <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity={0.15} />
-                <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="gradExpenses" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.12} />
-                <stop offset="100%" stopColor="#f43f5e" stopOpacity={0} />
-              </linearGradient>
-            </defs>
+      {/* ── Scientific Chart Area ── */}
+      <div className="p-4 flex-1 min-h-[340px] relative z-10 bg-background/30">
+        {!hasData ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="size-16 border-2 border-primary/20 border-t-primary rounded-full animate-spin mb-4" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary animate-pulse">Initializing_Data_Probe...</span>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={filteredData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="fluidRevenue" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity={0.25} /><stop offset="100%" stopColor="#10b981" stopOpacity={0} /></linearGradient>
+                <linearGradient id="fluidExpenses" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f43f5e" stopOpacity={0.25} /><stop offset="100%" stopColor="#f43f5e" stopOpacity={0} /></linearGradient>
+              </defs>
+              <CartesianGrid vertical={true} horizontal={true} stroke="hsl(var(--border))" strokeDasharray="3 3" strokeWidth={0.5} opacity={0.3} />
+              <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10, fontWeight: 700, fontFamily: "monospace" }} dy={10} />
+              <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000)}k`} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10, fontWeight: 700, fontFamily: "monospace" }} dx={-10} />
 
-            <CartesianGrid
-              vertical={false}
-              stroke="hsl(var(--border))"
-              strokeOpacity={0.5}
-              strokeDasharray="3 3"
-            />
+              <Tooltip
+                cursor={{ stroke: "hsl(var(--primary))", strokeWidth: 1, strokeDasharray: "4 4" }}
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  const rev = payload.find((p) => p.dataKey === "revenue")?.value as number ?? 0;
+                  const exp = payload.find((p) => p.dataKey === "expenses")?.value as number ?? 0;
+                  const net = rev - exp;
+                  return (
+                    <div className="border border-primary/20 bg-background/90 backdrop-blur-xl p-4 rounded-xl shadow-sm min-w-[200px]">
+                      <div className="flex items-center justify-between mb-4 border-b border-border/50 pb-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-primary font-mono">{label}</span>
+                        <Zap className="size-3 text-primary animate-pulse" />
+                      </div>
+                      <div className="space-y-3 mb-4">
+                        <div className="flex items-center justify-between gap-8">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Revenue</span>
+                          <span className="text-xs font-black tabular-nums text-emerald-500">PKR {rev.toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-8">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Expenses</span>
+                          <span className="text-xs font-black tabular-nums text-rose-500">PKR {exp.toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <div className="pt-2 border-t border-dashed border-border/50 flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase text-muted-foreground">Net_Yield</span>
+                        <span className={cn("text-sm font-black tabular-nums", net >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                          {net >= 0 ? "+" : ""}PKR {net.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }}
+              />
 
-            <XAxis
-              dataKey="month"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={10}
-              tick={{
-                fill: "hsl(var(--muted-foreground))",
-                fontSize: 11,
-                fontWeight: 600,
-              }}
-            />
+              <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeWidth={1} strokeDasharray="4 4" />
 
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tickMargin={6}
-              width={64}
-              tickFormatter={formatPKR}
-              tick={{
-                fill: "hsl(var(--muted-foreground))",
-                fontSize: 10,
-                fontWeight: 500,
-              }}
-            />
-
-            <Tooltip
-              cursor={{
-                stroke: "hsl(var(--border))",
-                strokeWidth: 1,
-                strokeDasharray: "4 4",
-              }}
-              content={<CustomTooltip />}
-            />
-
-            <Area
-              type="monotone"
-              dataKey="expenses"
-              stroke="#f43f5e"
-              strokeWidth={1.5}
-              fill="url(#gradExpenses)"
-              dot={false}
-              activeDot={{ r: 3.5, fill: "#f43f5e", strokeWidth: 0 }}
-            />
-            <Area
-              type="monotone"
-              dataKey="revenue"
-              stroke="#10b981"
-              strokeWidth={2}
-              fill="url(#gradRevenue)"
-              dot={false}
-              activeDot={{ r: 3.5, fill: "#10b981", strokeWidth: 0 }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-
-        {/* Legend */}
-        <div className="flex items-center justify-end gap-4 px-4 pt-1">
-          {[
-            { color: "bg-emerald-500", label: "Revenue" },
-            { color: "bg-rose-500", label: "Expenses" },
-          ].map((item) => (
-            <div key={item.label} className="flex items-center gap-1.5">
-              <div className={cn("w-5 h-0.5 rounded-full", item.color)} />
-              <span className="text-[10px] font-semibold text-muted-foreground">
-                {item.label}
-              </span>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+              <Area
+                type="monotone"
+                dataKey="expenses"
+                stroke="#f43f5e"
+                strokeWidth={3}
+                fill="url(#fluidExpenses)"
+                activeDot={{ r: 6, fill: "#f43f5e", stroke: "white", strokeWidth: 2 }}
+                animationDuration={2000}
+              />
+              <Area
+                type="monotone"
+                dataKey="revenue"
+                stroke="#10b981"
+                strokeWidth={3}
+                fill="url(#fluidRevenue)"
+                activeDot={{ r: 6, fill: "#10b981", stroke: "white", strokeWidth: 2 }}
+                animationDuration={1500}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+    </div>
   );
 }

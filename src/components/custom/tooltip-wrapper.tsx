@@ -8,12 +8,16 @@ import { ReactNode } from "react";
 
 type TooltipWrapperProps = {
   children: ReactNode;
-  tooltipContent: string;
+  tooltipContent: ReactNode; // Changed from string to ReactNode
+  side?: "top" | "right" | "bottom" | "left";
+  contentClassName?: string;
 };
 
 export function TooltipWrapper({
   children,
   tooltipContent,
+  side = "top",
+  contentClassName,
 }: TooltipWrapperProps) {
   if (!tooltipContent) return <>{children}</>;
 
@@ -21,8 +25,12 @@ export function TooltipWrapper({
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>{children}</TooltipTrigger>
-        <TooltipContent>
-          <p>{tooltipContent}</p>
+        <TooltipContent side={side} className={contentClassName}>
+          {typeof tooltipContent === "string" ? (
+            <p>{tooltipContent}</p>
+          ) : (
+            tooltipContent
+          )}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

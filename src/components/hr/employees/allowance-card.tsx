@@ -113,7 +113,7 @@ export const AllowanceCard = ({
   const isCustom = allowanceId.startsWith("custom_");
 
   return (
-    <div className="relative flex flex-col gap-2.5 p-3.5 border rounded-xl bg-card hover:border-primary/40 transition-all shadow-sm group">
+    <div className="relative flex flex-col gap-2.5 p-3.5 border rounded-xl bg-card hover:border-primary/40 transition-all  group">
 
       {/* ── Name + Remove ── */}
       <div className="flex items-center justify-between gap-1">
@@ -197,7 +197,7 @@ export const AllowanceCard = ({
                       aria-label={`${isActive ? "Disable" : "Enable"} deduction on ${occasion.fullLabel}`}
                       aria-pressed={isActive}
                       className={`relative flex items-center justify-center size-7 rounded-lg border transition-all duration-150 ${isActive
-                        ? `${occasion.activeBg} ${occasion.color} border-2 shadow-sm`
+                        ? `${occasion.activeBg} ${occasion.color} border-2 `
                         : "bg-transparent text-muted-foreground/35 border-dashed border-muted-foreground/25 hover:border-muted-foreground/40 hover:text-muted-foreground/60"
                         }`}
                     >

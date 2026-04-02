@@ -203,7 +203,7 @@ export const SignupForm = () => {
               <div className="pt-1">
                 <Button
                   type="submit"
-                  className="w-full h-9 font-medium text-[13px] rounded-lg shadow-sm active:scale-[0.98] transition-all"
+                  className="w-full h-9 font-medium text-[13px] rounded-lg  active:scale-[0.98] transition-all"
                   disabled={isPending}
                 >
                   {isPending ? (

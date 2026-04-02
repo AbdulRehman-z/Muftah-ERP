@@ -48,7 +48,7 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
       supplierName: "",
       supplierShopName: "",
       email: "",
-      nationalId: "",
+      // nationalId: "",x
       phone: "",
       address: "",
       city: "",

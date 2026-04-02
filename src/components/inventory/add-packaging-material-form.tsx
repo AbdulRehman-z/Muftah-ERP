@@ -115,7 +115,7 @@ export const AddPackagingMaterialForm = ({
               activeType === "primary" ? "text-white" : "text-muted-foreground",
             )}
           />
-          Packing (Bag)
+          Packing
         </Button>
         <Button
           size={"lg"}
@@ -133,7 +133,7 @@ export const AddPackagingMaterialForm = ({
               activeType === "master" ? "text-white" : "text-muted-foreground",
             )}
           />
-          Plastic (Bucket)
+          Carton
         </Button>
         <Button
           size={"lg"}

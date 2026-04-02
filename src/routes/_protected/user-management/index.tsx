@@ -4,6 +4,7 @@ import { UsersTable } from "@/components/user-management/users-table";
 import { GenericLoader } from "@/components/custom/generic-loader";
 import { adminGetUsersFn } from "@/server-functions/user-management/super-admin-get-users-fn";
 import { Users } from "lucide-react";
+import { motion } from "framer-motion";
 
 export const Route = createFileRoute("/_protected/user-management/")({
   component: RouteComponent,
@@ -18,28 +19,44 @@ export const Route = createFileRoute("/_protected/user-management/")({
 
 function RouteComponent() {
   return (
-    <main className="flex-1 overflow-y-auto">
-      <div className="flex flex-col min-h-full p-6 md:p-8 space-y-6">
-        <div className="flex items-start gap-4 pb-6 border-b border-border/60">
-          <div className="size-11 shrink-0 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <Users className="size-5 text-primary" />
+    <main className="flex-1 overflow-y-auto bg-background font-sans antialiased">
+      <div className="flex flex-col min-h-full p-4 md:p-8 space-y-6">
+
+        {/* ── Sharp Header Block ────────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="relative flex items-center gap-5 p-6 border border-border bg-card rounded-none shadow-none overflow-hidden"
+        >
+          {/* Technical Grid Pattern */}
+          <div
+            className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04] pointer-events-none"
+            style={{ backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`, backgroundSize: "8px 8px" }}
+          />
+
+          <div className="relative z-10 p-3 bg-primary/10 border border-primary/20 rounded-none shrink-0">
+            <Users className="size-6 text-primary" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight leading-none">
+          <div className="relative z-10">
+            <h1 className="text-2xl font-black tracking-tight leading-none text-foreground uppercase">
               User Management
             </h1>
-            <p className="mt-1.5 text-[13.5px] text-muted-foreground">
-              Manage system users, assign roles, and control account access.
+            <p className="mt-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+              Manage system users, assign roles, and control account access
             </p>
           </div>
-        </div>
+        </motion.div>
 
+        {/* ── Data Table Area ───────────────────────────────────────────── */}
         <Suspense
           fallback={
-            <GenericLoader
-              title="Loading Users"
-              description="Fetching user data..."
-            />
+            <div className="border border-border bg-card p-12 rounded-none shadow-none">
+              <GenericLoader
+                title="Loading Directory"
+                description="Fetching user data and access logs..."
+              />
+            </div>
           }
         >
           <UsersTable />

@@ -323,7 +323,7 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                     </Card>
 
                     {/* Net Pay */}
-                    <div className="flex items-center justify-between p-5 bg-primary/5 border border-primary/20 rounded-xl shadow-sm">
+                    <div className="flex items-center justify-between p-5 bg-primary/5 border border-primary/20 rounded-xl ">
                         <div className="space-y-0.5">
                             <p className="text-sm font-bold text-primary flex items-center gap-2 uppercase tracking-wide">
                                 Net Payable Amount

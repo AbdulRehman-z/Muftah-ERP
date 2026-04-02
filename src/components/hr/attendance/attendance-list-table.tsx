@@ -525,14 +525,14 @@ export const AttendanceListTable = ({ data, date }: Props) => {
           <TabsList className="bg-muted/50 p-1 h-10 rounded-lg">
             <TabsTrigger
               value="standard"
-              className="gap-2 px-4 text-[13px] rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="gap-2 px-4 text-[13px] rounded-md data-[state=active]:bg-background data-[state=active]:"
             >
               <Users className="size-3.5" />
               Standard Staff
             </TabsTrigger>
             <TabsTrigger
               value="orderbooker"
-              className="gap-2 px-4 text-[13px] rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="gap-2 px-4 text-[13px] rounded-md data-[state=active]:bg-background data-[state=active]:"
             >
               <Zap className="size-3.5" />
               Order Bookers

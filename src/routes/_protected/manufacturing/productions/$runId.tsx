@@ -231,7 +231,7 @@ function ProductionRunDetailsPage() {
         <div className="p-8 pb-24 space-y-8 max-w-[1600px] mx-auto">
           {/* Failed Run Warning Banner */}
           {run.status === "cancelled" && (
-            <div className="bg-destructive/10 border-l-4 border-destructive p-4 rounded-r-lg shadow-sm flex items-start gap-4">
+            <div className="bg-destructive/10 border-l-4 border-destructive p-4 rounded-r-lg  flex items-start gap-4">
               <AlertTriangle className="size-6 text-destructive shrink-0 mt-0.5" />
               <div>
                 <h3 className="text-destructive font-bold text-lg">Physical Stock Return Required</h3>
