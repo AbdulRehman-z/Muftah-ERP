@@ -16,6 +16,7 @@ interface PreviewPayslipInput {
     arrearsAmount: number;
     arrearsFromMonths: string[];
   };
+  earlyCutoffDate?: string;
 }
 
 export function usePreviewPayslip(

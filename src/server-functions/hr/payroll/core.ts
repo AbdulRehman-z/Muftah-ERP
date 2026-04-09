@@ -66,6 +66,8 @@ export type GeneratePayslipInput = {
   autoUpdateLeaveBalances?: boolean;
   autoFetchNightShiftRate?: boolean;
   autoFetchTada?: boolean;
+  earlyCutoffDate?: string;
+  ignorePastUnmarkedDays?: boolean;
 };
 
 export async function generateEmployeePayslipCore(
@@ -84,6 +86,8 @@ export async function generateEmployeePayslipCore(
     autoUpdateLeaveBalances = true,
     autoFetchNightShiftRate = true,
     autoFetchTada = true,
+    earlyCutoffDate,
+    ignorePastUnmarkedDays = false,
   } = input;
 
   // -- 0. Validate arrears (fail-fast before any DB work) --------------------
@@ -242,7 +246,17 @@ export async function generateEmployeePayslipCore(
     payrollPeriod,
     deductionConfig,
     mergedAdditional,
+    earlyCutoffDate,
   );
+
+  // -- 6.1 Strict validation for missing attendance --------------------------
+  if (payslipCalc.unmarkedDays > 0 && !ignorePastUnmarkedDays) {
+    // We throw a specific error message format that the frontend can parse
+    // to trigger the Hard Warning Modal instead of a generic toast.
+    const err = new Error(`PAST_UNMARKED_DAYS:${payslipCalc.unmarkedDays}`);
+    err.name = "ValidationError";
+    throw err;
+  }
 
   // -- 6.5 Yearly Bradford Factor (Jan 1 - Dec 31 of the payroll year) -------
   const payrollYear = new Date(payrollPeriod.month).getFullYear();

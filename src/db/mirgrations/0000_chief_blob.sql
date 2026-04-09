@@ -1,5 +1,5 @@
 CREATE TYPE "public"."attendance_status" AS ENUM('present', 'absent', 'leave', 'holiday');--> statement-breakpoint
-CREATE TYPE "public"."employee_status" AS ENUM('active', 'on_leave', 'terminated', 'resigned');--> statement-breakpoint
+CREATE TYPE "public"."employee_status" AS ENUM('active', 'on_leave', 'terminated', 'resigned', 'pending_deletion');--> statement-breakpoint
 CREATE TYPE "public"."employment_type" AS ENUM('full_time', 'part_time', 'contract', 'intern');--> statement-breakpoint
 CREATE TYPE "public"."leave_type" AS ENUM('sick', 'annual', 'special');--> statement-breakpoint
 CREATE TYPE "public"."payment_mode" AS ENUM('per_km');--> statement-breakpoint

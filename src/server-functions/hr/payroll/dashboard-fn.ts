@@ -15,6 +15,7 @@ import {
 import { calculatePayslip } from "@/lib/payroll-calculator";
 import { createServerFn } from "@tanstack/react-start";
 import { generateEmployeePayslipCore } from "./core";
+import { getCycleForPayoutMonth } from "@/lib/payroll-cycle";
 
 // ── Helper ─────────────────────────────────────────────────────────────────
 
@@ -296,6 +297,7 @@ export const previewEmployeePayslipFn = createServerFn()
           arrearsFromMonths: z.array(z.string()),
         })
         .optional(),
+      earlyCutoffDate: z.string().optional(),
     }),
   )
   .handler(async ({ data }) => {
@@ -359,6 +361,7 @@ export const previewEmployeePayslipFn = createServerFn()
         deductConveyanceOnLeave: true,
       },
       { ...(data.additionalAmounts || {}), advanceDeduction },
+      data.earlyCutoffDate
     );
 
     // Apply arrears to the preview net salary if provided
@@ -439,6 +442,8 @@ export const saveEmployeePayslipFn = createServerFn()
       // Which wallet to debit net salary from.
       // Optional — if not provided, payslip is saved with no wallet debit.
       walletId: z.string().optional(),
+      earlyCutoffDate: z.string().optional(),
+      ignorePastUnmarkedDays: z.boolean().optional(),
     }),
   )
   .handler(async ({ data, context }) => {
@@ -476,6 +481,8 @@ export const saveEmployeePayslipFn = createServerFn()
         additionalAmounts,
         arrears,
         walletId,
+        earlyCutoffDate: data.earlyCutoffDate,
+        ignorePastUnmarkedDays: data.ignorePastUnmarkedDays,
       },
       // Pass the admin's userId for the transaction journal entry
       context.session.user.id,

@@ -475,6 +475,7 @@ export function calculatePayslip(
     taxDeduction?: number;
     overtimeMultiplier?: number;
   } = {},
+  earlyCutoffDate?: string,
 ): PayslipCalculation {
   const stdDutyHours = employee.standardDutyHours || 8;
   const config = employee.allowanceConfig || [];
@@ -491,20 +492,29 @@ export function calculatePayslip(
     restDays,
   );
 
-  // Working-day records only — excludes rest days and holidays
+  // Working-day records only — excludes rest days and holidays AND filters up to cutoff.
+  const evaluationEndDate = earlyCutoffDate ? earlyCutoffDate : payrollPeriod.endDate;
   const workingDayRecords = attendanceRecords.filter(
-    (r) => !restDayDateSet.has(r.date) && r.status !== "holiday",
+    (r) => r.date <= evaluationEndDate && !restDayDateSet.has(r.date) && r.status !== "holiday",
   );
 
   // ── 2. True working days for this cycle ──────────────────────────────────
-  const totalWorkingDays = calculateWorkingDays(
+  // Denominator MUST use the full cycle length so per-day wages do not inflate.
+  const fullCycleWorkingDays = calculateWorkingDays(
     payrollPeriod.startDate,
     payrollPeriod.endDate,
     attendanceRecords,
     restDays,
   );
-  const calendarDaysInMonth =
-    getCalendarDaysInPayPeriodMonth(totalWorkingDays);
+  const calendarDaysInMonth = getCalendarDaysInPayPeriodMonth(fullCycleWorkingDays);
+
+  // Evaluated working days for the interval up to earlyCutoffDate
+  const totalWorkingDays = calculateWorkingDays(
+    payrollPeriod.startDate,
+    evaluationEndDate,
+    attendanceRecords,
+    restDays,
+  );
 
   // ── 3. Attendance summary (working days only) ────────────────────────────
   const daysPresent = workingDayRecords.filter(

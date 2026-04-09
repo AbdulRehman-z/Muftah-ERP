@@ -163,3 +163,44 @@ export const rejectSalaryAdvanceFn = createServerFn()
       .returning();
     return updated;
   });
+
+/**
+ * Update an existing salary advance (only if pending)
+ */
+export const updateSalaryAdvanceFn = createServerFn()
+  .middleware([requireAdminMiddleware])
+  .inputValidator(
+    z.object({
+      id: z.string(),
+      amount: z.number().positive(),
+      reason: z.string(),
+      installmentMonths: z.number().int().min(1).default(1),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const advance = await db.query.salaryAdvances.findFirst({
+      where: eq(salaryAdvances.id, data.id),
+    });
+
+    if (!advance) throw new Error("Advance not found");
+    if (advance.status !== "pending") {
+      throw new Error("Only pending advances can be edited.");
+    }
+
+    const installmentMonths = data.installmentMonths || 1;
+    const installmentAmount = +(data.amount / installmentMonths).toFixed(2);
+
+    const [updated] = await db
+      .update(salaryAdvances)
+      .set({
+        amount: data.amount.toString(),
+        reason: data.reason,
+        installmentMonths,
+        installmentAmount: installmentAmount.toString(),
+      })
+      .where(eq(salaryAdvances.id, data.id))
+      .returning();
+
+    return updated;
+  });
+

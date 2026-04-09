@@ -1,5 +1,5 @@
 {
-  "id": "14727450-d5bf-4256-96fe-da3086db7dd3",
+  "id": "8bda3b5a-03d1-42fd-b17d-7a010bd0e21d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -4880,7 +4880,8 @@
         "active",
         "on_leave",
         "terminated",
-        "resigned"
+        "resigned",
+        "pending_deletion"
       ]
     },
     "public.employment_type": {

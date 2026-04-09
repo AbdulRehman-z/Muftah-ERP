@@ -44,6 +44,7 @@ export type PayslipData = {
     totalDeductions: string;
     netSalary: string;
     remarks: string | null;
+    paymentSource?: string | null;
     createdAt: Date;
 };
 
@@ -76,7 +77,7 @@ function toN(s: string | null | undefined): number {
     return isNaN(n) ? 0 : n;
 }
 
-const B = "1px solid #9ca3af";
+const B = "none";
 
 const base: React.CSSProperties = {
     border: B,
@@ -294,20 +295,20 @@ export const PayslipView = ({
                         table-layout: fixed;
                     }
                     .cell {
-                        border: 1px solid #9ca3af;
+                        border: none;
                         padding: 3px 7px;
                         font-size: 11px;
                         vertical-align: middle;
                     }
                     .cell-label {
-                        border: 1px solid #9ca3af;
+                        border: none;
                         padding: 3px 7px;
                         font-size: 11px;
                         font-weight: 600;
                         vertical-align: middle;
                     }
                     .cell-hdr {
-                        border: 1px solid #9ca3af;
+                        border: none;
                         padding: 3px 7px;
                         font-size: 11px;
                         font-weight: 700;
@@ -320,7 +321,7 @@ export const PayslipView = ({
                     .ta-center { text-align: center; }
                     .ta-right { text-align: right; }
                     .total-cell {
-                        border: 1px solid #9ca3af;
+                        border: none;
                         padding: 3px 7px;
                         font-weight: 700;
                         text-align: right;
@@ -329,7 +330,7 @@ export const PayslipView = ({
                         print-color-adjust: exact;
                     }
                     .total-label {
-                        border: 1px solid #9ca3af;
+                        border: none;
                         padding: 3px 7px;
                         font-weight: 700;
                         text-align: right;
@@ -338,7 +339,7 @@ export const PayslipView = ({
                         print-color-adjust: exact;
                     }
                     .net-cell {
-                        border: 1px solid #9ca3af;
+                        border: none;
                         padding: 3px 7px;
                         font-weight: 800;
                         font-size: 13px;
@@ -348,7 +349,7 @@ export const PayslipView = ({
                         print-color-adjust: exact;
                     }
                     .net-num {
-                        border: 1px solid #9ca3af;
+                        border: none;
                         padding: 3px 7px;
                         font-weight: 800;
                         font-size: 13px;
@@ -365,7 +366,7 @@ export const PayslipView = ({
 
                     /* Remarks */
                     .remarks {
-                        border: 1px solid #9ca3af;
+                        border: none;
                         padding: 8px 10px;
                         min-height: 54px;
                         margin-top: 16px;
@@ -410,12 +411,9 @@ export const PayslipView = ({
                     <!-- Header -->
                     <div class="header">
                         <div class="header-left">
-                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-                                <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7l-9-5z" fill="#fef9c3" stroke="#eab308" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M9 12l2 2 4-4" stroke="#eab308" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
+                            <img src="/company-logo-transparent.png" alt="Muftah Chemical" style="width: 50px; height: 50px; object-fit: contain; margin-right: 4px;" />
                             <div>
-                                <div class="company-name">Muftah Chemical PVT LTD (S-WASH)</div>
+                                <div class="company-name">Muftah Chemical PVT LTD</div>
                                 <div class="company-sub">Confidential Payslip</div>
                             </div>
                         </div>
@@ -451,14 +449,14 @@ export const PayslipView = ({
                                 <td class="cell" colspan="2">${employee.cnic || "N/A"}</td>
                             </tr>
                             <tr>
-                                <td class="cell-label">Bank Account Number</td>
-                                <td class="cell" colspan="2">${employee.bankAccountNumber || "N/A"}</td>
+                                <td class="cell-label">Payment Method</td>
+                                <td class="cell" colspan="2">${employee.bankAccountNumber ? "Bank Transfer" : "Cash"}</td>
                                 <td class="cell-label">Bradford Factor Period</td>
                                 <td class="cell" colspan="2">${bradfordPeriod}</td>
                             </tr>
                             <tr>
-                                <td class="cell-label">Bank Name</td>
-                                <td class="cell" colspan="2">${employee.bankName || "Cash"}</td>
+                                <td class="cell-label">Account Details</td>
+                                <td class="cell" colspan="2">${employee.bankAccountNumber ? `${employee.bankName} - ${employee.bankAccountNumber} (${employee.firstName} ${employee.lastName})` : "—"}</td>
                                 <td class="cell-label">Bradford Factor</td>
                                 <td class="cell bradford" colspan="2">${effectiveBradford}${payslip.bradfordFactorOverride != null ? ' <span style="font-size:9px;color:#9ca3af;font-weight:400">(override)</span>' : ""}</td>
                             </tr>
@@ -508,12 +506,8 @@ export const PayslipView = ({
                     <!-- Remarks -->
                     <div class="remarks">
                         ${payslip.remarks || "Salaries are paid as per company policy."}
-                    </div>
-
-                    <!-- Signatures -->
-                    <div class="signatures">
-                        <div class="sig-block"><div class="sig-line">Employee Signature</div></div>
-                        <div class="sig-block"><div class="sig-line">HR / Finance Manager</div></div>
+                        <br/><br/>
+                        ${payslip.paymentSource ? `<strong>Paid From:</strong> ${payslip.paymentSource}` : ""}
                     </div>
 
                     <!-- Footer -->
@@ -595,30 +589,11 @@ export const PayslipView = ({
                     }}
                 >
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        {/* SVG shield icon (no lucide dependency in popup) */}
-                        <svg
-                            width="36"
-                            height="36"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            style={{ color: "#eab308", flexShrink: 0 }}
-                        >
-                            <path
-                                d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7l-9-5z"
-                                fill="#fef9c3"
-                                stroke="#eab308"
-                                strokeWidth="1.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
-                            <path
-                                d="M9 12l2 2 4-4"
-                                stroke="#eab308"
-                                strokeWidth="1.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
-                        </svg>
+                        <img 
+                            src="/company-logo-transparent.png" 
+                            alt="Logo" 
+                            style={{ width: 44, height: 44, objectFit: "contain" }} 
+                        />
                         <div>
                             <div
                                 style={{
@@ -628,7 +603,7 @@ export const PayslipView = ({
                                     letterSpacing: 0.5,
                                 }}
                             >
-                                Muftah Chemical PVT LTD (S-WASH)
+                                Muftah Chemical PVT LTD
                             </div>
                             <div
                                 style={{ fontSize: 10, color: "#6b7280", fontStyle: "italic" }}
@@ -693,9 +668,9 @@ export const PayslipView = ({
                             </td>
                         </tr>
                         <tr>
-                            <td style={styles.label}>Bank Account Number</td>
+                            <td style={styles.label}>Payment Method</td>
                             <td style={styles.data} colSpan={2}>
-                                {employee.bankAccountNumber || "N/A"}
+                                {employee.bankAccountNumber ? "Bank Transfer" : "Cash"}
                             </td>
                             <td style={styles.label}>Bradford Factor Period</td>
                             <td style={styles.data} colSpan={2}>
@@ -703,9 +678,9 @@ export const PayslipView = ({
                             </td>
                         </tr>
                         <tr>
-                            <td style={styles.label}>Bank Name</td>
+                            <td style={styles.label}>Account Details</td>
                             <td style={styles.data} colSpan={2}>
-                                {employee.bankName || "Cash"}
+                                {employee.bankAccountNumber ? `${employee.bankName} - ${employee.bankAccountNumber} (${employee.firstName} ${employee.lastName})` : "—"}
                             </td>
                             <td style={styles.label}>Bradford Factor</td>
                             <td
@@ -847,33 +822,14 @@ export const PayslipView = ({
                     }}
                 >
                     {payslip.remarks || "Salaries are paid as per company policy."}
+                    {payslip.paymentSource && (
+                        <div style={{ marginTop: 8 }}>
+                            <strong>Paid From:</strong> {payslip.paymentSource}
+                        </div>
+                    )}
                 </div>
 
-                {/* Signatures */}
-                <div
-                    style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        paddingTop: 36,
-                        paddingLeft: 8,
-                        paddingRight: 8,
-                    }}
-                >
-                    {["Employee Signature", "HR / Finance Manager"].map((label) => (
-                        <div key={label} style={{ textAlign: "center", width: 200 }}>
-                            <div
-                                style={{
-                                    borderTop: "1px solid #1f2937",
-                                    paddingTop: 6,
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                }}
-                            >
-                                {label}
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                {/* Signatures removed */}
 
                 {/* Footer */}
                 <div
@@ -888,7 +844,7 @@ export const PayslipView = ({
                         letterSpacing: 2,
                     }}
                 >
-                    System Generated Slip • Muftah Chemical PVT LTD (S-WASH)
+                    System Generated Slip • Muftah Chemical PVT LTD
                 </div>
             </div>
             {/* end printRef */}

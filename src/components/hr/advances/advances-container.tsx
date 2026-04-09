@@ -5,6 +5,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ApproveAdvanceDialog } from "./approve-advance-dialog";
+import { RequestAdvanceDialog } from "./request-advance-dialog";
 import { useRejectSalaryAdvance } from "@/hooks/hr/use-salary-advances";
 import {
   CheckCircle2,
@@ -12,6 +13,8 @@ import {
   XCircle,
   Receipt,
   TrendingUp,
+  Edit,
+  Plus,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { GenericEmpty } from "@/components/custom/empty";
@@ -54,6 +57,8 @@ export function AdvancesContainer() {
   const [approveId, setApproveId] = useState<string | null>(null);
   const [approveAmount, setApproveAmount] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
+  const [advanceToEdit, setAdvanceToEdit] = useState<any>(null);
 
   const rejectMutate = useRejectSalaryAdvance();
 
@@ -129,9 +134,14 @@ export function AdvancesContainer() {
         id: "amount",
         header: "Amount",
         cell: ({ row }) => (
-          <span className="font-black text-[13px] tabular-nums text-foreground">
-            PKR {parseFloat(row.original.amount).toLocaleString()}
-          </span>
+          <div className="flex flex-col">
+            <span className="font-black text-[13px] tabular-nums text-foreground">
+              PKR {parseFloat(row.original.amount).toLocaleString()}
+            </span>
+            <span className="text-[9px] font-semibold text-muted-foreground uppercase mt-0.5">
+              {row.original.installmentMonths} Installments
+            </span>
+          </div>
         ),
       },
       {
@@ -160,6 +170,21 @@ export function AdvancesContainer() {
           if (row.original.status !== "pending") return null;
           return (
             <div className="flex items-center gap-2 justify-end pr-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1.5 rounded-none shadow-none border-primary/20 text-primary hover:bg-primary/5"
+                onClick={() => {
+                  setAdvanceToEdit(row.original);
+                  setIsRequestDialogOpen(true);
+                }}
+              >
+                <Edit className="size-3.5" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">
+                  Edit
+                </span>
+              </Button>
+
               <Button
                 size="sm"
                 className="h-8 gap-1.5 rounded-none shadow-none bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -197,6 +222,29 @@ export function AdvancesContainer() {
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6 font-sans antialiased">
+      {/* ── Header Area ────────────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2">
+        <div className="space-y-0.5">
+          <h1 className="text-xl font-black uppercase tracking-tighter text-foreground flex items-center gap-2">
+            <Receipt className="size-5 text-primary" />
+            Salary Advances
+          </h1>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+            Manage and approve employee advance requests
+          </p>
+        </div>
+        <Button 
+          onClick={() => {
+            setAdvanceToEdit(null);
+            setIsRequestDialogOpen(true);
+          }}
+          className="h-10 rounded-none shadow-none gap-2 bg-foreground text-background hover:bg-foreground/90 font-bold uppercase tracking-widest text-[11px]"
+        >
+          <Plus className="size-4" />
+          Request New Advance
+        </Button>
+      </div>
+
       {/* ── KPI Cards ──────────────────────────────────────────────────── */}
       <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <SharpKPICard
@@ -256,6 +304,12 @@ export function AdvancesContainer() {
         onOpenChange={(open) => !open && setApproveId(null)}
         advanceId={approveId}
         amount={approveAmount}
+      />
+
+      <RequestAdvanceDialog
+        open={isRequestDialogOpen}
+        onOpenChange={setIsRequestDialogOpen}
+        advanceToEdit={advanceToEdit}
       />
     </motion.div>
   );

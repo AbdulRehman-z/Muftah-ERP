@@ -1,26 +1,35 @@
+import { useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { listSalaryAdvancesFn } from "@/server-functions/hr/advances/advances-fn";
-import { useState, useMemo } from "react";
-import type { ColumnDef } from "@tanstack/react-table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { useRejectSalaryAdvance } from "@/hooks/hr/use-salary-advances";
-import {
-  CheckCircle2,
-  Clock,
-  XCircle,
-  Receipt,
-  TrendingUp,
-} from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { GenericEmpty } from "@/components/custom/empty";
-import { HREmptyIllustration } from "@/components/illustrations/HREmptyIllustration";
-import { format, parseISO } from "date-fns";
-import { cn } from "@/lib/utils";
-import { DataTable } from "@/components/custom/data-table";
+import { getDailyAttendanceFn } from "@/server-functions/hr/attendance/get-daily-attendance-fn";
+import { AttendanceListTable } from "./attendance-list-table";
+import { format, addDays, startOfToday, parseISO, isToday } from "date-fns";
 import { motion, Variants } from "framer-motion";
-import { SharpKPICard } from "./SharpINteractiveKpiCard";
-import { ApproveAdvanceDialog } from "../advances/approve-advance-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
+  RotateCcw,
+  Clock4,
+  TimerOff,
+  Settings2,
+  CalendarRange,
+  Users,
+  CheckCircle2,
+  XCircle,
+  Clock,
+} from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { SetRateDialog } from "@/components/hr/tada/set-rate-dialog";
+import { useActiveTadaRate } from "@/hooks/hr/use-tada";
+import { BulkAttendanceSheet } from "./bulk-attendance-sheet";
 
 // ── Animation Variants ─────────────────────────────────────────────────────
 
@@ -41,222 +50,332 @@ const itemVariants: Variants = {
   },
 };
 
-// ── Status config ─────────────────────────────────────────────────────────
+// ── Component ──────────────────────────────────────────────────────────────
 
-const statusConfig: Record<string, { label: string; className: string }> = {
-  pending: { label: "Pending", className: "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400" },
-  approved: { label: "Approved", className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400" },
-  deducted: { label: "Deducted", className: "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400" },
-  rejected: { label: "Rejected", className: "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-400" },
-};
+export const AttendanceContainer = () => {
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(
+    format(startOfToday(), "yyyy-MM-dd"),
+  );
+  const [isSetRateOpen, setIsSetRateOpen] = useState(false);
 
-export function AdvancesContainer() {
-  const [approveId, setApproveId] = useState<string | null>(null);
-  const [approveAmount, setApproveAmount] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const { data: activeRate } = useActiveTadaRate();
 
-  const rejectMutate = useRejectSalaryAdvance();
-
-  const { data: advances } = useSuspenseQuery({
-    queryKey: ["salary-advances"],
-    queryFn: () => listSalaryAdvancesFn({ data: { limit: 200 } }),
+  const { data: employees } = useSuspenseQuery({
+    queryKey: ["daily-attendance", selectedDate],
+    queryFn: () => getDailyAttendanceFn({ data: { date: selectedDate } }),
+    select: (data) =>
+      data.map((e) => ({
+        ...e,
+        attendance: e.attendance.map((a) => ({
+          ...a,
+          overtimeStatus: a.overtimeStatus as
+            | "pending"
+            | "approved"
+            | "rejected"
+            | null,
+          entrySource: a.entrySource as "biometric" | "manual" | null,
+        })),
+      })),
   });
 
-  // KPI stats
-  const pendingCount = advances.filter((a) => a.status === "pending").length;
-  const pendingSum = advances
-    .filter((a) => a.status === "pending")
-    .reduce((s, a) => s + parseFloat(a.amount), 0);
-  const approvedSum = advances
-    .filter((a) => a.status === "approved" || a.status === "deducted")
-    .reduce((s, a) => s + parseFloat(a.amount), 0);
-  const totalSum = advances.reduce((s, a) => s + parseFloat(a.amount), 0);
+  const stats = {
+    total: employees.length,
+    present: employees.filter((e) => e.attendance[0]?.status === "present").length,
+    absent: employees.filter((e) => e.attendance[0]?.status === "absent").length,
+    late: employees.filter((e) => e.attendance[0]?.isLate).length,
+    leave: employees.filter((e) => e.attendance[0]?.status === "leave").length,
+    undertimeCount: employees.filter((e) => {
+      const a = e.attendance[0];
+      if (!a || a.status !== "present") return false;
+      const duty = parseFloat(a.dutyHours || "0");
+      const standard = (e as any).standardDutyHours || 8;
+      return duty < standard;
+    }).length,
+    undertimeMins: employees.reduce((acc, e) => {
+      const a = e.attendance[0];
+      if (!a || a.status !== "present") return acc;
+      const duty = parseFloat(a.dutyHours || "0");
+      const standard = (e as any).standardDutyHours || 8;
+      return duty < standard ? acc + Math.round((standard - duty) * 60) : acc;
+    }, 0),
+  };
 
-  const filteredAdvances = useMemo(() => {
-    if (!searchQuery.trim()) return advances;
-    const q = searchQuery.toLowerCase();
-    return advances.filter((a) => {
-      const emp = a.employee;
-      return (
-        `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(q) ||
-        emp.employeeCode.toLowerCase().includes(q) ||
-        a.reason?.toLowerCase().includes(q)
-      );
-    });
-  }, [advances, searchQuery]);
+  const handleDateChange = (days: number) => {
+    const nextDate = addDays(parseISO(selectedDate), days);
+    setSelectedDate(format(nextDate, "yyyy-MM-dd"));
+  };
 
-  const columns: ColumnDef<(typeof advances)[number]>[] = useMemo(
-    () => [
-      {
-        id: "employee",
-        header: "Employee",
-        cell: ({ row }) => {
-          const emp = row.original.employee;
-          return (
-            <div className="flex items-center gap-3">
-              <Avatar className="h-8 w-8 rounded-none border border-border shadow-none">
-                <AvatarFallback className="rounded-none text-[10px] font-bold bg-primary/10 text-primary">
-                  {emp.firstName[0]}{emp.lastName[0]}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col">
-                <span className="font-bold text-[13px] leading-tight text-foreground">
-                  {emp.firstName} {emp.lastName}
-                </span>
-                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
-                  {emp.employeeCode}
-                </span>
-              </div>
-            </div>
-          );
-        },
-      },
-      {
-        id: "date",
-        header: "Request Date",
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <span className="font-bold text-[13px] uppercase tracking-widest tabular-nums text-foreground">
-              {format(parseISO(row.original.date), "dd MMM yyyy")}
-            </span>
-            <span className="text-[10px] font-medium text-muted-foreground line-clamp-1 max-w-[160px] mt-0.5">
-              {row.original.reason}
-            </span>
-          </div>
-        ),
-      },
-      {
-        id: "amount",
-        header: "Amount",
-        cell: ({ row }) => (
-          <span className="font-black text-[13px] tabular-nums text-foreground">
-            PKR {parseFloat(row.original.amount).toLocaleString()}
-          </span>
-        ),
-      },
-      {
-        id: "status",
-        header: "Status",
-        cell: ({ row }) => {
-          const s = row.original.status as string;
-          const cfg = statusConfig[s] ?? { label: s, className: "bg-muted text-muted-foreground" };
-          return (
-            <Badge
-              variant="outline"
-              className={cn(
-                "text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-none",
-                cfg.className,
-              )}
-            >
-              {cfg.label}
-            </Badge>
-          );
-        },
-      },
-      {
-        id: "actions",
-        header: "",
-        cell: ({ row }) => {
-          if (row.original.status !== "pending") return null;
-          return (
-            <div className="flex items-center gap-2 justify-end pr-2">
-              <Button
-                size="sm"
-                className="h-8 gap-1.5 rounded-none shadow-none bg-emerald-600 hover:bg-emerald-700 text-white"
-                onClick={() => {
-                  setApproveAmount(row.original.amount);
-                  setApproveId(row.original.id);
-                }}
-              >
-                <CheckCircle2 className="size-3.5" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">
-                  Approve
-                </span>
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                className="h-8 gap-1.5 px-3 rounded-none shadow-none"
-                disabled={rejectMutate.isPending}
-                onClick={() =>
-                  rejectMutate.mutate({ data: { advanceId: row.original.id } })
-                }
-              >
-                <XCircle className="size-3.5" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">
-                  Reject
-                </span>
-              </Button>
-            </div>
-          );
-        },
-      },
-    ],
-    [rejectMutate],
-  );
+  const parsedDate = parseISO(selectedDate);
+  const isTodaySelected = isToday(parsedDate);
+
+  const attendanceRate = stats.total > 0
+    ? Math.round((stats.present / stats.total) * 100)
+    : 0;
+
+  const formatUndertimeMins = (mins: number): string | null => {
+    if (mins <= 0) return null;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
+  };
+
+  const undertimeLabel = formatUndertimeMins(stats.undertimeMins);
+
+  const rateColorClass = attendanceRate >= 80
+    ? "text-emerald-600 dark:text-emerald-500"
+    : attendanceRate >= 60
+      ? "text-amber-600 dark:text-amber-500"
+      : "text-rose-600 dark:text-rose-500";
+
+  const rateBarColorClass = attendanceRate >= 80
+    ? "bg-emerald-500"
+    : attendanceRate >= 60
+      ? "bg-amber-500"
+      : "bg-rose-500";
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6 font-sans antialiased">
-      {/* ── KPI Cards ──────────────────────────────────────────────────── */}
-      <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+      {/* ── Sharp Header & Toolbar ──────────────────────────────────────── */}
+      <motion.div variants={itemVariants} className="relative border border-border bg-card rounded-none shadow-none overflow-hidden">
+        {/* Technical Grid Pattern */}
+        <div
+          className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04] pointer-events-none"
+          style={{ backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`, backgroundSize: "8px 8px" }}
+        />
+
+        <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-4 p-5 border-b border-border">
+          <div className="flex items-center gap-4">
+            <div className="p-2.5 bg-primary/10 border border-primary/20 rounded-none">
+              <Clock4 className="size-5 text-primary" />
+            </div>
+            <div>
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-bold tracking-tight text-foreground uppercase">Daily Ledger</h2>
+                {isTodaySelected && (
+                  <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-widest rounded-none border-border px-1.5 py-0">
+                    Live
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
+                {format(parsedDate, "dd MMM yyyy")}
+              </p>
+            </div>
+          </div>
+
+          {/* Date Navigator & Actions */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center border border-border bg-background">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-none border-r border-border hover:bg-muted"
+                onClick={() => handleDateChange(-1)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="h-9 px-4 rounded-none text-xs font-bold uppercase tracking-widest gap-2 hover:bg-muted"
+                  >
+                    <CalendarDays className="size-3.5 text-muted-foreground" />
+                    {format(parsedDate, "dd MMM yyyy")}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 rounded-none border-border shadow-none" align="center">
+                  <Calendar
+                    mode="single"
+                    selected={parsedDate}
+                    onSelect={(date) =>
+                      date && setSelectedDate(format(date, "yyyy-MM-dd"))
+                    }
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-none border-l border-border hover:bg-muted"
+                onClick={() => handleDateChange(1)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <Button
+              variant="outline"
+              size="icon"
+              className={cn(
+                "h-9 w-9 rounded-none border-border shadow-none hover:bg-muted",
+                isTodaySelected && "opacity-50 pointer-events-none"
+              )}
+              onClick={() => setSelectedDate(format(startOfToday(), "yyyy-MM-dd"))}
+              title="Jump to Today"
+            >
+              <RotateCcw className="size-3.5" />
+            </Button>
+
+            <div className="w-px h-9 bg-border hidden sm:block mx-1" />
+
+            <Button variant="outline" size="sm" onClick={() => setBulkOpen(true)} className="h-9 rounded-none shadow-none border-border font-bold text-xs uppercase tracking-widest">
+              <CalendarRange className="size-3.5 mr-2" />
+              Bulk Mark
+            </Button>
+
+            <Button
+              variant={activeRate ? "default" : "outline"}
+              className={cn("h-9 px-4 rounded-none shadow-none font-bold text-xs uppercase tracking-widest gap-2", !activeRate && "border-border")}
+              onClick={() => setIsSetRateOpen(true)}
+            >
+              <Settings2 className="size-3.5" />
+              <span className="hidden sm:inline">
+                {activeRate ? `PKR ${activeRate.ratePerKm}/km` : "Set Rate"}
+              </span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Sharp Attendance Rate Bar */}
+        <div className="relative z-10 p-5 bg-muted/10">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              Fleet Attendance Rate
+            </span>
+            <div className="flex items-center gap-4">
+              {undertimeLabel && stats.undertimeCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-500 border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/20 px-2 py-0.5">
+                  <TimerOff className="size-3" />
+                  −{undertimeLabel} ({stats.undertimeCount} emp)
+                </span>
+              )}
+              <span className={cn("text-lg font-black tabular-nums tracking-tight", rateColorClass)}>
+                {attendanceRate}%
+              </span>
+            </div>
+          </div>
+          <div className="h-1.5 w-full bg-border rounded-none overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${attendanceRate}%` }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className={cn("h-full rounded-none", rateBarColorClass)}
+            />
+          </div>
+        </div>
+      </motion.div>
+
+      {/* ── Sharp KPI Summary Grid ────────────────────────────────────── */}
+      <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <SharpKPICard
-          title="Total Requests"
-          value={advances.length.toString()}
-          subtext="Advances in history"
-          icon={Receipt}
+          title="Total Workforce"
+          value={stats.total.toString()}
+          subtext="Registered employees"
+          icon={Users}
           theme="blue"
         />
         <SharpKPICard
-          title="Pending Approval"
-          value={`PKR ${Math.round(pendingSum).toLocaleString()}`}
-          subtext={`${pendingCount} request${pendingCount !== 1 ? "s" : ""} waiting`}
-          icon={Clock}
-          theme="amber"
-        />
-        <SharpKPICard
-          title="Total Paid Out"
-          value={`PKR ${Math.round(approvedSum).toLocaleString()}`}
-          subtext="Approved & Deducted"
+          title="Present"
+          value={stats.present.toString()}
+          subtext="Checked in today"
           icon={CheckCircle2}
           theme="emerald"
         />
         <SharpKPICard
-          title="Grand Total"
-          value={`PKR ${Math.round(totalSum).toLocaleString()}`}
-          subtext="All time advance value"
-          icon={TrendingUp}
-          theme="violet"
+          title="Absent & Leave"
+          value={(stats.absent + stats.leave).toString()}
+          subtext={`${stats.leave} on approved leave`}
+          icon={XCircle}
+          theme="rose"
+        />
+        <SharpKPICard
+          title="Late Arrivals"
+          value={stats.late.toString()}
+          subtext="Missed standard time"
+          icon={Clock}
+          theme="amber"
         />
       </motion.div>
 
-      {/* ── DataTable ─────────────────────────────────────────────────── */}
+      {/* ── Table Container ───────────────────────────────────────────── */}
       <motion.div variants={itemVariants} className="border border-border bg-card rounded-none shadow-none">
-        <DataTable
-          columns={columns}
-          data={filteredAdvances}
-          showSearch
-          searchPlaceholder="Search employee or code..."
-          searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
-          showViewOptions={false}
-          pageSize={10}
-          className="rounded-none border-none shadow-none"
-          emptyState={
-            <GenericEmpty
-              icon={HREmptyIllustration}
-              title="No results found"
-              description="No salary advances matching your search."
-            />
-          }
-        />
+        <AttendanceListTable data={employees} date={selectedDate} />
       </motion.div>
 
-      <ApproveAdvanceDialog
-        open={!!approveId}
-        onOpenChange={(open) => !open && setApproveId(null)}
-        advanceId={approveId}
-        amount={approveAmount}
+      {/* ── Modals/Sheets ─────────────────────────────────────────────── */}
+      <BulkAttendanceSheet
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        employees={employees}
       />
+      <SetRateDialog
+        open={isSetRateOpen}
+        onOpenChange={setIsSetRateOpen}
+      />
+    </motion.div>
+  );
+};
+
+// ── Sharp Pixel-Perfect KPI Component ───────────────────────────────────────
+
+type KPITheme = "blue" | "rose" | "emerald" | "violet" | "amber";
+
+const sharpThemeStyles = {
+  blue: { border: "border-t-blue-500", iconBg: "bg-blue-500/10", iconText: "text-blue-500" },
+  rose: { border: "border-t-rose-500", iconBg: "bg-rose-500/10", iconText: "text-rose-500" },
+  emerald: { border: "border-t-emerald-500", iconBg: "bg-emerald-500/10", iconText: "text-emerald-500" },
+  violet: { border: "border-t-violet-500", iconBg: "bg-violet-500/10", iconText: "text-violet-500" },
+  amber: { border: "border-t-amber-500", iconBg: "bg-amber-500/10", iconText: "text-amber-500" },
+};
+
+function SharpKPICard({
+  title,
+  value,
+  subtext,
+  icon: Icon,
+  theme
+}: {
+  title: string;
+  value: string;
+  subtext: string;
+  icon: any;
+  theme: KPITheme
+}) {
+  const styles = sharpThemeStyles[theme];
+
+  return (
+    <motion.div
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      className={cn(
+        "relative flex flex-col justify-between p-5 bg-card border border-border rounded-none shadow-none",
+        "border-t-2",
+        styles.border
+      )}
+    >
+      {/* Technical Grid Pattern */}
+      <div
+        className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04] pointer-events-none"
+        style={{ backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`, backgroundSize: "8px 8px" }}
+      />
+
+      <div className="relative z-10 flex items-start justify-between mb-8">
+        <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">{title}</p>
+        <div className={cn("p-1.5 rounded-none", styles.iconBg)}>
+          <Icon className={cn("size-4", styles.iconText)} />
+        </div>
+      </div>
+
+      <div className="relative z-10 space-y-1">
+        <h3 className="text-3xl font-bold tracking-tight text-foreground tabular-nums">{value}</h3>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">{subtext}</p>
+      </div>
     </motion.div>
   );
 }

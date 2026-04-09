@@ -81,6 +81,10 @@ export const walletsRelations = relations(wallets, ({ many }) => ({
 }));
 
 export const expensesRelations = relations(expenses, ({ one }) => ({
+  category: one(expenseCategories, {
+    fields: [expenses.categoryId],
+    references: [expenseCategories.id],
+  }),
   wallet: one(wallets, {
     fields: [expenses.walletId],
     references: [wallets.id],

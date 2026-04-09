@@ -26,6 +26,8 @@ import { STANDARD_ALLOWANCES } from "@/lib/types/hr-types";
 import { Badge } from "@/components/ui/badge";
 import { ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
+import { getCycleForPayoutMonth } from "@/lib/payroll-cycle";
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // ── Allowance display name resolver ──────────────────────────────────────────
 const ALLOWANCE_LABELS: Record<string, string> = Object.fromEntries(
@@ -53,9 +55,17 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
     const [activeTab, setActiveTab] = useState("overview");
     const [selectedWalletId, setSelectedWalletId] = useState<string>("");
     const [selectedArrearsKeys, setSelectedArrearsKeys] = useState<Set<string>>(new Set());
+    const [earlyCutoffDate, setEarlyCutoffDate] = useState<string | undefined>();
+    const [ignorePastUnmarkedDays, setIgnorePastUnmarkedDays] = useState(false);
+    const [showUnmarkedModal, setShowUnmarkedModal] = useState<{ count: number } | null>(null);
 
     const saveMutation = useSavePayslip(onSuccess);
     const { data: wallets = [] } = useWallets();
+
+    const [cyYear, cyMonth] = month.split("-").map(Number);
+    const cycle = getCycleForPayoutMonth(cyYear, cyMonth);
+    const today = format(new Date(), "yyyy-MM-dd");
+    const isEarlyProcessing = cycle && today < cycle.cycleEnd;
 
     const form = useForm({
         defaultValues: {
@@ -92,6 +102,7 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                 return sum + (missed?.amount || 0);
             }, 0),
         } : undefined,
+        earlyCutoffDate,
     }, isOpen);
 
     // Smart wallet suggestion: match employee's bank name to a wallet
@@ -121,7 +132,7 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
     const insufficientFunds = !!selectedWallet && walletBalance < netSalary;
     const afterBalance = walletBalance - netSalary;
 
-    const handleSave = () => {
+    const handleSave = (customIgnore?: boolean) => {
         if (!calculation) return;
 
         if (!selectedWalletId) {
@@ -163,6 +174,15 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                     return sum + (missed?.amount || 0);
                 }, 0),
             } : undefined,
+            earlyCutoffDate,
+            ignorePastUnmarkedDays: customIgnore ?? ignorePastUnmarkedDays,
+        }, {
+            onError: (err: Error) => {
+                if (err.message.includes("PAST_UNMARKED_DAYS")) {
+                    const days = parseInt(err.message.split(":")[1] || "0", 10);
+                    setShowUnmarkedModal({ count: days });
+                }
+            }
         });
     };
 
@@ -194,6 +214,38 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                 <div className="absolute top-0 right-0 p-2 z-50">
                     <Loader2 className="size-4 animate-spin text-primary opacity-70" />
                 </div>
+            )}
+
+            {isEarlyProcessing && !earlyCutoffDate && cycle && (
+                <Alert className="bg-amber-50 border-amber-200">
+                    <AlertCircle className="size-4 text-amber-600" />
+                    <AlertTitle className="text-amber-800">Early Payroll Generation</AlertTitle>
+                    <AlertDescription className="text-amber-700 flex flex-col gap-3 mt-2">
+                        <p>
+                            The payroll cycle ends on <strong>{format(parseISO(cycle.cycleEnd), "MMM d, yyyy")}</strong>, but today is <strong>{format(parseISO(today), "MMM d, yyyy")}</strong>.
+                            <br/>Would you like to generate a pro-rated payslip strictly for the evaluated days up to today?
+                        </p>
+                        <Button size="sm" variant="outline" className="w-fit border-amber-300 text-amber-800 hover:bg-amber-100 bg-white" onClick={() => setEarlyCutoffDate(today)}>
+                            Yes, Generate Pro-rated Slip till Today
+                        </Button>
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {earlyCutoffDate && (
+                <Alert className="bg-blue-50 border-blue-200">
+                    <Info className="size-4 text-blue-600" />
+                    <AlertTitle className="text-blue-800">Pro-rated Evaluation Active</AlertTitle>
+                    <AlertDescription className="text-blue-700 flex items-center justify-between mt-1">
+                        <span>Generating evaluated payslip strictly up to <strong>{format(parseISO(earlyCutoffDate), "dd MMM yyyy")}</strong>.</span>
+                        <Button size="sm" variant="ghost" onClick={() => {
+                            setEarlyCutoffDate(undefined);
+                            setIgnorePastUnmarkedDays(false);
+                        }} className="h-7 text-blue-700 hover:bg-blue-100 hover:text-blue-800 bg-white">
+                            Revert to Full Cycle
+                        </Button>
+                    </AlertDescription>
+                </Alert>
             )}
 
             {/* Header / Employee Summary */}
@@ -848,15 +900,51 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                     </Button>
                     <Button
                         className="flex-1"
-                        onClick={handleSave}
+                        onClick={() => handleSave()}
                         disabled={saveMutation.isPending || !calculation || !selectedWalletId || insufficientFunds}
                     >
-                        {saveMutation.isPending
+                    {saveMutation.isPending
                             ? <><Loader2 className="mr-2 size-4 animate-spin" /> Processing…</>
                             : <><Calculator className="mr-2 size-4" /> Finalize & Generate Slip</>}
                     </Button>
                 </div>
             </div>
+
+            <AlertDialog open={!!showUnmarkedModal} onOpenChange={(o) => (!o && !saveMutation.isPending) && setShowUnmarkedModal(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-red-600 flex items-center gap-2">
+                            <AlertCircle className="size-5" />
+                            Missing Attendance Data
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-sm mt-3">
+                            You are requesting to finalize a slip, but there are <strong className="text-red-600">{showUnmarkedModal?.count} days</strong> of missing attendance data in the evaluation period.
+                            <br/><br/>
+                            Generating a slip without reviewing and marking all past days will lead to incorrect salary allocations because the system calculates presence using available records.
+                            <br/><br/>
+                            Do you still want to proceed and finalize the slip despite missing data?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={saveMutation.isPending}>Cancel</AlertDialogCancel>
+                        <Button
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                            disabled={saveMutation.isPending}
+                            onClick={() => {
+                                setIgnorePastUnmarkedDays(true);
+                                setShowUnmarkedModal(null);
+                                // Queue the next save with skip validation true
+                                setTimeout(() => {
+                                    handleSave(true);
+                                }, 50);
+                            }}
+                        >
+                            {saveMutation.isPending ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
+                            Proceed Anyway
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

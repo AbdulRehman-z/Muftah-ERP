@@ -34,6 +34,7 @@ export const employeeStatusEnum = pgEnum("employee_status", [
   "on_leave",
   "terminated",
   "resigned",
+  "pending_deletion",
 ]);
 
 export const employmentTypeEnum = pgEnum("employment_type", [

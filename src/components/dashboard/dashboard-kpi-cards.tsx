@@ -1,5 +1,11 @@
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   IsoMixingVat,
   IsoBottlingLine,
@@ -8,7 +14,7 @@ import {
   IsoNetYieldChart,
   IsoStaffTerminal,
   IsoStockDrums,
-  IsoWarehouseRack
+  IsoWarehouseRack,
 } from "@/components/illustrations/dashboard-isometric";
 
 function formatPKR(value: number): string {
@@ -30,6 +36,8 @@ export interface KpiData {
   totalStockValue: number;
   totalPayrollCost: number;
   totalExpenses: number;
+  operationalExpenses: number;
+  materialConsumptionCost: number;
   totalCost: number;
   netProfit: number;
   activeEmployees: number;
@@ -37,11 +45,13 @@ export interface KpiData {
 
 export function DashboardKpiCards({ data }: { data: KpiData }) {
   const profitPositive = data.netProfit > 0;
-  const profitMargin = data.totalRevenue > 0 ? ((data.netProfit / data.totalRevenue) * 100).toFixed(1) : "0.0";
+  const profitMargin =
+    data.totalRevenue > 0
+      ? ((data.netProfit / data.totalRevenue) * 100).toFixed(1)
+      : "0.0";
 
   return (
     <div className="space-y-4">
-      {/* ── Top Row: Physical Manufacturing Operations ─────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <PremiumSaaSCard
           title="Gross Revenue"
@@ -59,25 +69,32 @@ export function DashboardKpiCards({ data }: { data: KpiData }) {
           theme="blue"
           Illustration={IsoBottlingLine}
         />
+        {/* FIX #1: Operational Burn now includes material consumption with breakdown tooltip */}
         <PremiumSaaSCard
           title="Operational Burn"
           value={formatPKR(data.totalExpenses)}
-          trendLabel="Non-Payroll"
+          trendLabel="Opex + Materials"
           trend="neutral"
           theme="rose"
           Illustration={IsoExpenseSilo}
+          tooltip={
+            data.totalExpenses > 0
+              ? `Expenses: ${formatPKR(data.operationalExpenses)} · Materials consumed: ${formatPKR(data.materialConsumptionCost)}`
+              : undefined
+          }
         />
+        {/* FIX #3: Only completed cartons count */}
         <PremiumSaaSCard
-          title="Cartons Yield"
+          title="Output Volume"
           value={data.totalCartonsProduced.toLocaleString()}
-          trendLabel="Output Vol"
+          trendLabel={data.totalCartonsProduced > 0 ? "Completed runs" : "No output"}
           trend={data.totalCartonsProduced > 0 ? "up" : "neutral"}
           theme="cyan"
           Illustration={IsoYieldPacker}
+          tooltip="Only cartons from completed production runs are counted."
         />
       </div>
 
-      {/* ── Bottom Row: Fiscal & Resource Analytics ────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <PremiumSaaSCard
           title="Net Yield / Deficit"
@@ -116,10 +133,6 @@ export function DashboardKpiCards({ data }: { data: KpiData }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// UNIFIED PREMIUM SAAS CARD UI
-// ─────────────────────────────────────────────────────────────────────────────
-
 interface PremiumSaaSCardProps {
   title: string;
   value: string;
@@ -127,13 +140,21 @@ interface PremiumSaaSCardProps {
   trend: "up" | "down" | "neutral";
   theme: "emerald" | "blue" | "rose" | "cyan" | "violet" | "amber" | "sky";
   Illustration: React.ElementType;
+  tooltip?: string;
 }
 
-function PremiumSaaSCard({ title, value, trend, trendLabel, theme, Illustration }: PremiumSaaSCardProps) {
-  const TrendIcon = trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Minus;
+function PremiumSaaSCard({
+  title,
+  value,
+  trend,
+  trendLabel,
+  theme,
+  Illustration,
+  tooltip,
+}: PremiumSaaSCardProps) {
+  const TrendIcon =
+    trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Minus;
 
-  // Extremely clean, modern aesthetic. Light/Dark mode compatible.
-  // We use very subtle top borders to hint at the color theme, keeping the rest of the card pristine.
   const styleMap: Record<PremiumSaaSCardProps["theme"], string> = {
     emerald: "border-t-emerald-500 text-emerald-600 dark:text-emerald-500",
     blue: "border-t-blue-500 text-blue-600 dark:text-blue-500",
@@ -144,35 +165,62 @@ function PremiumSaaSCard({ title, value, trend, trendLabel, theme, Illustration 
     sky: "border-t-sky-500 text-sky-600 dark:text-sky-500",
   };
 
-  const colors = styleMap[theme];
+  const colors = styleMap[theme].split(" ");
 
   return (
-    <div className={cn(
-      "relative h-[180px] bg-card border border-border rounded-xl p-5 flex flex-col justify-between overflow-hidden group  hover:shadow-md transition-all duration-300 border-t-2",
-      colors.split(" ")[0] // Applies the specific border-t color
-    )}>
-
-      {/* 3D Scene Container (Right aligned, slightly scaled up for depth) */}
+    <div
+      className={cn(
+        "relative h-[180px] bg-card border border-border rounded-xl p-5 flex flex-col justify-between overflow-hidden group hover:shadow-md transition-all duration-300 border-t-2",
+        colors[0],
+      )}
+    >
       <div className="absolute right-[-10%] bottom-[-5%] w-[200px] h-[200px] pointer-events-none z-0 group-hover:scale-105 transition-transform duration-500 ease-out">
         <Illustration />
       </div>
 
-      {/* Top Badge */}
-      <div className="relative z-10 flex items-start">
-        <div className={cn(
-          "flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border bg-background/80 backdrop-blur-sm",
-          colors.split(" ")[1], // Text color
-          colors.split(" ")[2]  // Dark mode text color
-        )}>
+      {/* Badge */}
+      <div className="relative z-10 flex items-center justify-between">
+        <div
+          className={cn(
+            "flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border bg-background/80 backdrop-blur-sm",
+            colors[1],
+            colors[2],
+          )}
+        >
           <TrendIcon className="size-3" />
-          <span className="text-[9px] font-bold uppercase tracking-widest">{trendLabel}</span>
+          <span className="text-[9px] font-bold uppercase tracking-widest">
+            {trendLabel}
+          </span>
         </div>
+
+        {/* Info tooltip for cards with breakdowns */}
+        {tooltip && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="p-1 rounded-md bg-background/80 border border-border cursor-help">
+                  <Info className="size-3 text-muted-foreground" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent
+                side="top"
+                className="max-w-[220px] text-xs bg-background text-foreground border border-border shadow-lg"
+              >
+                {tooltip}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </div>
 
-      {/* Typography */}
+      {/* Value + title */}
       <div className="relative z-10 mt-auto">
-        <h3 className="text-2xl font-black tracking-tight text-foreground mb-1 tabular-nums drop-">{value}</h3>
-        <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{title}</p>
+        <h3 className="text-2xl font-black tracking-tight text-foreground mb-1 tabular-nums">
+          {value}
+        </h3>
+        <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+          {title}
+        </p>
       </div>
     </div>
   );

@@ -21,6 +21,8 @@ type SavePayslipInput = {
     arrearsAmount: number;
     arrearsFromMonths: string[];
   };
+  earlyCutoffDate?: string;
+  ignorePastUnmarkedDays?: boolean;
 };
 
 export function useSavePayslip(onSuccess?: () => void) {
@@ -35,6 +37,7 @@ export function useSavePayslip(onSuccess?: () => void) {
       onSuccess?.();
     },
     onError: (err) => {
+      if (err.message.includes("PAST_UNMARKED_DAYS")) return;
       toast.error("Failed to generate payslip", { description: err.message });
     },
   });
