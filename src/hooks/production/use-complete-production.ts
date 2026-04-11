@@ -7,7 +7,9 @@ export const useCompleteProduction = () => {
   return useMutation({
     mutationFn: completeProductionFn,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["operator-production-runs"] });
       queryClient.invalidateQueries({ queryKey: ["production-runs"] });
+      queryClient.invalidateQueries({ queryKey: ["production-run"] });
       queryClient.invalidateQueries({ queryKey: ["finished-goods"] });
     },
   });

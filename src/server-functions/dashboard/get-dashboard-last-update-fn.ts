@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireDashboardViewMiddleware } from "@/lib/middlewares";
 import { db } from "@/db";
 import { invoices } from "@/db/schemas/sales-schema";
 import { productionRuns } from "@/db/schemas/inventory-schema";
@@ -8,7 +8,7 @@ import { expenses } from "@/db/schemas/finance-schema";
 import { desc } from "drizzle-orm";
 
 export const getDashboardLastUpdateFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireDashboardViewMiddleware])
   .handler(async () => {
     // Check the latest `updatedAt` / `createdAt` across key entities
     const [latestInvoice, latestRun, latestPayslip, latestExpense] =

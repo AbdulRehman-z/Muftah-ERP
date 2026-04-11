@@ -8,7 +8,9 @@ import { getOvertimeApprovalsFn } from "@/server-functions/hr/attendance/get-ove
 import { getLeaveApprovalsFn } from "@/server-functions/hr/attendance/leave-approvals-fn";
 import { listSalaryAdvancesFn } from "@/server-functions/hr/advances/advances-fn";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, CalendarX, Banknote, ShieldCheck } from "lucide-react";
+import { Clock, CalendarX, Banknote, ShieldCheck, UserX } from "lucide-react";
+import { EmployeeDeletionApprovalsContainer } from "@/components/hr/employees/employee-deletion-approvals-container";
+import { getEmployeeDeletionRequestsFn } from "@/server-functions/hr/employees/delete-employee-fn";
 
 export const Route = createFileRoute("/_protected/hr/approvals/")({
   loader: async ({ context: { queryClient } }) => {
@@ -24,11 +26,15 @@ export const Route = createFileRoute("/_protected/hr/approvals/")({
       queryKey: ["salary-advances"],
       queryFn: () => listSalaryAdvancesFn({ data: { limit: 50 } }),
     });
+    void queryClient.prefetchQuery({
+      queryKey: ["employee-deletion-requests"],
+      queryFn: () => getEmployeeDeletionRequestsFn(),
+    });
   },
   component: ApprovalsPage,
 });
 
-type ApprovalTab = "overtime" | "leave" | "advances";
+type ApprovalTab = "overtime" | "leave" | "advances" | "removal";
 
 function ApprovalsPage() {
   const [activeTab, setActiveTab] = useState<ApprovalTab>("overtime");
@@ -46,7 +52,7 @@ function ApprovalsPage() {
                 Approval Center
               </h1>
               <p className="text-sm text-muted-foreground">
-                Review and manage overtime, leave, and salary advance requests.
+                Review and manage overtime, leave, salary advance, and employee removal requests.
               </p>
             </div>
           </div>
@@ -80,7 +86,15 @@ function ApprovalsPage() {
                 className="gap-2 px-4 h-8 text-[13px] font-medium text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-background data-[state=active]: rounded-md transition-all"
               >
                 <Banknote className="size-3.5 opacity-70" />
-                Salary Advances
+                Advance Requests
+              </TabsTrigger>
+
+              <TabsTrigger
+                value="removal"
+                className="gap-2 px-4 h-8 text-[13px] font-medium text-muted-foreground data-[state=active]:text-foreground data-[state=active]:bg-background data-[state=active]: rounded-md transition-all"
+              >
+                <UserX className="size-3.5 opacity-70" />
+                Employee Removal
               </TabsTrigger>
             </TabsList>
             <TabsContent value="overtime" className="mt-0 outline-none">
@@ -119,6 +133,19 @@ function ApprovalsPage() {
                 }
               >
                 <AdvancesContainer />
+              </Suspense>
+            </TabsContent>
+
+            <TabsContent value="removal" className="mt-0 outline-none">
+              <Suspense
+                fallback={
+                  <GenericLoader
+                    title="Processing removal registry"
+                    description="Fetching deletion requests..."
+                  />
+                }
+              >
+                <EmployeeDeletionApprovalsContainer />
               </Suspense>
             </TabsContent>
           </Tabs>

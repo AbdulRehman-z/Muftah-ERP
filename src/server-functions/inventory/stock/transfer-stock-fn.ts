@@ -8,11 +8,11 @@ import {
   warehouses,
 } from "@/db";
 import { finishedGoodsStock } from "@/db/schemas/inventory-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireInventoryManageMiddleware } from "@/lib/middlewares";
 import { transferStockSchema } from "@/lib/validators/validators";
 
 export const transferStockFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireInventoryManageMiddleware])
   .inputValidator(transferStockSchema)
   .handler(async ({ data, context }) => {
     if (data.fromWarehouseId === data.toWarehouseId) {

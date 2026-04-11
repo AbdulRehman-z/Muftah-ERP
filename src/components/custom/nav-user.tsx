@@ -1,4 +1,7 @@
 import { authClient } from "@/lib/auth-client";
+import { ROLE_BADGE_STYLES } from "@/lib/rbac";
+import { cn } from "@/lib/utils";
+import { useViewerAccess } from "@/hooks/use-viewer-access";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { SidebarMenu, SidebarMenuItem } from "../ui/sidebar";
 import { LogOut, Loader2, ShieldCheck } from "lucide-react";
@@ -6,7 +9,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 export function NavUser() {
-  const { data: session, isPending } = authClient.useSession();
+  const { data: viewerAccess, isPending } = useViewerAccess();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -40,9 +43,9 @@ export function NavUser() {
     );
   }
 
-  if (!session) return null;
+  if (!viewerAccess) return null;
 
-  const { user } = session;
+  const { role, user } = viewerAccess;
   const initials = user.name
     .split(" ")
     .map((n: string) => n[0])
@@ -106,15 +109,14 @@ export function NavUser() {
               {user.email}
             </p>
             <span
-              className="inline-flex items-center gap-1 mt-2 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-widest"
-              style={{
-                background: "rgba(99,102,241,0.2)",
-                color: "#a5b4fc",
-                border: "1px solid rgba(99,102,241,0.3)",
-              }}
+              className={cn(
+                "mt-2 inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest",
+                ROLE_BADGE_STYLES[role.slug] ??
+                  "border-white/10 bg-white/5 text-indigo-100",
+              )}
             >
               <ShieldCheck className="size-2.5" />
-              {user.role}
+              {role.name}
             </span>
           </div>
         </div>

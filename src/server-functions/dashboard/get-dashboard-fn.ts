@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireDashboardViewMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 import { db } from "@/db";
 import { invoices } from "@/db/schemas/sales-schema";
@@ -40,7 +40,7 @@ async function getPayrollCostForIds(payrollIds: string[]): Promise<number> {
 }
 
 export const getDashboardStatsFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireDashboardViewMiddleware])
   .inputValidator(
     z.object({
       year: z.number().default(new Date().getFullYear()),
@@ -293,7 +293,7 @@ export const getDashboardStatsFn = createServerFn()
 
 // ── Paginated production runs for the dedicated logs page ─────────────────────
 export const getProductionRunsFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireDashboardViewMiddleware])
   .inputValidator(
     z.object({
       page: z.number().int().positive().default(1),

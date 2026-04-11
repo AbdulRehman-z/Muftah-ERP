@@ -1,4 +1,4 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { ChevronDown, Search, ZapIcon } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -17,9 +17,10 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { type NavigationItem, navigations } from "@/lib/constants";
+import { getAccessibleNavigationItems } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
+import { useViewerAccess } from "@/hooks/use-viewer-access";
 import { NavUser } from "./nav-user";
-import { authClient } from "@/lib/auth-client";
 import { ScrollArea } from "../ui/scroll-area";
 
 // ── Path helpers ───────────────────────────────────────────────────────────────
@@ -227,8 +228,7 @@ export const AppSidebar = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: session, isPending } = authClient.useSession();
-  const userRole = session?.user?.role;
+  const { data: viewerAccess, isPending } = useViewerAccess();
 
   if (isPending) {
     return (
@@ -251,14 +251,10 @@ export const AppSidebar = () => {
     );
   }
 
-  let visibleNavigations = navigations;
-  if (userRole === "finance-manager") {
-    visibleNavigations = navigations.filter((i) => ["Sales", "Finance"].includes(i.title));
-  } else if (userRole === "operator") {
-    visibleNavigations = navigations.filter((i) => ["Operator Interface"].includes(i.title));
-  } else if (userRole === "admin") {
-    visibleNavigations = navigations.filter((i) => !["User Management", "Settings"].includes(i.title));
-  }
+  const visibleNavigations = getAccessibleNavigationItems(
+    navigations,
+    viewerAccess?.permissions ?? [],
+  );
 
   const filteredNavigations = filterNavItems(visibleNavigations, searchQuery);
   const hasSearchQuery = searchQuery.trim().length > 0;
@@ -272,7 +268,11 @@ export const AppSidebar = () => {
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Muftah Chemical PVT LTD (S-WASH)"
-              onClick={() => navigate({ to: "/dashboard" })}
+              onClick={() =>
+                navigate({
+                  to: (viewerAccess?.defaultLandingPath ?? "/dashboard") as any,
+                })
+              }
               className={cn(
                 "group/logo rounded-xl transition-all duration-150",
                 // Expanded: full-width row, subtle hover
@@ -311,7 +311,7 @@ export const AppSidebar = () => {
           </SidebarMenuItem>
         </SidebarMenu>
 
-        {userRole !== "operator" && (
+        {viewerAccess?.role.slug !== "operator" && (
           <div className="relative group/search group-data-[collapsible=icon]:hidden mt-1">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-sidebar-foreground/70 transition-colors group-focus-within/search:text-sidebar-ring" />
             <Input

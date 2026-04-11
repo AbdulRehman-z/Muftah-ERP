@@ -1,7 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { payslips } from "@/db/schemas/hr-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import {
+  requireHrManageMiddleware,
+  requireHrViewMiddleware,
+} from "@/lib/middlewares";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { generateEmployeePayslipCore } from "./core";
@@ -10,7 +13,7 @@ import { generateEmployeePayslipCore } from "./core";
  * Generate payslip for a single employee
  */
 export const generateEmployeePayslipFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrManageMiddleware])
   .inputValidator(
     z.object({
       employeeId: z.string(),
@@ -58,7 +61,7 @@ export const generateEmployeePayslipFn = createServerFn()
  * Get payslip by ID with full details
  */
 export const getPayslipByIdFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrViewMiddleware])
   .inputValidator(z.object({ payslipId: z.string() }))
   .handler(async ({ data }) => {
     const payslip = await db.query.payslips.findFirst({
@@ -80,7 +83,7 @@ export const getPayslipByIdFn = createServerFn()
  * Get all payslips for a payroll
  */
 export const getPayslipsByPayrollFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrViewMiddleware])
   .inputValidator(z.object({ payrollId: z.string() }))
   .handler(async ({ data }) => {
     return await db.query.payslips.findMany({
@@ -104,7 +107,7 @@ export const getPayslipsByPayrollFn = createServerFn()
  * Get employee's payslip history
  */
 export const getEmployeePayslipHistoryFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrViewMiddleware])
   .inputValidator(
     z.object({
       employeeId: z.string(),

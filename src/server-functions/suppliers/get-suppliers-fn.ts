@@ -1,9 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireSuppliersViewMiddleware } from "@/lib/middlewares";
 
 export const getSuppliersFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireSuppliersViewMiddleware])
   .handler(async () => {
     const suppliersData = await db.query.suppliers.findMany({
       orderBy: (suppliers, { desc }) => [desc(suppliers.createdAt)],

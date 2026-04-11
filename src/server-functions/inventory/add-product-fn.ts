@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { products } from "@/db/schemas/inventory-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireInventoryManageMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 
 const addProductSchema = z.object({
@@ -10,7 +10,7 @@ const addProductSchema = z.object({
 });
 
 export const addProductFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireInventoryManageMiddleware])
   .inputValidator(addProductSchema)
   .handler(async ({ data }) => {
     const [newProduct] = await db

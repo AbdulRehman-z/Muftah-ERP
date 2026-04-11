@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db, supplierPayments, purchaseRecords } from "@/db";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireSuppliersManageMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 import { eq, sql } from "drizzle-orm";
 
@@ -30,7 +30,7 @@ const addPaymentSchema = z
   );
 
 export const addPaymentFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireSuppliersManageMiddleware])
   .inputValidator(addPaymentSchema)
   .handler(async ({ data }) => {
     return await db.transaction(async (tx) => {

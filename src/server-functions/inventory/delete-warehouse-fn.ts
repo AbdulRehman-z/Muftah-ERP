@@ -9,7 +9,7 @@ import {
   stockTransfers,
   warehouses,
 } from "@/db";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireInventoryManageMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 
 const deleteWarehouseSchema = z.object({
@@ -17,7 +17,7 @@ const deleteWarehouseSchema = z.object({
 });
 
 export const deleteWarehouseFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireInventoryManageMiddleware])
   .inputValidator(deleteWarehouseSchema)
   .handler(async ({ data: { warehouseId } }) => {
     try {

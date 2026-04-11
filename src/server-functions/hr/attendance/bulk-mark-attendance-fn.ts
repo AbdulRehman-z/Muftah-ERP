@@ -1,13 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { attendance, employees } from "@/db/schemas/hr-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireHrManageMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 import { and, eq, inArray } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
 
 export const bulkMarkAttendanceFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrManageMiddleware])
   .inputValidator(
     z.object({
       employeeIds: z.array(z.string()),

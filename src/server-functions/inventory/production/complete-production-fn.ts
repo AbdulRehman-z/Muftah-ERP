@@ -12,6 +12,7 @@ import {
 import { requireAuthMiddleware } from "@/lib/middlewares";
 import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
+import { hasPermission } from "@/lib/rbac";
 
 const completeProductionSchema = z.object({
   productionRunId: z.string().min(1, "Production run ID is required"),
@@ -21,6 +22,14 @@ export const completeProductionFn = createServerFn()
   .middleware([requireAuthMiddleware])
   .inputValidator(completeProductionSchema)
   .handler(async ({ data, context }) => {
+    const canCompleteRun =
+      hasPermission(context.authContext.permissions, "operator.run.complete") ||
+      hasPermission(context.authContext.permissions, "manufacturing.run.manage");
+
+    if (!canCompleteRun) {
+      throw new Error("You do not have permission to complete this production run.");
+    }
+
     return await db.transaction(async (tx) => {
       // 1. Get the production run
       const [productionRun] = await tx

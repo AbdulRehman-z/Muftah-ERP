@@ -1,6 +1,9 @@
 import { db } from "@/db";
 import { employees, payslips, payrolls, attendance, bradfordAuditLog } from "@/db/schemas/hr-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import {
+  requireHrManageMiddleware,
+  requireHrViewMiddleware,
+} from "@/lib/middlewares";
 import { z } from "zod";
 import { eq, and, sql, desc, asc, inArray, gte, lte } from "drizzle-orm";
 import {
@@ -14,7 +17,7 @@ import {
 } from "date-fns";
 import { calculatePayslip } from "@/lib/payroll-calculator";
 import { createServerFn } from "@tanstack/react-start";
-import { generateEmployeePayslipCore } from "./core";
+import { generateEmployeePayslipCore, calculateEnrichedAdvanceDeductions, type AdvanceProcessRecord } from "./core";
 import { getCycleForPayoutMonth } from "@/lib/payroll-cycle";
 
 // ── Helper ─────────────────────────────────────────────────────────────────
@@ -87,7 +90,7 @@ function computeEmployeeReadiness(
 // ── Main Fn ────────────────────────────────────────────────────────────────
 
 export const getMonthlyPayrollTableFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrViewMiddleware])
   .inputValidator(
     z.object({
       month: z.string(), // YYYY-MM
@@ -272,7 +275,7 @@ export const getMonthlyPayrollTableFn = createServerFn()
 // ── Preview Payslip ────────────────────────────────────────────────────────
 
 export const previewEmployeePayslipFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrViewMiddleware])
   .inputValidator(
     z.object({
       employeeId: z.string(),
@@ -337,19 +340,13 @@ export const previewEmployeePayslipFn = createServerFn()
       earlyDepartureStatus: record.earlyDepartureStatus ?? "none",
     }));
 
-    let advanceDeduction = data.additionalAmounts?.advanceDeduction ?? 0;
-    if (advanceDeduction === 0) {
-      const pendingAdvances = await db.query.salaryAdvances.findMany({
-        where: (table, { and, eq }) =>
-          and(eq(table.employeeId, employeeId), eq(table.status, "approved")),
-      });
-      const notYetDeducted = pendingAdvances.filter(
-        (a) => !a.deductedInPayslipId,
-      );
-      advanceDeduction = notYetDeducted.reduce(
-        (sum, a) => sum + parseFloat(a.amount || "0"),
-        0,
-      );
+    let advanceDeduction = data.additionalAmounts?.advanceDeduction;
+    let advanceProcessRecords: AdvanceProcessRecord[] = [];
+
+    if (advanceDeduction === undefined) {
+      const { totalDeduction, processedRecords } = await calculateEnrichedAdvanceDeductions(employeeId);
+      advanceDeduction = totalDeduction;
+      advanceProcessRecords = processedRecords;
     }
 
     const calculation = calculatePayslip(
@@ -421,12 +418,13 @@ export const previewEmployeePayslipFn = createServerFn()
       netSalary: netWithArrears,
       arrearsAmount: arrearsAmt,
       missedCycles,
+      advanceProcessRecords,
     };
   });
 
 // ── Save Payslip ───────────────────────────────────────────────────────────
 export const saveEmployeePayslipFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrManageMiddleware])
   .inputValidator(
     z.object({
       employeeId: z.string(),
@@ -493,7 +491,7 @@ export const saveEmployeePayslipFn = createServerFn()
 //   "last12" → rolling 12-month window (default)
 //   "year"   → full calendar year
 export const getEmployeePayrollHistoryFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrViewMiddleware])
   .inputValidator(
     z.object({
       employeeId: z.string(),

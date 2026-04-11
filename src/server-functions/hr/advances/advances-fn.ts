@@ -2,7 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { salaryAdvances } from "@/db/schemas/hr-schema";
 import { wallets, transactions } from "@/db/schemas/finance-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import {
+  requireHrManageMiddleware,
+  requireHrViewMiddleware,
+} from "@/lib/middlewares";
 import { z } from "zod";
 import { eq, sql } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
@@ -11,7 +14,7 @@ import { createId } from "@paralleldrive/cuid2";
  * List all salary advances, with pagination
  */
 export const listSalaryAdvancesFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrViewMiddleware])
   .inputValidator(z.object({ limit: z.number().optional().default(50) }))
   .handler(async ({ data }) => {
     return await db.query.salaryAdvances.findMany({
@@ -41,7 +44,7 @@ export const listSalaryAdvancesFn = createServerFn()
  * Request/Create a new salary advance
  */
 export const createSalaryAdvanceFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrManageMiddleware])
   .inputValidator(
     z.object({
       employeeId: z.string(),
@@ -74,7 +77,7 @@ export const createSalaryAdvanceFn = createServerFn()
  * Approve a salary advance and debit it from a finance wallet
  */
 export const approveSalaryAdvanceFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrManageMiddleware])
   .inputValidator(
     z.object({
       advanceId: z.string(),
@@ -153,7 +156,7 @@ export const approveSalaryAdvanceFn = createServerFn()
  * Reject a salary advance
  */
 export const rejectSalaryAdvanceFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrManageMiddleware])
   .inputValidator(z.object({ advanceId: z.string() }))
   .handler(async ({ data }) => {
     const [updated] = await db
@@ -168,7 +171,7 @@ export const rejectSalaryAdvanceFn = createServerFn()
  * Update an existing salary advance (only if pending)
  */
 export const updateSalaryAdvanceFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrManageMiddleware])
   .inputValidator(
     z.object({
       id: z.string(),
@@ -203,4 +206,3 @@ export const updateSalaryAdvanceFn = createServerFn()
 
     return updated;
   });
-

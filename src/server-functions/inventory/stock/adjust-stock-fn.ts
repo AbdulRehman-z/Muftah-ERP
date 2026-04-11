@@ -7,7 +7,7 @@ import {
   chemicals,
   packagingMaterials,
 } from "@/db/schemas/inventory-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireInventoryManageMiddleware } from "@/lib/middlewares";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
@@ -19,7 +19,7 @@ const adjustStockSchema = z.object({
 });
 
 export const adjustStockFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireInventoryManageMiddleware])
   .inputValidator(adjustStockSchema)
   .handler(async ({ data, context }) => {
     return await db.transaction(async (tx) => {

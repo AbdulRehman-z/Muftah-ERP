@@ -4,7 +4,10 @@ import { createId } from "@paralleldrive/cuid2";
 import { invoices, invoiceItems, customers } from "@/db/schemas/sales-schema";
 import { finishedGoodsStock } from "@/db/schemas/inventory-schema";
 import { transactions, wallets } from "@/db/schemas/finance-schema";
-import { requireAuthMiddleware } from "@/lib/middlewares";
+import {
+  requireSalesManageMiddleware,
+  requireSalesViewMiddleware,
+} from "@/lib/middlewares";
 import { z } from "zod";
 import { count, sql, eq, and, gte, lte, SQL } from "drizzle-orm";
 import { createInvoiceSchema } from "@/db/zod_schemas";
@@ -13,7 +16,7 @@ import {
 } from "date-fns";
 
 export const getInvoicesFn = createServerFn()
-  .middleware([requireAuthMiddleware])
+  .middleware([requireSalesViewMiddleware])
   .inputValidator((input: any) =>
     z.object({
       page: z.number().int().positive().default(1),
@@ -75,7 +78,7 @@ export const getInvoicesFn = createServerFn()
   });
 
 export const createInvoiceFn = createServerFn()
-  .middleware([requireAuthMiddleware])
+  .middleware([requireSalesManageMiddleware])
   .inputValidator((input: any) => createInvoiceSchema.parse(input))
   .handler(async ({ data, context }) => {
     const userId = context.session.user.id;

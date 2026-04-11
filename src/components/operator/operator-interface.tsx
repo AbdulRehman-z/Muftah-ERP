@@ -40,8 +40,8 @@ export const OperatorInterface = () => {
   const completeProduction = useCompleteProduction();
 
   const { data: allRuns } = useSuspenseQuery({
-    queryKey: ["production-runs"],
-    queryFn: getProductionRunsFn,
+    queryKey: ["operator-production-runs"],
+    queryFn: () => getProductionRunsFn({ data: { filter: "active" } }),
   });
 
   // Smart polling

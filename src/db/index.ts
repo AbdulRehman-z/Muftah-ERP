@@ -6,6 +6,7 @@ import * as salesSchema from "./schemas/sales-schema";
 import * as coreSuppliers from "./schemas/core-suppliers";
 import * as supplierSchema from "./schemas/supplier-schema";
 import * as hrSchema from "./schemas/hr-schema";
+import * as rbacSchema from "./schemas/rbac-schema";
 
 const schema = {
   ...authSchema,
@@ -15,6 +16,7 @@ const schema = {
   ...supplierSchema,
   ...coreSuppliers,
   ...hrSchema,
+  ...rbacSchema,
 };
 
 export const db = drizzle(process.env.DATABASE_URL!, { schema: schema });
@@ -38,3 +40,5 @@ export const { wallets, expenses, transactions } = financeSchema;
 export const { supplierPayments, purchaseRecords } = supplierSchema;
 export const { suppliers } = coreSuppliers;
 export const { employees, attendance, payrolls, payslips } = hrSchema;
+export const { appPermissions, appRolePermissions, appRoles, userRoleAssignments } =
+  rbacSchema;

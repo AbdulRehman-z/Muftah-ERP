@@ -127,8 +127,8 @@ export const EmployeeListContainer = () => {
       <motion.div variants={itemVariants} className="rounded-none border border-border bg-card shadow-none">
         <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-transparent">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-foreground">All Employees</p>
-            <p className="text-[10px] font-semibold text-muted-foreground mt-1 uppercase tracking-widest">
+            <p className="font-bold uppercase text-foreground">All Employees</p>
+            <p className="text-[10px] font-semibold text-muted-foreground mt-1">
               Manage roles, compensation, and team details.
             </p>
           </div>

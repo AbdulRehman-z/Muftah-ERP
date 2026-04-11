@@ -1,10 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireHrViewMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 
 export const getDailyAttendanceFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrViewMiddleware])
   .inputValidator(z.object({ date: z.string() }))
   .handler(async ({ data }) => {
     const { date } = data;

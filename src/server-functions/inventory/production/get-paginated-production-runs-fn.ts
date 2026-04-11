@@ -1,13 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
-import { count, desc, eq, and, or, ilike, sql } from "drizzle-orm";
+import { count, desc, eq, and, or, ilike, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { db, productionRuns, chemicals, packagingMaterials } from "@/db";
-import {
-  requireAuthMiddleware,
-} from "@/lib/middlewares";
+import { requireManufacturingViewMiddleware } from "@/lib/middlewares";
 
 export const getPaginatedProductionRunsFn = createServerFn()
-  .middleware([requireAuthMiddleware])
+  .middleware([requireManufacturingViewMiddleware])
   .inputValidator(
     z.object({
       search: z.string().optional(),
@@ -18,7 +16,7 @@ export const getPaginatedProductionRunsFn = createServerFn()
     })
   )
   .handler(async ({ data }) => {
-    let whereConditions = [];
+    const whereConditions: SQL[] = [];
 
     // Search Box (Batch ID or Recipe Name)
     if (data.search) {

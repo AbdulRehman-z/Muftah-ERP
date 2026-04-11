@@ -2,10 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { employees } from "@/db/schemas/hr-schema";
 import { createEmployeeSchema } from "@/lib/validators/hr-validators";
-import { requireAuthMiddleware } from "@/lib/middlewares";
+import { requireHrManageMiddleware } from "@/lib/middlewares";
 
 export const createEmployeeFn = createServerFn()
-  .middleware([requireAuthMiddleware])
+  .middleware([requireHrManageMiddleware])
   .inputValidator(createEmployeeSchema)
   .handler(async ({ data }) => {
     const [newEmployee] = await db

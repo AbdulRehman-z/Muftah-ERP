@@ -361,7 +361,22 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                         label={formValues.advance === "" ? "Salary Advance Recovery (Auto)" : "Salary Advance Recovery"}
                                         value={calculation.advanceDeduction}
                                         isDeduction
+                                        tooltip={calculation.advanceProcessRecords?.length > 0 ? (
+                                            calculation.advanceProcessRecords.map((a: any) => 
+                                                `Inst. ${a.installmentNo}/${a.totalInstallments} (Remaining: PKR ${Math.round(a.remainingBalance).toLocaleString()})`
+                                            ).join(", ")
+                                        ) : undefined}
                                     />
+                                    {formValues.advance === "" && calculation.advanceProcessRecords?.map((a: any, i: number) => (
+                                        <TableRow key={`adv-detail-${i}`} className="hover:bg-transparent border-0 opacity-60">
+                                            <TableCell className="py-0 pl-8 text-[10px] text-muted-foreground italic">
+                                                ↳ Installment {a.installmentNo} of {a.totalInstallments} (Balance: PKR {Math.round(a.remainingBalance).toLocaleString()})
+                                            </TableCell>
+                                            <TableCell className="text-right py-0 text-[10px] font-mono text-rose-600">
+                                                - {Math.round(a.installmentAmount).toLocaleString()}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
                                     <SummaryRow label="Other Manual Deductions" value={calculation.otherDeduction} isDeduction />
                                     <TableRow className="bg-muted/10 font-semibold border-t">
                                         <TableCell className="py-2.5">Total Deductions</TableCell>
@@ -794,9 +809,17 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                 </div>
                             )}
                             {calculation.advanceDeduction > 0 && (
-                                <div className="flex justify-between py-0.5 border-b border-dashed border-border/40">
-                                    <span className="text-muted-foreground">− Salary Advance Recovery</span>
-                                    <span className="text-rose-600">{Math.round(calculation.advanceDeduction).toLocaleString()}</span>
+                                <div className="space-y-1">
+                                    <div className="flex justify-between py-0.5 border-b border-dashed border-border/40">
+                                        <span className="text-muted-foreground">− Salary Advance Recovery</span>
+                                        <span className="text-rose-600">{Math.round(calculation.advanceDeduction).toLocaleString()}</span>
+                                    </div>
+                                    {calculation.advanceProcessRecords?.map((a: any, i: number) => (
+                                        <div key={i} className="flex justify-between pl-4 py-0.5 text-[10px] opacity-70 italic border-l-2 ml-1 border-rose-200">
+                                            <span>↳ Inst. {a.installmentNo}/{a.totalInstallments} (Remaining PKR {Math.round(a.remainingBalance).toLocaleString()})</span>
+                                            <span>{Math.round(a.installmentAmount).toLocaleString()}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                             {calculation.manualDeductions.map((d, i) => (

@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { attendance, employees } from "@/db/schemas/hr-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireHrManageMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 import { and, eq, inArray, gte, lte } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
@@ -101,7 +101,7 @@ const bulkAttendanceSchema = z.object({
 // ── Handler ────────────────────────────────────────────────────────────────
 
 export const bulkMarkAttendanceRangeFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireHrManageMiddleware])
     .inputValidator(bulkAttendanceSchema)
     .handler(async ({ data }) => {
         const { startDate, endDate, template, conflictStrategy } = data;
@@ -264,7 +264,7 @@ export const bulkMarkAttendanceRangeFn = createServerFn()
 // of exactly what will happen without touching the DB.
 
 export const previewBulkAttendanceFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireHrManageMiddleware])
     .inputValidator(bulkAttendanceSchema)
     .handler(async ({ data }) => {
         const { startDate, endDate, conflictStrategy } = data;

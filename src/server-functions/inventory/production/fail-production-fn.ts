@@ -7,6 +7,7 @@ import {
 import { requireAuthMiddleware } from "@/lib/middlewares";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { hasPermission } from "@/lib/rbac";
 
 const failProductionSchema = z.object({
   productionRunId: z.string().min(1, "Production run ID is required"),
@@ -17,6 +18,14 @@ export const failProductionFn = createServerFn()
   .middleware([requireAuthMiddleware])
   .inputValidator(failProductionSchema)
   .handler(async ({ data, context }) => {
+    const canFailRun =
+      hasPermission(context.authContext.permissions, "operator.run.fail") ||
+      hasPermission(context.authContext.permissions, "manufacturing.run.manage");
+
+    if (!canFailRun) {
+      throw new Error("You do not have permission to fail this production run.");
+    }
+
     return await db.transaction(async (tx) => {
       // 1. Get the production run
       const [productionRun] = await tx

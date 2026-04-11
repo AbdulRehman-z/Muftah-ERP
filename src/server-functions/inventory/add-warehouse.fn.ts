@@ -1,10 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db, warehouses } from "@/db";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireInventoryManageMiddleware } from "@/lib/middlewares";
 import { addWarehouseSchema } from "@/lib/validators";
 
 export const addWarehouseFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireInventoryManageMiddleware])
   .inputValidator(addWarehouseSchema) // Cleaned up validator call
   .handler(async ({ data }) => {
     try {

@@ -1,7 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { tadaRates, travelLogs } from "@/db/schemas/hr-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import {
+    requireHrManageMiddleware,
+    requireHrViewMiddleware,
+} from "@/lib/middlewares";
 import { z } from "zod";
 import { eq, desc, and, gte, lte } from "drizzle-orm";
 
@@ -13,7 +16,7 @@ import { eq, desc, and, gte, lte } from "drizzle-orm";
  * Get the currently active TA/DA rate per km.
  */
 export const getActiveTadaRateFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireHrViewMiddleware])
     .handler(async () => {
         const rate = await db.query.tadaRates.findFirst({
             where: eq(tadaRates.isActive, true),
@@ -26,7 +29,7 @@ export const getActiveTadaRateFn = createServerFn()
  * List all TA/DA rate history.
  */
 export const listTadaRatesFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireHrViewMiddleware])
     .handler(async () => {
         return await db.query.tadaRates.findMany({
             with: {
@@ -40,7 +43,7 @@ export const listTadaRatesFn = createServerFn()
  * Set a new TA/DA rate. Deactivates all previous rates.
  */
 export const setTadaRateFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireHrManageMiddleware])
     .inputValidator(
         z.object({
             ratePerKm: z.number().positive("Rate must be positive"),
@@ -80,7 +83,7 @@ export const setTadaRateFn = createServerFn()
  * Automatically snapshots the current active TA/DA rate.
  */
 export const createTravelLogFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireHrManageMiddleware])
     .inputValidator(
         z.object({
             employeeId: z.string(),
@@ -127,7 +130,7 @@ export const createTravelLogFn = createServerFn()
  * List travel logs for an employee, optionally filtered by date range.
  */
 export const listTravelLogsFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireHrViewMiddleware])
     .inputValidator(
         z.object({
             employeeId: z.string().optional(),
@@ -178,7 +181,7 @@ export const listTravelLogsFn = createServerFn()
  * Approve or reject a travel log entry.
  */
 export const processTravelLogFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireHrManageMiddleware])
     .inputValidator(
         z.object({
             id: z.string(),
@@ -203,7 +206,7 @@ export const processTravelLogFn = createServerFn()
  * Used by the payroll calculator to add TA/DA to earnings.
  */
 export const getEmployeeTadaTotalFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireHrViewMiddleware])
     .inputValidator(
         z.object({
             employeeId: z.string(),

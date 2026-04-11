@@ -13,3 +13,10 @@ count.txt
 todos.json
 *.md
 *.txt
+.kiro
+.qwen
+.tanstack
+.vscode
+scripts
+.codex
+prompt.txt

@@ -1,9 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireInventoryViewMiddleware } from "@/lib/middlewares";
 
 export const getProductsFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireInventoryViewMiddleware])
   .handler(async () => {
     const products = await db.query.products.findMany({
       with: {

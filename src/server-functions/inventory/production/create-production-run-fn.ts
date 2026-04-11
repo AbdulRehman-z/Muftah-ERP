@@ -1,15 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
-import { createRecipeSchema } from "@/lib/validators/validators";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireManufacturingRunManageMiddleware } from "@/lib/middlewares";
 import {
   productionRuns,
   recipes,
-  recipeIngredients,
   packagingMaterials,
-  chemicals,
 } from "@/db/schemas/inventory-schema";
-import { eq, inArray, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
 
 const createProductionRunSchema = z.object({
@@ -21,7 +18,7 @@ const createProductionRunSchema = z.object({
 });
 
 export const createProductionRunFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireManufacturingRunManageMiddleware])
   .inputValidator(createProductionRunSchema)
   .handler(async ({ data, context }) => {
     return await db.transaction(async (tx) => {
@@ -35,17 +32,7 @@ export const createProductionRunFn = createServerFn()
         throw new Error("Recipe not found");
       }
 
-      // 2. Get recipe ingredients
-      const ingredients = await tx
-        .select({
-          ingredient: recipeIngredients,
-          material: chemicals,
-        })
-        .from(recipeIngredients)
-        .innerJoin(chemicals, eq(recipeIngredients.chemicalId, chemicals.id))
-        .where(eq(recipeIngredients.recipeId, recipe.id));
-
-      // 3. Get packaging materials
+      // 2. Get packaging materials
       const [containerPkg] = await tx
         .select()
         .from(packagingMaterials)
@@ -55,7 +42,7 @@ export const createProductionRunFn = createServerFn()
         throw new Error("Container packaging not found");
       }
 
-      // 4. Calculate production output
+      // 3. Calculate production output
       let totalContainers = 0;
 
       if (recipe.targetUnitsPerBatch && recipe.targetUnitsPerBatch > 0) {

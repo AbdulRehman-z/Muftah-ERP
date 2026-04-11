@@ -4,12 +4,8 @@ import { Suspense } from "react";
 import { Separator } from "@/components/ui/separator";
 import { SupplierContainer } from "@/components/suppliers/suppliers-container";
 import { GenericLoader } from "@/components/custom/generic-loader";
-import { requireAdminMiddleware } from "@/lib/middlewares";
 
 export const Route = createFileRoute("/_protected/suppliers/")({
-  server: {
-    middleware: [requireAdminMiddleware],
-  },
   loader: async ({ context }) => {
     void context.queryClient.prefetchQuery({
       queryKey: ["suppliers"],

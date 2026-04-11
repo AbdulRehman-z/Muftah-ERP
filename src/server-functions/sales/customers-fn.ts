@@ -1,12 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { customers } from "@/db/schemas/sales-schema";
-import { requireAuthMiddleware } from "@/lib/middlewares"; // Standard middleware
+import { requireSalesViewMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
-import { count, like, or, SQL, desc } from "drizzle-orm";
+import { count, like, or, SQL } from "drizzle-orm";
 
 export const getCustomersFn = createServerFn()
-  .middleware([requireAuthMiddleware])
+  .middleware([requireSalesViewMiddleware])
   .inputValidator((input: any) =>
     z
       .object({
@@ -48,7 +48,7 @@ export const getCustomersFn = createServerFn()
   });
 
 export const getAllCustomersFn = createServerFn()
-  .middleware([requireAuthMiddleware])
+  .middleware([requireSalesViewMiddleware])
   .handler(async () => {
     return await db.query.customers.findMany({
       orderBy: (customers, { asc }) => [asc(customers.name)],

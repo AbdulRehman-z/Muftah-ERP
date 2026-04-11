@@ -4,14 +4,17 @@ import {
   payslips,
   bradfordAuditLog,
 } from "@/db/schemas/hr-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import {
+  requireHrManageMiddleware,
+  requireHrViewMiddleware,
+} from "@/lib/middlewares";
 import { z } from "zod";
 import { eq, desc } from "drizzle-orm";
 
 /**
  * Override Bradford Factor with mandatory audit logging.
  *
- * RBAC: Only admin/super-admin can call this (requireAdminMiddleware).
+ * RBAC: Only HR managers or stronger roles can call this.
  * Every override creates an immutable audit log entry with:
  *  - computed score (what the system calculated)
  *  - override score (what the admin changed it to)
@@ -19,7 +22,7 @@ import { eq, desc } from "drizzle-orm";
  *  - who performed it and when
  */
 export const overrideBradfordFactorFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrManageMiddleware])
   .inputValidator(
     z.object({
       payslipId: z.string(),
@@ -65,7 +68,7 @@ export const overrideBradfordFactorFn = createServerFn()
  * Get Bradford Factor audit history for a payslip.
  */
 export const getBradfordAuditLogFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrViewMiddleware])
   .inputValidator(z.object({ payslipId: z.string() }))
   .handler(async ({ data }) => {
     return await db.query.bradfordAuditLog.findMany({

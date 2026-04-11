@@ -10,7 +10,7 @@ import {
   chemicals,
   warehouses,
 } from "@/db/schemas/inventory-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireManufacturingRunManageMiddleware } from "@/lib/middlewares";
 import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -19,7 +19,7 @@ const startProductionSchema = z.object({
 });
 
 export const startProductionFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireManufacturingRunManageMiddleware])
   .inputValidator(startProductionSchema)
   .handler(async ({ data, context }) => {
     return await db.transaction(async (tx) => {

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getProductionRunsFn } from "@/server-functions/inventory/production/get-production-run-fn";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,6 @@ import {
   Calendar1Icon,
   ArrowLeft,
   AlertTriangle,
-  Package,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -32,7 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useStartProduction } from "@/hooks/production/use-start-production";
 import { useCompleteProduction } from "@/hooks/production/use-complete-production";
 import { useCancelProduction } from "@/hooks/production/use-cancel-production";
@@ -58,11 +57,11 @@ function ProductionRunDetailsPage() {
   const { runId } = Route.useParams();
 
   const { data: runs } = useSuspenseQuery({
-    queryKey: ["production-runs"],
-    queryFn: () => getProductionRunsFn({ data: {} }),
+    queryKey: ["production-run", runId],
+    queryFn: () => getProductionRunsFn({ data: { runId } }),
   });
 
-  const run = runs.find((r) => r.id === runId);
+  const run = runs[0];
 
   // Hooks
   const startProduction = useStartProduction();

@@ -1,12 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { productionMaterialsUsed, productionRuns } from "@/db/schemas/inventory-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireInventoryViewMiddleware } from "@/lib/middlewares";
 import { desc, count, inArray, ilike } from "drizzle-orm";
 import { z } from "zod";
 
 export const getConsumptionHistoryFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireInventoryViewMiddleware])
   .inputValidator(
     z.object({
       search: z.string().optional(),

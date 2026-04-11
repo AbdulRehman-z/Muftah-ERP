@@ -1,11 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db, suppliers } from "@/db";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireSuppliersManageMiddleware } from "@/lib/middlewares";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 export const deleteSupplierFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireSuppliersManageMiddleware])
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     try {

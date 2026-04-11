@@ -10,11 +10,11 @@ import {
   chemicals,
   packagingMaterials,
 } from "@/db";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireInventoryManageMiddleware } from "@/lib/middlewares";
 import { addStockSchema } from "@/lib/validators/validators";
 
 export const addStockFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireInventoryManageMiddleware])
   .inputValidator(addStockSchema)
   .handler(async ({ data, context }) => {
     return await db.transaction(async (tx) => {

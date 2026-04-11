@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { attendance, employees } from "@/db/schemas/hr-schema";
 import { upsertAttendanceSchema } from "@/lib/validators/hr-validators";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireHrManageMiddleware } from "@/lib/middlewares";
 import { eq } from "drizzle-orm";
 import { differenceInMinutes, parse } from "date-fns";
 
@@ -32,7 +32,7 @@ function calculateHours(checkIn?: string | null, checkOut?: string | null) {
 }
 
 export const upsertAttendanceFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrManageMiddleware])
   .inputValidator(upsertAttendanceSchema)
   .handler(async ({ data }) => {
     const { employeeId, date, ...rest } = data;

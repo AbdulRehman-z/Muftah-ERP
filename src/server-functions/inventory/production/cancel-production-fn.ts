@@ -11,7 +11,7 @@ import {
   warehouses,
   finishedGoodsStock,
 } from "@/db/schemas/inventory-schema";
-import { requireAuthMiddleware } from "@/lib/middlewares";
+import { requireManufacturingRunManageMiddleware } from "@/lib/middlewares";
 import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -21,7 +21,7 @@ const cancelProductionSchema = z.object({
 });
 
 export const cancelProductionFn = createServerFn()
-  .middleware([requireAuthMiddleware])
+  .middleware([requireManufacturingRunManageMiddleware])
   .inputValidator(cancelProductionSchema)
   .handler(async ({ data, context }) => {
     return await db.transaction(async (tx) => {

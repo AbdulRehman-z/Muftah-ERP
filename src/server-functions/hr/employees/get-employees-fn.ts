@@ -2,16 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { employees } from "@/db/schemas/hr-schema";
 import { desc, eq } from "drizzle-orm";
-import { requireAuthMiddleware } from "@/lib/middlewares";
+import { requireHrViewMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 
 export const getEmployeesFn = createServerFn()
-  .middleware([requireAuthMiddleware])
+  .middleware([requireHrViewMiddleware])
   .inputValidator(
     z
       .object({
         status: z
-          .enum(["active", "on_leave", "terminated", "resigned"])
+          .enum(["active", "on_leave", "terminated", "resigned", "pending_deletion"])
           .optional(),
       })
       .optional(),

@@ -1,20 +1,28 @@
-
 import { ForgotIllustration } from "@/components/illustrations/Forgotllustration";
 import { LoginIllustration } from "@/components/illustrations/LoginIllustration";
 import { ResetIllustration } from "@/components/illustrations/Resetllustration";
-import { SignupIllustration } from "@/components/illustrations/Signupllustration";
 import { VerificationIllustration } from "@/components/illustrations/Verificationllustration";
-import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
-import type { FunctionComponent, SVGProps } from "react";
-import type { LinkProps, RegisteredRouter } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useRouterState,
+} from "@tanstack/react-router";
+import type { FunctionComponent } from "react";
+import { getViewerAccessFn } from "@/server-functions/auth/get-viewer-access-fn";
 
 export const Route = createFileRoute("/_authLayout")({
-  // server: {
-  // 	middleware: [requireNoAuthMiddleware],
-  // },
+  beforeLoad: async () => {
+    const viewerAccess = await getViewerAccessFn();
+
+    if (viewerAccess) {
+      throw redirect({
+        to: viewerAccess.defaultLandingPath,
+      });
+    }
+  },
   component: RouteComponent,
 });
-
 
 type IllustrationComponent = FunctionComponent<{ className?: string }>;
 
@@ -30,12 +38,6 @@ const authRoutesConfig: Record<string, AuthRouteConfig> = {
     description:
       "Enter your system credentials below to access the administrative dashboard.",
     illustration: LoginIllustration,
-  },
-  "/sign-up": {
-    title: "Onboard to Muftah Chemical PVT LTD (S-WASH)",
-    description:
-      "Please complete the form below to register your administrative account.",
-    illustration: SignupIllustration,
   },
   "/forgot-password": {
     title: "Account Recovery",
@@ -72,10 +74,8 @@ export function RouteComponent() {
 
   return (
     <div className="h-screen w-screen flex flex-col md:flex-row overflow-hidden bg-background">
-
       {/* ── Illustration Column (Left) ── */}
       <div className="flex-1 hidden md:flex flex-col items-center justify-center gap-10 p-12 relative bg-muted/20 border-r border-border/50">
-
         {/* Subtle grid texture */}
         <div
           aria-hidden="true"
@@ -112,7 +112,6 @@ export function RouteComponent() {
 
       {/* ── Form Column (Right) ── */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12">
-
         {/* Mobile-only brand header */}
         <div className="md:hidden mb-8 text-center space-y-1">
           <h2 className="text-xl font-bold tracking-tight text-foreground">

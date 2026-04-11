@@ -4,10 +4,10 @@ import { employees } from "@/db/schemas/hr-schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { notFound } from "@tanstack/react-router";
-import { requireAuthMiddleware } from "@/lib/middlewares";
+import { requireHrViewMiddleware } from "@/lib/middlewares";
 
 export const getEmployeeFn = createServerFn()
-  .middleware([requireAuthMiddleware])
+  .middleware([requireHrViewMiddleware])
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     const result = await db

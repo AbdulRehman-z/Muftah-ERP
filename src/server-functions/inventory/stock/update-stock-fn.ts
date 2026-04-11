@@ -1,11 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { eq } from "drizzle-orm";
 import { db, inventoryAuditLog, materialStock } from "@/db";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireInventoryManageMiddleware } from "@/lib/middlewares";
 import { updateStockSchema } from "@/lib/validators/validators";
 
 export const updateStockFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireInventoryManageMiddleware])
   .inputValidator(updateStockSchema)
   .handler(async ({ data, context }) => {
     return await db.transaction(async (tx) => {

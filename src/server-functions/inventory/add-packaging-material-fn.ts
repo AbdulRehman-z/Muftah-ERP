@@ -8,11 +8,11 @@ import {
   supplierPayments,
 } from "@/db";
 import { eq, sql } from "drizzle-orm";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireInventoryManageMiddleware } from "@/lib/middlewares";
 import { addPackagingMaterialSchema } from "@/lib/validators/validators";
 
 export const addPackagingMaterialFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireInventoryManageMiddleware])
   .inputValidator(addPackagingMaterialSchema)
   .handler(async ({ data }) => {
     return await db.transaction(async (tx) => {

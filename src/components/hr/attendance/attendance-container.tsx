@@ -224,15 +224,15 @@ export const AttendanceContainer = () => {
             </Button>
 
             <div className="w-px h-9 bg-border hidden sm:block mx-1" />
-
-            <Button variant="outline" size="sm" onClick={() => setBulkOpen(true)} className="h-9 rounded-none shadow-none border-border font-bold text-xs uppercase tracking-widest">
+            <Button variant="outline" onClick={() => setBulkOpen(true)}
+            >
               <CalendarRange className="size-3.5 mr-2" />
               Bulk Mark
             </Button>
 
             <Button
               variant={activeRate ? "default" : "outline"}
-              className={cn("h-9 px-4 rounded-none shadow-none font-bold text-xs uppercase tracking-widest gap-2", !activeRate && "border-border")}
+              className={cn("", !activeRate && "border-border")}
               onClick={() => setIsSetRateOpen(true)}
             >
               <Settings2 className="size-3.5" />

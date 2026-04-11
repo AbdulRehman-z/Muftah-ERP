@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { employees, payrolls, payslips } from "@/db/schemas/hr-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireHrViewMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 import { eq, and, lt, inArray, sql, ne } from "drizzle-orm";
 import { format, subMonths, parseISO } from "date-fns";
@@ -36,7 +36,7 @@ export type MissedCycleEntry = {
 // ──────────────────────────────────────────────────────────────────────────────
 
 export const getArrearsMissedCyclesFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrViewMiddleware])
   .inputValidator(
     z.object({
       /** How many months back to look. Defaults to 12 — covers 1 full year. */

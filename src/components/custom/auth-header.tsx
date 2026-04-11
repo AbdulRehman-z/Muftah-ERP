@@ -1,5 +1,4 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Image } from "@unpic/react";
 import type { AllRoutes } from "@/lib/types";
 import { buttonVariants } from "../ui/button";
 
@@ -19,15 +18,6 @@ export const Header = () => {
             to="/login"
           >
             Login
-          </Link>
-          <Link
-            className={buttonVariants({
-              variant: "default",
-              size: "lg",
-            })}
-            to="/sign-up"
-          >
-            Sign Up
           </Link>
         </div>
       )}

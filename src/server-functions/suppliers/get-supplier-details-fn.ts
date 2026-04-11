@@ -1,11 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db, materialStock } from "@/db";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireSuppliersViewMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 import { notFound } from "@tanstack/react-router";
 
 export const getSupplierDetailsFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireSuppliersViewMiddleware])
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     const supplier = await db.query.suppliers.findFirst({

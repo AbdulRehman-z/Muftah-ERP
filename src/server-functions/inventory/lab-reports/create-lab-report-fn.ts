@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { chemicalLabReports } from "@/db/schemas/inventory-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireInventoryManageMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 
 const analysisItemSchema = z.object({
@@ -27,7 +27,7 @@ const createLabReportSchema = z.object({
 });
 
 export const createLabReportFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireInventoryManageMiddleware])
     .inputValidator(createLabReportSchema)
     .handler(async ({ data, context }) => {
         const [report] = await db

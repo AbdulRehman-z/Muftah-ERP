@@ -7,12 +7,12 @@ import {
   chemicals,
   packagingMaterials,
 } from "@/db/schemas/inventory-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireManufacturingManageMiddleware } from "@/lib/middlewares";
 import { createRecipeSchema } from "@/lib/validators/validators";
 import { eq, inArray } from "drizzle-orm";
 
 export const createRecipeFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireManufacturingManageMiddleware])
   .inputValidator(createRecipeSchema)
   .handler(async ({ data }) => {
     return await db.transaction(async (tx) => {

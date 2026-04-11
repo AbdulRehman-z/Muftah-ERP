@@ -1,12 +1,16 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { twoFactor } from "better-auth/plugins";
-import { admin as adminPlugin } from "better-auth/plugins";
+import { admin as adminPlugin } from "better-auth/plugins/admin";
+import { twoFactor } from "better-auth/plugins/two-factor";
 import { account, db, session, user, verification } from "../db";
 import { resetPasswordTemplate } from "../email-templates/reset-password-template";
 import { verificationEmailTemplate } from "../email-templates/verify-email-template";
 import { sendEmail } from "./email-client";
+import { getAuthBaseUrl } from "./auth-url";
 import { ac, admin, financeManager, operator, superAdmin } from "./permissions";
+
+const authBaseUrl = getAuthBaseUrl();
+const trustedOrigins = authBaseUrl ? [authBaseUrl] : [];
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -20,24 +24,24 @@ export const auth = betterAuth({
     },
   }),
   emailVerification: {
-    autoSignInAfterVerification: true,
-    sendOnSignIn: true,
-    sendOnSignUp: true,
-    sendVerificationEmail: async ({ url, user }) => {
-      await sendEmail({
-        email: user.email,
-        html: () =>
-          verificationEmailTemplate({
-            url,
-            user,
-          }),
-        subject: "Verify Your Email",
-      });
-    },
+    // autoSignInAfterVerification: true,
+    // sendOnSignIn: true,
+    // sendOnSignUp: true,
+    // sendVerificationEmail: async ({ url, user }) => {
+    //   await sendEmail({
+    //     email: user.email,
+    //     html: () =>
+    //       verificationEmailTemplate({
+    //         url,
+    //         user,
+    //       }),
+    //     subject: "Verify Your Email",
+    //   });
+    // },
   },
   emailAndPassword: {
     autoSignIn: true,
-    // requireEmailVerification: true,
+    requireEmailVerification: false,
     enabled: true,
     sendResetPassword: async ({ user, url }) => {
       await sendEmail({
@@ -51,11 +55,15 @@ export const auth = betterAuth({
       });
     },
   },
+  trustedOrigins,
+  advanced: {
+    useSecureCookies: process.env.NODE_ENV === "production",
+  },
 
   plugins: [
     twoFactor(),
     adminPlugin({
-      defaultRole: "super-admin",
+      defaultRole: "operator",
       adminRoles: ["super-admin", "admin"],
       ac,
       roles: {

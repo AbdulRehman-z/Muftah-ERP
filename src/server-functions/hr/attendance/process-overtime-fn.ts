@@ -1,12 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { attendance } from "@/db/schemas/hr-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireHrManageMiddleware } from "@/lib/middlewares";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 export const processOvertimeFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireHrManageMiddleware])
     .inputValidator(
         z.object({
             id: z.string(),

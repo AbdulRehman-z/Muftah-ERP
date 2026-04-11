@@ -1,6 +1,9 @@
 import { db } from "@/db";
 import { expenseCategories } from "@/db/schemas/finance-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import {
+  requireFinanceManageMiddleware,
+  requireFinanceViewMiddleware,
+} from "@/lib/middlewares";
 import { createServerFn } from "@tanstack/react-start";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -8,7 +11,7 @@ import { createId } from "@paralleldrive/cuid2";
 
 // ── List Categories ────────────────────────────────────────────────────────
 export const listExpenseCategoriesFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireFinanceViewMiddleware])
   .handler(async () => {
     return db.query.expenseCategories.findMany({
       where: eq(expenseCategories.isActive, true),
@@ -18,7 +21,7 @@ export const listExpenseCategoriesFn = createServerFn()
 
 // ── List All (including inactive) for admin management ────────────────────
 export const listAllExpenseCategoriesFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireFinanceViewMiddleware])
   .handler(async () => {
     return db.query.expenseCategories.findMany({
       orderBy: (t, { asc }) => [asc(t.name)],
@@ -27,7 +30,7 @@ export const listAllExpenseCategoriesFn = createServerFn()
 
 // ── Create Category ────────────────────────────────────────────────────────
 export const createExpenseCategoryFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireFinanceManageMiddleware])
   .inputValidator(
     z.object({
       name: z.string().min(1).max(50),
@@ -49,7 +52,7 @@ export const createExpenseCategoryFn = createServerFn()
 
 // ── Update Category ────────────────────────────────────────────────────────
 export const updateExpenseCategoryFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireFinanceManageMiddleware])
   .inputValidator(
     z.object({
       id: z.string(),
@@ -70,7 +73,7 @@ export const updateExpenseCategoryFn = createServerFn()
 
 // ── Delete (soft-delete) Category ─────────────────────────────────────────
 export const deleteExpenseCategoryFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireFinanceManageMiddleware])
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     await db.delete(expenseCategories).where(eq(expenseCategories.id, data.id));

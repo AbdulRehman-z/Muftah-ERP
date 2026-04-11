@@ -27,10 +27,8 @@ export const EmployeesTable = ({ data }: Props) => {
   const [advanceEmployeeId, setAdvanceEmployeeId] = useState<string | null>(null);
 
   const [deleteConfirmationId, setDeleteConfirmationId] = useState<string | null>(null);
-  const [approveConfirmationId, setApproveConfirmationId] = useState<string | null>(null);
 
   const deleteMutate = useDeleteEmployee();
-  const approveMutate = useApproveEmployeeDeletion();
   const cancelMutate = useCancelEmployeeDeletion();
 
   const columns: ColumnDef<Employee>[] = [
@@ -132,16 +130,17 @@ export const EmployeesTable = ({ data }: Props) => {
             className="flex justify-end gap-2"
             onClick={(e) => e.stopPropagation()}
           >
+            <Button
+              variant="ghost"
+              size="icon"
+              title="View Highlights"
+              onClick={() => navigate({ to: `/hr/employees/${employee.id}` })}
+            >
+              <Eye className="size-4" />
+            </Button>
+
             {!isPendingDeletion ? (
               <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  title="View Highlights"
-                  onClick={() => navigate({ to: `/hr/employees/${employee.id}` })}
-                >
-                  <Eye className="size-4" />
-                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -175,17 +174,8 @@ export const EmployeesTable = ({ data }: Props) => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  title="Approve Deletion"
-                  className="text-rose-600 hover:text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-950/50"
-                  onClick={() => setApproveConfirmationId(employee.id)}
-                >
-                  <ShieldAlert className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  title="Cancel Deletion Request"
-                  className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-950/50"
+                  title="Restore Employee"
+                  className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 underline decoration-dotted"
                   onClick={() => cancelMutate.mutate({ data: { id: employee.id } })}
                 >
                   <Undo2 className="size-4" />
@@ -199,7 +189,6 @@ export const EmployeesTable = ({ data }: Props) => {
   ];
 
   const employeeToRequestDeletion = data.find(e => e.id === deleteConfirmationId);
-  const employeeToApproveDeletion = data.find(e => e.id === approveConfirmationId);
 
   return (
     <>
@@ -232,7 +221,7 @@ export const EmployeesTable = ({ data }: Props) => {
         open={!!deleteConfirmationId}
         onOpenChange={(open) => !open && setDeleteConfirmationId(null)}
         title="Request Employee Deletion"
-        description="Are you sure you want to request deletion for this employee? This will require administrative approval before data is removed."
+        description="Are you sure you want to request deletion for this employee?"
         icon={Trash2}
       >
         <div className="space-y-6 pt-2">
@@ -247,10 +236,10 @@ export const EmployeesTable = ({ data }: Props) => {
           </div>
 
           <div className="flex flex-col gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded text-xs text-amber-800 dark:text-amber-200">
-            <p className="font-bold flex items-center gap-1.5 uppercase tracking-tight">
-              <AlertTriangle className="size-3.5" /> Note
+            <p className="font-bold flex items-center gap-1.5 uppercase tracking-tight text-[10px]">
+              <AlertTriangle className="size-3.5" /> Administrative Protocol
             </p>
-            <p>This action marks the employee as "Pending Deletion". They will remain in the database until an admin approves the final removal of all records (Attendance, Payslips, Advances etc).</p>
+            <p>This will move the employee to the <strong>Approval Center</strong>. A senior administrator must review and permanently wipe the data from there.</p>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
@@ -262,57 +251,7 @@ export const EmployeesTable = ({ data }: Props) => {
               onClick={() => deleteConfirmationId && deleteMutate.mutate({ data: { id: deleteConfirmationId } }, { onSuccess: () => setDeleteConfirmationId(null) })}
               disabled={deleteMutate.isPending}
             >
-              Request Deletion
-            </Button>
-          </div>
-        </div>
-      </ResponsiveDialog>
-
-      {/* APPROVE DELETION DIALOG (THE DESTRUCTIVE ONE) */}
-      <ResponsiveDialog
-        open={!!approveConfirmationId}
-        onOpenChange={(open) => !open && setApproveConfirmationId(null)}
-        title="Finalize Deletion"
-        description="WARNING: This action is permanent and cannot be undone. All historical data including attendance, salary history, and advances will be wiped."
-        icon={ShieldAlert}
-        className="max-w-md"
-      >
-        <div className="space-y-6 pt-2 text-center md:text-left">
-          <div className="space-y-2">
-            <p className="text-sm font-medium">You are about to permanently remove records for:</p>
-            <p className="text-lg font-black text-rose-600 uppercase tabular-nums tracking-tight">
-              {employeeToApproveDeletion?.firstName} {employeeToApproveDeletion?.lastName} ({employeeToApproveDeletion?.employeeCode})
-            </p>
-          </div>
-
-          <div className="p-4 bg-rose-50 dark:bg-rose-950/20 border-2 border-rose-200 dark:border-rose-900 flex flex-col gap-2 text-rose-800 dark:text-rose-200">
-            <p className="text-xs font-black uppercase flex items-center gap-2">
-              <Ban className="size-4" /> Destructive Operation
-            </p>
-            <ul className="text-xs list-disc pl-4 space-y-1 text-left opacity-80">
-              <li>Permanently deletes attendance history</li>
-              <li>Wipes all past payslips and calculations</li>
-              <li>Removes advance request history</li>
-              <li>Cannot be reverted once confirmed</li>
-            </ul>
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-3 pt-6">
-            <Button
-              variant="outline"
-              className="flex-1 rounded-none h-11 font-bold order-2 md:order-1"
-              onClick={() => setApproveConfirmationId(null)}
-              disabled={approveMutate.isPending}
-            >
-              Go Back
-            </Button>
-            <Button
-              variant="destructive"
-              className="flex-[2] rounded-none h-11 font-black uppercase tracking-widest order-1 md:order-2"
-              onClick={() => approveConfirmationId && approveMutate.mutate({ data: { id: approveConfirmationId } }, { onSuccess: () => setApproveConfirmationId(null) })}
-              disabled={approveMutate.isPending}
-            >
-              {approveMutate.isPending ? "Removing..." : "Permanently Delete Data"}
+              Request Removal
             </Button>
           </div>
         </div>

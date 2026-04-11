@@ -19,6 +19,62 @@ import {
   type EmployeeData,
 } from "@/lib/payroll-calculator";
 
+export type AdvanceProcessRecord = {
+  id: string;
+  installmentAmount: number;
+  installmentNo: number;
+  totalInstallments: number;
+  remainingBalance: number;
+  isFullySettled: boolean;
+};
+
+/**
+ * Shared logic to fetch and calculate advance deductions for an employee.
+ * Hardened to handle legacy null installmentAmounts by calculating on-the-fly.
+ */
+export async function calculateEnrichedAdvanceDeductions(employeeId: string) {
+  const pendingAdvances = await db.query.salaryAdvances.findMany({
+    where: and(
+      eq(salaryAdvances.employeeId, employeeId),
+      eq(salaryAdvances.status, "approved"),
+    ),
+  });
+
+  // Only advances that still have installments remaining
+  const activeAdvances = pendingAdvances.filter(
+    (a) => a.installmentsPaid < a.installmentMonths,
+  );
+
+  let totalDeduction = 0;
+  const processedRecords: AdvanceProcessRecord[] = [];
+
+  for (const adv of activeAdvances) {
+    const totalAmount = parseFloat(adv.amount);
+    const months = adv.installmentMonths || 1;
+    const paidCount = adv.installmentsPaid || 0;
+
+    // Use stored installmentAmount, or calculate as fallback if null/legacy
+    const instAmt = adv.installmentAmount
+      ? parseFloat(adv.installmentAmount)
+      : +(totalAmount / months).toFixed(2);
+
+    const currentInstallmentNo = paidCount + 1;
+    const remainingAfterThis = Math.max(0, totalAmount - instAmt * currentInstallmentNo);
+
+    totalDeduction += instAmt;
+    processedRecords.push({
+      id: adv.id,
+      installmentAmount: instAmt,
+      installmentNo: currentInstallmentNo,
+      totalInstallments: months,
+      remainingBalance: remainingAfterThis,
+      isFullySettled: currentInstallmentNo >= months,
+    });
+  }
+
+  return { totalDeduction, processedRecords };
+}
+
 export type GeneratePayslipInput = {
   employeeId: string;
   payrollId: string;
@@ -146,39 +202,12 @@ export async function generateEmployeePayslipCore(
 
   // -- 3. Salary advances (installment-aware) --------------------------------
   let advanceDeduction: number;
-  let advanceIdsToProcess: Array<{
-    id: string;
-    installmentAmount: number;
-    installmentNo: number;
-    isFullySettled: boolean;
-  }> = [];
+  let advanceIdsToProcess: AdvanceProcessRecord[] = [];
 
   if (autoDeductAdvances && additionalAmounts.advanceDeduction === undefined) {
-    const pendingAdvances = await db.query.salaryAdvances.findMany({
-      where: and(
-        eq(salaryAdvances.employeeId, employeeId),
-        eq(salaryAdvances.status, "approved"),
-      ),
-    });
-
-    // Only advances that still have installments remaining
-    const activeAdvances = pendingAdvances.filter(
-      (a) => a.installmentsPaid < a.installmentMonths,
-    );
-
-    advanceDeduction = 0;
-    for (const adv of activeAdvances) {
-      const instAmt = adv.installmentAmount
-        ? parseFloat(adv.installmentAmount)
-        : parseFloat(adv.amount); // fallback: full amount for legacy single-shot
-      advanceDeduction += instAmt;
-      advanceIdsToProcess.push({
-        id: adv.id,
-        installmentAmount: instAmt,
-        installmentNo: adv.installmentsPaid + 1,
-        isFullySettled: adv.installmentsPaid + 1 >= adv.installmentMonths,
-      });
-    }
+    const { totalDeduction, processedRecords } = await calculateEnrichedAdvanceDeductions(employeeId);
+    advanceDeduction = totalDeduction;
+    advanceIdsToProcess = processedRecords;
   } else {
     advanceDeduction = additionalAmounts.advanceDeduction ?? 0;
   }
@@ -373,7 +402,12 @@ export async function generateEmployeePayslipCore(
           arrearsMonths.length > 0
             ? `Includes arrears of PKR ${Math.round(arrearsAmt).toLocaleString()} for: ${arrearsMonths.join(", ")}.`
             : null,
-        ].filter(Boolean).join(" ") || null,
+          advanceIdsToProcess.length > 0
+            ? advanceIdsToProcess.map(a => 
+                `Advance Recovery (Inst. ${a.installmentNo}/${a.totalInstallments}) - Remaining: PKR ${Math.round(a.remainingBalance).toLocaleString()}`
+              ).join(" | ")
+            : null,
+        ].filter(Boolean).join(" | ") || null,
       })
       .returning();
 

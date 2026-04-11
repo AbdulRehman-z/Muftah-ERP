@@ -28,6 +28,7 @@ export const useProductionRunsSync = () => {
         lastUpdateRef.current = newUpdate;
 
         // Invalidate all related queries
+        queryClient.invalidateQueries({ queryKey: ["operator-production-runs"] });
         queryClient.invalidateQueries({ queryKey: ["production-runs"] });
         // Also invalidate active run specific queries if needed
         queryClient.invalidateQueries({ queryKey: ["production-run"] });

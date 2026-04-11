@@ -1,5 +1,7 @@
 import { createAccessControl } from "better-auth/plugins/access";
 
+// Better Auth still uses this static model for its admin plugin endpoints.
+// The application's real authorization model is database-backed in src/lib/rbac.ts.
 const statement = {
   user: [
     "create",

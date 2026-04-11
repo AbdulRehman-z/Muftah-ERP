@@ -3,10 +3,10 @@ import { db } from "@/db";
 import { employees } from "@/db/schemas/hr-schema";
 import { eq } from "drizzle-orm";
 import { updateEmployeeSchema } from "@/lib/validators/hr-validators";
-import { requireAuthMiddleware } from "@/lib/middlewares";
+import { requireHrManageMiddleware } from "@/lib/middlewares";
 
 export const updateEmployeeFn = createServerFn()
-  .middleware([requireAuthMiddleware])
+  .middleware([requireHrManageMiddleware])
   .inputValidator(updateEmployeeSchema)
   .handler(async ({ data }) => {
     // Exclude ID from update payload and ensure it's used only for WHERE clause

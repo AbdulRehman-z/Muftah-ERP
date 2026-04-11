@@ -23,6 +23,7 @@ import { Route as AuthLayoutResetPasswordIndexRouteImport } from './routes/_auth
 import { Route as AuthLayoutLoginIndexRouteImport } from './routes/_authLayout/login/index'
 import { Route as AuthLayoutForgotPasswordIndexRouteImport } from './routes/_authLayout/forgot-password/index'
 import { Route as AuthLayout2FaIndexRouteImport } from './routes/_authLayout/2-fa/index'
+import { Route as ApiInternalBootstrapAdminRouteImport } from './routes/api/internal/bootstrap-admin'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ProtectedSuppliersSupplierIdRouteImport } from './routes/_protected/suppliers/$supplierId'
 import { Route as ProtectedOperatorRunIdRouteImport } from './routes/_protected/operator/$runId'
@@ -118,6 +119,12 @@ const AuthLayout2FaIndexRoute = AuthLayout2FaIndexRouteImport.update({
   path: '/2-fa/',
   getParentRoute: () => AuthLayoutRouteRoute,
 } as any)
+const ApiInternalBootstrapAdminRoute =
+  ApiInternalBootstrapAdminRouteImport.update({
+    id: '/api/internal/bootstrap-admin',
+    path: '/api/internal/bootstrap-admin',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -260,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/operator/$runId': typeof ProtectedOperatorRunIdRoute
   '/suppliers/$supplierId': typeof ProtectedSuppliersSupplierIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/internal/bootstrap-admin': typeof ApiInternalBootstrapAdminRoute
   '/2-fa/': typeof AuthLayout2FaIndexRoute
   '/forgot-password/': typeof AuthLayoutForgotPasswordIndexRoute
   '/login/': typeof AuthLayoutLoginIndexRoute
@@ -297,6 +305,7 @@ export interface FileRoutesByTo {
   '/operator/$runId': typeof ProtectedOperatorRunIdRoute
   '/suppliers/$supplierId': typeof ProtectedSuppliersSupplierIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/internal/bootstrap-admin': typeof ApiInternalBootstrapAdminRoute
   '/2-fa': typeof AuthLayout2FaIndexRoute
   '/forgot-password': typeof AuthLayoutForgotPasswordIndexRoute
   '/login': typeof AuthLayoutLoginIndexRoute
@@ -337,6 +346,7 @@ export interface FileRoutesById {
   '/_protected/operator/$runId': typeof ProtectedOperatorRunIdRoute
   '/_protected/suppliers/$supplierId': typeof ProtectedSuppliersSupplierIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/internal/bootstrap-admin': typeof ApiInternalBootstrapAdminRoute
   '/_authLayout/2-fa/': typeof AuthLayout2FaIndexRoute
   '/_authLayout/forgot-password/': typeof AuthLayoutForgotPasswordIndexRoute
   '/_authLayout/login/': typeof AuthLayoutLoginIndexRoute
@@ -376,6 +386,7 @@ export interface FileRouteTypes {
     | '/operator/$runId'
     | '/suppliers/$supplierId'
     | '/api/auth/$'
+    | '/api/internal/bootstrap-admin'
     | '/2-fa/'
     | '/forgot-password/'
     | '/login/'
@@ -413,6 +424,7 @@ export interface FileRouteTypes {
     | '/operator/$runId'
     | '/suppliers/$supplierId'
     | '/api/auth/$'
+    | '/api/internal/bootstrap-admin'
     | '/2-fa'
     | '/forgot-password'
     | '/login'
@@ -452,6 +464,7 @@ export interface FileRouteTypes {
     | '/_protected/operator/$runId'
     | '/_protected/suppliers/$supplierId'
     | '/api/auth/$'
+    | '/api/internal/bootstrap-admin'
     | '/_authLayout/2-fa/'
     | '/_authLayout/forgot-password/'
     | '/_authLayout/login/'
@@ -490,6 +503,7 @@ export interface RootRouteChildren {
   ProtectedRouteRoute: typeof ProtectedRouteRouteWithChildren
   InvestorIndexRoute: typeof InvestorIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiInternalBootstrapAdminRoute: typeof ApiInternalBootstrapAdminRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -591,6 +605,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/2-fa/'
       preLoaderRoute: typeof AuthLayout2FaIndexRouteImport
       parentRoute: typeof AuthLayoutRouteRoute
+    }
+    '/api/internal/bootstrap-admin': {
+      id: '/api/internal/bootstrap-admin'
+      path: '/api/internal/bootstrap-admin'
+      fullPath: '/api/internal/bootstrap-admin'
+      preLoaderRoute: typeof ApiInternalBootstrapAdminRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -854,6 +875,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProtectedRouteRoute: ProtectedRouteRouteWithChildren,
   InvestorIndexRoute: InvestorIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiInternalBootstrapAdminRoute: ApiInternalBootstrapAdminRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

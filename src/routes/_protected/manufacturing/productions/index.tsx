@@ -2,13 +2,31 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { GenericLoader } from "@/components/custom/generic-loader";
 import { ProductionRunsContainer } from "@/components/productions/production-container";
-import { getProductionRunsFn } from "@/server-functions/inventory/production/get-production-run-fn";
+import { getPaginatedProductionRunsFn } from "@/server-functions/inventory/production/get-paginated-production-runs-fn";
 
 export const Route = createFileRoute("/_protected/manufacturing/productions/")({
   loader: async ({ context }) => {
     void context.queryClient.prefetchQuery({
-      queryKey: ["production-runs"],
-      queryFn: getProductionRunsFn,
+      queryKey: [
+        "production-runs",
+        {
+          search: "",
+          dateFilter: "today",
+          statusFilter: "all",
+          pageIndex: 0,
+          pageSize: 10,
+        },
+      ],
+      queryFn: () =>
+        getPaginatedProductionRunsFn({
+          data: {
+            search: "",
+            dateFilter: "today",
+            statusFilter: "all",
+            pageIndex: 0,
+            pageSize: 10,
+          },
+        }),
     });
   },
   component: RouteComponent,

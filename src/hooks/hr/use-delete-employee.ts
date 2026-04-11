@@ -14,6 +14,7 @@ export const useDeleteEmployee = () => {
     onSuccess: () => {
       toast.success("Employee marked for deletion. Needs admin approval.");
       queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-deletion-requests"] });
     },
     onError: (error) => {
       console.error(error);
@@ -29,6 +30,7 @@ export const useApproveEmployeeDeletion = () => {
     onSuccess: () => {
       toast.success("Employee record and all related data permanently removed.");
       queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-deletion-requests"] });
     },
     onError: (error) => {
       console.error(error);
@@ -44,6 +46,7 @@ export const useCancelEmployeeDeletion = () => {
     onSuccess: () => {
       toast.success("Employee deletion cancelled.");
       queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-deletion-requests"] });
     },
     onError: (error) => {
       console.error(error);

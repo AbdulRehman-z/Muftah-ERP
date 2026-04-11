@@ -233,12 +233,12 @@ export function AdvancesContainer() {
             Manage and approve employee advance requests
           </p>
         </div>
-        <Button 
+        <Button
+        size="lg" 
           onClick={() => {
             setAdvanceToEdit(null);
             setIsRequestDialogOpen(true);
           }}
-          className="h-10 rounded-none shadow-none gap-2 bg-foreground text-background hover:bg-foreground/90 font-bold uppercase tracking-widest text-[11px]"
         >
           <Plus className="size-4" />
           Request New Advance

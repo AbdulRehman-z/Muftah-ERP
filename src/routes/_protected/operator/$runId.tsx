@@ -82,6 +82,7 @@ function ProductionRunManagePage() {
       }
       setCartonsInput("");
       queryClient.invalidateQueries({ queryKey: ["production-run", runId] });
+      queryClient.invalidateQueries({ queryKey: ["operator-production-runs"] });
       queryClient.invalidateQueries({ queryKey: ["production-runs"] });
       queryClient.invalidateQueries({ queryKey: ["finished-goods"] });
       queryClient.invalidateQueries({ queryKey: ["factory-floor"] });
@@ -122,6 +123,7 @@ function ProductionRunManagePage() {
           queryClient.invalidateQueries({
             queryKey: ["production-run", runId],
           });
+          queryClient.invalidateQueries({ queryKey: ["operator-production-runs"] });
           queryClient.invalidateQueries({ queryKey: ["production-runs"] });
         },
         onError: (err) => {

@@ -3,17 +3,13 @@ import { Suspense } from "react";
 import { GenericLoader } from "@/components/custom/generic-loader";
 import { OperatorInterface } from "@/components/operator/operator-interface";
 import { getProductionRunsFn } from "@/server-functions/inventory/production/get-production-run-fn";
-import { requireAuthMiddleware } from "@/lib/middlewares";
 import { Separator } from "@/components/ui/separator";
 
 export const Route = createFileRoute("/_protected/operator/")({
-  server: {
-    middleware: [requireAuthMiddleware],
-  },
   loader: async ({ context }) => {
     void context.queryClient.prefetchQuery({
-      queryKey: ["productionRuns"],
-      queryFn: getProductionRunsFn,
+      queryKey: ["operator-production-runs"],
+      queryFn: () => getProductionRunsFn({ data: { filter: "active" } }),
     });
   },
   component: RouteComponent,

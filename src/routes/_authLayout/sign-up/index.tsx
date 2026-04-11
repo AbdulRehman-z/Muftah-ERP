@@ -1,10 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { SignupForm } from "@/components/auth/signup-form";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authLayout/sign-up/")({
+  beforeLoad: () => {
+    throw redirect({
+      to: "/login",
+    });
+  },
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  return <SignupForm />;
+  return null;
 }

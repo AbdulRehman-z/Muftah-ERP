@@ -1,12 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { attendance, employees } from "@/db/schemas/hr-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireHrViewMiddleware } from "@/lib/middlewares";
 import { eq, and, gt, desc, or } from "drizzle-orm";
 import { z } from "zod";
 
 export const getOvertimeApprovalsFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireHrViewMiddleware])
     .inputValidator(
         z.object({
             status: z.enum(["pending", "approved", "rejected", "all"]).default("pending"),

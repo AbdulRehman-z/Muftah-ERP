@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireHrManageMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 import { db } from "@/db";
 import { payslips } from "@/db/schemas/hr-schema";
@@ -8,7 +8,7 @@ import { sendEmail } from "@/lib/email-client";
 import { generatePayslipEmailHtml } from "@/email-templates/payslip-template";
 
 export const sendPayslipEmailFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrManageMiddleware])
   .inputValidator(
     z.object({
       payslipId: z.string(),

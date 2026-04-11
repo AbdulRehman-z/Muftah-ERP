@@ -5,7 +5,7 @@ import {
     productionRuns,
     productionMaterialsUsed,
 } from "@/db/schemas/inventory-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireManufacturingRunManageMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 
 const deleteProductionRunSchema = z.object({
@@ -13,7 +13,7 @@ const deleteProductionRunSchema = z.object({
 });
 
 export const deleteProductionRunFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireManufacturingRunManageMiddleware])
     .inputValidator(deleteProductionRunSchema)
     .handler(async ({ data }) => {
         const run = await db.query.productionRuns.findFirst({

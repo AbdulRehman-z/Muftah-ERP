@@ -1,10 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { eq } from "drizzle-orm";
 import { db, warehouses } from "@/db";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireInventoryViewMiddleware } from "@/lib/middlewares";
 
 export const getFactoryFloorStockFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireInventoryViewMiddleware])
   .handler(async () => {
     // Get factory floor warehouse
     const factoryFloor = await db.query.warehouses.findFirst({

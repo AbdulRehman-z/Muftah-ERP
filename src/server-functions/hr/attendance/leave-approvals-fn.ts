@@ -1,7 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { attendance, employees } from "@/db/schemas/hr-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import {
+    requireHrManageMiddleware,
+    requireHrViewMiddleware,
+} from "@/lib/middlewares";
 import { eq, and, desc } from "drizzle-orm";
 import { z } from "zod";
 
@@ -9,7 +12,7 @@ import { z } from "zod";
  * Fetch leave records that need admin approval
  */
 export const getLeaveApprovalsFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireHrViewMiddleware])
     .inputValidator(
         z.object({
             status: z
@@ -72,7 +75,7 @@ export const getLeaveApprovalsFn = createServerFn()
  * When rejected, sets isApprovedLeave = false (salary deduction applied).
  */
 export const processLeaveApprovalFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireHrManageMiddleware])
     .inputValidator(
         z.object({
             id: z.string(),

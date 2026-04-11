@@ -30,6 +30,7 @@ export function usePreviewPayslip(
       input.month,
       input.manualDeductions,
       input.additionalAmounts,
+      input.earlyCutoffDate,
     ],
     queryFn: () => previewEmployeePayslipFn({ data: input }),
     enabled: enabled && !!input.employeeId,

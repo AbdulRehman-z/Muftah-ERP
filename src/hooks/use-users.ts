@@ -1,185 +1,176 @@
-import { authClient } from "@/lib/auth-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import {
+  archiveRoleFn,
+  assignUserRoleFn,
+  banManagedUserFn,
+  createManagedUserFn,
+  createRoleFn,
+  deleteRoleFn,
+  revokeManagedUserSessionFn,
+  revokeManagedUserSessionsFn,
+  setManagedUserPasswordFn,
+  unbanManagedUserFn,
+  updateManagedUserFn,
+  updateRoleFn,
+  removeManagedUserFn,
+} from "@/server-functions/user-management/rbac-management-fn";
 import { superAdminGetUserSessionsFn } from "@/server-functions/user-management/super-admin-get-user-sessions-fn";
+
+const overviewQueryKey = ["admin-users"];
 
 export const useUsers = () => {
   const queryClient = useQueryClient();
 
-  const listUsers = (queryParams: any) => {
-    return useQuery({
-      queryKey: ["users", queryParams],
-      queryFn: async () => {
-        const { data, error } = await authClient.admin.listUsers({
-          query: queryParams,
-        });
-        if (error) throw new Error(error.message);
-        return data;
-      },
-      placeholderData: (previousData) => previousData,
-    });
-  };
+  const invalidateOverview = () =>
+    queryClient.invalidateQueries({ queryKey: overviewQueryKey });
 
   const listUserSessions = (userId: string, enabled: boolean) => {
     return useQuery({
       queryKey: ["user-sessions", userId],
       queryFn: async () => {
         const result = await superAdminGetUserSessionsFn({ data: { userId } });
-        return result.sessions;
+        return result.sessions ?? result;
       },
       enabled,
     });
   };
 
   const createUser = useMutation({
-    mutationFn: async (data: any) => {
-      const { error } = await authClient.admin.createUser(data);
-      if (error) throw new Error(error.message);
-    },
+    mutationFn: async (data: Parameters<typeof createManagedUserFn>[0]["data"]) =>
+      createManagedUserFn({ data }),
     onSuccess: () => {
-      toast.success("User created successfully");
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("User created successfully.");
+      invalidateOverview();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (error) => toast.error(error.message),
   });
 
   const setRole = useMutation({
-    mutationFn: async ({
-      userId,
-      role,
-    }: {
-      userId: string;
-      role: "admin" | "super-admin" | "operator" | "finance-manager";
-    }) => {
-      const { error } = await authClient.admin.setRole({ userId, role });
-      if (error) throw new Error(error.message);
-    },
+    mutationFn: async (data: Parameters<typeof assignUserRoleFn>[0]["data"]) =>
+      assignUserRoleFn({ data }),
     onSuccess: () => {
-      toast.success("User role updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("User role updated successfully.");
+      invalidateOverview();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (error) => toast.error(error.message),
   });
 
   const updateUser = useMutation({
-    mutationFn: async ({ userId, data }: { userId: string; data: any }) => {
-      const { error } = await authClient.admin.updateUser({ userId, data });
-      if (error) throw new Error(error.message);
-    },
+    mutationFn: async (data: Parameters<typeof updateManagedUserFn>[0]["data"]) =>
+      updateManagedUserFn({ data }),
     onSuccess: () => {
-      toast.success("User updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("User updated successfully.");
+      invalidateOverview();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (error) => toast.error(error.message),
   });
 
   const setUserPassword = useMutation({
-    mutationFn: async ({
-      userId,
-      password,
-    }: {
-      userId: string;
-      password: string;
-    }) => {
-      const { error } = await authClient.admin.setUserPassword({
-        userId,
-        newPassword: password,
-      });
-      if (error) throw new Error(error.message);
-    },
+    mutationFn: async (
+      data: Parameters<typeof setManagedUserPasswordFn>[0]["data"],
+    ) => setManagedUserPasswordFn({ data }),
     onSuccess: () => {
-      toast.success("Password updated successfully");
+      toast.success("Password updated successfully.");
     },
-    onError: (err) => toast.error(err.message),
+    onError: (error) => toast.error(error.message),
   });
 
   const banUser = useMutation({
-    mutationFn: async ({
-      userId,
-      reason,
-      duration,
-    }: {
-      userId: string;
-      reason?: string;
-      duration?: number;
-    }) => {
-      const { error } = await authClient.admin.banUser({
-        userId,
-        banReason: reason,
-        banExpiresIn: duration,
-      });
-      if (error) throw new Error(error.message);
-    },
+    mutationFn: async (data: Parameters<typeof banManagedUserFn>[0]["data"]) =>
+      banManagedUserFn({ data }),
     onSuccess: () => {
-      toast.success("User banned successfully");
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("User restricted successfully.");
+      invalidateOverview();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (error) => toast.error(error.message),
   });
 
   const unbanUser = useMutation({
-    mutationFn: async ({ userId }: { userId: string }) => {
-      const { error } = await authClient.admin.unbanUser({ userId });
-      if (error) throw new Error(error.message);
-    },
+    mutationFn: async (data: Parameters<typeof unbanManagedUserFn>[0]["data"]) =>
+      unbanManagedUserFn({ data }),
     onSuccess: () => {
-      toast.success("User unbanned successfully");
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("User access restored successfully.");
+      invalidateOverview();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (error) => toast.error(error.message),
   });
 
   const removeUser = useMutation({
-    mutationFn: async ({ userId }: { userId: string }) => {
-      const { error } = await authClient.admin.removeUser({ userId });
-      if (error) throw new Error(error.message);
-    },
+    mutationFn: async (data: Parameters<typeof removeManagedUserFn>[0]["data"]) =>
+      removeManagedUserFn({ data }),
     onSuccess: () => {
-      toast.success("User deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("User deleted successfully.");
+      invalidateOverview();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (error) => toast.error(error.message),
   });
 
   const revokeUserSession = useMutation({
-    mutationFn: async ({ sessionToken }: { sessionToken: string }) => {
-      const { error } = await authClient.admin.revokeUserSession({
-        sessionToken,
-      });
-      if (error) throw new Error(error.message);
-    },
+    mutationFn: async (
+      data: Parameters<typeof revokeManagedUserSessionFn>[0]["data"],
+    ) => revokeManagedUserSessionFn({ data }),
     onSuccess: () => {
-      toast.success("Session revoked successfully");
+      toast.success("Session revoked successfully.");
       queryClient.invalidateQueries({ queryKey: ["user-sessions"] });
     },
-    onError: (err) => toast.error(err.message),
+    onError: (error) => toast.error(error.message),
   });
 
   const revokeAllUserSessions = useMutation({
-    mutationFn: async ({ userId }: { userId: string }) => {
-      const { error } = await authClient.admin.revokeUserSessions({ userId });
-      if (error) throw new Error(error.message);
-    },
+    mutationFn: async (
+      data: Parameters<typeof revokeManagedUserSessionsFn>[0]["data"],
+    ) => revokeManagedUserSessionsFn({ data }),
     onSuccess: () => {
-      toast.success("All sessions revoked successfully");
+      toast.success("All sessions revoked successfully.");
       queryClient.invalidateQueries({ queryKey: ["user-sessions"] });
     },
-    onError: (err) => toast.error(err.message),
+    onError: (error) => toast.error(error.message),
   });
 
-  const impersonateUser = useMutation({
-    mutationFn: async ({ userId }: { userId: string }) => {
-      const { error } = await authClient.admin.impersonateUser({ userId });
-      if (error) throw new Error(error.message);
-    },
+  const createRole = useMutation({
+    mutationFn: async (data: Parameters<typeof createRoleFn>[0]["data"]) =>
+      createRoleFn({ data }),
     onSuccess: () => {
-      window.location.href = "/";
+      toast.success("Role created successfully.");
+      invalidateOverview();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (error) => toast.error(error.message),
+  });
+
+  const updateRole = useMutation({
+    mutationFn: async (data: Parameters<typeof updateRoleFn>[0]["data"]) =>
+      updateRoleFn({ data }),
+    onSuccess: () => {
+      toast.success("Role updated successfully.");
+      invalidateOverview();
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  const archiveRole = useMutation({
+    mutationFn: async (data: Parameters<typeof archiveRoleFn>[0]["data"]) =>
+      archiveRoleFn({ data }),
+    onSuccess: (_, variables) => {
+      toast.success(
+        variables.isArchived ? "Role archived successfully." : "Role restored successfully.",
+      );
+      invalidateOverview();
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  const deleteRole = useMutation({
+    mutationFn: async (data: Parameters<typeof deleteRoleFn>[0]["data"]) =>
+      deleteRoleFn({ data }),
+    onSuccess: () => {
+      toast.success("Role deleted successfully.");
+      invalidateOverview();
+    },
+    onError: (error) => toast.error(error.message),
   });
 
   return {
-    listUsers,
     listUserSessions,
     createUser,
     setRole,
@@ -190,6 +181,9 @@ export const useUsers = () => {
     removeUser,
     revokeUserSession,
     revokeAllUserSessions,
-    impersonateUser,
+    createRole,
+    updateRole,
+    archiveRole,
+    deleteRole,
   };
 };

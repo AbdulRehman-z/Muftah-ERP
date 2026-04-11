@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { attendance, salaryAdvances } from "@/db/schemas/hr-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireHrViewMiddleware } from "@/lib/middlewares";
 import { eq, and, gt } from "drizzle-orm";
 
 /**
@@ -9,7 +9,7 @@ import { eq, and, gt } from "drizzle-orm";
  * Used by the payroll module to warn admins before generating payslips.
  */
 export const getPendingApprovalCountsFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireHrViewMiddleware])
     .handler(async () => {
         // Pending overtime
         const pendingOT = await db

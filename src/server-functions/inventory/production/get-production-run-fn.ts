@@ -1,11 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { db, productionRuns, chemicals, packagingMaterials } from "@/db";
-import {
-  requireAdminMiddleware,
-  requireAuthMiddleware,
-} from "@/lib/middlewares";
+import { requireAuthMiddleware } from "@/lib/middlewares";
+import { hasPermission } from "@/lib/rbac";
 
 export const getProductionRunsFn = createServerFn()
   .middleware([requireAuthMiddleware])
@@ -17,13 +15,26 @@ export const getProductionRunsFn = createServerFn()
       })
       .optional(),
   )
-  .handler(async ({ data }) => {
-    let whereClause;
+  .handler(async ({ data, context }) => {
+    const permissions = context.authContext.permissions;
+    const canViewManufacturing =
+      hasPermission(permissions, "manufacturing.view") ||
+      hasPermission(permissions, "manufacturing.run.read");
+    const canViewOperator =
+      hasPermission(permissions, "operator.view") ||
+      hasPermission(permissions, "operator.run.read");
+
+    if (!canViewManufacturing && !canViewOperator) {
+      throw new Error("You do not have permission to view production runs.");
+    }
+
+    const operatorOnlyAccess = canViewOperator && !canViewManufacturing;
+    let whereClause: SQL | undefined;
 
     if (data?.runId) {
       // Specific Run (Any Status)
       whereClause = eq(productionRuns.id, data.runId);
-    } else if (data?.filter === "active") {
+    } else if (data?.filter === "active" || operatorOnlyAccess) {
       // Active Runs Only
       whereClause = eq(productionRuns.status, "in_progress");
     }
@@ -53,7 +64,7 @@ export const getProductionRunsFn = createServerFn()
         operator: true,
         materialsUsed: true,
       },
-      limit: data?.runId ? 1 : 10,
+      limit: data?.runId ? 1 : operatorOnlyAccess ? 25 : 10,
     });
 
     // Fetch all materials to map names

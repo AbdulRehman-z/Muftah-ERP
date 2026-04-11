@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
+import { getAbsoluteAuthUrl } from "@/lib/auth-url";
 import { signupSchema } from "@/lib/validators";
 import { FormWrapper } from "../custom/form-wrapper";
 import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
@@ -43,7 +44,7 @@ export const SignupForm = () => {
           email: value.email,
           password: value.password,
           name: value.fullName,
-          callbackURL: "http://localhost:3000/email-verification",
+          callbackURL: getAbsoluteAuthUrl("/email-verification"),
         });
 
         if (error) {

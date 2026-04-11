@@ -1,15 +1,11 @@
 import { GenericLoader } from "@/components/custom/generic-loader";
 import { EmployeeListContainer } from "@/components/hr/employees/employee-list-container";
 import { Separator } from "@/components/ui/separator";
-import { requireAdminMiddleware } from "@/lib/middlewares";
 import { getEmployeesFn } from "@/server-functions/hr/employees/get-employees-fn";
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 
 export const Route = createFileRoute("/_protected/hr/employees/")({
-  server: {
-    middleware: [requireAdminMiddleware],
-  },
   loader: async ({ context }) => {
     void context.queryClient.prefetchQuery({
       queryKey: ["employees"],

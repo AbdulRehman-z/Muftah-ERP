@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
+import { getAbsoluteAuthUrl } from "@/lib/auth-url";
 import { Button } from "../ui/button";
 import {
   Card,
@@ -45,7 +46,7 @@ export const EmailVerification = ({ email }: Props) => {
       startResendVerificationTimer();
       await authClient.sendVerificationEmail({
         email,
-        callbackURL: "http://localhost:3000/email-verification",
+        callbackURL: getAbsoluteAuthUrl("/email-verification"),
       });
       toast.success("Verification email sent successfully.");
     } catch (error: unknown) {

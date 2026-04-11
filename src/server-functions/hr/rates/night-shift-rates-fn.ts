@@ -1,7 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { nightShiftRates } from "@/db/schemas/hr-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import {
+    requireHrManageMiddleware,
+    requireHrViewMiddleware,
+} from "@/lib/middlewares";
 import { z } from "zod";
 import { eq, desc } from "drizzle-orm";
 
@@ -10,7 +13,7 @@ import { eq, desc } from "drizzle-orm";
  * Falls back to the most recent year's rate if no rate is set for the current year.
  */
 export const getCurrentNightShiftRateFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireHrViewMiddleware])
     .handler(async () => {
         const currentYear = new Date().getFullYear();
 
@@ -33,7 +36,7 @@ export const getCurrentNightShiftRateFn = createServerFn()
  * List all night shift rate configurations (historical).
  */
 export const listNightShiftRatesFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireHrViewMiddleware])
     .handler(async () => {
         return await db.query.nightShiftRates.findMany({
             with: {
@@ -48,7 +51,7 @@ export const listNightShiftRatesFn = createServerFn()
  * If a rate already exists for the year, it updates it.
  */
 export const upsertNightShiftRateFn = createServerFn()
-    .middleware([requireAdminMiddleware])
+    .middleware([requireHrManageMiddleware])
     .inputValidator(
         z.object({
             year: z.number().min(2020).max(2100),

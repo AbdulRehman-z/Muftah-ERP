@@ -1,10 +1,11 @@
 import { adminClient, twoFactorClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { toast } from "sonner";
+import { getAuthBaseUrl } from "./auth-url";
 import { ac, admin, financeManager, operator, superAdmin } from "./permissions";
 
 export const authClient = createAuthClient({
-  baseURL: "http://localhost:3000",
+  baseURL: getAuthBaseUrl(),
   fetchOptions: {
     onError: async (context) => {
       const { response } = context;
@@ -21,7 +22,7 @@ export const authClient = createAuthClient({
       },
     }),
     adminClient({
-      defaultRole: "super-admin",
+      defaultRole: "operator",
       adminRoles: ["super-admin", "admin"],
       ac,
       roles: {

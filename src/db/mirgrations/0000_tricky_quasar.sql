@@ -518,6 +518,48 @@ CREATE TABLE "warehouses" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "app_permissions" (
+	"id" text PRIMARY KEY NOT NULL,
+	"key" text NOT NULL,
+	"module_key" text NOT NULL,
+	"label" text NOT NULL,
+	"description" text DEFAULT '' NOT NULL,
+	"kind" text DEFAULT 'action' NOT NULL,
+	"route_pattern" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "app_permissions_key_unique" UNIQUE("key")
+);
+--> statement-breakpoint
+CREATE TABLE "app_role_permissions" (
+	"role_id" text NOT NULL,
+	"permission_id" text NOT NULL,
+	"granted_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "app_role_permissions_pk" PRIMARY KEY("role_id","permission_id")
+);
+--> statement-breakpoint
+CREATE TABLE "app_roles" (
+	"id" text PRIMARY KEY NOT NULL,
+	"slug" text NOT NULL,
+	"name" text NOT NULL,
+	"description" text DEFAULT '' NOT NULL,
+	"is_system" boolean DEFAULT false NOT NULL,
+	"is_archived" boolean DEFAULT false NOT NULL,
+	"priority" integer DEFAULT 0 NOT NULL,
+	"default_landing_path" text DEFAULT '/dashboard' NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "app_roles_slug_unique" UNIQUE("slug")
+);
+--> statement-breakpoint
+CREATE TABLE "user_role_assignments" (
+	"user_id" text PRIMARY KEY NOT NULL,
+	"role_id" text NOT NULL,
+	"assigned_by_user_id" text,
+	"assigned_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "customers" (
 	"id" text PRIMARY KEY NOT NULL,
 	"s_no" serial NOT NULL,
@@ -668,6 +710,11 @@ ALTER TABLE "recipes" ADD CONSTRAINT "recipes_carton_packaging_id_packaging_mate
 ALTER TABLE "stock_transfers" ADD CONSTRAINT "stock_transfers_from_warehouse_id_warehouses_id_fk" FOREIGN KEY ("from_warehouse_id") REFERENCES "public"."warehouses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stock_transfers" ADD CONSTRAINT "stock_transfers_to_warehouse_id_warehouses_id_fk" FOREIGN KEY ("to_warehouse_id") REFERENCES "public"."warehouses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stock_transfers" ADD CONSTRAINT "stock_transfers_performed_by_id_user_id_fk" FOREIGN KEY ("performed_by_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "app_role_permissions" ADD CONSTRAINT "app_role_permissions_role_id_app_roles_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."app_roles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "app_role_permissions" ADD CONSTRAINT "app_role_permissions_permission_id_app_permissions_id_fk" FOREIGN KEY ("permission_id") REFERENCES "public"."app_permissions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_role_assignments" ADD CONSTRAINT "user_role_assignments_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_role_assignments" ADD CONSTRAINT "user_role_assignments_role_id_app_roles_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."app_roles"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_role_assignments" ADD CONSTRAINT "user_role_assignments_assigned_by_user_id_user_id_fk" FOREIGN KEY ("assigned_by_user_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invoice_items" ADD CONSTRAINT "invoice_items_invoice_id_invoices_id_fk" FOREIGN KEY ("invoice_id") REFERENCES "public"."invoices"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invoice_items" ADD CONSTRAINT "invoice_items_recipe_id_recipes_id_fk" FOREIGN KEY ("recipe_id") REFERENCES "public"."recipes"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invoices" ADD CONSTRAINT "invoices_customer_id_customers_id_fk" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -694,6 +741,14 @@ CREATE INDEX "stock_warehouse_idx" ON "material_stock" USING btree ("warehouse_i
 CREATE INDEX "production_runs_updated_at_idx" ON "production_runs" USING btree ("updated_at");--> statement-breakpoint
 CREATE INDEX "ingredients_recipe_idx" ON "recipe_ingredients" USING btree ("recipe_id");--> statement-breakpoint
 CREATE INDEX "packaging_recipe_idx" ON "recipe_packaging" USING btree ("recipe_id");--> statement-breakpoint
+CREATE INDEX "app_permissions_key_idx" ON "app_permissions" USING btree ("key");--> statement-breakpoint
+CREATE INDEX "app_permissions_module_idx" ON "app_permissions" USING btree ("module_key");--> statement-breakpoint
+CREATE INDEX "app_role_permissions_role_idx" ON "app_role_permissions" USING btree ("role_id");--> statement-breakpoint
+CREATE INDEX "app_role_permissions_permission_idx" ON "app_role_permissions" USING btree ("permission_id");--> statement-breakpoint
+CREATE INDEX "app_roles_slug_idx" ON "app_roles" USING btree ("slug");--> statement-breakpoint
+CREATE INDEX "app_roles_archived_idx" ON "app_roles" USING btree ("is_archived");--> statement-breakpoint
+CREATE INDEX "user_role_assignments_role_idx" ON "user_role_assignments" USING btree ("role_id");--> statement-breakpoint
+CREATE INDEX "user_role_assignments_assigned_by_idx" ON "user_role_assignments" USING btree ("assigned_by_user_id");--> statement-breakpoint
 CREATE INDEX "purchase_supplier_idx" ON "purchase_records" USING btree ("supplier_id");--> statement-breakpoint
 CREATE INDEX "purchase_warehouse_idx" ON "purchase_records" USING btree ("warehouse_id");--> statement-breakpoint
 CREATE INDEX "purchase_date_idx" ON "purchase_records" USING btree ("purchase_date");--> statement-breakpoint

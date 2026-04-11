@@ -9,10 +9,10 @@ import {
   finishedGoodsStock,
   recipes,
 } from "@/db";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireInventoryViewMiddleware } from "@/lib/middlewares";
 
 export const getLowStockAlertsFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireInventoryViewMiddleware])
   .handler(async () => {
     // Chemicals low stock
     const rawAlerts = await db

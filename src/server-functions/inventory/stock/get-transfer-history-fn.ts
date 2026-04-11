@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { and, desc, eq, or } from "drizzle-orm";
 import { z } from "zod";
 import { db, stockTransfers, warehouses, user } from "@/db";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireInventoryViewMiddleware } from "@/lib/middlewares";
 
 const getTransferHistorySchema = z.object({
   materialType: z.enum(["chemical", "packaging", "finished"]),
@@ -11,7 +11,7 @@ const getTransferHistorySchema = z.object({
 });
 
 export const getTransferHistoryFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireInventoryViewMiddleware])
   .inputValidator(getTransferHistorySchema)
   .handler(async ({ data }) => {
     const history = await db.query.stockTransfers.findMany({

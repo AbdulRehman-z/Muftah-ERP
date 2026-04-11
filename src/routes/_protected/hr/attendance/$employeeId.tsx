@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { requireAdminMiddleware } from "@/lib/middlewares";
 import { getEmployeeAttendanceLogFn } from "@/server-functions/hr/attendance/get-employee-attendance-log-fn";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { z } from "zod";
@@ -11,9 +10,6 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute("/_protected/hr/attendance/$employeeId")({
-  server: {
-    middleware: [requireAdminMiddleware],
-  },
   validateSearch: searchSchema,
   loaderDeps: ({ search: { from, to } }) => ({ from, to }),
   loader: async ({ params, context, deps }) => {

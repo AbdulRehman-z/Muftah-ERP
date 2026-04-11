@@ -480,26 +480,19 @@ export function calculatePayslip(
   const stdDutyHours = employee.standardDutyHours || 8;
   const config = employee.allowanceConfig || [];
   const basicSalaryStd = parseFloat(employee.standardSalary || "0");
-  const restDays = employee.restDays ?? [0]; // Default: Sunday off
+  const restDays = employee.restDays ?? [0];
 
-  // ── 1. Build a set of rest-day dates in this cycle ───────────────────────
-  // Any attendance record that falls on a rest day is excluded from ALL
-  // summary counts (present, absent, leave, unmarked, Bradford).
-  // This prevents rest-day records from distorting working-day arithmetic.
+  // 1. Build a set of rest-day dates in this cycle
   const restDayDateSet = buildRestDayDateSet(
     payrollPeriod.startDate,
     payrollPeriod.endDate,
     restDays,
   );
 
-  // Working-day records only — excludes rest days and holidays AND filters up to cutoff.
+  // 2. Evaluation window
   const evaluationEndDate = earlyCutoffDate ? earlyCutoffDate : payrollPeriod.endDate;
-  const workingDayRecords = attendanceRecords.filter(
-    (r) => r.date <= evaluationEndDate && !restDayDateSet.has(r.date) && r.status !== "holiday",
-  );
 
-  // ── 2. True working days for this cycle ──────────────────────────────────
-  // Denominator MUST use the full cycle length so per-day wages do not inflate.
+  // 3. Full Cycle Denominator
   const fullCycleWorkingDays = calculateWorkingDays(
     payrollPeriod.startDate,
     payrollPeriod.endDate,
@@ -508,7 +501,7 @@ export function calculatePayslip(
   );
   const calendarDaysInMonth = getCalendarDaysInPayPeriodMonth(fullCycleWorkingDays);
 
-  // Evaluated working days for the interval up to earlyCutoffDate
+  // 4. Evaluated Working Days (Numerator for window)
   const totalWorkingDays = calculateWorkingDays(
     payrollPeriod.startDate,
     evaluationEndDate,
@@ -516,55 +509,56 @@ export function calculatePayslip(
     restDays,
   );
 
-  // ── 3. Attendance summary (working days only) ────────────────────────────
-  const daysPresent = workingDayRecords.filter(
-    (r) => r.status === "present",
-  ).length;
+  // 5. Build WorkingDayRecords (including virtual future absents)
+  const workingDayRecords = attendanceRecords.filter(
+    (r) => !restDayDateSet.has(r.date) && r.status !== "holiday",
+  ).map(r => {
+    if (earlyCutoffDate && r.date > earlyCutoffDate) {
+      return { ...r, status: "absent" as const };
+    }
+    return r;
+  });
 
-  const daysAbsent = workingDayRecords.filter(
-    (r) => r.status === "absent",
-  ).length;
+  // Inject virtual records for entirely missing future days
+  if (earlyCutoffDate) {
+    const start = parseISO(payrollPeriod.startDate);
+    const end = parseISO(payrollPeriod.endDate);
+    const cycleRange = eachDayOfInterval({ start, end });
+    const existingDates = new Set(attendanceRecords.map(r => r.date));
+    for (const day of cycleRange) {
+      const dateStr = format(day, "yyyy-MM-dd");
+      if (dateStr > earlyCutoffDate && !restDayDateSet.has(dateStr) && !existingDates.has(dateStr)) {
+        workingDayRecords.push({
+          date: dateStr,
+          status: "absent",
+          dutyHours: null,
+          overtimeHours: null,
+          isNightShift: false
+        });
+      }
+    }
+  }
 
-  const daysLeave = workingDayRecords.filter(
-    (r) => r.status === "leave" && r.isApprovedLeave,
-  ).length;
+  // 6. Attendance Summary
+  // Unmarked only counts gaps in the window (<= cutoff)
+  const pastRecords = workingDayRecords.filter(r => r.date <= evaluationEndDate);
+  const accountedPastDays = pastRecords.filter(r => ["present", "absent", "leave"].includes(r.status)).length;
+  const unmarkedDays = Math.max(0, totalWorkingDays - accountedPastDays);
 
-  const daysUnapprovedLeave = workingDayRecords.filter(
-    (r) => r.status === "leave" && !r.isApprovedLeave,
-  ).length;
+  const daysPresent = workingDayRecords.filter(r => r.status === "present").length;
+  const daysAbsent = workingDayRecords.filter(r => r.status === "absent").length;
+  const daysLeave = workingDayRecords.filter(r => r.status === "leave" && r.isApprovedLeave).length;
+  const daysUnapprovedLeave = workingDayRecords.filter(r => r.status === "leave" && !r.isApprovedLeave).length;
+  const daysSickLeave = workingDayRecords.filter(r => r.status === "leave" && r.leaveType === "sick").length;
+  const daysCasualLeave = workingDayRecords.filter(r => r.status === "leave" && r.leaveType === "casual").length;
+  const daysAnnualLeave = workingDayRecords.filter(r => r.status === "leave" && r.leaveType === "annual").length;
+  const daysSpecialLeave = workingDayRecords.filter(r => r.status === "leave" && r.leaveType === "special").length;
 
-  const daysSickLeave = workingDayRecords.filter(
-    (r) => r.status === "leave" && r.leaveType === "sick",
-  ).length;
+  const totalOvertimeHours = sumApprovedOvertimeHours(workingDayRecords.filter(r => r.date <= evaluationEndDate));
+  const nightShiftsCount = workingDayRecords.filter(r => r.date <= evaluationEndDate && r.isNightShift).length;
+  const bradfordFactorScore = calculateBradfordFactor(workingDayRecords.filter(r => r.date <= evaluationEndDate));
 
-  const daysCasualLeave = workingDayRecords.filter(
-    (r) => r.status === "leave" && r.leaveType === "casual",
-  ).length;
-
-  const daysAnnualLeave = workingDayRecords.filter(
-    (r) => r.status === "leave" && r.leaveType === "annual",
-  ).length;
-
-  const daysSpecialLeave = workingDayRecords.filter(
-    (r) => r.status === "leave" && r.leaveType === "special",
-  ).length;
-
-  // Unmarked = working days with zero attendance entry
-  // Rest days are already excluded, so this count is always accurate.
-  const accountedDays =
-    daysPresent + daysAbsent + daysLeave + daysUnapprovedLeave;
-  const unmarkedDays = Math.max(0, totalWorkingDays - accountedDays);
-
-  const totalOvertimeHours = sumApprovedOvertimeHours(workingDayRecords);
-
-  const nightShiftsCount = workingDayRecords.filter(
-    (r) => r.isNightShift,
-  ).length;
-
-  // Bradford only on working-day records
-  const bradfordFactorScore = calculateBradfordFactor(workingDayRecords);
-
-  // ── 4. Deductions ─────────────────────────────────────────────────────────
+  // 7. Deductions
   const {
     absentDeduction,
     leaveDeduction,
@@ -639,7 +633,7 @@ export function calculatePayslip(
     startDate: payrollPeriod.startDate,
     endDate: payrollPeriod.endDate,
 
-    totalWorkingDays,
+    totalWorkingDays: fullCycleWorkingDays,
     daysPresent,
     daysAbsent,
     daysLeave,

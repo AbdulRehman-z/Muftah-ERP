@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { chemicalLabReports } from "@/db/schemas/inventory-schema";
-import { requireAuthMiddleware } from "@/lib/middlewares";
+import { requireInventoryViewMiddleware } from "@/lib/middlewares";
 import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
 
@@ -10,7 +10,7 @@ const getLabReportsSchema = z.object({
 });
 
 export const getLabReportsFn = createServerFn()
-    .middleware([requireAuthMiddleware])
+    .middleware([requireInventoryViewMiddleware])
     .inputValidator(getLabReportsSchema)
     .handler(async ({ data }) => {
         const reports = await db.query.chemicalLabReports.findMany({
@@ -34,7 +34,7 @@ const getLabReportByIdSchema = z.object({
 });
 
 export const getLabReportByIdFn = createServerFn()
-    .middleware([requireAuthMiddleware])
+    .middleware([requireInventoryViewMiddleware])
     .inputValidator(getLabReportByIdSchema)
     .handler(async ({ data }) => {
         const report = await db.query.chemicalLabReports.findFirst({

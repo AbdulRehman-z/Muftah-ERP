@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { recipes } from "@/db/schemas/inventory-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireManufacturingViewMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 
 const getRecipeParams = z.object({
@@ -10,7 +10,7 @@ const getRecipeParams = z.object({
 });
 
 export const getRecipeFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireManufacturingViewMiddleware])
   .inputValidator(getRecipeParams)
   .handler(async ({ data }) => {
     const result = await db.query.recipes.findFirst({

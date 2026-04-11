@@ -7,7 +7,9 @@ export const useFailProduction = () => {
   return useMutation({
     mutationFn: failProductionFn,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["operator-production-runs"] });
       queryClient.invalidateQueries({ queryKey: ["production-runs"] });
+      queryClient.invalidateQueries({ queryKey: ["production-run"] });
     },
   });
 };

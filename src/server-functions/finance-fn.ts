@@ -1,7 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { wallets, expenses, transactions } from "@/db/schemas/finance-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import {
+  requireFinanceManageMiddleware,
+  requireFinanceViewMiddleware,
+} from "@/lib/middlewares";
 import { and, count, eq, SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import { createId } from "@paralleldrive/cuid2";
@@ -14,7 +17,7 @@ import { createId } from "@paralleldrive/cuid2";
  * List all wallets with their current balance
  */
 export const getWalletsListFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireFinanceViewMiddleware])
   .handler(async () => {
     return await db.query.wallets.findMany({
       orderBy: (wallets, { asc }) => [asc(wallets.createdAt)],
@@ -25,7 +28,7 @@ export const getWalletsListFn = createServerFn()
  * Create a new wallet (cash box or bank account)
  */
 export const createWalletFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireFinanceManageMiddleware])
   .inputValidator(
     z.object({
       name: z.string().min(1, "Wallet name is required"),
@@ -64,7 +67,7 @@ export const createWalletFn = createServerFn()
  * Update wallet name
  */
 export const updateWalletFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireFinanceManageMiddleware])
   .inputValidator(
     z.object({
       walletId: z.string().min(1),
@@ -88,7 +91,7 @@ export const updateWalletFn = createServerFn()
  * Deposit money into a wallet (credit)
  */
 export const depositToWalletFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireFinanceManageMiddleware])
   .inputValidator(
     z.object({
       walletId: z.string().min(1),
@@ -145,7 +148,7 @@ export const EXPENSE_CATEGORIES = [
  * Record an expense — validates wallet has enough balance
  */
 export const createExpenseFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireFinanceManageMiddleware])
   .inputValidator(
     z.object({
       description: z.string().min(1, "Description is required"),
@@ -212,7 +215,7 @@ export const createExpenseFn = createServerFn()
  * List all expenses with wallet info
  */
 export const getExpensesFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireFinanceViewMiddleware])
   .inputValidator(
     z.object({
       category: z.string().optional(),
@@ -259,7 +262,7 @@ export const getExpensesFn = createServerFn()
  * Get transaction ledger for a specific wallet or all wallets
  */
 export const getTransactionsFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireFinanceViewMiddleware])
   .inputValidator(
     z.object({
       walletId: z.string().optional(),
@@ -310,7 +313,7 @@ export const getTransactionsFn = createServerFn()
  * Used as a shared utility by payroll, advance approval, etc.
  */
 export const debitWalletFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireFinanceManageMiddleware])
   .inputValidator(
     z.object({
       walletId: z.string().min(1, "Please select a payment source"),

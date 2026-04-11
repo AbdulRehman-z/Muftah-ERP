@@ -2,7 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { payrolls, employees, payslips, salaryAdvances } from "@/db/schemas/hr-schema";
 import { wallets, transactions } from "@/db/schemas/finance-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import {
+  requireHrManageMiddleware,
+  requireHrViewMiddleware,
+} from "@/lib/middlewares";
 import { z } from "zod";
 import { eq, sql, inArray } from "drizzle-orm";
 import { format, parseISO, startOfMonth, subMonths, addDays } from "date-fns";
@@ -16,7 +19,7 @@ const createPayrollSchema = z.object({
 });
 
 export const createPayrollFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrManageMiddleware])
   .inputValidator(createPayrollSchema)
   .handler(async ({ data }) => {
     const { month, employeeIds, processedBy } = data;
@@ -113,7 +116,7 @@ export const createPayrollFn = createServerFn()
  * Get payroll by ID
  */
 export const getPayrollByIdFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrViewMiddleware])
   .inputValidator(z.object({ payrollId: z.string() }))
   .handler(async ({ data }) => {
     return await db.query.payrolls.findFirst({
@@ -150,7 +153,7 @@ export const getPayrollByIdFn = createServerFn()
  * List all payrolls
  */
 export const listPayrollsFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrViewMiddleware])
   .inputValidator(z.object({ limit: z.number().optional().default(50) }))
   .handler(async ({ data }) => {
     return await db.query.payrolls.findMany({
@@ -171,7 +174,7 @@ export const listPayrollsFn = createServerFn()
  * Approve payroll
  */
 export const approvePayrollFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrManageMiddleware])
   .inputValidator(z.object({ payrollId: z.string() }))
   .handler(async ({ data }) => {
     const [updated] = await db
@@ -188,7 +191,7 @@ export const approvePayrollFn = createServerFn()
  * Mark payroll as paid — debits from a finance wallet and logs a ledger transaction.
  */
 export const markPayrollAsPaidFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrManageMiddleware])
   .inputValidator(
     z.object({
       payrollId: z.string(),
@@ -263,7 +266,7 @@ export const markPayrollAsPaidFn = createServerFn()
  * so they can be recovered in the next payroll cycle.
  */
 export const deletePayrollFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireHrManageMiddleware])
   .inputValidator(z.object({ payrollId: z.string() }))
   .handler(async ({ data }) => {
     return await db.transaction(async (tx) => {
@@ -295,4 +298,3 @@ export const deletePayrollFn = createServerFn()
       return deleted;
     });
   });
-

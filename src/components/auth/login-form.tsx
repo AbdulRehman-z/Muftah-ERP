@@ -1,5 +1,5 @@
 import { useForm } from "@tanstack/react-form";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { Loader2, Mail, LockKeyhole } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -13,16 +13,21 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
+import { resolvePostLoginDestinationFn } from "@/server-functions/auth/resolve-post-login-destination-fn";
 import { loginSchema } from "@/lib/validators";
 import { FormWrapper } from "../custom/form-wrapper";
 import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
 import { PasswordInput } from "../custom/password-input";
 import { EmailVerification } from "./email-verification";
 
-export const LoginForm = () => {
-  const navigate = useNavigate();
+type LoginFormProps = {
+  redirectTo?: string;
+};
+
+export const LoginForm = ({ redirectTo }: LoginFormProps) => {
   const [isPending, startTransition] = useTransition();
-  const [showVerificationComponent, setShowVerificationComponent] = useState(false);
+  const [showVerificationComponent, setShowVerificationComponent] =
+    useState(false);
 
   const form = useForm({
     defaultValues: {
@@ -50,7 +55,13 @@ export const LoginForm = () => {
         }
 
         toast.success("Authentication successful.");
-        navigate({ to: "/dashboard" });
+        const destination = await resolvePostLoginDestinationFn({
+          data: {
+            redirectTo,
+          },
+        });
+
+        window.location.href = destination;
       });
     },
   });
@@ -160,13 +171,7 @@ export const LoginForm = () => {
               </div>
 
               <div className="text-center text-[13px] text-muted-foreground pt-2">
-                Don't have an account?{" "}
-                <Link
-                  to="/sign-up"
-                  className="font-medium text-foreground hover:text-primary transition-colors"
-                >
-                  Sign up
-                </Link>
+                Account access is provisioned by your super admin.
               </div>
             </FieldGroup>
           </form>

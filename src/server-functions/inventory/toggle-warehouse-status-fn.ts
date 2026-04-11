@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { eq } from "drizzle-orm";
 import { db, finishedGoodsStock, materialStock, warehouses } from "@/db";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireInventoryManageMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 
 const toggleWarehouseStatusSchema = z.object({
@@ -11,7 +11,7 @@ const toggleWarehouseStatusSchema = z.object({
 });
 
 export const toggleWarehouseStatusFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireInventoryManageMiddleware])
   .inputValidator(toggleWarehouseStatusSchema)
   .handler(
     async ({ data: { warehouseId, isActive, transferToWarehouseId } }) => {

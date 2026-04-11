@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
+import { getAbsoluteAuthUrl } from "@/lib/auth-url";
 import { forgotPasswordSchema } from "@/lib/validators";
 import { FormWrapper } from "../custom/form-wrapper";
 import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
@@ -33,7 +34,7 @@ export const ForgotPasswordForm = () => {
         await authClient.requestPasswordReset(
           {
             email: value.email,
-            redirectTo: `http://localhost:3000/reset-password`,
+            redirectTo: getAbsoluteAuthUrl("/reset-password"),
           },
           {
             onSuccess: () => {

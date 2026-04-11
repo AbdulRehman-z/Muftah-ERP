@@ -10,7 +10,7 @@ import {
   finishedGoodsStock,
 } from "@/db/schemas/inventory-schema";
 import { invoiceItems } from "@/db/schemas/sales-schema";
-import { requireAdminMiddleware } from "@/lib/middlewares";
+import { requireManufacturingManageMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 
 const deleteRecipeSchema = z.object({
@@ -19,7 +19,7 @@ const deleteRecipeSchema = z.object({
 });
 
 export const deleteRecipeFn = createServerFn()
-  .middleware([requireAdminMiddleware])
+  .middleware([requireManufacturingManageMiddleware])
   .inputValidator(deleteRecipeSchema)
   .handler(async ({ data }) => {
     // Check for existing production runs

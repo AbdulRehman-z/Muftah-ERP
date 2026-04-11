@@ -14,6 +14,7 @@ import {
 import { requireAuthMiddleware } from "@/lib/middlewares";
 import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
+import { hasPermission } from "@/lib/rbac";
 
 const logProgressSchema = z.object({
   productionRunId: z.string().min(1),
@@ -24,6 +25,14 @@ export const logProductionProgressFn = createServerFn()
   .middleware([requireAuthMiddleware])
   .inputValidator(logProgressSchema)
   .handler(async ({ data, context }) => {
+    const canLogProgress =
+      hasPermission(context.authContext.permissions, "operator.run.log") ||
+      hasPermission(context.authContext.permissions, "manufacturing.run.manage");
+
+    if (!canLogProgress) {
+      throw new Error("You do not have permission to log production progress.");
+    }
+
     return await db.transaction(async (tx) => {
       // 1. Get Production Run
       const [run] = await tx
