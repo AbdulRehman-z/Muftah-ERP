@@ -1,3 +1,6 @@
+import { UserEditorDialog } from "./user-editor-dialog";
+import { RoleEditorDialog } from "./role-editor-dialog";
+import { ManagedUser, ManagedRole, PermissionDefinition, UserDialogState, RoleDialogState, LandingPathPill } from "./types";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -20,6 +23,9 @@ import {
   UserPlus,
   UserRoundPen,
   Users,
+  Search,
+  Activity,
+  User
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { adminGetUsersFn } from "@/server-functions/user-management/super-admin-get-users-fn";
@@ -41,692 +47,55 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useUsers } from "@/hooks/use-users";
 import { MODULE_PERMISSION_GROUPS } from "@/lib/rbac";
-import { UserSessionsList } from "./user-sessions-list";
+import { UserSessionsDialog } from "./user-sessions-dialog";
 
-type OverviewData = Awaited<ReturnType<typeof adminGetUsersFn>>;
-type ManagedUser = OverviewData["users"][number];
-type ManagedRole = OverviewData["roles"][number];
-type PermissionDefinition = OverviewData["permissions"][number];
-
-type UserDialogState =
-  | {
-      mode: "create";
-      user?: undefined;
-    }
-  | {
-      mode: "edit";
-      user: ManagedUser;
-    };
-
-type RoleDialogState =
-  | {
-      mode: "create";
-      role?: undefined;
-    }
-  | {
-      mode: "edit";
-      role: ManagedRole;
-    };
-
-const MODULE_LABELS: Record<string, string> = {
-  dashboard: "Dashboard",
-  manufacturing: "Manufacturing",
-  inventory: "Inventory",
-  suppliers: "Suppliers",
-  sales: "Sales",
-  finance: "Finance",
-  hr: "HR & Payroll",
-  operator: "Operator",
-  "user-management": "User Management",
-  rbac: "Role Governance",
-};
-
-const StatCard = ({
-  title,
-  value,
-  description,
-  accentClassName,
-  icon: Icon,
-}: {
+// ── Blueprint KPI Card ────────────────────────────────────────────────────────
+interface StatCardProps {
   title: string;
   value: string | number;
-  description: string;
-  accentClassName: string;
-  icon: typeof Sparkles;
-}) => (
-  <div className="relative overflow-hidden rounded-[28px] border border-border/60 bg-card/90 p-5 shadow-[0_20px_60px_-36px_rgba(15,23,42,0.55)]">
-    <div className="absolute inset-y-0 left-0 w-1 rounded-full bg-gradient-to-b from-white/20 via-white/10 to-transparent" />
-    <div className="flex items-start justify-between gap-4">
-      <div className="space-y-2">
-        <p className="text-[11px] font-bold uppercase tracking-[0.26em] text-muted-foreground">
-          {title}
-        </p>
-        <p className="text-3xl font-black tracking-tight text-foreground">{value}</p>
-        <p className="max-w-[18rem] text-sm leading-relaxed text-muted-foreground">
-          {description}
-        </p>
-      </div>
+  sub: string;
+  icon: React.ReactNode;
+  theme: "blue" | "emerald" | "amber" | "sky";
+  delay?: number;
+}
+
+function BlueprintStatCard({ title, value, sub, icon, theme, delay = 0 }: StatCardProps) {
+  const styles = {
+    blue: "border-t-blue-500 bg-blue-500/5 text-blue-500",
+    emerald: "border-t-emerald-500 bg-emerald-500/5 text-emerald-500",
+    amber: "border-t-amber-500 bg-amber-500/5 text-amber-500",
+    sky: "border-t-sky-500 bg-sky-500/5 text-sky-500",
+  }[theme];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay, ease: "easeOut" }}
+      className={cn(
+        "relative bg-card border border-border rounded-none p-5 shadow-none overflow-hidden flex flex-col justify-between h-[140px] hover:bg-muted/10 transition-colors",
+        styles.split(" ")[0]
+      )}
+    >
       <div
-        className={cn(
-          "flex size-12 items-center justify-center rounded-2xl border text-white shadow-lg",
-          accentClassName,
-        )}
-      >
-        <Icon className="size-5" />
-      </div>
-    </div>
-  </div>
-);
-
-const LandingPathPill = ({ path }: { path: string }) => (
-  <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/80 px-3 py-1 text-[11px] font-semibold text-foreground/80">
-    <Landmark className="size-3.5 text-primary" />
-    {path}
-  </span>
-);
-
-function UserEditorDialog({
-  dialogState,
-  open,
-  onOpenChange,
-  roles,
-}: {
-  dialogState: UserDialogState | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  roles: ManagedRole[];
-}) {
-  const { createUser, setRole, setUserPassword, updateUser } = useUsers();
-  const isEditing = dialogState?.mode === "edit";
-  const availableRoles = roles.filter(
-    (role) => !role.isArchived || role.slug === dialogState?.user?.roleAssignment?.slug,
-  );
-
-  const [formState, setFormState] = useState(() => ({
-    name: dialogState?.mode === "edit" ? dialogState.user.name : "",
-    email: dialogState?.mode === "edit" ? dialogState.user.email : "",
-    password: "",
-    roleSlug:
-      dialogState?.mode === "edit"
-        ? dialogState.user.roleAssignment?.slug ?? availableRoles[0]?.slug ?? "operator"
-        : availableRoles[0]?.slug ?? "operator",
-  }));
-
-  const submitting =
-    createUser.isPending ||
-    setRole.isPending ||
-    setUserPassword.isPending ||
-    updateUser.isPending;
-
-  const syncFormState = () => {
-    setFormState({
-      name: dialogState?.mode === "edit" ? dialogState.user.name : "",
-      email: dialogState?.mode === "edit" ? dialogState.user.email : "",
-      password: "",
-      roleSlug:
-        dialogState?.mode === "edit"
-          ? dialogState.user.roleAssignment?.slug ?? availableRoles[0]?.slug ?? "operator"
-          : availableRoles[0]?.slug ?? "operator",
-    });
-  };
-
-  const close = (nextOpen: boolean) => {
-    if (!nextOpen) {
-      syncFormState();
-    }
-    onOpenChange(nextOpen);
-  };
-
-  useEffect(() => {
-    syncFormState();
-  }, [dialogState]);
-
-  const handleSubmit = async () => {
-    if (!formState.name.trim() || !formState.email.trim()) {
-      return;
-    }
-
-    if (!isEditing) {
-      await createUser.mutateAsync({
-        name: formState.name.trim(),
-        email: formState.email.trim().toLowerCase(),
-        password: formState.password,
-        roleSlug: formState.roleSlug,
-      });
-      close(false);
-      return;
-    }
-
-    const promises: Promise<unknown>[] = [];
-
-    if (
-      formState.name.trim() !== dialogState.user.name ||
-      formState.email.trim().toLowerCase() !== dialogState.user.email
-    ) {
-      promises.push(
-        updateUser.mutateAsync({
-          userId: dialogState.user.id,
-          name: formState.name.trim(),
-          email: formState.email.trim().toLowerCase(),
-        }),
-      );
-    }
-
-    if (formState.roleSlug !== dialogState.user.roleAssignment?.slug) {
-      promises.push(
-        setRole.mutateAsync({
-          userId: dialogState.user.id,
-          roleSlug: formState.roleSlug,
-        }),
-      );
-    }
-
-    if (formState.password.trim()) {
-      promises.push(
-        setUserPassword.mutateAsync({
-          userId: dialogState.user.id,
-          password: formState.password,
-        }),
-      );
-    }
-
-    await Promise.all(promises);
-    close(false);
-  };
-
-  return (
-    <ResponsiveDialog
-      open={open}
-      onOpenChange={close}
-      title={isEditing ? "Refine User Access" : "Create Managed User"}
-      description={
-        isEditing
-          ? "Update identity, access, and recovery settings without leaving the control center."
-          : "Create an account and attach it to an active RBAC role in a single flow."
-      }
-      className="sm:max-w-2xl border-border/60 bg-card/95 p-0 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.7)]"
-      icon={isEditing ? UserRoundPen : UserPlus}
-    >
-      <div className="grid gap-6 p-6 md:grid-cols-[1.2fr_0.9fr]">
-        <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
-                Full Name
-              </span>
-              <Input
-                value={formState.name}
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    name: event.target.value,
-                  }))
-                }
-                placeholder="Abdul Rehman"
-                className="h-11 rounded-2xl border-border/60 bg-background/80 text-sm"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
-                Email
-              </span>
-              <Input
-                type="email"
-                value={formState.email}
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    email: event.target.value,
-                  }))
-                }
-                placeholder="operator@company.com"
-                className="h-11 rounded-2xl border-border/60 bg-background/80 text-sm"
-              />
-            </label>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
-                Role Assignment
-              </span>
-              <Select
-                value={formState.roleSlug}
-                onValueChange={(value) =>
-                  setFormState((current) => ({
-                    ...current,
-                    roleSlug: value,
-                  }))
-                }
-              >
-                <SelectTrigger className="h-11 w-full rounded-2xl border-border/60 bg-background/80 px-4 text-sm">
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableRoles.map((role) => (
-                    <SelectItem key={role.id} value={role.slug}>
-                      {role.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </label>
-            <label className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
-                {isEditing ? "Rotate Password" : "Initial Password"}
-              </span>
-              <Input
-                type="password"
-                value={formState.password}
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    password: event.target.value,
-                  }))
-                }
-                placeholder={isEditing ? "Leave blank to keep current" : "Minimum 8 characters"}
-                className="h-11 rounded-2xl border-border/60 bg-background/80 text-sm"
-              />
-            </label>
-          </div>
-        </div>
-
-        <div className="rounded-[24px] border border-border/60 bg-linear-to-br from-primary/10 via-background to-background p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-              <ShieldCheck className="size-4" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-foreground">Access Snapshot</p>
-              <p className="text-xs text-muted-foreground">
-                Preview the operating lane this user will enter after sign-in.
-              </p>
-            </div>
-          </div>
-
-          {roles
-            .filter((role) => role.slug === formState.roleSlug)
-            .map((role) => (
-              <div key={role.id} className="mt-5 space-y-4">
-                <Badge className={cn("h-6 rounded-full px-3 text-[10px] font-bold uppercase", role.toneClassName)}>
-                  {role.name}
-                </Badge>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {role.description || "No role description has been written yet."}
-                </p>
-                <div className="space-y-2">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
-                    Landing
-                  </p>
-                  <LandingPathPill path={role.defaultLandingPath} />
-                </div>
-                <div className="space-y-2">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
-                    Reachable Modules
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {role.accessiblePaths.slice(0, 6).map((path) => (
-                      <Badge key={path} variant="outline" className="h-6 rounded-full px-3 text-[10px]">
-                        {path}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
+        className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none"
+        style={{ backgroundImage: 'linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)', backgroundSize: '16px 16px' }}
+      />
+      <div className="relative z-10 flex justify-between items-start">
+        <p className="text-[11px] font-bold text-muted-foreground uppercase">{title}</p>
+        <div className={cn("p-1.5 rounded-none border border-current", styles.split(" ")[1], styles.split(" ")[2])}>
+          {icon}
         </div>
       </div>
-
-      <div className="flex items-center justify-end gap-3 border-t border-border/60 px-6 py-4">
-        <Button variant="outline" onClick={() => close(false)} className="rounded-full px-5">
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          disabled={
-            submitting ||
-            !formState.name.trim() ||
-            !formState.email.trim() ||
-            (!isEditing && formState.password.trim().length < 8)
-          }
-          className="rounded-full px-5"
-        >
-          {submitting ? "Saving..." : isEditing ? "Save Access" : "Create User"}
-        </Button>
+      <div className="relative z-10 mt-auto">
+        <h3 className="text-3xl font-black text-foreground tabular-nums">{value}</h3>
+        <p className="text-[10px] font-semibold text-muted-foreground mt-1 truncate uppercase">{sub}</p>
       </div>
-    </ResponsiveDialog>
+    </motion.div>
   );
 }
 
-function RoleEditorDialog({
-  dialogState,
-  open,
-  onOpenChange,
-  permissions,
-  landingPathOptions,
-}: {
-  dialogState: RoleDialogState | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  permissions: PermissionDefinition[];
-  landingPathOptions: string[];
-}) {
-  const { createRole, updateRole } = useUsers();
-  const isEditing = dialogState?.mode === "edit";
-  const isSuperAdmin = dialogState?.mode === "edit" && dialogState.role.slug === "super-admin";
-
-  const [formState, setFormState] = useState(() => ({
-    name: dialogState?.mode === "edit" ? dialogState.role.name : "",
-    slug: dialogState?.mode === "edit" ? dialogState.role.slug : "",
-    description: dialogState?.mode === "edit" ? dialogState.role.description : "",
-    defaultLandingPath:
-      dialogState?.mode === "edit"
-        ? dialogState.role.defaultLandingPath
-        : landingPathOptions[0] ?? "/dashboard",
-    permissionKeys:
-      dialogState?.mode === "edit"
-        ? dialogState.role.permissionKeys.filter((permissionKey) => permissionKey !== "*")
-        : [],
-  }));
-
-  const groupedPermissions = useMemo(() => {
-    return permissions.reduce<Record<string, PermissionDefinition[]>>((acc, permission) => {
-      acc[permission.moduleKey] = acc[permission.moduleKey] ?? [];
-      acc[permission.moduleKey].push(permission);
-      return acc;
-    }, {});
-  }, [permissions]);
-
-  const resetForm = () => {
-    setFormState({
-      name: dialogState?.mode === "edit" ? dialogState.role.name : "",
-      slug: dialogState?.mode === "edit" ? dialogState.role.slug : "",
-      description: dialogState?.mode === "edit" ? dialogState.role.description : "",
-      defaultLandingPath:
-        dialogState?.mode === "edit"
-          ? dialogState.role.defaultLandingPath
-          : landingPathOptions[0] ?? "/dashboard",
-      permissionKeys:
-        dialogState?.mode === "edit"
-          ? dialogState.role.permissionKeys.filter((permissionKey) => permissionKey !== "*")
-          : [],
-    });
-  };
-
-  const close = (nextOpen: boolean) => {
-    if (!nextOpen) {
-      resetForm();
-    }
-    onOpenChange(nextOpen);
-  };
-
-  useEffect(() => {
-    resetForm();
-  }, [dialogState, landingPathOptions]);
-
-  const togglePermission = (permissionKey: string) => {
-    setFormState((current) => ({
-      ...current,
-      permissionKeys: current.permissionKeys.includes(permissionKey)
-        ? current.permissionKeys.filter((existingKey) => existingKey !== permissionKey)
-        : [...current.permissionKeys, permissionKey],
-    }));
-  };
-
-  const handleSubmit = async () => {
-    if (isEditing && dialogState?.mode === "edit") {
-      await updateRole.mutateAsync({
-        roleId: dialogState.role.id,
-        name: formState.name.trim(),
-        slug: formState.slug.trim(),
-        description: formState.description.trim(),
-        defaultLandingPath: formState.defaultLandingPath,
-        permissionKeys: formState.permissionKeys,
-      });
-      close(false);
-      return;
-    }
-
-    await createRole.mutateAsync({
-      name: formState.name.trim(),
-      slug: formState.slug.trim(),
-      description: formState.description.trim(),
-      defaultLandingPath: formState.defaultLandingPath,
-      permissionKeys: formState.permissionKeys,
-    });
-    close(false);
-  };
-
-  return (
-    <ResponsiveDialog
-      open={open}
-      onOpenChange={close}
-      title={isEditing ? "Tune Role Blueprint" : "Design New Role"}
-      description="Shape permissions, choose a landing page, and keep the control surface readable."
-      className="sm:max-w-5xl border-border/60 bg-card/95 p-0 shadow-[0_40px_110px_-55px_rgba(15,23,42,0.8)]"
-      icon={Blocks}
-    >
-      <div className="grid gap-0 lg:grid-cols-[1fr_1.2fr]">
-        <div className="border-b border-border/60 p-6 lg:border-r lg:border-b-0">
-          <div className="space-y-4">
-            <label className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
-                Role Name
-              </span>
-              <Input
-                value={formState.name}
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    name: event.target.value,
-                  }))
-                }
-                placeholder="Machine Operator"
-                className="h-11 rounded-2xl border-border/60 bg-background/80"
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
-                Role Slug
-              </span>
-              <Input
-                value={formState.slug}
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    slug: event.target.value
-                      .toLowerCase()
-                      .replace(/[^a-z0-9-]+/g, "-")
-                      .replace(/--+/g, "-"),
-                  }))
-                }
-                disabled={dialogState?.mode === "edit" && dialogState.role.isSystem}
-                placeholder="machine-operator"
-                className="h-11 rounded-2xl border-border/60 bg-background/80 font-mono text-[13px]"
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
-                Description
-              </span>
-              <Textarea
-                value={formState.description}
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    description: event.target.value,
-                  }))
-                }
-                placeholder="Summarize what this role owns and why it exists."
-                className="min-h-28 rounded-[24px] border-border/60 bg-background/80"
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
-                Default Landing Page
-              </span>
-              <Select
-                value={formState.defaultLandingPath}
-                onValueChange={(value) =>
-                  setFormState((current) => ({
-                    ...current,
-                    defaultLandingPath: value,
-                  }))
-                }
-              >
-                <SelectTrigger className="h-11 w-full rounded-2xl border-border/60 bg-background/80 px-4">
-                  <SelectValue placeholder="Choose a landing page" />
-                </SelectTrigger>
-                <SelectContent>
-                  {landingPathOptions.map((path) => (
-                    <SelectItem key={path} value={path}>
-                      {path}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </label>
-
-            <div className="rounded-[24px] border border-border/60 bg-linear-to-br from-primary/10 via-background to-background p-5">
-              <div className="flex items-center gap-3">
-                <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                  <Radar className="size-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground">Preview Engine</p>
-                  <p className="text-xs text-muted-foreground">
-                    This role will open here after sign-in and expose the modules shown on the right.
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4">
-                <LandingPathPill path={formState.defaultLandingPath} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-bold text-foreground">Permission Matrix</p>
-              <p className="text-xs text-muted-foreground">
-                Toggle the exact route and action capabilities this role should own.
-              </p>
-            </div>
-            {isSuperAdmin && (
-              <Badge className="rounded-full bg-primary px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-primary-foreground">
-                Locked Full Access
-              </Badge>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            {Object.entries(groupedPermissions).map(([moduleKey, modulePermissions]) => {
-              const moduleTone = MODULE_PERMISSION_GROUPS[moduleKey as keyof typeof MODULE_PERMISSION_GROUPS];
-              return (
-                <div
-                  key={moduleKey}
-                  className="rounded-[24px] border border-border/60 bg-background/80 p-4"
-                >
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          "flex size-9 items-center justify-center rounded-2xl border bg-muted text-foreground",
-                          moduleTone?.accent === "violet" && "border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-300",
-                          moduleTone?.accent === "amber" && "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-300",
-                          moduleTone?.accent === "cyan" && "border-cyan-500/20 bg-cyan-500/10 text-cyan-600 dark:text-cyan-300",
-                          moduleTone?.accent === "orange" && "border-orange-500/20 bg-orange-500/10 text-orange-600 dark:text-orange-300",
-                          moduleTone?.accent === "emerald" && "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
-                          moduleTone?.accent === "sky" && "border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-300",
-                          moduleTone?.accent === "rose" && "border-rose-500/20 bg-rose-500/10 text-rose-600 dark:text-rose-300",
-                          moduleTone?.accent === "yellow" && "border-yellow-500/20 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300",
-                          moduleTone?.accent === "fuchsia" && "border-fuchsia-500/20 bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-300",
-                          moduleTone?.accent === "indigo" && "border-indigo-500/20 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300",
-                        )}
-                      >
-                        <Layers2 className="size-4" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-foreground">
-                          {MODULE_LABELS[moduleKey] ?? moduleKey}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {modulePermissions.length} permission lanes
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3">
-                    {modulePermissions.map((permission) => {
-                      const isChecked =
-                        isSuperAdmin || formState.permissionKeys.includes(permission.key);
-                      return (
-                        <label
-                          key={permission.key}
-                          className="flex items-start gap-3 rounded-2xl border border-border/50 bg-card/60 px-4 py-3"
-                        >
-                          <Checkbox
-                            checked={isChecked}
-                            disabled={isSuperAdmin}
-                            onCheckedChange={() => togglePermission(permission.key)}
-                            className="mt-0.5"
-                          />
-                          <div className="space-y-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-sm font-semibold text-foreground">
-                                {permission.label}
-                              </span>
-                              <Badge variant="outline" className="h-5 rounded-full px-2 text-[10px] font-mono">
-                                {permission.key}
-                              </Badge>
-                            </div>
-                            <p className="text-xs leading-relaxed text-muted-foreground">
-                              {permission.description}
-                            </p>
-                          </div>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-end gap-3 border-t border-border/60 px-6 py-4">
-        <Button variant="outline" onClick={() => close(false)} className="rounded-full px-5">
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          disabled={
-            createRole.isPending ||
-            updateRole.isPending ||
-            !formState.name.trim() ||
-            !formState.slug.trim() ||
-            (!isSuperAdmin && formState.permissionKeys.length === 0)
-          }
-          className="rounded-full px-5"
-        >
-          {createRole.isPending || updateRole.isPending
-            ? "Saving..."
-            : isEditing
-              ? "Save Role"
-              : "Create Role"}
-        </Button>
-      </div>
-    </ResponsiveDialog>
-  );
-}
-
+// ── Main Page Component ───────────────────────────────────────────────────────
 export const UsersTable = () => {
   const { data } = useSuspenseQuery({
     queryKey: ["admin-users"],
@@ -777,36 +146,40 @@ export const UsersTable = () => {
     });
   }, [data.roles, deferredRoleSearch]);
 
-  const previewRole =
-    data.roles.find((role) => role.id === previewRoleId) ?? data.roles[0] ?? null;
+  const previewRole = data.roles.find((role) => role.id === previewRoleId) ?? data.roles[0] ?? null;
 
   const userColumns = useMemo<ColumnDef<ManagedUser>[]>(
     () => [
       {
         accessorKey: "name",
-        header: "User",
+        header: "Identity",
         cell: ({ row }) => {
           const user = row.original;
           return (
-            <div className="space-y-1">
-              <p className="font-semibold text-foreground">{user.name}</p>
-              <p className="text-xs text-muted-foreground">{user.email}</p>
+            <div className="flex items-center gap-3 py-1">
+              <div className="size-8 rounded-none bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                <User className="size-4 text-primary" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-bold text-[13px] text-foreground uppercase">{user.name}</p>
+                <p className="text-[10px] font-mono text-muted-foreground">{user.email}</p>
+              </div>
             </div>
           );
         },
       },
       {
         id: "role",
-        header: "Role",
+        header: "Assigned Role",
         cell: ({ row }) => {
           const role = row.original.roleAssignment;
           return role ? (
-            <Badge className={cn("h-6 rounded-full px-3 text-[10px] font-bold uppercase", role.toneClassName)}>
+            <Badge className={cn("h-6 rounded-none px-3 text-[9px] font-black uppercase shadow-none", role.toneClassName)}>
               {role.name}
               {role.isArchived ? " / archived" : ""}
             </Badge>
           ) : (
-            <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px]">
+            <Badge variant="outline" className="h-6 rounded-none px-3 text-[9px] font-bold uppercase shadow-none">
               Unassigned
             </Badge>
           );
@@ -814,11 +187,11 @@ export const UsersTable = () => {
       },
       {
         id: "status",
-        header: "Status",
+        header: "Network Status",
         cell: ({ row }) => (
           <Badge
             className={cn(
-              "h-6 rounded-full px-3 text-[10px] font-bold uppercase",
+              "h-6 rounded-none px-3 text-[9px] font-black uppercase shadow-none",
               row.original.banned
                 ? "border-destructive/20 bg-destructive/10 text-destructive"
                 : "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
@@ -830,9 +203,9 @@ export const UsersTable = () => {
       },
       {
         accessorKey: "createdAt",
-        header: "Joined",
+        header: "Onboarded",
         cell: ({ row }) => (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-[11px] font-mono font-bold text-muted-foreground uppercase">
             {new Date(row.original.createdAt).toLocaleDateString()}
           </span>
         ),
@@ -844,55 +217,23 @@ export const UsersTable = () => {
           const user = row.original;
           return (
             <div className="flex flex-wrap justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-full"
-                onClick={() => setUserDialog({ mode: "edit", user })}
-              >
-                <UserRoundPen className="mr-2 size-3.5" />
-                Edit
+              <Button variant="outline" size="sm" className="rounded-none h-8 text-[10px] font-bold uppercase shadow-none" onClick={() => setUserDialog({ mode: "edit", user })}>
+                <UserRoundPen className="mr-2 size-3.5" /> Edit
+              </Button>
+              <Button variant="outline" size="sm" className="rounded-none h-8 text-[10px] font-bold uppercase shadow-none" onClick={() => setSessionsUser(user)}>
+                <MonitorDot className="mr-2 size-3.5" /> Sessions
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-full"
-                onClick={() => setSessionsUser(user)}
+                className="rounded-none h-8 text-[10px] font-bold uppercase shadow-none"
+                onClick={() => user.banned ? unbanUser.mutate({ userId: user.id }) : banUser.mutate({ userId: user.id, reason: "Restricted by super admin" })}
               >
-                <MonitorDot className="mr-2 size-3.5" />
-                Sessions
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-full"
-                onClick={() =>
-                  user.banned
-                    ? unbanUser.mutate({ userId: user.id })
-                    : banUser.mutate({ userId: user.id, reason: "Restricted by super admin" })
-                }
-              >
-                {user.banned ? (
-                  <>
-                    <ShieldCheck className="mr-2 size-3.5" />
-                    Restore
-                  </>
-                ) : (
-                  <>
-                    <ShieldAlert className="mr-2 size-3.5" />
-                    Restrict
-                  </>
-                )}
+                {user.banned ? <><ShieldCheck className="mr-2 size-3.5 text-emerald-500" /> Restore</> : <><ShieldAlert className="mr-2 size-3.5 text-rose-500" /> Restrict</>}
               </Button>
               {user.id !== data.currentUserId && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="rounded-full"
-                  onClick={() => removeUser.mutate({ userId: user.id })}
-                >
-                  <Trash2 className="mr-2 size-3.5" />
-                  Delete
+                <Button variant="destructive" size="sm" className="rounded-none h-8 text-[10px] font-bold uppercase shadow-none" onClick={() => removeUser.mutate({ userId: user.id })}>
+                  <Trash2 className="mr-2 size-3.5" /> Delete
                 </Button>
               )}
             </div>
@@ -905,429 +246,260 @@ export const UsersTable = () => {
 
   return (
     <>
-      <div className="space-y-6">
-        <div className="grid gap-4 lg:grid-cols-4">
-          <StatCard
-            title="System Users"
-            value={data.users.length}
-            description="Managed identities currently covered by the RBAC control plane."
-            accentClassName="border-violet-500/20 bg-violet-500 text-white"
-            icon={Users}
-          />
-          <StatCard
-            title="Active Roles"
-            value={data.roles.filter((role) => !role.isArchived).length}
-            description="Live role blueprints that can still be assigned to new users."
-            accentClassName="border-emerald-500/20 bg-emerald-500 text-white"
-            icon={Blocks}
-          />
-          <StatCard
-            title="Archived Roles"
-            value={data.roles.filter((role) => role.isArchived).length}
-            description="Retired roles that remain attached to existing users until reassigned."
-            accentClassName="border-amber-500/20 bg-amber-500 text-white"
-            icon={Archive}
-          />
-          <StatCard
-            title="Permission Catalog"
-            value={data.permissions.length}
-            description="Explicit route and action capabilities available inside the matrix."
-            accentClassName="border-sky-500/20 bg-sky-500 text-white"
-            icon={Radar}
-          />
-        </div>
+      <div className="space-y-6 pb-8">
 
-        <div className="overflow-hidden rounded-[32px] border border-border/60 bg-card/95 shadow-[0_30px_90px_-55px_rgba(15,23,42,0.9)]">
-          <div className="border-b border-border/60 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.16),transparent_30%),radial-gradient(circle_at_top_left,rgba(168,85,247,0.12),transparent_26%)] px-6 py-6">
-            <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-              <div className="space-y-3">
-                <Badge className="h-7 rounded-full bg-primary px-4 text-[10px] font-black uppercase tracking-[0.28em] text-primary-foreground">
-                  Access Operations
-                </Badge>
-                <div>
-                  <h2 className="text-3xl font-black tracking-tight text-foreground">
-                    Identity Command Surface
-                  </h2>
-                  <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                    Manage people, role blueprints, and module access from one deliberately
-                    opinionated control center. Every action here is now backed by app-level RBAC.
-                  </p>
-                </div>
+        {/* ── COMMAND HEADER: STRUCTURAL STYLE ── */}
+        <div className="relative bg-card border border-border rounded-none shadow-none">
+          <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between p-6 gap-8">
+            <div className="flex items-center gap-6 w-full lg:w-auto">
+              <div className="size-20 shrink-0 rounded-none bg-primary/10 border border-primary flex items-center justify-center relative group">
+                <ShieldCheck className="size-10 text-primary relative z-10" />
               </div>
 
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  variant="outline"
-                  className="rounded-full border-border/60 px-5"
-                  onClick={() => setRoleDialog({ mode: "create" })}
-                >
-                  <Blocks className="mr-2 size-4" />
-                  New Role
-                </Button>
-                <Button className="rounded-full px-5" onClick={() => setUserDialog({ mode: "create" })}>
-                  <Plus className="mr-2 size-4" />
-                  New User
-                </Button>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h1 className="text-3xl font-black uppercase text-foreground">
+                    Identity Command
+                  </h1>
+                  <Badge className="bg-primary/10 text-primary border-primary rounded-none px-3 py-1 text-[10px] font-black uppercase shadow-none">
+                    <Activity className="size-3 mr-1 inline" /> Access Control
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground uppercase max-w-md leading-relaxed font-bold">
+                  Manage network identities, blueprint dynamic roles, and monitor permission matrices from a centralized hub.
+                </p>
               </div>
             </div>
+
+            <div className="flex flex-col gap-2 w-full lg:w-auto">
+              <Button onClick={() => setRoleDialog({ mode: "create" })} className="w-full lg:w-[180px] h-10 font-black uppercase text-[11px] rounded-none shadow-none">
+                <Blocks className="size-4 mr-2" /> New Role
+              </Button>
+              <Button variant="outline" onClick={() => setUserDialog({ mode: "create" })} className="w-full lg:w-[180px] h-10 font-black uppercase text-[11px] rounded-none shadow-none border-border">
+                <UserPlus className="size-4 mr-2" /> Invite User
+              </Button>
+            </div>
           </div>
+        </div>
 
-          <div className="p-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-6">
-              <TabsList className="rounded-[24px] border border-border/60 bg-muted/40 p-1.5">
-                <TabsTrigger
-                  value="users"
-                  className="rounded-[20px] px-4 py-2 text-[12px] font-bold uppercase tracking-[0.18em]"
-                >
-                  Users
-                </TabsTrigger>
-                <TabsTrigger
-                  value="roles"
-                  className="rounded-[20px] px-4 py-2 text-[12px] font-bold uppercase tracking-[0.18em]"
-                >
-                  Roles
-                </TabsTrigger>
-                <TabsTrigger
-                  value="access"
-                  className="rounded-[20px] px-4 py-2 text-[12px] font-bold uppercase tracking-[0.18em]"
-                >
-                  Access
-                </TabsTrigger>
-              </TabsList>
+        {/* ── BLUEPRINT KPI GRID ── */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <BlueprintStatCard title="System Users" value={data.users.length} sub="Identities in RBAC plane" theme="blue" icon={<Users className="size-4" />} delay={0} />
+          <BlueprintStatCard title="Active Roles" value={data.roles.filter((r) => !r.isArchived).length} sub="Live role blueprints" theme="emerald" icon={<Blocks className="size-4" />} delay={0.1} />
+          <BlueprintStatCard title="Archived Roles" value={data.roles.filter((r) => r.isArchived).length} sub="Retired legacy roles" theme="amber" icon={<Archive className="size-4" />} delay={0.2} />
+          <BlueprintStatCard title="Permission Nodes" value={data.permissions.length} sub="Configurable logic gates" theme="sky" icon={<Radar className="size-4" />} delay={0.3} />
+        </div>
 
-              <TabsContent value="users" className="space-y-5">
-                <div className="flex flex-col gap-4 rounded-[28px] border border-border/60 bg-background/70 p-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-bold text-foreground">People & session governance</p>
-                    <p className="text-xs text-muted-foreground">
-                      Search, restrict, delete, or reassign users without leaving the dashboard.
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-3 sm:flex-row">
+        {/* ── TABBED TELEMETRY DATA ── */}
+        <div className="rounded-none border border-border bg-card/95 shadow-none relative">
+          <div className="p-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <div className="flex flex-col sm:flex-row items-center justify-between p-2 bg-muted/20 border border-border gap-4 mb-4 rounded-none">
+                <TabsList className="bg-background border border-border h-10 rounded-none p-1 shadow-none">
+                  <TabsTrigger value="users" className="text-[11px] font-black uppercase px-6 rounded-none data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shadow-none">Users</TabsTrigger>
+                  <TabsTrigger value="roles" className="text-[11px] font-black uppercase px-6 rounded-none data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shadow-none">Roles</TabsTrigger>
+                  <TabsTrigger value="access" className="text-[11px] font-black uppercase px-6 rounded-none data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shadow-none">Matrix</TabsTrigger>
+                </TabsList>
+
+                {/* Dynamic Filters based on Tab */}
+                {activeTab === "users" && (
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
                     <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
-                      <SelectTrigger className="h-10 w-full rounded-full border-border/60 bg-card/80 px-4 sm:w-[180px]">
-                        <SelectValue placeholder="Filter status" />
+                      <SelectTrigger className="h-10 w-[140px] rounded-none border-border bg-background text-xs font-bold uppercase shadow-none">
+                        <SelectValue placeholder="Filter" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All statuses</SelectItem>
-                        <SelectItem value="active">Active only</SelectItem>
-                        <SelectItem value="restricted">Restricted only</SelectItem>
+                      <SelectContent className="rounded-none border-border shadow-none">
+                        <SelectItem value="all" className="text-xs font-bold uppercase rounded-none">All status</SelectItem>
+                        <SelectItem value="active" className="text-xs font-bold uppercase text-emerald-500 rounded-none">Active</SelectItem>
+                        <SelectItem value="restricted" className="text-xs font-bold uppercase text-rose-500 rounded-none">Restricted</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Input
-                      value={userSearch}
-                      onChange={(event) => setUserSearch(event.target.value)}
-                      placeholder="Search users, emails, or roles..."
-                      className="h-10 rounded-full border-border/60 bg-card/80 px-4 sm:w-[320px]"
-                    />
+                    <div className="relative w-full sm:w-[260px]">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                      <Input value={userSearch} onChange={(e) => setUserSearch(e.target.value)} placeholder="Search identity..." className="h-10 pl-9 rounded-none border-border bg-background text-xs shadow-none" />
+                    </div>
                   </div>
-                </div>
+                )}
 
+                {activeTab === "roles" && (
+                  <div className="relative w-full sm:w-[320px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                    <Input value={roleSearch} onChange={(e) => setRoleSearch(e.target.value)} placeholder="Search blueprint or slug..." className="h-10 pl-9 rounded-none border-border bg-background text-xs shadow-none" />
+                  </div>
+                )}
+              </div>
+
+              {/* ── USERS TAB ── */}
+              <TabsContent value="users" className="p-0 m-0 border border-border">
                 <DataTable
                   columns={userColumns}
                   data={filteredUsers}
                   showSearch={false}
                   showViewOptions={false}
                   pageSize={8}
-                  className="rounded-[28px] border-border/60 bg-background/70"
+                  className="rounded-none border-none bg-background shadow-none"
                 />
               </TabsContent>
 
-              <TabsContent value="roles" className="space-y-5">
-                <div className="flex flex-col gap-4 rounded-[28px] border border-border/60 bg-background/70 p-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-bold text-foreground">Role blueprints & lifecycle</p>
-                    <p className="text-xs text-muted-foreground">
-                      Create custom roles, archive assigned roles, and delete only when nobody depends on them.
-                    </p>
-                  </div>
-                  <Input
-                    value={roleSearch}
-                    onChange={(event) => setRoleSearch(event.target.value)}
-                    placeholder="Search role name, slug, or description..."
-                    className="h-10 rounded-full border-border/60 bg-card/80 px-4 sm:w-[360px]"
-                  />
-                </div>
-
+              {/* ── ROLES TAB ── */}
+              <TabsContent value="roles" className="p-0 m-0">
                 <div className="grid gap-4 xl:grid-cols-2">
                   {filteredRoles.map((role) => (
-                    <motion.div
+                    <div
                       key={role.id}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="group rounded-[28px] border border-border/60 bg-card/80 p-5 shadow-[0_18px_60px_-44px_rgba(15,23,42,0.75)]"
+                      className="group rounded-none border border-border bg-card p-5 shadow-none transition-colors hover:bg-muted/5"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="space-y-3">
                           <div className="flex flex-wrap items-center gap-2">
-                            <Badge className={cn("h-6 rounded-full px-3 text-[10px] font-black uppercase", role.toneClassName)}>
+                            <Badge className={cn("h-6 rounded-none px-3 text-[10px] font-black uppercase shadow-none", role.toneClassName)}>
                               {role.name}
                             </Badge>
                             {role.isSystem && (
-                              <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px] font-bold uppercase">
-                                System
-                              </Badge>
+                              <Badge variant="outline" className="h-6 rounded-none px-3 text-[10px] font-bold uppercase shadow-none border-border">System</Badge>
                             )}
                             {role.isArchived && (
-                              <Badge
-                                variant="outline"
-                                className="h-6 rounded-full border-amber-500/20 bg-amber-500/10 px-3 text-[10px] font-bold uppercase text-amber-700 dark:text-amber-300"
-                              >
+                              <Badge variant="outline" className="h-6 rounded-none border-amber-500/20 bg-amber-500/10 px-3 text-[10px] font-bold uppercase text-amber-700 dark:text-amber-300 shadow-none">
                                 Archived
                               </Badge>
                             )}
                           </div>
                           <div>
-                            <p className="font-mono text-xs text-muted-foreground">{role.slug}</p>
-                            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                              {role.description || "No description has been added yet."}
+                            <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase">{role.slug}</p>
+                            <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground min-h-[40px]">
+                              {role.description || "No description provided."}
                             </p>
                           </div>
                         </div>
 
-                        <div className="space-y-2 text-right">
-                          <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                            Assignments
-                          </div>
-                          <p className="text-2xl font-black tracking-tight text-foreground">
-                            {role.assignmentCount}
-                          </p>
+                        <div className="space-y-1 text-right bg-muted/20 p-3 rounded-none border border-border">
+                          <div className="text-[9px] font-black uppercase text-muted-foreground">Assignments</div>
+                          <p className="text-2xl font-black text-foreground tabular-nums">{role.assignmentCount}</p>
                         </div>
                       </div>
 
-                      <div className="mt-5 flex flex-wrap items-center gap-2">
+                      <div className="mt-5 flex flex-wrap items-center gap-2 p-3 bg-muted/10 rounded-none border border-border">
                         <LandingPathPill path={role.defaultLandingPath} />
-                        <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px]">
-                          {role.permissionKeys.includes("*")
-                            ? "Full access"
-                            : `${role.permissionKeys.length} permission toggles`}
+                        <Badge variant="outline" className="h-6 rounded-none px-3 text-[10px] font-mono shadow-none border-border">
+                          {role.permissionKeys.includes("*") ? "[*] FULL_ACCESS" : `[${role.permissionKeys.length}] NODES`}
                         </Badge>
                       </div>
 
-                      <div className="mt-5 flex flex-wrap gap-2">
-                        {role.accessiblePaths.slice(0, 5).map((path) => (
-                          <Badge key={path} variant="outline" className="h-6 rounded-full px-3 text-[10px]">
-                            {path}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      <div className="mt-6 flex flex-wrap gap-2">
-                        <Button
-                          variant="outline"
-                          className="rounded-full"
-                          onClick={() => {
-                            setPreviewRoleId(role.id);
-                            setActiveTab("access");
-                          }}
-                        >
-                          <Eye className="mr-2 size-3.5" />
-                          Preview
+                      <div className="mt-5 flex flex-wrap gap-2 pt-4 border-t border-border justify-end">
+                        <Button variant="outline" size="sm" className="rounded-none h-8 text-[10px] font-bold uppercase shadow-none border-border" onClick={() => { setPreviewRoleId(role.id); setActiveTab("access"); }}>
+                          <Eye className="mr-2 size-3.5" /> Inspect
                         </Button>
-                        <Button
-                          variant="outline"
-                          className="rounded-full"
-                          onClick={() => setRoleDialog({ mode: "edit", role })}
-                        >
-                          <UserRoundPen className="mr-2 size-3.5" />
-                          Edit
+                        <Button variant="outline" size="sm" className="rounded-none h-8 text-[10px] font-bold uppercase shadow-none border-border" onClick={() => setRoleDialog({ mode: "edit", role })}>
+                          <UserRoundPen className="mr-2 size-3.5" /> Edit
                         </Button>
                         {!role.isSystem && (
-                          <Button
-                            variant="outline"
-                            className="rounded-full"
-                            onClick={() =>
-                              archiveRole.mutate({
-                                roleId: role.id,
-                                isArchived: !role.isArchived,
-                              })
-                            }
-                          >
-                            {role.isArchived ? (
-                              <>
-                                <ArchiveRestore className="mr-2 size-3.5" />
-                                Restore
-                              </>
-                            ) : (
-                              <>
-                                <Archive className="mr-2 size-3.5" />
-                                Archive
-                              </>
-                            )}
+                          <Button variant="outline" size="sm" className="rounded-none h-8 text-[10px] font-bold uppercase shadow-none border-border" onClick={() => archiveRole.mutate({ roleId: role.id, isArchived: !role.isArchived })}>
+                            {role.isArchived ? <><ArchiveRestore className="mr-2 size-3.5 text-emerald-500" /> Restore</> : <><Archive className="mr-2 size-3.5 text-amber-500" /> Archive</>}
                           </Button>
                         )}
                         {!role.isSystem && role.assignmentCount === 0 && (
-                          <Button
-                            variant="destructive"
-                            className="rounded-full"
-                            onClick={() => deleteRole.mutate({ roleId: role.id })}
-                          >
-                            <Trash2 className="mr-2 size-3.5" />
-                            Delete
+                          <Button variant="destructive" size="sm" className="rounded-none h-8 text-[10px] font-bold uppercase shadow-none" onClick={() => deleteRole.mutate({ roleId: role.id })}>
+                            <Trash2 className="mr-2 size-3.5" /> Delete
                           </Button>
                         )}
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               </TabsContent>
 
-              <TabsContent value="access" className="space-y-5">
-                <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
-                  <div className="rounded-[28px] border border-border/60 bg-background/70 p-5">
-                    <div className="mb-4">
-                      <p className="text-sm font-bold text-foreground">Live role preview</p>
-                      <p className="text-xs text-muted-foreground">
-                        Inspect exactly where a selected role can land and what it can touch.
-                      </p>
+              {/* ── ACCESS MATRIX TAB ── */}
+              <TabsContent value="access" className="p-0 m-0">
+                <div className="grid gap-6 xl:grid-cols-[300px_1fr]">
+                  {/* Left: Role Selector */}
+                  <div className="rounded-none border border-border bg-muted/10 p-4 h-fit">
+                    <div className="mb-4 border-b border-border pb-2">
+                      <p className="text-[11px] font-black uppercase text-muted-foreground flex items-center gap-2"><Radar className="size-3 text-primary" /> Target Blueprint</p>
                     </div>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {data.roles.map((role) => (
                         <button
                           key={role.id}
-                          type="button"
                           onClick={() => setPreviewRoleId(role.id)}
                           className={cn(
-                            "w-full rounded-[22px] border px-4 py-4 text-left transition-all",
+                            "w-full rounded-none border px-4 py-3 text-left transition-colors flex items-center justify-between",
                             previewRole?.id === role.id
-                              ? "border-primary/40 bg-primary/10 shadow-[0_18px_50px_-35px_rgba(99,102,241,0.7)]"
-                              : "border-border/60 bg-card/80 hover:border-primary/20 hover:bg-primary/5",
+                              ? "border-primary bg-primary/10"
+                              : "border-border bg-card hover:border-primary/50 hover:bg-muted/50"
                           )}
                         >
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <Badge className={cn("h-6 rounded-full px-3 text-[10px] font-black uppercase", role.toneClassName)}>
-                                  {role.name}
-                                </Badge>
-                                {role.isArchived && (
-                                  <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px] uppercase">
-                                    Archived
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="mt-2 text-xs text-muted-foreground">{role.slug}</p>
-                            </div>
-                            <ArrowUpRight className="size-4 text-muted-foreground" />
+                          <div>
+                            <Badge className={cn("h-5 rounded-none px-2 text-[9px] font-black uppercase shadow-none", role.toneClassName)}>
+                              {role.name}
+                            </Badge>
+                            <p className="mt-1.5 text-[10px] font-mono text-muted-foreground uppercase">{role.slug}</p>
                           </div>
+                          <ArrowUpRight className={cn("size-3.5", previewRole?.id === role.id ? "text-primary" : "text-muted-foreground")} />
                         </button>
                       ))}
                     </div>
                   </div>
 
+                  {/* Right: Matrix Preview */}
                   {previewRole && (
                     <div className="space-y-5">
-                      <div className="rounded-[28px] border border-border/60 bg-card/85 p-5">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="rounded-none border border-border bg-card p-6 shadow-none relative overflow-hidden">
+                        <div className="relative z-10 flex flex-col md:flex-row items-start justify-between gap-6">
                           <div className="space-y-3">
                             <div className="flex items-center gap-2">
-                              <Badge className={cn("h-6 rounded-full px-3 text-[10px] font-black uppercase", previewRole.toneClassName)}>
+                              <Badge className={cn("h-6 rounded-none px-3 text-[10px] font-black uppercase shadow-none", previewRole.toneClassName)}>
                                 {previewRole.name}
                               </Badge>
-                              {previewRole.isSystem && (
-                                <Badge variant="outline" className="h-6 rounded-full px-3 text-[10px] uppercase">
-                                  System
-                                </Badge>
-                              )}
+                              {previewRole.isSystem && <Badge variant="outline" className="h-6 rounded-none px-3 text-[10px] uppercase font-bold shadow-none border-border">System</Badge>}
                             </div>
-                            <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                              {previewRole.description || "No role description has been added yet."}
+                            <p className="max-w-xl text-[13px] leading-relaxed text-muted-foreground font-medium">
+                              {previewRole.description || "No role description provided."}
                             </p>
                           </div>
-                          <Button
-                            variant="outline"
-                            className="rounded-full"
-                            onClick={() => setRoleDialog({ mode: "edit", role: previewRole })}
-                          >
-                            <UserRoundPen className="mr-2 size-3.5" />
-                            Edit Role
+                          <Button variant="outline" className="rounded-none shadow-none font-bold uppercase text-[11px] shrink-0 border-border" onClick={() => setRoleDialog({ mode: "edit", role: previewRole })}>
+                            <UserRoundPen className="mr-2 size-3.5" /> Modify Blueprint
                           </Button>
                         </div>
 
-                        <div className="mt-5 grid gap-4 md:grid-cols-2">
-                          <div className="rounded-[24px] border border-border/60 bg-background/80 p-4">
-                            <div className="flex items-center gap-3">
-                              <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                                <Landmark className="size-4" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-bold text-foreground">Default landing</p>
-                                <p className="text-xs text-muted-foreground">
-                                  Post-login destination if no protected redirect is available.
-                                </p>
-                              </div>
-                            </div>
-                            <div className="mt-4">
-                              <LandingPathPill path={previewRole.defaultLandingPath} />
-                            </div>
+                        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                          <div className="rounded-none border border-border bg-muted/10 p-4">
+                            <p className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2 mb-3"><Landmark className="size-3 text-primary" /> Entry Vector</p>
+                            <LandingPathPill path={previewRole.defaultLandingPath} />
                           </div>
-
-                          <div className="rounded-[24px] border border-border/60 bg-background/80 p-4">
-                            <div className="flex items-center gap-3">
-                              <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                                <BadgeCheck className="size-4" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-bold text-foreground">Effective access</p>
-                                <p className="text-xs text-muted-foreground">
-                                  Reachable surfaces derived from the current permission set.
-                                </p>
-                              </div>
-                            </div>
-                            <div className="mt-4 flex flex-wrap gap-2">
+                          <div className="rounded-none border border-border bg-muted/10 p-4">
+                            <p className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2 mb-3"><BadgeCheck className="size-3 text-primary" /> Accessible Surfaces</p>
+                            <div className="flex flex-wrap gap-2">
                               {previewRole.accessiblePaths.map((path) => (
-                                <Badge key={path} variant="outline" className="h-6 rounded-full px-3 text-[10px]">
-                                  {path}
-                                </Badge>
+                                <Badge key={path} variant="outline" className="h-6 rounded-none bg-background px-2 text-[9px] font-mono shadow-none border-border">{path}</Badge>
                               ))}
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="rounded-[28px] border border-border/60 bg-card/85 p-5">
-                        <div className="mb-4">
-                          <p className="text-sm font-bold text-foreground">Permission detail</p>
-                          <p className="text-xs text-muted-foreground">
-                            Route and action capabilities currently granted to this role.
-                          </p>
+                      <div className="rounded-none border border-border bg-card p-6 shadow-none">
+                        <div className="mb-5 flex items-center justify-between border-b border-border pb-3">
+                          <p className="text-[11px] font-black uppercase text-muted-foreground flex items-center gap-2"><Layers2 className="size-3 text-primary" /> Node Permissions</p>
                         </div>
-                        <div className="grid gap-3">
+                        <div className="grid gap-3 sm:grid-cols-2">
                           {data.permissions.map((permission) => {
-                            const enabled =
-                              previewRole.permissionKeys.includes("*") ||
-                              previewRole.permissionKeys.includes(permission.key);
+                            const enabled = previewRole.permissionKeys.includes("*") || previewRole.permissionKeys.includes(permission.key);
                             return (
                               <div
                                 key={permission.key}
                                 className={cn(
-                                  "rounded-[22px] border px-4 py-3 transition-all",
-                                  enabled
-                                    ? "border-primary/20 bg-primary/8"
-                                    : "border-border/60 bg-background/70 opacity-70",
+                                  "rounded-none border px-4 py-3 flex items-start gap-3",
+                                  enabled ? "border-primary/50 bg-primary/5" : "border-border bg-muted/5 opacity-50 grayscale"
                                 )}
                               >
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <Badge
-                                    className={cn(
-                                      "h-5 rounded-full px-2 text-[10px] font-black uppercase",
-                                      enabled
-                                        ? "bg-primary text-primary-foreground"
-                                        : "bg-muted text-muted-foreground",
-                                    )}
-                                  >
-                                    {enabled ? "Enabled" : "Off"}
-                                  </Badge>
-                                  <span className="text-sm font-semibold text-foreground">
-                                    {permission.label}
-                                  </span>
-                                  <Badge variant="outline" className="h-5 rounded-full px-2 text-[10px] font-mono">
-                                    {permission.key}
-                                  </Badge>
+                                <div className={cn("size-2.5 rounded-none mt-1 shrink-0 border", enabled ? "bg-primary border-primary" : "bg-transparent border-muted-foreground")} />
+                                <div>
+                                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                                    <span className="text-[12px] font-bold text-foreground uppercase">{permission.label}</span>
+                                    <Badge variant="outline" className="h-4 rounded-none bg-background px-1.5 text-[8px] font-mono border-border shadow-none">{permission.key}</Badge>
+                                  </div>
+                                  <p className="text-[11px] leading-relaxed text-muted-foreground font-medium">{permission.description}</p>
                                 </div>
-                                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                                  {permission.description}
-                                </p>
                               </div>
                             );
                           })}
@@ -1342,31 +514,9 @@ export const UsersTable = () => {
         </div>
       </div>
 
-      <UserEditorDialog
-        dialogState={userDialog}
-        open={!!userDialog}
-        onOpenChange={(open) => !open && setUserDialog(null)}
-        roles={data.roles}
-      />
-
-      <RoleEditorDialog
-        dialogState={roleDialog}
-        open={!!roleDialog}
-        onOpenChange={(open) => !open && setRoleDialog(null)}
-        permissions={data.permissions}
-        landingPathOptions={data.landingPathOptions}
-      />
-
-      <ResponsiveDialog
-        open={!!sessionsUser}
-        onOpenChange={(open) => !open && setSessionsUser(null)}
-        title="Active Sessions"
-        description={`Inspect and revoke active device sessions for ${sessionsUser?.email ?? ""}.`}
-        className="sm:max-w-xl border-border/60 bg-card/95"
-        icon={MonitorDot}
-      >
-        {sessionsUser && <UserSessionsList userId={sessionsUser.id} />}
-      </ResponsiveDialog>
+      <UserEditorDialog dialogState={userDialog} open={!!userDialog} onOpenChange={(open) => !open && setUserDialog(null)} roles={data.roles} />
+      <RoleEditorDialog dialogState={roleDialog} open={!!roleDialog} onOpenChange={(open) => !open && setRoleDialog(null)} permissions={data.permissions} landingPathOptions={data.landingPathOptions} />
+      <UserSessionsDialog sessionsUser={sessionsUser} onOpenChange={(open) => !open && setSessionsUser(null)} />
     </>
   );
 };

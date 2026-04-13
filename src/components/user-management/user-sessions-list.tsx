@@ -61,11 +61,11 @@ export const UserSessionsList = ({ userId }: Props) => {
           sessions.map((session: Session) => (
             <div
               key={session.token}
-              className="group flex items-center justify-between p-3 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-border/80 transition-all"
+              className="group flex items-center justify-between p-3 rounded-none border border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-border/80 transition-all"
             >
               <div className="flex items-center gap-3 min-w-0">
                 {/* Device icon */}
-                <div className="size-8 shrink-0 rounded-lg border border-border/50 bg-background flex items-center justify-center group-hover:border-primary/20 transition-colors">
+                <div className="size-8 shrink-0 rounded-none border border-border/50 bg-background flex items-center justify-center group-hover:border-primary/20 transition-colors">
                   {getDeviceIcon(session.userAgent!)}
                 </div>
                 <div className="flex flex-col min-w-0">
@@ -78,7 +78,7 @@ export const UserSessionsList = ({ userId }: Props) => {
                         : "Unknown Device"}
                     </span>
                     {session.ipAddress && (
-                      <span className="shrink-0 font-mono text-[9.5px] text-muted-foreground/55 bg-muted px-1.5 py-0.5 rounded border border-border/40">
+                      <span className="shrink-0 font-mono text-[9.5px] text-muted-foreground/55 bg-muted px-1.5 py-0.5 rounded-none border border-border/40">
                         {session.ipAddress}
                       </span>
                     )}
@@ -93,7 +93,7 @@ export const UserSessionsList = ({ userId }: Props) => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="size-7 shrink-0 rounded-lg text-muted-foreground/30 hover:text-destructive hover:bg-destructive/8 opacity-0 group-hover:opacity-100 transition-all"
+                className="size-7 shrink-0 rounded-none text-muted-foreground/30 hover:text-destructive hover:bg-destructive/8 opacity-0 group-hover:opacity-100 transition-all"
                 onClick={() => revokeUserSession.mutate({ sessionToken: session.token })}
                 disabled={revokeUserSession.isPending}
               >
@@ -102,8 +102,8 @@ export const UserSessionsList = ({ userId }: Props) => {
             </div>
           ))
         ) : (
-          <div className="flex flex-col items-center justify-center py-14 px-4 text-center rounded-xl border border-dashed border-border/50 bg-muted/10">
-            <div className="size-10 rounded-full bg-muted/60 flex items-center justify-center mb-3">
+          <div className="flex flex-col items-center justify-center py-14 px-4 text-center rounded-none border border-dashed border-border/50 bg-muted/10">
+            <div className="size-10 rounded-none bg-muted/60 flex items-center justify-center mb-3">
               <WifiOff className="size-4 text-muted-foreground/40" />
             </div>
             <p className="text-[12px] font-semibold text-muted-foreground/60">No active sessions</p>

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ type ResponsiveDialogProps = {
   onOpenChange: (open: boolean) => void;
   className?: string;
   icon?: LucideIcon;
+  noScroll?: boolean;
 };
 
 export const ResponsiveDialog = ({
@@ -34,6 +36,7 @@ export const ResponsiveDialog = ({
   onOpenChange,
   className,
   icon,
+  noScroll,
 }: ResponsiveDialogProps) => {
   const isMobile = useIsMobile();
   const Icon = icon;
@@ -41,7 +44,7 @@ export const ResponsiveDialog = ({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent>
+        <DrawerContent className="rounded-none shadow-none">
           <DrawerHeader>
             <DrawerTitle className="flex items-center gap-2 text-primary">
               {Icon && <Icon className="size-6 text-primary" />}
@@ -55,10 +58,18 @@ export const ResponsiveDialog = ({
     );
   }
 
+  // Determine if consumer wants full bleed by checking if they passed p-0
+  const isFullBleed = className?.includes("p-0");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={className}>
-        <DialogHeader>
+      <DialogContent
+        className={cn(
+          "flex flex-col gap-0 max-h-[90vh] overflow-hidden rounded-none shadow-none",
+          className
+        )}
+      >
+        <DialogHeader className={cn("shrink-0", isFullBleed ? "p-6 pb-4" : "pb-4")}>
           <DialogTitle className="flex items-center gap-2">
             {Icon && <Icon className="size-6 text-primary" />}
             {title}
@@ -67,7 +78,9 @@ export const ResponsiveDialog = ({
             {description}
           </DialogDescription>
         </DialogHeader>
-        {children}
+        <div className={cn("flex flex-col min-h-0 flex-1 relative", noScroll ? "overflow-hidden" : "overflow-y-auto")}>
+          {children}
+        </div>
       </DialogContent>
     </Dialog>
   );
