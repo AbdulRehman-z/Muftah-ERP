@@ -27,6 +27,49 @@ import { addStockSchema } from "@/lib/validators/validators";
 import { Textarea } from "../ui/textarea";
 import { PurchaseRecord } from "@/components/suppliers/purchase-history-table";
 
+const CostCalculatorEffect = ({
+  form,
+  quantity,
+  pricePerUnit,
+  pricePerKg,
+  materialType,
+  activeMaterial,
+}: any) => {
+  useEffect(() => {
+    const qty = parseFloat(quantity || "0");
+    let total = 0;
+
+    if (qty > 0) {
+      if (materialType === "chemical") {
+        const price = parseFloat(pricePerUnit || "0");
+        total = price * qty;
+      } else if (materialType === "packaging" && activeMaterial) {
+        const pkg = activeMaterial as any;
+        if (pkg.type === "primary") {
+          const weight = parseFloat(pkg.weightPerPack || "0");
+          const price = parseFloat(pricePerKg || "0");
+          if (weight > 0 && price > 0) {
+            // Formula: (Weight/1000) * PricePerKg * Qty
+            total = price * (weight / 1000) * qty;
+          }
+        } else {
+          // Master / Sticker / Others -> Simple Unit Price
+          const price = parseFloat(pricePerUnit || "0");
+          total = price * qty;
+        }
+      }
+    }
+
+    const newCost = total > 0 ? Math.round(total).toString() : "";
+    if (form.state.values.cost !== newCost) {
+      // Always sync cost — even "0" so the field never shows a stale value
+      form.setFieldValue("cost", newCost);
+    }
+  }, [quantity, pricePerUnit, pricePerKg, materialType, activeMaterial, form]);
+
+  return null;
+};
+
 type Props = {
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
@@ -162,44 +205,7 @@ export const AddStockForm = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeMaterial?.id, itemToRestock?.id]);
 
-  // Live Cost Calculation Effect
-  // Always updates the cost field — including setting it to "0" when qty=0 or
-  // no price is entered, so stale values from previous entries don't persist.
-  useEffect(() => {
-    const qty = parseFloat(form.state.values.quantity || "0");
-
-    let total = 0;
-
-    if (qty > 0) {
-      if (materialType === "chemical") {
-        const price = parseFloat(pricePerUnit || "0");
-        total = price * qty;
-      } else if (materialType === "packaging" && activeMaterial) {
-        const pkg = activeMaterial as any;
-        if (pkg.type === "primary") {
-          const weight = parseFloat(pkg.weightPerPack || "0");
-          const price = parseFloat(pricePerKg || "0");
-          if (weight > 0 && price > 0) {
-            // Formula: (Weight/1000) * PricePerKg * Qty
-            total = price * (weight / 1000) * qty;
-          }
-        } else {
-          // Master / Sticker / Others -> Simple Unit Price
-          const price = parseFloat(pricePerUnit || "0");
-          total = price * qty;
-        }
-      }
-    }
-
-    // Always sync cost — even "0" so the field never shows a stale value
-    form.setFieldValue("cost", total > 0 ? Math.round(total).toString() : "");
-  }, [
-    form.state.values.quantity,
-    pricePerUnit,
-    pricePerKg,
-    materialType,
-    activeMaterial,
-  ]);
+  // Live Cost Calculation Effect is handled by CostCalculatorEffect component inserted below
 
   return (
     <form
@@ -209,6 +215,20 @@ export const AddStockForm = ({
         form.handleSubmit();
       }}
     >
+      <form.Subscribe
+        selector={(state) => state.values.quantity}
+        children={(quantity) => (
+          <CostCalculatorEffect
+            form={form}
+            quantity={quantity}
+            pricePerUnit={pricePerUnit}
+            pricePerKg={pricePerKg}
+            materialType={materialType}
+            activeMaterial={activeMaterial}
+          />
+        )}
+      />
+
       {isPreselectedInvalid && (
         <div className="p-3 rounded-lg bg-red-50 text-red-600 text-xs flex items-center gap-2">
           <Info className="size-4" />
