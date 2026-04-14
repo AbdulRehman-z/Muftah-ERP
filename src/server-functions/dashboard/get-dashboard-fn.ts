@@ -18,11 +18,6 @@ import { sql, and, gte, lte, eq, desc, inArray } from "drizzle-orm";
 import {
   format,
   startOfMonth,
-  endOfMonth,
-  subMonths,
-  parseISO,
-  startOfYear,
-  endOfYear,
 } from "date-fns";
 
 function toFloat(value: string | number | null | undefined): number {
@@ -43,26 +38,15 @@ export const getDashboardStatsFn = createServerFn()
   .middleware([requireDashboardViewMiddleware])
   .inputValidator(
     z.object({
-      year: z.number().default(new Date().getFullYear()),
-      month: z
-        .string()
-        .regex(/^\d{4}-\d{2}$/, "month must be in YYYY-MM format")
-        .optional(),
+      startDate: z.string().datetime().or(z.string().date()),
+      endDate: z.string().datetime().or(z.string().date()),
     }),
   )
   .handler(async ({ data }) => {
-    const { year, month } = data;
+    const { startDate, endDate } = data;
 
-    let rangeStart: Date;
-    let rangeEnd: Date;
-    if (month) {
-      const monthDate = parseISO(`${month}-01`);
-      rangeStart = startOfMonth(monthDate);
-      rangeEnd = endOfMonth(monthDate);
-    } else {
-      rangeStart = startOfYear(new Date(year, 0, 1));
-      rangeEnd = endOfYear(new Date(year, 0, 1));
-    }
+    const rangeStart = new Date(startDate);
+    const rangeEnd = new Date(endDate);
 
     // ── Run all top-level KPI queries in parallel ─────────────────────────
     const [
@@ -182,11 +166,10 @@ export const getDashboardStatsFn = createServerFn()
     const totalPayrollCost = await getPayrollCostForIds(payrollsInRange.map((p) => p.id));
     const activeEmployees = empCountRow?.count ?? 0;
 
-    // ── Chart: single GROUP BY query per source — 3 queries instead of 36 ──
-    // FIX #2: Use date_trunc to group by month, anchor on rangeEnd
-    // Labels formatted as "01 MMM" to show 1st-of-month clearly
+    // ── Chart: single GROUP BY query per source — filtered by date range ──
+    // Calculate the chart window: from rangeStart to rangeEnd, grouped by month
 
-    const chartWindowStart = subMonths(rangeEnd, 11);
+    const chartWindowStart = startOfMonth(rangeStart);
 
     const [chartRevenue, chartExpenses, chartPayrolls] = await Promise.all([
       // Revenue by month
@@ -196,7 +179,7 @@ export const getDashboardStatsFn = createServerFn()
           total: sql<string>`coalesce(sum(${invoices.totalPrice}), 0)`,
         })
         .from(invoices)
-        .where(and(gte(invoices.createdAt, startOfMonth(chartWindowStart)), lte(invoices.createdAt, rangeEnd)))
+        .where(and(gte(invoices.createdAt, chartWindowStart), lte(invoices.createdAt, rangeEnd)))
         .groupBy(sql`date_trunc('month', ${invoices.createdAt})`)
         .orderBy(sql`date_trunc('month', ${invoices.createdAt})`),
 
@@ -207,7 +190,7 @@ export const getDashboardStatsFn = createServerFn()
           total: sql<string>`coalesce(sum(${expenses.amount}), 0)`,
         })
         .from(expenses)
-        .where(and(gte(expenses.createdAt, startOfMonth(chartWindowStart)), lte(expenses.createdAt, rangeEnd)))
+        .where(and(gte(expenses.createdAt, chartWindowStart), lte(expenses.createdAt, rangeEnd)))
         .groupBy(sql`date_trunc('month', ${expenses.createdAt})`)
         .orderBy(sql`date_trunc('month', ${expenses.createdAt})`),
 
@@ -219,7 +202,7 @@ export const getDashboardStatsFn = createServerFn()
         })
         .from(payslips)
         .innerJoin(payrolls, eq(payslips.payrollId, payrolls.id))
-        .where(and(gte(payrolls.createdAt, startOfMonth(chartWindowStart)), lte(payrolls.createdAt, rangeEnd)))
+        .where(and(gte(payrolls.createdAt, chartWindowStart), lte(payrolls.createdAt, rangeEnd)))
         .groupBy(sql`date_trunc('month', ${payrolls.createdAt})`)
         .orderBy(sql`date_trunc('month', ${payrolls.createdAt})`),
     ]);
@@ -229,14 +212,19 @@ export const getDashboardStatsFn = createServerFn()
     const expensesByMonth = new Map(chartExpenses.map((r) => [r.month, toFloat(r.total)]));
     const payrollByMonth = new Map(chartPayrolls.map((r) => [r.month, toFloat(r.total)]));
 
-    // Generate all 12 month keys in window
-    const revenueExpenseChart = Array.from({ length: 12 }, (_, i) => {
-      const mDate = subMonths(rangeEnd, 11 - i);
-      const key = format(startOfMonth(mDate), "yyyy-MM-dd");
-      const label = format(startOfMonth(mDate), "01 MMM"); // FIX #2: always 1st of month
-      const rev = Math.round(revenueByMonth.get(key) ?? 0);
-      const exp = Math.round((expensesByMonth.get(key) ?? 0) + (payrollByMonth.get(key) ?? 0));
-      const payroll = Math.round(payrollByMonth.get(key) ?? 0);
+    // Generate month keys from chartWindowStart to rangeEnd
+    // Use endOfMonth to ensure we capture the full range
+    const chartWindowEnd = startOfMonth(rangeEnd);
+    const monthsDiff = (chartWindowEnd.getFullYear() - chartWindowStart.getFullYear()) * 12 + (chartWindowEnd.getMonth() - chartWindowStart.getMonth());
+    const monthCount = Math.max(1, monthsDiff + 1);
+    
+    const revenueExpenseChart = Array.from({ length: monthCount }, (_, i) => {
+      const mDate = new Date(chartWindowStart.getFullYear(), chartWindowStart.getMonth() + i, 1);
+      const key = format(mDate, "yyyy-MM-01");
+      const label = format(mDate, "01 MMM");
+      const rev = revenueByMonth.get(key) ?? 0;
+      const exp = (expensesByMonth.get(key) ?? 0) + (payrollByMonth.get(key) ?? 0);
+      const payroll = payrollByMonth.get(key) ?? 0;
       return { month: label, revenue: rev, expenses: exp, payroll };
     });
 
@@ -264,29 +252,27 @@ export const getDashboardStatsFn = createServerFn()
     }));
 
     return {
-      totalRevenue: Math.round(totalRevenue),
+      totalRevenue,
       invoiceCount,
       activeProductionRuns,
       completedProductionRuns,
-      totalCartonsProduced: Math.round(totalCartonsProduced),
-      rawStockValue: Math.round(rawStockValue),
-      finishedStockValue: Math.round(finishedStockValue),
-      totalStockValue: Math.round(totalStockValue),
-      totalPayrollCost: Math.round(totalPayrollCost),
-      totalExpenses: Math.round(totalExpenses),
+      totalCartonsProduced,
+      rawStockValue,
+      finishedStockValue,
+      totalStockValue,
+      totalPayrollCost,
+      totalExpenses,
       // Breakdown for transparency
-      operationalExpenses: Math.round(operationalExpenses),
-      materialConsumptionCost: Math.round(materialConsumptionCost),
-      totalCost: Math.round(totalPayrollCost + totalExpenses),
-      netProfit: Math.round(totalRevenue - totalPayrollCost - totalExpenses),
+      operationalExpenses,
+      materialConsumptionCost,
+      totalCost: totalPayrollCost + totalExpenses,
+      netProfit: totalRevenue - totalPayrollCost - totalExpenses,
       activeEmployees,
       revenueExpenseChart,
       recentActivity,
       period: {
         startStr: format(rangeStart, "yyyy-MM-dd"),
         endStr: format(rangeEnd, "yyyy-MM-dd"),
-        year,
-        month,
       },
     };
   });

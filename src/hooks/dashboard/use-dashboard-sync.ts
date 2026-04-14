@@ -1,14 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
-// Use relative path to avoid potential alias resolution issues in some IDEs
+import { useCallback, useEffect, useRef } from "react";
 import { getDashboardLastUpdateFn } from "../../server-functions/dashboard/get-dashboard-last-update-fn";
 
 /**
  * Smart polling for the admin dashboard.
- * Only invalidates ["admin-dashboard"] queries when server data actually changes,
+ * Only invalidates queries when server data actually changes,
  * preventing spurious re-renders and dialog dismissals.
  */
-export const useDashboardSync = () => {
+export const useDashboardSync = (startDate: string, endDate: string) => {
   const queryClient = useQueryClient();
   const lastUpdateRef = useRef<string | null>(null);
 
@@ -19,8 +18,12 @@ export const useDashboardSync = () => {
     refetchIntervalInBackground: true,
   });
 
+  // Use callback to always get latest startDate/endDate without re-subscribing
+  const invalidateDashboard = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["admin-dashboard", startDate, endDate] });
+  }, [queryClient, startDate, endDate]);
+
   useEffect(() => {
-    // Explicitly cast or check to ensure TS knows the shape if inference fails
     const payload = data as { lastUpdated: string } | undefined;
 
     if (payload?.lastUpdated) {
@@ -35,8 +38,8 @@ export const useDashboardSync = () => {
       // Only invalidate if something actually changed on the server
       if (lastUpdateRef.current !== newUpdate) {
         lastUpdateRef.current = newUpdate;
-        queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+        invalidateDashboard();
       }
     }
-  }, [data, queryClient]);
+  }, [data, invalidateDashboard]);
 };

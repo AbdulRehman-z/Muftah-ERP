@@ -1,29 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
-import { getDashboardStatsFn } from "@/server-functions/dashboard/get-dashboard-fn";
 import { GenericLoader } from "@/components/custom/generic-loader";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import {
-  LayoutDashboard,
-  Zap,
-} from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 import { AdminDashboard } from "@/components/dashboard/admin-dashboard-container";
 import { motion } from "framer-motion";
 
-const currentYear = new Date().getFullYear();
-const currentMonth = format(new Date(), "yyyy-MM");
-
 export const Route = createFileRoute("/_protected/dashboard/")({
-  loader: async ({ context }) => {
-    void context.queryClient.prefetchQuery({
-      queryKey: ["admin-dashboard", currentYear, currentMonth],
-      queryFn: () =>
-        getDashboardStatsFn({
-          data: { year: currentYear, month: currentMonth },
-        }),
-    });
-  },
   component: AdminDashboardPage,
 });
 

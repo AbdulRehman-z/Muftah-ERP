@@ -379,7 +379,9 @@ export async function generateEmployeePayslipCore(
         incentiveAmount: payslipCalc.incentiveAmount.toString(),
         bonusAmount: payslipCalc.bonusAmount.toString(),
 
-        absentDeduction: payslipCalc.absentDeduction.toString(),
+        // Combine notEmployedDeduction into absentDeduction to avoid schema migration,
+        // but log it in remarks for transparency.
+        absentDeduction: (payslipCalc.absentDeduction + (payslipCalc.notEmployedDeduction || 0)).toString(),
         leaveDeduction: payslipCalc.leaveDeduction.toString(),
         advanceDeduction: payslipCalc.advanceDeduction.toString(),
         taxDeduction: payslipCalc.taxDeduction.toString(),
@@ -399,6 +401,9 @@ export async function generateEmployeePayslipCore(
         paymentSource: walletName,
         remarks: [
           payslipCalc.remarks,
+          payslipCalc.daysNotEmployed > 0 
+            ? `Prorated by PKR ${Math.round(payslipCalc.notEmployedDeduction).toLocaleString()} for ${payslipCalc.daysNotEmployed} pre-joining/cutoff day(s).` 
+            : null,
           arrearsMonths.length > 0
             ? `Includes arrears of PKR ${Math.round(arrearsAmt).toLocaleString()} for: ${arrearsMonths.join(", ")}.`
             : null,
