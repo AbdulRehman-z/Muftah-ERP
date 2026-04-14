@@ -12,6 +12,8 @@ export const useAddPackagingMaterial = () => {
       queryClient.invalidateQueries({ queryKey: ["low-stock-alerts"] });
       queryClient.invalidateQueries({ queryKey: ["supplier"] });
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      queryClient.invalidateQueries({ queryKey: ["wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
     },
     onError: (error) => {
       toast.error(error.message || "Failed to add packaging material");

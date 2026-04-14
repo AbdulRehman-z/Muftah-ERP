@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { PaymentMethodSelect } from "@/components/suppliers/payment-method-select";
 
 type Props = {
   open: boolean;
@@ -57,6 +58,8 @@ export const EditPurchaseDialog = ({ open, onOpenChange, purchase }: Props) => {
       toast.success("Purchase record updated successfully");
       queryClient.invalidateQueries({ queryKey: ["supplier"] });
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
       onOpenChange(false);
     },
     onError: (err) =>
@@ -74,10 +77,9 @@ export const EditPurchaseDialog = ({ open, onOpenChange, purchase }: Props) => {
       capacityUnit: "",
       minStock: "",
       // Payment fields
-      paymentMethod: purchase?.paymentMethod || "cash",
+      paymentMethod: purchase?.paymentMethod || "pay_later",
       invoiceNumber: purchase?.invoiceNumber || "",
       transactionId: purchase?.transactionId || "",
-      paidBy: purchase?.paidBy || "",
       // Notes
       notes: purchase?.notes || "",
     },
@@ -95,7 +97,6 @@ export const EditPurchaseDialog = ({ open, onOpenChange, purchase }: Props) => {
           capacity: value.capacity,
           capacityUnit: value.capacityUnit,
           minStock: value.minStock,
-          paidBy: value.paidBy,
           paymentMethod: value.paymentMethod,
         },
       });
@@ -110,8 +111,7 @@ export const EditPurchaseDialog = ({ open, onOpenChange, purchase }: Props) => {
       form.setFieldValue("notes", purchase.notes || "");
       form.setFieldValue("transactionId", purchase.transactionId || "");
       form.setFieldValue("invoiceNumber", purchase.invoiceNumber || "");
-      form.setFieldValue("paymentMethod", purchase.paymentMethod || "cash");
-      form.setFieldValue("paidBy", purchase.paidBy || "");
+      form.setFieldValue("paymentMethod", purchase.paymentMethod || "pay_later");
 
       if (purchase.materialType === "packaging" && purchase.packagingMaterial) {
         form.setFieldValue("materialName", purchase.packagingMaterial.name);
@@ -217,40 +217,14 @@ export const EditPurchaseDialog = ({ open, onOpenChange, purchase }: Props) => {
             {(field) => (
               <Field>
                 <FieldLabel>Payment Method</FieldLabel>
-                <Select
-                  value={field.state.value || "cash"}
+                <PaymentMethodSelect
+                  value={field.state.value || "pay_later"}
                   onValueChange={(val) => field.handleChange(val)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="cheque">Cheque</SelectItem>
-                    <SelectItem value="pay_later">Pay Later</SelectItem>
-                  </SelectContent>
-                </Select>
+                />
                 <FieldError errors={field.state.meta.errors} />
               </Field>
             )}
           </form.Field>
-
-          {paymentMethod !== "pay_later" && (
-            <form.Field name="paidBy">
-              {(field) => (
-                <Field>
-                  <FieldLabel>Paid By</FieldLabel>
-                  <Input
-                    value={field.state.value || ""}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    placeholder="e.g. John Doe"
-                  />
-                  <FieldError errors={field.state.meta.errors} />
-                </Field>
-              )}
-            </form.Field>
-          )}
         </div>
 
         {/* Invoice / Transaction */}

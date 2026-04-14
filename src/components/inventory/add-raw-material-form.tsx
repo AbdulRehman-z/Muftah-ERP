@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { PaymentMethodSelect } from "@/components/suppliers/payment-method-select";
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
 import { useAddChemical } from "@/hooks/inventory/use-add-raw-material";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -61,16 +62,11 @@ export const AddRawMaterialForm = ({
       minimumStockLevel: "0",
       supplierId: preselectedSupplierId || "",
       notes: "",
-      paymentMethod: "cash" as
-        | "cash"
-        | "bank_transfer"
-        | "cheque"
-        | "pay_later",
-      paymentStatus: "paid_full" as "paid_full" | "credit",
+      paymentMethod: "pay_later",
+      paymentStatus: "paid" as "paid" | "partial" | "unpaid",
       amountPaid: "",
       transactionId: "",
       bankName: "",
-      paidBy: "",
     },
     validators: {
       onSubmit: addChemicalSchema,
@@ -285,26 +281,16 @@ export const AddRawMaterialForm = ({
             {(field) => (
               <Field>
                 <FieldLabel>Payment Method</FieldLabel>
-                <Select
-                  value={field.state.value}
-                  onValueChange={(val: any) => {
+                <PaymentMethodSelect
+                  value={field.state.value || "pay_later"}
+                  onValueChange={(val) => {
                     field.handleChange(val);
                     if (val === "pay_later") {
-                      form.setFieldValue("paymentStatus", "credit");
+                      form.setFieldValue("paymentStatus", "unpaid");
                       form.setFieldValue("amountPaid", "");
                     }
                   }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="cheque">Cheque</SelectItem>
-                    <SelectItem value="pay_later">Pay Later</SelectItem>
-                  </SelectContent>
-                </Select>
+                />
                 <FieldError errors={field.state.meta.errors} />
               </Field>
             )}
@@ -326,8 +312,9 @@ export const AddRawMaterialForm = ({
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="paid_full">Paid Full</SelectItem>
-                        <SelectItem value="credit">Credit / Partial</SelectItem>
+                        <SelectItem value="paid">Paid Full</SelectItem>
+                        <SelectItem value="partial">Credit / Partial</SelectItem>
+                        <SelectItem value="unpaid">Unpaid</SelectItem>
                       </SelectContent>
                     </Select>
                     <FieldError errors={field.state.meta.errors} />
@@ -347,7 +334,7 @@ export const AddRawMaterialForm = ({
             ]}
             children={([status, cost, qty, paid, method]) => {
               if (method === "pay_later") return null;
-              if (status !== "credit") return null;
+              if (status !== "partial") return null;
 
               const total =
                 (parseFloat(cost || "0") || 0) * (parseFloat(qty || "0") || 0);
@@ -442,28 +429,6 @@ export const AddRawMaterialForm = ({
             }}
           />
         </div>
-
-        <form.Subscribe
-          selector={(state) => state.values.paymentMethod}
-          children={(method) => {
-            if (method === "pay_later") return null;
-            return (
-              <form.Field name="paidBy">
-                {(field) => (
-                  <Field>
-                    <FieldLabel>Paid By</FieldLabel>
-                    <Input
-                      placeholder="Person who made the payment"
-                      value={field.state.value || ""}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                    />
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                )}
-              </form.Field>
-            );
-          }}
-        />
 
         <Button
           disabled={form.state.isSubmitting}
