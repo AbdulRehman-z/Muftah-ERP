@@ -7,7 +7,7 @@ import { type AllowanceConfig } from "@/lib/types/hr-types";
 
 export type AttendanceRecord = {
   date: string;
-  status: "present" | "absent" | "leave" | "holiday";
+  status: "present" | "absent" | "leave" | "holiday" | "not_employed";
   dutyHours: string | null;
   overtimeHours: string | null;
   isNightShift: boolean;
@@ -37,6 +37,7 @@ export type EmployeeData = {
   lastName: string;
   cnic: string | null;
   designation: string;
+  joiningDate?: string | null;
   bankName: string | null;
   bankAccountNumber: string | null;
   standardSalary: string;
@@ -83,6 +84,7 @@ export type PayslipCalculation = {
   daysCasualLeave: number; // kept for backward compat; hidden from UI
   daysAnnualLeave: number;
   daysSpecialLeave: number;
+  daysNotEmployed: number; // Days outside of joining/cutoff
   unmarkedDays: number; // dynamically computed missing days on working days only
   totalOvertimeHours: number;
   totalUndertimeHours: number;
@@ -100,6 +102,7 @@ export type PayslipCalculation = {
   bonusAmount: number;
 
   // Deductions
+  notEmployedDeduction: number; // Money deducted for pre-joining or post-cutoff
   absentDeduction: number;
   leaveDeduction: number;
   advanceDeduction: number;
@@ -235,6 +238,7 @@ export function calculateAbsentDeductions(
 ): {
   absentDeduction: number;
   leaveDeduction: number;
+  notEmployedDeduction: number;
   totalUndertimeHours: number;
   adjustedAllowances: Record<string, number>;
 } {
@@ -247,6 +251,7 @@ export function calculateAbsentDeductions(
 
   let totalAbsentDeduction = 0;
   let totalLeaveDeduction = 0;
+  let totalNotEmployedDeduction = 0;
   let totalUndertimeHours = 0;
 
   const adjustments: Record<string, number> = {};
@@ -257,12 +262,13 @@ export function calculateAbsentDeductions(
     fraction: number,
     occasion:
       | "absent"
+      | "not_employed"
       | "annualLeave"
       | "sickLeave"
       | "specialLeave"
       | "lateArrival"
       | "earlyLeaving",
-    isLeaveType = false,
+    deductionTarget: "absent" | "leave" | "not_employed" = "absent",
   ) => {
     let subTotal = 0;
 
@@ -273,7 +279,9 @@ export function calculateAbsentDeductions(
     }
 
     for (const allowance of config) {
-      const shouldDeduct = allowance.deductions?.[occasion] ?? false;
+      const shouldDeduct = occasion === "not_employed" 
+        ? true // Always prorate all allowances if the employee is not employed (pre-joining or post-cutoff)
+        : (allowance.deductions?.[occasion] ?? false);
       if (shouldDeduct) {
         let amt = 0;
         if (occasion === "lateArrival" || occasion === "earlyLeaving") {
@@ -288,8 +296,10 @@ export function calculateAbsentDeductions(
       }
     }
 
-    if (isLeaveType) {
+    if (deductionTarget === "leave") {
       totalLeaveDeduction += subTotal;
+    } else if (deductionTarget === "not_employed") {
+      totalNotEmployedDeduction += subTotal;
     } else {
       totalAbsentDeduction += subTotal;
     }
@@ -306,18 +316,21 @@ export function calculateAbsentDeductions(
     const dutyHours = parseFloat(record.dutyHours || "0");
 
     if (record.status === "absent") {
-      applyOccasionDeduction(1, "absent");
+      applyOccasionDeduction(1, "absent", "absent");
+    } else if (record.status === "not_employed") {
+      // For not_employed, we deduct exactly identical to "absent" (all standard wages)
+      applyOccasionDeduction(1, "not_employed", "not_employed");
     } else if (record.status === "leave") {
       if (record.leaveType === "special") {
-        applyOccasionDeduction(1, "specialLeave", true);
+        applyOccasionDeduction(1, "specialLeave", "leave");
       } else if (record.leaveType === "sick") {
-        applyOccasionDeduction(1, "sickLeave", true);
+        applyOccasionDeduction(1, "sickLeave", "leave");
       } else if (record.leaveType === "annual") {
         if (!record.isApprovedLeave) {
-          applyOccasionDeduction(1, "annualLeave", true);
+          applyOccasionDeduction(1, "annualLeave", "leave");
         }
       } else if (!record.isApprovedLeave) {
-        applyOccasionDeduction(1, "annualLeave", true);
+        applyOccasionDeduction(1, "annualLeave", "leave");
       }
     } else if (
       record.status === "present" &&
@@ -357,6 +370,7 @@ export function calculateAbsentDeductions(
   return {
     absentDeduction: Math.round(totalAbsentDeduction),
     leaveDeduction: Math.round(totalLeaveDeduction),
+    notEmployedDeduction: Math.round(totalNotEmployedDeduction),
     totalUndertimeHours: +totalUndertimeHours.toFixed(2),
     adjustedAllowances,
   };
@@ -482,6 +496,14 @@ export function calculatePayslip(
   const basicSalaryStd = parseFloat(employee.standardSalary || "0");
   const restDays = employee.restDays ?? [0];
 
+  let joinedAtDate: string | null = null;
+  if (employee.joiningDate) {
+    const d = parseISO(employee.joiningDate);
+    if (!isNaN(d.getTime())) {
+      joinedAtDate = format(d, "yyyy-MM-dd");
+    }
+  }
+
   // 1. Build a set of rest-day dates in this cycle
   const restDayDateSet = buildRestDayDateSet(
     payrollPeriod.startDate,
@@ -490,6 +512,9 @@ export function calculatePayslip(
   );
 
   // 2. Evaluation window
+  const evaluationStartDate = joinedAtDate && joinedAtDate > payrollPeriod.startDate 
+    ? joinedAtDate 
+    : payrollPeriod.startDate;
   const evaluationEndDate = earlyCutoffDate ? earlyCutoffDate : payrollPeriod.endDate;
 
   // 3. Full Cycle Denominator
@@ -501,36 +526,39 @@ export function calculatePayslip(
   );
   const calendarDaysInMonth = getCalendarDaysInPayPeriodMonth(fullCycleWorkingDays);
 
-  // 4. Evaluated Working Days (Numerator for window)
-  const totalWorkingDays = calculateWorkingDays(
-    payrollPeriod.startDate,
-    evaluationEndDate,
-    attendanceRecords,
-    restDays,
-  );
-
-  // 5. Build WorkingDayRecords (including virtual future absents)
+  // 5. Build WorkingDayRecords (including virtual not_employed for future & past)
+  const todayStr = format(new Date(), "yyyy-MM-dd");
   const workingDayRecords = attendanceRecords.filter(
     (r) => !restDayDateSet.has(r.date) && r.status !== "holiday",
   ).map(r => {
-    if (earlyCutoffDate && r.date > earlyCutoffDate) {
-      return { ...r, status: "absent" as const };
+    // If a record exists but is dated after the cutoff (or after today in full-cycle mode), treat as not_employed
+    const effectiveCutoff = earlyCutoffDate ?? todayStr;
+    if (r.date > effectiveCutoff) {
+      return { ...r, status: "not_employed" as const };
+    }
+    if (joinedAtDate && r.date < joinedAtDate) {
+      return { ...r, status: "not_employed" as const };
     }
     return r;
   });
 
-  // Inject virtual records for entirely missing future days
-  if (earlyCutoffDate) {
-    const start = parseISO(payrollPeriod.startDate);
-    const end = parseISO(payrollPeriod.endDate);
-    const cycleRange = eachDayOfInterval({ start, end });
-    const existingDates = new Set(attendanceRecords.map(r => r.date));
-    for (const day of cycleRange) {
-      const dateStr = format(day, "yyyy-MM-dd");
-      if (dateStr > earlyCutoffDate && !restDayDateSet.has(dateStr) && !existingDates.has(dateStr)) {
+  // Inject virtual records for entirely missing future or pre-joining days
+  const start = parseISO(payrollPeriod.startDate);
+  const end = parseISO(payrollPeriod.endDate);
+  const cycleRange = eachDayOfInterval({ start, end });
+  const existingDates = new Set(attendanceRecords.map(r => r.date));
+  for (const day of cycleRange) {
+    const dateStr = format(day, "yyyy-MM-dd");
+    if (!restDayDateSet.has(dateStr) && !existingDates.has(dateStr)) {
+      // Future = after earlyCutoffDate (if set), OR after today (if no cutoff set)
+      const isFuture = earlyCutoffDate 
+        ? dateStr > earlyCutoffDate 
+        : dateStr > todayStr;
+      const isPreJoining = joinedAtDate && dateStr < joinedAtDate;
+      if (isFuture || isPreJoining) {
         workingDayRecords.push({
           date: dateStr,
-          status: "absent",
+          status: "not_employed",
           dutyHours: null,
           overtimeHours: null,
           isNightShift: false
@@ -540,10 +568,17 @@ export function calculatePayslip(
   }
 
   // 6. Attendance Summary
-  // Unmarked only counts gaps in the window (<= cutoff)
-  const pastRecords = workingDayRecords.filter(r => r.date <= evaluationEndDate);
+  // Unmarked only counts gaps in the window (<= cutoff && >= joined)
+  // evaluationWindowWorkingDays is the number of working days the employee was *expected* to work.
+  const evaluationWindowWorkingDays = calculateWorkingDays(
+    evaluationStartDate,
+    evaluationEndDate,
+    attendanceRecords,
+    restDays,
+  );
+  const pastRecords = workingDayRecords.filter(r => r.date <= evaluationEndDate && r.date >= evaluationStartDate && r.status !== "not_employed");
   const accountedPastDays = pastRecords.filter(r => ["present", "absent", "leave"].includes(r.status)).length;
-  const unmarkedDays = Math.max(0, totalWorkingDays - accountedPastDays);
+  const unmarkedDays = Math.max(0, evaluationWindowWorkingDays - accountedPastDays);
 
   const daysPresent = workingDayRecords.filter(r => r.status === "present").length;
   const daysAbsent = workingDayRecords.filter(r => r.status === "absent").length;
@@ -553,15 +588,18 @@ export function calculatePayslip(
   const daysCasualLeave = workingDayRecords.filter(r => r.status === "leave" && r.leaveType === "casual").length;
   const daysAnnualLeave = workingDayRecords.filter(r => r.status === "leave" && r.leaveType === "annual").length;
   const daysSpecialLeave = workingDayRecords.filter(r => r.status === "leave" && r.leaveType === "special").length;
+  const daysNotEmployed = workingDayRecords.filter(r => r.status === "not_employed").length;
 
-  const totalOvertimeHours = sumApprovedOvertimeHours(workingDayRecords.filter(r => r.date <= evaluationEndDate));
-  const nightShiftsCount = workingDayRecords.filter(r => r.date <= evaluationEndDate && r.isNightShift).length;
-  const bradfordFactorScore = calculateBradfordFactor(workingDayRecords.filter(r => r.date <= evaluationEndDate));
+  const validEvaluationRecords = workingDayRecords.filter(r => r.date >= evaluationStartDate && r.date <= evaluationEndDate);
+  const totalOvertimeHours = sumApprovedOvertimeHours(validEvaluationRecords);
+  const nightShiftsCount = validEvaluationRecords.filter(r => r.isNightShift).length;
+  const bradfordFactorScore = calculateBradfordFactor(validEvaluationRecords);
 
   // 7. Deductions
   const {
     absentDeduction,
     leaveDeduction,
+    notEmployedDeduction,
     totalUndertimeHours,
     adjustedAllowances,
   } = calculateAbsentDeductions(employee, workingDayRecords, calendarDaysInMonth);
@@ -642,12 +680,13 @@ export function calculatePayslip(
     daysCasualLeave,
     daysAnnualLeave,
     daysSpecialLeave,
+    daysNotEmployed,
     unmarkedDays,
     totalOvertimeHours: +totalOvertimeHours.toFixed(2),
     totalUndertimeHours,
     nightShiftsCount,
     bradfordFactorScore,
-    bradfordFactorPeriod: `${format(parseISO(payrollPeriod.startDate), "d MMM yyyy")} to ${format(parseISO(payrollPeriod.endDate), "d MMM yyyy")}`,
+    bradfordFactorPeriod: `${format(parseISO(evaluationStartDate), "d MMM yyyy")} to ${format(parseISO(evaluationEndDate), "d MMM yyyy")}`,
 
     basicSalary: adjustedAllowances["basicSalary"] || 0,
     allowanceBreakdown: adjustedAllowances,
@@ -657,6 +696,7 @@ export function calculatePayslip(
     incentiveAmount,
     bonusAmount,
 
+    notEmployedDeduction: Math.round(notEmployedDeduction),
     absentDeduction: Math.round(absentDeduction),
     leaveDeduction: Math.round(leaveDeduction),
     advanceDeduction: Math.round(advanceDeduction),

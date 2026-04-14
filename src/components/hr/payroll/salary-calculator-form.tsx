@@ -712,6 +712,17 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
 
                     <CalcSection step="Step 3" title="Attendance Deduction Rules Applied" color="rose">
                         <div className="space-y-3 text-xs">
+                            {calculation.daysNotEmployed > 0 && (
+                                <div className="p-3 rounded-lg border border-orange-100 bg-orange-50/50 space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-semibold text-orange-800">Pre-Joining / Cutoff Proration</span>
+                                        <Badge variant="outline" className="text-[10px] border-orange-200 text-orange-700 bg-white">{calculation.daysNotEmployed} day(s)</Badge>
+                                    </div>
+                                    <p className="text-muted-foreground font-mono leading-relaxed">
+                                        {calculation.daysNotEmployed} × Per Day Rate (Basic + allowances)
+                                    </p>
+                                </div>
+                            )}
                             {calculation.daysAbsent > 0 && (
                                 <div className="p-3 rounded-lg border border-rose-100 bg-rose-50/50 space-y-1">
                                     <div className="flex items-center justify-between">
@@ -724,10 +735,10 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                 </div>
                             )}
                             {calculation.totalUndertimeHours > 0 && (
-                                <div className="p-3 rounded-lg border border-orange-100 bg-orange-50/50 space-y-1">
+                                <div className="p-3 rounded-lg border border-amber-100 bg-amber-50/50 space-y-1">
                                     <div className="flex items-center justify-between">
-                                        <span className="font-semibold text-orange-800">Undertime (Short Hours)</span>
-                                        <Badge variant="outline" className="text-[10px] border-orange-200 text-orange-700 bg-white">{calculation.totalUndertimeHours} hrs</Badge>
+                                        <span className="font-semibold text-amber-800">Undertime (Short Hours)</span>
+                                        <Badge variant="outline" className="text-[10px] border-amber-200 text-amber-700 bg-white">{calculation.totalUndertimeHours} hrs</Badge>
                                     </div>
                                     <p className="text-muted-foreground font-mono leading-relaxed">
                                         {calculation.totalUndertimeHours} hrs × PKR {calculation.calculationMeta.perHourBasic.toFixed(2)} per hour (Basic salary only)
@@ -745,13 +756,13 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                                     </p>
                                 </div>
                             )}
-                            {calculation.daysAbsent === 0 && calculation.totalUndertimeHours === 0 && calculation.daysUnapprovedLeave === 0 && (
+                            {calculation.daysNotEmployed === 0 && calculation.daysAbsent === 0 && calculation.totalUndertimeHours === 0 && calculation.daysUnapprovedLeave === 0 && (
                                 <p className="text-muted-foreground italic py-2 text-center">No attendance deductions this cycle. 🎉</p>
                             )}
                         </div>
                         <div className="mt-3 flex items-center justify-between p-2.5 bg-rose-50 border border-rose-100 rounded-lg">
-                            <span className="text-xs font-semibold text-rose-800">Total Attendance Deduction</span>
-                            <span className="text-sm font-bold font-mono text-rose-700">- PKR {Math.round(calculation.absentDeduction + calculation.leaveDeduction).toLocaleString()}</span>
+                            <span className="text-xs font-semibold text-rose-800">Total Attendance & Proration Deduction</span>
+                            <span className="text-sm font-bold font-mono text-rose-700">- PKR {Math.round(calculation.absentDeduction + calculation.leaveDeduction + calculation.notEmployedDeduction).toLocaleString()}</span>
                         </div>
                     </CalcSection>
 
@@ -775,11 +786,13 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                     <CalcSection step={calculation.totalOvertimeHours > 0 ? "Step 5" : "Step 4"} title="Gross Salary Build-up" color="emerald">
                         <div className="space-y-1 text-xs font-mono">
                             {Object.entries(calculation.allowanceBreakdown)
-                                .filter(([id, val]) => val > 0 && id !== "nightShift")
+                                .filter(([id]) => id !== "nightShift")
                                 .map(([id, val]) => (
                                     <div key={id} className="flex justify-between py-0.5 border-b border-dashed border-border/40">
-                                        <span className="text-muted-foreground">+ {getAllowanceLabel(id)}</span>
-                                        <span>{Math.round(val).toLocaleString()}</span>
+                                        <span className={`${(val as number) <= 0 ? "text-rose-400 line-through" : "text-muted-foreground"}`}>
+                                            {id === "basicSalary" ? "+" : "+"} {getAllowanceLabel(id)}
+                                        </span>
+                                        <span className={(val as number) <= 0 ? "text-rose-400" : ""}>{Math.round(val as number).toLocaleString()}</span>
                                     </div>
                                 ))}
                             {[

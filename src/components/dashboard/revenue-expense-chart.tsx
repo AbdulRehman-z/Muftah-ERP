@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import {
   AreaChart,
   Area,
@@ -13,25 +13,17 @@ import { cn } from "@/lib/utils";
 
 function fmtK(v: number) {
   if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `${(v / 1_000).toFixed(0)}K`;
+  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
   return v.toLocaleString();
 }
 
 export function RevenueExpenseChart({ data, className }: { data: any[]; className?: string }) {
-  const [range, setRange] = useState<"3m" | "6m" | "all">("all");
-
-  const filtered = useMemo(() => {
-    if (!data?.length) return [];
-    if (range === "3m") return data.slice(-3);
-    if (range === "6m") return data.slice(-6);
-    return data;
-  }, [data, range]);
-
   const totals = useMemo(() => {
-    const rev = filtered.reduce((s: number, d: any) => s + (d.revenue || 0), 0);
-    const exp = filtered.reduce((s: number, d: any) => s + (d.expenses || 0), 0);
+    if (!data?.length) return { rev: 0, exp: 0, net: 0 };
+    const rev = data.reduce((s: number, d: any) => s + (d.revenue || 0), 0);
+    const exp = data.reduce((s: number, d: any) => s + (d.expenses || 0), 0);
     return { rev, exp, net: rev - exp };
-  }, [filtered]);
+  }, [data]);
 
   const isProfit = totals.net >= 0;
 
@@ -46,26 +38,8 @@ export function RevenueExpenseChart({ data, className }: { data: any[]; classNam
             </div>
             <div>
               <h3 className="text-sm font-bold text-foreground">Revenue vs Expenses</h3>
-              <p className="text-[11px] text-muted-foreground mt-0.5">12-month rolling window</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Date range filtered</p>
             </div>
-          </div>
-
-          {/* Range toggle */}
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/40 border border-border/40">
-            {(["3m", "6m", "all"] as const).map((r) => (
-              <button
-                key={r}
-                onClick={() => setRange(r)}
-                className={cn(
-                  "text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-md transition-all",
-                  range === r
-                    ? "bg-background text-foreground shadow-sm border border-border/40"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {r === "all" ? "All" : r}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -93,13 +67,13 @@ export function RevenueExpenseChart({ data, className }: { data: any[]; classNam
 
       {/* Chart */}
       <div className="flex-1 min-h-[280px] px-2 py-4">
-        {!filtered.length ? (
+        {!data.length ? (
           <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
             No data for this period
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={filtered} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
+            <AreaChart data={data} margin={{ top: 10, right: 16, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="gradRev" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#10b981" stopOpacity={0.18} />
