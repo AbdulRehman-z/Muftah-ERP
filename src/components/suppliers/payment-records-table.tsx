@@ -27,9 +27,15 @@ type SupplierPayment = {
 type Props = {
   data: SupplierPayment[];
   dateRange?: { from?: Date; to?: Date };
+  isLoading?: boolean;
+  manualPagination?: boolean;
+  pageCount?: number;
+  pagination?: { pageIndex: number; pageSize: number };
+  onPaginationChange?: (updater: any) => void;
+  totalRecords?: number;
 };
 
-export const PaymentRecordsTable = ({ data, dateRange }: Props) => {
+export const PaymentRecordsTable = ({ data, dateRange, ...rest }: Props) => {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] =
     useState<SupplierPayment | null>(null);
@@ -135,6 +141,7 @@ export const PaymentRecordsTable = ({ data, dateRange }: Props) => {
         searchKey="notes"
         searchPlaceholder="Search notes..."
         pageSize={6}
+        {...rest}
       />
       <PaymentDetailsDialog
         open={detailsOpen}

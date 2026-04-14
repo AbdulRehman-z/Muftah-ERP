@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getSupplierDetailsFn } from "@/server-functions/suppliers/get-supplier-details-fn";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,13 +74,14 @@ interface StatCardProps {
   sub: string;
   icon: React.ReactNode;
   variant?: "default" | "success" | "danger";
+  linkProps?: any;
 }
 
-function StatCard({ title, value, sub, icon, variant = "default" }: StatCardProps) {
-  return (
+function StatCard({ title, value, sub, icon, variant = "default", linkProps }: StatCardProps) {
+  const CardContentBlock = (
     <Card
       className={cn(
-        "relative overflow-hidden transition-all",
+        "relative overflow-hidden transition-all hover:-translate-y-[2px] hover:shadow-md cursor-pointer",
         variant === "danger" && "border-red-500/40 dark:border-red-500/30",
         variant === "success" && "border-emerald-500/40 dark:border-emerald-500/30",
       )}
@@ -123,6 +124,16 @@ function StatCard({ title, value, sub, icon, variant = "default" }: StatCardProp
       </CardContent>
     </Card>
   );
+
+  if (linkProps) {
+    return (
+      <Link {...linkProps} className="block">
+        {CardContentBlock}
+      </Link>
+    );
+  }
+
+  return CardContentBlock;
 }
 
 // ── Contact Row ───────────────────────────────────────────────────────────────
@@ -393,23 +404,26 @@ function SupplierDetailsPage() {
             <StatCard
               title="Total Purchases"
               value={`PKR ${Number(supplier.totalPurchases).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-              sub={`${supplier.purchases.length} orders placed`}
+              sub={`View complete paginated history`}
               icon={<ShoppingCart className="size-3.5" />}
               variant="default"
+              linkProps={{ to: "/suppliers/$supplierId/details", params: { supplierId }, search: { view: "purchases", page: 1 } }}
             />
             <StatCard
               title="Total Paid"
               value={`PKR ${Number(supplier.totalPayments).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-              sub={`${supplier.payments.length} payments recorded`}
+              sub={`View all recorded payments`}
               icon={<Banknote className="size-3.5" />}
               variant="success"
+              linkProps={{ to: "/suppliers/$supplierId/details", params: { supplierId }, search: { view: "payments", page: 1 } }}
             />
             <StatCard
               title="Outstanding Balance"
               value={`PKR ${Math.abs(Number(supplier.balance)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-              sub={isOverdue ? "Payment due" : "Fully paid — no dues"}
+              sub={isOverdue ? "View unpaid purchases" : "Fully paid — no dues"}
               icon={<CreditCard className="size-3.5" />}
               variant={isOverdue ? "danger" : "success"}
+              linkProps={{ to: "/suppliers/$supplierId/details", params: { supplierId }, search: { view: "outstanding", page: 1 } }}
             />
           </div>
 
@@ -430,21 +444,17 @@ function SupplierDetailsPage() {
                   </TabsList>
 
                   <div className="flex items-center gap-2">
-                    <DatePickerWithRange
-                      date={dateRange}
-                      onDateChange={setDateRange}
-                      className="w-[230px] h-8"
-                    />
-                    {dateRange?.from && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => setDateRange(undefined)}
-                      >
-                        <XIcon className="size-3.5" />
-                      </Button>
-                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-8 text-[12px]" 
+                      asChild
+                    >
+                      <Link to="/suppliers/$supplierId/details" params={{ supplierId }} search={{ view: "purchases", page: 1 }}>
+                        View All Details
+                        <TrendingUp className="size-3.5 ml-2 text-muted-foreground" />
+                      </Link>
+                    </Button>
                   </div>
                 </div>
 

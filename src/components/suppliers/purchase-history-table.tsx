@@ -70,6 +70,12 @@ type Props = {
   onRecordPayment: (item: PurchaseRecord) => void;
   onRestock?: (item: PurchaseRecord) => void;
   dateRange?: { from?: Date; to?: Date };
+  isLoading?: boolean;
+  manualPagination?: boolean;
+  pageCount?: number;
+  pagination?: { pageIndex: number; pageSize: number };
+  onPaginationChange?: (updater: any) => void;
+  totalRecords?: number;
 };
 
 export const PurchaseHistoryTable = ({
@@ -81,6 +87,7 @@ export const PurchaseHistoryTable = ({
   onRecordPayment,
   onRestock,
   dateRange,
+  ...rest
 }: Props) => {
   // Filter data based on date range
   const filteredData = data.filter((record) => {
@@ -330,6 +337,7 @@ export const PurchaseHistoryTable = ({
       searchKey="material"
       searchPlaceholder="Filter purchases..."
       pageSize={5}
+      {...rest}
     />
   );
 };
