@@ -25,10 +25,17 @@ import { ScrollArea } from "../ui/scroll-area";
 
 // ── Path helpers ───────────────────────────────────────────────────────────────
 
-const isLeafActive = (pathname: string, itemPath: string, exact?: boolean): boolean =>
+const isLeafActive = (
+  pathname: string,
+  itemPath: string,
+  exact?: boolean,
+): boolean =>
   pathname === itemPath || (!exact && pathname.startsWith(`${itemPath}/`));
 
-const isChildExactlyActive = (pathname: string, item: NavigationItem): boolean => {
+const isChildExactlyActive = (
+  pathname: string,
+  item: NavigationItem,
+): boolean => {
   if (!item.items?.length) return false;
   return item.items.some((child) =>
     child.items?.length
@@ -37,21 +44,32 @@ const isChildExactlyActive = (pathname: string, item: NavigationItem): boolean =
   );
 };
 
-const isItemOrChildActive = (pathname: string, item: NavigationItem): boolean => {
+const isItemOrChildActive = (
+  pathname: string,
+  item: NavigationItem,
+): boolean => {
   if (isLeafActive(pathname, item.url, item.exact)) return true;
-  return item.items?.some((child) => isItemOrChildActive(pathname, child)) ?? false;
+  return (
+    item.items?.some((child) => isItemOrChildActive(pathname, child)) ?? false
+  );
 };
 
 // ── Search filter ──────────────────────────────────────────────────────────────
 
-const filterNavItems = (items: NavigationItem[], query: string): NavigationItem[] => {
+const filterNavItems = (
+  items: NavigationItem[],
+  query: string,
+): NavigationItem[] => {
   if (!query.trim()) return items;
   const q = query.toLowerCase();
   return items.reduce((acc: NavigationItem[], item) => {
     const titleMatch = item.title.toLowerCase().includes(q);
     const filteredChildren = item.items ? filterNavItems(item.items, q) : [];
     if (titleMatch || filteredChildren.length > 0) {
-      acc.push({ ...item, items: filteredChildren.length > 0 ? filteredChildren : item.items });
+      acc.push({
+        ...item,
+        items: filteredChildren.length > 0 ? filteredChildren : item.items,
+      });
     }
     return acc;
   }, []);
@@ -75,7 +93,10 @@ const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
     : isLeafActive(pathname, item.url, item.exact);
 
   const [isOpen, setIsOpen] = useState(
-    () => isActive || (hasChildren && isItemOrChildActive(pathname, item)) || searchActive,
+    () =>
+      isActive ||
+      (hasChildren && isItemOrChildActive(pathname, item)) ||
+      searchActive,
   );
 
   // ── Leaf ──────────────────────────────────────────────────────────────────
@@ -90,7 +111,8 @@ const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
             "relative rounded-xl px-3 transition-all duration-150 group/btn",
             "h-11 group-data-[collapsible=icon]:!rounded-xl",
             // Idle
-            !isActive && "text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent",
+            !isActive &&
+              "text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent",
             // Active expanded — indigo pill + glow
             isActive && [
               "bg-sidebar-primary text-white font-semibold",
@@ -98,7 +120,8 @@ const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
               "shadow-[0_4px_14px_0_rgba(79,70,229,0.45)]",
             ],
             // Active collapsed — same pill, icon centred by CVA p-0 + justify-center
-            isActive && "group-data-[collapsible=icon]:bg-sidebar-primary group-data-[collapsible=icon]:shadow-[0_4px_14px_0_rgba(79,70,229,0.45)]",
+            isActive &&
+              "group-data-[collapsible=icon]:bg-sidebar-primary group-data-[collapsible=icon]:shadow-[0_4px_14px_0_rgba(79,70,229,0.45)]",
           )}
         >
           {/* Left-edge bar — expanded only */}
@@ -131,14 +154,18 @@ const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
     <SidebarMenuItem>
       <SidebarMenuButton
         onClick={() => {
-          if (state === "collapsed") { setOpen(true); setIsOpen(true); }
-          else setIsOpen(!isOpen);
+          if (state === "collapsed") {
+            setOpen(true);
+            setIsOpen(true);
+          } else setIsOpen(!isOpen);
         }}
         tooltip={item.title}
         className={cn(
           "relative h-11 rounded-xl px-3 transition-all duration-150 group/btn",
-          !isActive && "text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent",
-          isActive && "bg-sidebar-accent/80 text-sidebar-accent-foreground font-medium",
+          !isActive &&
+            "text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent",
+          isActive &&
+            "bg-sidebar-accent/80 text-sidebar-accent-foreground font-medium",
         )}
       >
         {isActive && (
@@ -187,7 +214,8 @@ const NavItem = ({ item, pathname, searchActive = false }: NavItemProps) => {
                   onClick={() => navigate({ to: child.url as any })}
                   className={cn(
                     "relative h-9 rounded-lg px-3 transition-all duration-150 text-[13px] group/sub cursor-pointer",
-                    !childActive && "text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent",
+                    !childActive &&
+                      "text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent",
                     childActive && [
                       "bg-sidebar-primary text-white font-semibold",
                       "hover:bg-sidebar-primary/95",
@@ -261,7 +289,6 @@ export const AppSidebar = () => {
 
   return (
     <Sidebar collapsible="icon" variant="sidebar">
-
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <SidebarHeader className="px-3 pt-3 pb-2.5 group-data-[collapsible=icon]:px-1.5 group-data-[collapsible=icon]:items-center">
         <SidebarMenu>
@@ -286,15 +313,17 @@ export const AppSidebar = () => {
               )}
             >
               {/* Icon — always visible */}
-              <div className={cn(
-                "shrink-0 flex items-center justify-center rounded-lg text-white transition-all",
-                "group-hover/logo:scale-105",
-                // Expanded: full indigo pill
-                "size-8 bg-sidebar-primary shadow-[0_4px_12px_rgba(79,70,229,0.45)] ring-1 ring-white/10",
-                // Collapsed: button IS the pill, so this div becomes icon-only, no bg
-                "group-data-[collapsible=icon]:size-5 group-data-[collapsible=icon]:bg-transparent",
-                "group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:ring-0",
-              )}>
+              <div
+                className={cn(
+                  "shrink-0 flex items-center justify-center rounded-lg text-white transition-all",
+                  "group-hover/logo:scale-105",
+                  // Expanded: full indigo pill
+                  "size-8 bg-sidebar-primary shadow-[0_4px_12px_rgba(79,70,229,0.45)] ring-1 ring-white/10",
+                  // Collapsed: button IS the pill, so this div becomes icon-only, no bg
+                  "group-data-[collapsible=icon]:size-5 group-data-[collapsible=icon]:bg-transparent",
+                  "group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:ring-0",
+                )}
+              >
                 <ZapIcon className="size-4" />
               </div>
 
@@ -352,8 +381,12 @@ export const AppSidebar = () => {
                   <div className="w-9 h-9 rounded-xl bg-sidebar-accent flex items-center justify-center mx-auto mb-3">
                     <Search className="size-4 text-sidebar-foreground/70" />
                   </div>
-                  <p className="text-[12.5px] font-medium text-sidebar-foreground">No results</p>
-                  <p className="mt-0.5 text-[11px] text-sidebar-foreground/60">Try a different keyword</p>
+                  <p className="text-[12.5px] font-medium text-sidebar-foreground">
+                    No results
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-sidebar-foreground/60">
+                    Try a different keyword
+                  </p>
                 </div>
               )}
             </SidebarMenu>

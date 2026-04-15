@@ -36,11 +36,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  TooltipProvider,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
 
 type Category = {
   id: string;
@@ -149,11 +146,13 @@ export function ExpenseCategoriesManager() {
   };
 
   // Filtered data
-  const listData = categories.filter((c: Category) =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
-  ).filter((c: Category) =>
-    activeTab === "active" ? c.isActive : !c.isActive
-  );
+  const listData = categories
+    .filter((c: Category) =>
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    )
+    .filter((c: Category) =>
+      activeTab === "active" ? c.isActive : !c.isActive,
+    );
   const activeCount = categories.filter((c: Category) => c.isActive).length;
   const archivedCount = categories.filter((c: Category) => !c.isActive).length;
 
@@ -169,15 +168,15 @@ export function ExpenseCategoriesManager() {
               <Tag className="size-4 text-primary-foreground" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold tracking-tight">Expense Categories</h2>
-              <p className="text-[11px] text-muted-foreground font-medium">Configure and manage expense classifications</p>
+              <h2 className="text-sm font-semibold tracking-tight">
+                Expense Categories
+              </h2>
+              <p className="text-[11px] text-muted-foreground font-medium">
+                Configure and manage expense classifications
+              </p>
             </div>
           </div>
-          <Button
-            onClick={startCreate}
-            size="sm"
-            className="h-8 gap-1.5"
-          >
+          <Button onClick={startCreate} size="sm" className="h-8 gap-1.5">
             <Plus className="size-3.5 stroke-[3px]" />
             Add Category
           </Button>
@@ -195,13 +194,35 @@ export function ExpenseCategoriesManager() {
             />
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-auto">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-auto"
+          >
             <TabsList className="h-8 p-0.5 bg-muted">
-              <TabsTrigger value="active" className="h-7 text-[11px] px-3 data-[state=active]:bg-background data-[state=active]:shadow-none">
-                Active <Badge variant="secondary" className="ml-2 h-4 px-1 text-[9px] bg-emerald-500/10 text-emerald-600 border-none">{activeCount}</Badge>
+              <TabsTrigger
+                value="active"
+                className="h-7 text-[11px] px-3 data-[state=active]:bg-background data-[state=active]:shadow-none"
+              >
+                Active{" "}
+                <Badge
+                  variant="secondary"
+                  className="ml-2 h-4 px-1 text-[9px] bg-emerald-500/10 text-emerald-600 border-none"
+                >
+                  {activeCount}
+                </Badge>
               </TabsTrigger>
-              <TabsTrigger value="archived" className="h-7 text-[11px] px-3 data-[state=active]:bg-background data-[state=active]:shadow-none">
-                Archived <Badge variant="secondary" className="ml-2 h-4 px-1 text-[9px] bg-muted-foreground/10 text-muted-foreground border-none">{archivedCount}</Badge>
+              <TabsTrigger
+                value="archived"
+                className="h-7 text-[11px] px-3 data-[state=active]:bg-background data-[state=active]:shadow-none"
+              >
+                Archived{" "}
+                <Badge
+                  variant="secondary"
+                  className="ml-2 h-4 px-1 text-[9px] bg-muted-foreground/10 text-muted-foreground border-none"
+                >
+                  {archivedCount}
+                </Badge>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -240,9 +261,18 @@ export function ExpenseCategoriesManager() {
                         disabled={createMutation.isPending || !draftName.trim()}
                         className="h-8"
                       >
-                        {createMutation.isPending ? <Loader2 className="size-3.5 animate-spin" /> : "Save"}
+                        {createMutation.isPending ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          "Save"
+                        )}
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={cancelAction} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={cancelAction}
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      >
                         <X className="size-4" />
                       </Button>
                     </div>
@@ -253,7 +283,9 @@ export function ExpenseCategoriesManager() {
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-3">
                   <Loader2 className="size-6 animate-spin text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Loading Registry...</p>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">
+                    Loading Registry...
+                  </p>
                 </div>
               ) : listData.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
@@ -262,10 +294,16 @@ export function ExpenseCategoriesManager() {
                   </div>
                   <h3 className="text-sm font-semibold">No results found</h3>
                   <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
-                    Try adjusting your search or add a new category to get started.
+                    Try adjusting your search or add a new category to get
+                    started.
                   </p>
                   {!isCreating && (
-                    <Button onClick={startCreate} variant="outline" size="sm" className="mt-6">
+                    <Button
+                      onClick={startCreate}
+                      variant="outline"
+                      size="sm"
+                      className="mt-6"
+                    >
                       Add First Category
                     </Button>
                   )}
@@ -299,19 +337,25 @@ export function ExpenseCategoriesManager() {
         {/* Footer */}
         <footer className="px-6 py-3 border-t bg-muted/20 flex items-center justify-between text-[10px] font-medium text-muted-foreground">
           <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5"><div className="size-1 bg-emerald-500 rounded-full animate-pulse" /> Linked to Finance DB</span>
+            <span className="flex items-center gap-1.5">
+              <div className="size-1 bg-emerald-500 rounded-full animate-pulse" />{" "}
+              Linked to Finance DB
+            </span>
           </div>
           <span>{activeCount + archivedCount} Total Records</span>
         </footer>
       </div>
 
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: hsl(var(--muted-foreground) / 0.1); border-radius: 10px; }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.2); }
-            ` }} />
+            `,
+        }}
+      />
     </TooltipProvider>
   );
 }
@@ -326,7 +370,7 @@ function CategoryRow({
   startEdit,
   handleToggleActive,
   handleDelete,
-  updatePending
+  updatePending,
 }: any) {
   const isArchived = !cat.isActive;
 
@@ -338,14 +382,18 @@ function CategoryRow({
       className={cn(
         "group relative flex items-center justify-between px-6 py-3 transition-colors",
         isEditing ? "bg-primary/3" : "hover:bg-muted/30",
-        isArchived && "bg-muted/10 opacity-75"
+        isArchived && "bg-muted/10 opacity-75",
       )}
     >
       <div className="flex items-center gap-4 flex-1">
-        <div className={cn(
-          "size-8 rounded flex items-center justify-center transition-colors",
-          isArchived ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
-        )}>
+        <div
+          className={cn(
+            "size-8 rounded flex items-center justify-center transition-colors",
+            isArchived
+              ? "bg-muted text-muted-foreground"
+              : "bg-primary/10 text-primary",
+          )}
+        >
           <Hash className="size-4" />
         </div>
 
@@ -362,22 +410,37 @@ function CategoryRow({
                 className="h-7 text-xs flex-1 max-w-[200px]"
                 placeholder="Category name"
               />
-              <Button size="icon" variant="ghost" onClick={handleSaveEdit} className="h-7 w-7">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleSaveEdit}
+                className="h-7 w-7"
+              >
                 <Check className="size-3.5" />
               </Button>
-              <Button size="icon" variant="ghost" onClick={cancelAction} className="h-7 w-7">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={cancelAction}
+                className="h-7 w-7"
+              >
                 <X className="size-3.5" />
               </Button>
             </div>
           ) : (
             <div className="flex flex-col">
-              <span className={cn(
-                "text-sm font-medium leading-none mb-1",
-                isArchived && "text-muted-foreground line-through decoration-muted-foreground/30"
-              )}>
+              <span
+                className={cn(
+                  "text-sm font-medium leading-none mb-1",
+                  isArchived &&
+                    "text-muted-foreground line-through decoration-muted-foreground/30",
+                )}
+              >
                 {cat.name}
               </span>
-              <span className="text-[10px] text-muted-foreground/50 font-mono tracking-tighter uppercase">{cat.id.slice(0, 8)}</span>
+              <span className="text-[10px] text-muted-foreground/50 font-mono tracking-tighter uppercase">
+                {cat.id.slice(0, 8)}
+              </span>
             </div>
           )}
         </div>
@@ -386,7 +449,9 @@ function CategoryRow({
       <div className="flex items-center gap-4">
         {/* Active Toggle */}
         <div className="flex items-center gap-2 pr-4 border-r">
-          <span className="text-[10px] uppercase font-bold text-muted-foreground/40 hidden sm:inline-block tracking-widest">Active</span>
+          <span className="text-[10px] uppercase font-bold text-muted-foreground/40 hidden sm:inline-block tracking-widest">
+            Active
+          </span>
           <Switch
             checked={cat.isActive}
             onCheckedChange={() => handleToggleActive(cat.id, cat.isActive)}
@@ -417,14 +482,25 @@ function CategoryRow({
             </AlertDialogTrigger>
             <AlertDialogContent className="max-w-[400px]">
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-lg font-bold">Delete permanently?</AlertDialogTitle>
+                <AlertDialogTitle className="text-lg font-bold">
+                  Delete permanently?
+                </AlertDialogTitle>
                 <AlertDialogDescription className="text-sm">
-                  You are about to delete <span className="font-semibold text-foreground italic">"{cat.name}"</span>.
-                  This action is <span className="text-destructive font-bold">irreversible</span> and will fail if the category is still in use.
+                  You are about to delete{" "}
+                  <span className="font-semibold text-foreground italic">
+                    "{cat.name}"
+                  </span>
+                  . This action is{" "}
+                  <span className="text-destructive font-bold">
+                    irreversible
+                  </span>{" "}
+                  and will fail if the category is still in use.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="mt-4">
-                <AlertDialogCancel className="h-8 text-xs">Cancel</AlertDialogCancel>
+                <AlertDialogCancel className="h-8 text-xs">
+                  Cancel
+                </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => handleDelete(cat.id)}
                   className="h-8 text-xs bg-destructive text-destructive-foreground hover:bg-destructive/90"

@@ -66,10 +66,12 @@ export const ResponsiveDialog = ({
       <DialogContent
         className={cn(
           "flex flex-col gap-0 max-h-[90vh] overflow-hidden rounded-none shadow-none",
-          className
+          className,
         )}
       >
-        <DialogHeader className={cn("shrink-0", isFullBleed ? "p-6 pb-4" : "pb-4")}>
+        <DialogHeader
+          className={cn("shrink-0", isFullBleed ? "p-6 pb-4" : "pb-4")}
+        >
           <DialogTitle className="flex items-center gap-2">
             {Icon && <Icon className="size-6 text-primary" />}
             {title}
@@ -78,7 +80,12 @@ export const ResponsiveDialog = ({
             {description}
           </DialogDescription>
         </DialogHeader>
-        <div className={cn("flex flex-col min-h-0 flex-1 relative", noScroll ? "overflow-hidden" : "overflow-y-auto")}>
+        <div
+          className={cn(
+            "flex flex-col min-h-0 flex-1 relative",
+            noScroll ? "overflow-hidden" : "overflow-y-auto",
+          )}
+        >
           {children}
         </div>
       </DialogContent>

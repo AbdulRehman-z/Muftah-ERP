@@ -87,7 +87,9 @@ export function DashboardKpiCards({ data }: { data: KpiData }) {
         <PremiumSaaSCard
           title="Output Volume"
           value={data.totalCartonsProduced.toLocaleString()}
-          trendLabel={data.totalCartonsProduced > 0 ? "Completed runs" : "No output"}
+          trendLabel={
+            data.totalCartonsProduced > 0 ? "Completed runs" : "No output"
+          }
           trend={data.totalCartonsProduced > 0 ? "up" : "neutral"}
           theme="cyan"
           Illustration={IsoYieldPacker}

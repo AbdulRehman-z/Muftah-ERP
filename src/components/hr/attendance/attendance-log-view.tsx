@@ -5,7 +5,12 @@ import { GenericLoader } from "@/components/custom/generic-loader";
 import { format, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { ArrowLeft, CalendarRange, Check, FilterX } from "lucide-react";
 import { useState, useEffect, Suspense } from "react";
-import { Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearch,
+} from "@tanstack/react-router";
 
 export const AttendanceLogView = () => {
   const { employeeId } = useParams({
@@ -54,7 +59,12 @@ export const AttendanceLogView = () => {
       {/* Action Bar / Filter */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-secondary p-5 rounded-2xl border">
         <div className="flex items-start gap-4 mt-1">
-          <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 rounded-xl bg-background transition-transform hover:-translate-x-1" asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-10 w-10 shrink-0 rounded-xl bg-background transition-transform hover:-translate-x-1"
+            asChild
+          >
             <Link to="/hr/attendance">
               <ArrowLeft className="size-4" />
             </Link>

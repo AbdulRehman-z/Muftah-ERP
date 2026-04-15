@@ -49,7 +49,7 @@ export const ResetPasswordForm = () => {
           onError: (ctx) => {
             toast.error(ctx.error.message || "Failed to reset password.");
           },
-        }
+        },
       );
     },
   });
@@ -81,7 +81,9 @@ export const ResetPasswordForm = () => {
                     <Field>
                       <FieldLabel className="flex items-center gap-2 mb-1.5">
                         <KeyRound className="size-4 text-muted-foreground" />
-                        <span className="text-sm font-semibold">New Password</span>
+                        <span className="text-sm font-semibold">
+                          New Password
+                        </span>
                       </FieldLabel>
                       <PasswordInput
                         name={field.name}
@@ -107,7 +109,9 @@ export const ResetPasswordForm = () => {
                     <Field>
                       <FieldLabel className="flex items-center gap-2 mb-1.5">
                         <ShieldCheck className="size-4 text-muted-foreground" />
-                        <span className="text-sm font-semibold">Confirm New Password</span>
+                        <span className="text-sm font-semibold">
+                          Confirm New Password
+                        </span>
                       </FieldLabel>
                       <PasswordInput
                         name={field.name}
@@ -132,7 +136,9 @@ export const ResetPasswordForm = () => {
                       type="submit"
                       className="w-full"
                     >
-                      {isSubmitting ? "Resetting Password..." : "Update Password"}
+                      {isSubmitting
+                        ? "Resetting Password..."
+                        : "Update Password"}
                     </Button>
                   )}
                 </form.Subscribe>

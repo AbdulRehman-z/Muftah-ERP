@@ -81,8 +81,10 @@ export const AttendanceContainer = () => {
 
   const stats = {
     total: employees.length,
-    present: employees.filter((e) => e.attendance[0]?.status === "present").length,
-    absent: employees.filter((e) => e.attendance[0]?.status === "absent").length,
+    present: employees.filter((e) => e.attendance[0]?.status === "present")
+      .length,
+    absent: employees.filter((e) => e.attendance[0]?.status === "absent")
+      .length,
     late: employees.filter((e) => e.attendance[0]?.isLate).length,
     leave: employees.filter((e) => e.attendance[0]?.status === "leave").length,
     undertimeCount: employees.filter((e) => {
@@ -109,9 +111,8 @@ export const AttendanceContainer = () => {
   const parsedDate = parseISO(selectedDate);
   const isTodaySelected = isToday(parsedDate);
 
-  const attendanceRate = stats.total > 0
-    ? Math.round((stats.present / stats.total) * 100)
-    : 0;
+  const attendanceRate =
+    stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0;
 
   const formatUndertimeMins = (mins: number): string | null => {
     if (mins <= 0) return null;
@@ -124,27 +125,39 @@ export const AttendanceContainer = () => {
 
   const undertimeLabel = formatUndertimeMins(stats.undertimeMins);
 
-  const rateColorClass = attendanceRate >= 80
-    ? "text-emerald-600 dark:text-emerald-500"
-    : attendanceRate >= 60
-      ? "text-amber-600 dark:text-amber-500"
-      : "text-rose-600 dark:text-rose-500";
+  const rateColorClass =
+    attendanceRate >= 80
+      ? "text-emerald-600 dark:text-emerald-500"
+      : attendanceRate >= 60
+        ? "text-amber-600 dark:text-amber-500"
+        : "text-rose-600 dark:text-rose-500";
 
-  const rateBarColorClass = attendanceRate >= 80
-    ? "bg-emerald-500"
-    : attendanceRate >= 60
-      ? "bg-amber-500"
-      : "bg-rose-500";
+  const rateBarColorClass =
+    attendanceRate >= 80
+      ? "bg-emerald-500"
+      : attendanceRate >= 60
+        ? "bg-amber-500"
+        : "bg-rose-500";
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6 font-sans antialiased">
-
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="space-y-6 font-sans antialiased"
+    >
       {/* ── Sharp Header & Toolbar ──────────────────────────────────────── */}
-      <motion.div variants={itemVariants} className="relative border border-border bg-card rounded-none shadow-none overflow-hidden">
+      <motion.div
+        variants={itemVariants}
+        className="relative border border-border bg-card rounded-none shadow-none overflow-hidden"
+      >
         {/* Technical Grid Pattern */}
         <div
           className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04] pointer-events-none"
-          style={{ backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`, backgroundSize: "8px 8px" }}
+          style={{
+            backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`,
+            backgroundSize: "8px 8px",
+          }}
         />
 
         <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-4 p-5 border-b border-border">
@@ -154,9 +167,14 @@ export const AttendanceContainer = () => {
             </div>
             <div>
               <div className="flex items-center gap-3">
-                <h2 className="text-lg font-bold tracking-tight text-foreground uppercase">Daily Ledger</h2>
+                <h2 className="text-lg font-bold tracking-tight text-foreground uppercase">
+                  Daily Ledger
+                </h2>
                 {isTodaySelected && (
-                  <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-widest rounded-none border-border px-1.5 py-0">
+                  <Badge
+                    variant="outline"
+                    className="text-[9px] font-bold uppercase tracking-widest rounded-none border-border px-1.5 py-0"
+                  >
                     Live
                   </Badge>
                 )}
@@ -189,7 +207,10 @@ export const AttendanceContainer = () => {
                     {format(parsedDate, "dd MMM yyyy")}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 rounded-none border-border shadow-none" align="center">
+                <PopoverContent
+                  className="w-auto p-0 rounded-none border-border shadow-none"
+                  align="center"
+                >
                   <Calendar
                     mode="single"
                     selected={parsedDate}
@@ -215,17 +236,18 @@ export const AttendanceContainer = () => {
               size="icon"
               className={cn(
                 "h-9 w-9 rounded-none border-border shadow-none hover:bg-muted",
-                isTodaySelected && "opacity-50 pointer-events-none"
+                isTodaySelected && "opacity-50 pointer-events-none",
               )}
-              onClick={() => setSelectedDate(format(startOfToday(), "yyyy-MM-dd"))}
+              onClick={() =>
+                setSelectedDate(format(startOfToday(), "yyyy-MM-dd"))
+              }
               title="Jump to Today"
             >
               <RotateCcw className="size-3.5" />
             </Button>
 
             <div className="w-px h-9 bg-border hidden sm:block mx-1" />
-            <Button variant="outline" onClick={() => setBulkOpen(true)}
-            >
+            <Button variant="outline" onClick={() => setBulkOpen(true)}>
               <CalendarRange className="size-3.5 mr-2" />
               Bulk Mark
             </Button>
@@ -252,11 +274,16 @@ export const AttendanceContainer = () => {
             <div className="flex items-center gap-4">
               {undertimeLabel && stats.undertimeCount > 0 && (
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-500 border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/20 px-2 py-0.5">
-                  <TimerOff className="size-3" />
-                  −{undertimeLabel} ({stats.undertimeCount} emp)
+                  <TimerOff className="size-3" />−{undertimeLabel} (
+                  {stats.undertimeCount} emp)
                 </span>
               )}
-              <span className={cn("text-lg font-black tabular-nums tracking-tight", rateColorClass)}>
+              <span
+                className={cn(
+                  "text-lg font-black tabular-nums tracking-tight",
+                  rateColorClass,
+                )}
+              >
                 {attendanceRate}%
               </span>
             </div>
@@ -273,7 +300,10 @@ export const AttendanceContainer = () => {
       </motion.div>
 
       {/* ── Sharp KPI Summary Grid ────────────────────────────────────── */}
-      <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <motion.div
+        variants={itemVariants}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
         <SharpKPICard
           title="Total Workforce"
           value={stats.total.toString()}
@@ -305,7 +335,10 @@ export const AttendanceContainer = () => {
       </motion.div>
 
       {/* ── Table Container ───────────────────────────────────────────── */}
-      <motion.div variants={itemVariants} className="border border-border bg-card rounded-none shadow-none">
+      <motion.div
+        variants={itemVariants}
+        className="border border-border bg-card rounded-none shadow-none"
+      >
         <AttendanceListTable data={employees} date={selectedDate} />
       </motion.div>
 
@@ -315,10 +348,7 @@ export const AttendanceContainer = () => {
         onOpenChange={setBulkOpen}
         employees={employees}
       />
-      <SetRateDialog
-        open={isSetRateOpen}
-        onOpenChange={setIsSetRateOpen}
-      />
+      <SetRateDialog open={isSetRateOpen} onOpenChange={setIsSetRateOpen} />
     </motion.div>
   );
 };
@@ -328,11 +358,31 @@ export const AttendanceContainer = () => {
 type KPITheme = "blue" | "rose" | "emerald" | "violet" | "amber";
 
 const sharpThemeStyles = {
-  blue: { border: "border-t-blue-500", iconBg: "bg-blue-500/10", iconText: "text-blue-500" },
-  rose: { border: "border-t-rose-500", iconBg: "bg-rose-500/10", iconText: "text-rose-500" },
-  emerald: { border: "border-t-emerald-500", iconBg: "bg-emerald-500/10", iconText: "text-emerald-500" },
-  violet: { border: "border-t-violet-500", iconBg: "bg-violet-500/10", iconText: "text-violet-500" },
-  amber: { border: "border-t-amber-500", iconBg: "bg-amber-500/10", iconText: "text-amber-500" },
+  blue: {
+    border: "border-t-blue-500",
+    iconBg: "bg-blue-500/10",
+    iconText: "text-blue-500",
+  },
+  rose: {
+    border: "border-t-rose-500",
+    iconBg: "bg-rose-500/10",
+    iconText: "text-rose-500",
+  },
+  emerald: {
+    border: "border-t-emerald-500",
+    iconBg: "bg-emerald-500/10",
+    iconText: "text-emerald-500",
+  },
+  violet: {
+    border: "border-t-violet-500",
+    iconBg: "bg-violet-500/10",
+    iconText: "text-violet-500",
+  },
+  amber: {
+    border: "border-t-amber-500",
+    iconBg: "bg-amber-500/10",
+    iconText: "text-amber-500",
+  },
 };
 
 function SharpKPICard({
@@ -340,13 +390,13 @@ function SharpKPICard({
   value,
   subtext,
   icon: Icon,
-  theme
+  theme,
 }: {
   title: string;
   value: string;
   subtext: string;
   icon: any;
-  theme: KPITheme
+  theme: KPITheme;
 }) {
   const styles = sharpThemeStyles[theme];
 
@@ -356,25 +406,34 @@ function SharpKPICard({
       className={cn(
         "relative flex flex-col justify-between p-5 bg-card border border-border rounded-none shadow-none",
         "border-t-2",
-        styles.border
+        styles.border,
       )}
     >
       {/* Technical Grid Pattern */}
       <div
         className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04] pointer-events-none"
-        style={{ backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`, backgroundSize: "8px 8px" }}
+        style={{
+          backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`,
+          backgroundSize: "8px 8px",
+        }}
       />
 
       <div className="relative z-10 flex items-start justify-between mb-8">
-        <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">{title}</p>
+        <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+          {title}
+        </p>
         <div className={cn("p-1.5 rounded-none", styles.iconBg)}>
           <Icon className={cn("size-4", styles.iconText)} />
         </div>
       </div>
 
       <div className="relative z-10 space-y-1">
-        <h3 className="text-3xl font-bold tracking-tight text-foreground tabular-nums">{value}</h3>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">{subtext}</p>
+        <h3 className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
+          {value}
+        </h3>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+          {subtext}
+        </p>
       </div>
     </motion.div>
   );

@@ -84,7 +84,9 @@ export const EmailVerification = ({ email }: Props) => {
             Verify your email
           </CardTitle>
           <CardDescription className="text-[14px] leading-relaxed mx-auto max-w-[300px]">
-            We've sent a verification link to <span className="font-medium text-foreground">{email}</span>. Check your inbox to verify your account.
+            We've sent a verification link to{" "}
+            <span className="font-medium text-foreground">{email}</span>. Check
+            your inbox to verify your account.
           </CardDescription>
         </CardHeader>
 
@@ -95,7 +97,9 @@ export const EmailVerification = ({ email }: Props) => {
             variant={canResend ? "default" : "secondary"}
             className="w-full h-10 font-medium text-[14px] rounded-lg  active:scale-[0.98] transition-all"
           >
-            {canResend ? "Resend Verification Email" : `Resend in ${timeToNextResend}s`}
+            {canResend
+              ? "Resend Verification Email"
+              : `Resend in ${timeToNextResend}s`}
           </Button>
 
           <p className="text-[13px] text-muted-foreground pt-2">

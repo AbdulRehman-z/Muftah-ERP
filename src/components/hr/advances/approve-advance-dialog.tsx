@@ -1,13 +1,25 @@
 import { ResponsiveDialog } from "@/components/custom/responsive-dialog";
 import { Button } from "@/components/ui/button";
 import { useApproveSalaryAdvance } from "@/hooks/hr/use-salary-advances";
-import { Loader2, CheckCircle2, Building2, BanknoteIcon, AlertTriangleIcon } from "lucide-react";
+import {
+  Loader2,
+  CheckCircle2,
+  Building2,
+  BanknoteIcon,
+  AlertTriangleIcon,
+} from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useQuery } from "@tanstack/react-query";
 import { getWalletsListFn } from "@/server-functions/finance-fn";
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 
 export const ApproveAdvanceDialog = ({
@@ -43,7 +55,9 @@ export const ApproveAdvanceDialog = ({
       return;
     }
     if (insufficientFunds) {
-      toast.error(`Insufficient balance in "${selectedWallet?.name}". Available: PKR ${currentBalance.toLocaleString()}`);
+      toast.error(
+        `Insufficient balance in "${selectedWallet?.name}". Available: PKR ${currentBalance.toLocaleString()}`,
+      );
       return;
     }
 
@@ -78,7 +92,9 @@ export const ApproveAdvanceDialog = ({
       <div className="space-y-6 py-4">
         {/* Amount Card */}
         <div className="p-4 bg-muted/30 rounded-xl border flex items-center justify-between">
-          <span className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">Amount to Pay</span>
+          <span className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+            Amount to Pay
+          </span>
           <span className="text-xl font-black text-primary tabular-nums">
             ₨ {parsedAmount.toLocaleString()}
           </span>
@@ -89,9 +105,19 @@ export const ApproveAdvanceDialog = ({
           <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
             Pay From Wallet
           </Label>
-          <Select value={walletId} onValueChange={setWalletId} disabled={isWalletsLoading}>
+          <Select
+            value={walletId}
+            onValueChange={setWalletId}
+            disabled={isWalletsLoading}
+          >
             <SelectTrigger className="h-11 font-medium">
-              <SelectValue placeholder={isWalletsLoading ? "Loading wallets..." : "Select account to debit..."} />
+              <SelectValue
+                placeholder={
+                  isWalletsLoading
+                    ? "Loading wallets..."
+                    : "Select account to debit..."
+                }
+              />
             </SelectTrigger>
             <SelectContent>
               {wallets.map((w) => (
@@ -115,17 +141,19 @@ export const ApproveAdvanceDialog = ({
           {/* Balance Indicator */}
           {selectedWallet && (
             <div
-              className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${insufficientFunds
+              className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                insufficientFunds
                   ? "bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800"
                   : "bg-muted/30 border-muted-foreground/5"
-                }`}
+              }`}
             >
               <span className="text-xs font-semibold text-muted-foreground">
                 Available Balance
               </span>
               <span
-                className={`text-sm font-black tabular-nums ${insufficientFunds ? "text-rose-600" : ""
-                  }`}
+                className={`text-sm font-black tabular-nums ${
+                  insufficientFunds ? "text-rose-600" : ""
+                }`}
               >
                 ₨ {currentBalance.toLocaleString()}
               </span>
@@ -135,7 +163,8 @@ export const ApproveAdvanceDialog = ({
           {insufficientFunds && (
             <div className="flex items-center gap-2 text-rose-600 text-xs font-bold p-2 bg-rose-50 dark:bg-rose-950/20 rounded-lg">
               <AlertTriangleIcon className="size-3.5 shrink-0" />
-              Insufficient funds! You need ₨ {(parsedAmount - currentBalance).toLocaleString()} more.
+              Insufficient funds! You need ₨{" "}
+              {(parsedAmount - currentBalance).toLocaleString()} more.
             </div>
           )}
         </div>

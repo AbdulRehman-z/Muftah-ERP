@@ -47,10 +47,26 @@ const itemVariants: Variants = {
 // ── Status config ─────────────────────────────────────────────────────────
 
 const statusConfig: Record<string, { label: string; className: string }> = {
-  pending: { label: "Pending", className: "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400" },
-  approved: { label: "Approved", className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400" },
-  deducted: { label: "Deducted", className: "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400" },
-  rejected: { label: "Rejected", className: "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-400" },
+  pending: {
+    label: "Pending",
+    className:
+      "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400",
+  },
+  approved: {
+    label: "Approved",
+    className:
+      "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400",
+  },
+  deducted: {
+    label: "Deducted",
+    className:
+      "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400",
+  },
+  rejected: {
+    label: "Rejected",
+    className:
+      "bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-400",
+  },
 };
 
 export function AdvancesContainer() {
@@ -101,7 +117,8 @@ export function AdvancesContainer() {
             <div className="flex items-center gap-3">
               <Avatar className="h-8 w-8 rounded-none border border-border shadow-none">
                 <AvatarFallback className="rounded-none text-[10px] font-bold bg-primary/10 text-primary">
-                  {emp.firstName[0]}{emp.lastName[0]}
+                  {emp.firstName[0]}
+                  {emp.lastName[0]}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
@@ -149,7 +166,10 @@ export function AdvancesContainer() {
         header: "Status",
         cell: ({ row }) => {
           const s = row.original.status as string;
-          const cfg = statusConfig[s] ?? { label: s, className: "bg-muted text-muted-foreground" };
+          const cfg = statusConfig[s] ?? {
+            label: s,
+            className: "bg-muted text-muted-foreground",
+          };
           return (
             <Badge
               variant="outline"
@@ -221,7 +241,12 @@ export function AdvancesContainer() {
   );
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6 font-sans antialiased">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="space-y-6 font-sans antialiased"
+    >
       {/* ── Header Area ────────────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2">
         <div className="space-y-0.5">
@@ -234,7 +259,7 @@ export function AdvancesContainer() {
           </p>
         </div>
         <Button
-        size="lg" 
+          size="lg"
           onClick={() => {
             setAdvanceToEdit(null);
             setIsRequestDialogOpen(true);
@@ -246,7 +271,10 @@ export function AdvancesContainer() {
       </div>
 
       {/* ── KPI Cards ──────────────────────────────────────────────────── */}
-      <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <motion.div
+        variants={itemVariants}
+        className="grid grid-cols-2 md:grid-cols-4 gap-4"
+      >
         <SharpKPICard
           title="Total Requests"
           value={advances.length.toString()}
@@ -278,7 +306,10 @@ export function AdvancesContainer() {
       </motion.div>
 
       {/* ── DataTable ─────────────────────────────────────────────────── */}
-      <motion.div variants={itemVariants} className="border border-border bg-card rounded-none shadow-none">
+      <motion.div
+        variants={itemVariants}
+        className="border border-border bg-card rounded-none shadow-none"
+      >
         <DataTable
           columns={columns}
           data={filteredAdvances}

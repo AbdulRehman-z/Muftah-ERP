@@ -10,7 +10,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCreateSalaryAdvance, useUpdateSalaryAdvance } from "@/hooks/hr/use-salary-advances";
+import {
+  useCreateSalaryAdvance,
+  useUpdateSalaryAdvance,
+} from "@/hooks/hr/use-salary-advances";
 import { useQuery } from "@tanstack/react-query";
 import { getEmployeesFn } from "@/server-functions/hr/employees/get-employees-fn";
 import { Loader2, HandCoins, CalendarRange } from "lucide-react";
@@ -119,8 +122,14 @@ export const RequestAdvanceDialog = ({
     <ResponsiveDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={isEditing ? "Edit Salary Advance Request" : "Request Salary Advance"}
-      description={isEditing ? "Modify the details of this pending advance request." : "Create a new salary advance request for an employee."}
+      title={
+        isEditing ? "Edit Salary Advance Request" : "Request Salary Advance"
+      }
+      description={
+        isEditing
+          ? "Modify the details of this pending advance request."
+          : "Create a new salary advance request for an employee."
+      }
       icon={HandCoins}
     >
       <div className="space-y-6 py-4">
@@ -129,9 +138,19 @@ export const RequestAdvanceDialog = ({
             <label className="text-sm font-semibold ">
               Employee <span className="text-destructive">*</span>
             </label>
-            <Select value={employeeId} onValueChange={setEmployeeId} disabled={isEmployeesLoading}>
+            <Select
+              value={employeeId}
+              onValueChange={setEmployeeId}
+              disabled={isEmployeesLoading}
+            >
               <SelectTrigger className="h-11">
-                <SelectValue placeholder={isEmployeesLoading ? "Loading employees..." : "Select an employee..."} />
+                <SelectValue
+                  placeholder={
+                    isEmployeesLoading
+                      ? "Loading employees..."
+                      : "Select an employee..."
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
                 {employees.map((emp: any) => (
@@ -159,7 +178,8 @@ export const RequestAdvanceDialog = ({
 
         <div className="flex flex-col space-y-2">
           <label className="text-sm font-semibold">
-            Repayment Window (Months) <span className="text-destructive">*</span>
+            Repayment Window (Months){" "}
+            <span className="text-destructive">*</span>
           </label>
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
@@ -175,15 +195,24 @@ export const RequestAdvanceDialog = ({
               />
             </div>
             <div className="bg-muted/50 px-4 py-2 rounded-lg border text-xs font-medium text-muted-foreground min-w-[100px] text-center">
-              {parsedInstallments} {parsedInstallments === 1 ? "Month" : "Months"}
+              {parsedInstallments}{" "}
+              {parsedInstallments === 1 ? "Month" : "Months"}
             </div>
           </div>
           {parsedAmount > 0 && (
             <p className="text-xs text-muted-foreground mt-1 px-1">
               {parsedInstallments === 1 ? (
-                <span className="text-amber-600 font-medium">Full amount will be deducted from the next single payslip.</span>
+                <span className="text-amber-600 font-medium">
+                  Full amount will be deducted from the next single payslip.
+                </span>
               ) : (
-                <>≈ <span className="font-bold text-foreground">PKR {parseFloat(perInstallment).toLocaleString()}</span> deducted per payslip over {parsedInstallments} months</>
+                <>
+                  ≈{" "}
+                  <span className="font-bold text-foreground">
+                    PKR {parseFloat(perInstallment).toLocaleString()}
+                  </span>{" "}
+                  deducted per payslip over {parsedInstallments} months
+                </>
               )}
             </p>
           )}
@@ -209,7 +238,11 @@ export const RequestAdvanceDialog = ({
           >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isPending} className="min-w-[140px]">
+          <Button
+            onClick={handleSubmit}
+            disabled={isPending}
+            className="min-w-[140px]"
+          >
             {isPending ? (
               <Loader2 className="size-4 mr-2 animate-spin" />
             ) : isEditing ? (

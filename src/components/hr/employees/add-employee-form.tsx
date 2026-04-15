@@ -337,7 +337,9 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
                     onCheckedChange={(c) => field.handleChange(!!c)}
                   />
                   <div>
-                    <p className="text-[13px] font-medium">Order Booker / Field Sales</p>
+                    <p className="text-[13px] font-medium">
+                      Order Booker / Field Sales
+                    </p>
                     <p className="text-[12px] text-muted-foreground">
                       Enables sales & recovery tracking in attendance
                     </p>
@@ -378,9 +380,7 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
                     placeholder="e.g. 8"
                     value={field.state.value as number}
                     onBlur={field.handleBlur}
-                    onChange={(e) =>
-                      field.handleChange(Number(e.target.value))
-                    }
+                    onChange={(e) => field.handleChange(Number(e.target.value))}
                     className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <FieldError errors={field.state.meta.errors} />

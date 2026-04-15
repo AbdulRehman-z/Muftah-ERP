@@ -43,7 +43,7 @@ export const ForgotPasswordForm = () => {
             onError: (ctx) => {
               toast.error(ctx.error.message || "Failed to send reset link");
             },
-          }
+          },
         );
       });
     },
@@ -144,7 +144,8 @@ export const ForgotPasswordForm = () => {
                 <Link
                   className={buttonVariants({
                     variant: "default",
-                    className: "w-full h-10 font-medium text-[14px] rounded-lg ",
+                    className:
+                      "w-full h-10 font-medium text-[14px] rounded-lg ",
                   })}
                   to="/login"
                 >

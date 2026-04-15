@@ -58,7 +58,7 @@ const TimeInput = ({
           "[&::-webkit-calendar-picker-indicator]:absolute",
           "[&::-webkit-calendar-picker-indicator]:right-2",
           "[&::-webkit-calendar-picker-indicator]:cursor-pointer",
-          className
+          className,
         )}
       />
       <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none transition-colors group-focus-within:text-primary" />
@@ -117,14 +117,17 @@ const calculateHours = (
   in1?: string | null,
   out1?: string | null,
   in2?: string | null,
-  out2?: string | null
+  out2?: string | null,
 ): number | null => {
   const toMin = (t: string) => {
     const [h, m] = t.split(":").map(Number);
     return h * 60 + m;
   };
 
-  const getMinsDiff = (startStr?: string | null, endStr?: string | null): number => {
+  const getMinsDiff = (
+    startStr?: string | null,
+    endStr?: string | null,
+  ): number => {
     if (!startStr || !endStr) return 0;
     const s = toMin(startStr);
     const e = toMin(endStr);
@@ -136,10 +139,16 @@ const calculateHours = (
 };
 
 const statusConfig = {
-  present: { label: "Present", color: "text-emerald-600 dark:text-emerald-500" },
+  present: {
+    label: "Present",
+    color: "text-emerald-600 dark:text-emerald-500",
+  },
   leave: { label: "On Leave", color: "text-amber-600 dark:text-amber-500" },
   absent: { label: "Absent", color: "text-rose-600 dark:text-rose-500" },
-  holiday: { label: "Official Holiday", color: "text-blue-600 dark:text-blue-500" },
+  holiday: {
+    label: "Official Holiday",
+    color: "text-blue-600 dark:text-blue-500",
+  },
 } as const;
 
 // ── Auto-populate hook ─────────────────────────────────────────────────────
@@ -176,9 +185,21 @@ const AutoPopulate = ({ form, standardDutyHours }: AutoPopulateProps) => {
 };
 
 const AutoPopulateEffect = ({
-  form, ci1, co1, ci2, co2, status, standardDutyHours,
+  form,
+  ci1,
+  co1,
+  ci2,
+  co2,
+  status,
+  standardDutyHours,
 }: {
-  form: any; ci1: string | null; co1: string | null; ci2: string | null; co2: string | null; status: string; standardDutyHours: number;
+  form: any;
+  ci1: string | null;
+  co1: string | null;
+  ci2: string | null;
+  co2: string | null;
+  status: string;
+  standardDutyHours: number;
 }) => {
   const isFirstRender = useRef(true);
 
@@ -241,7 +262,12 @@ const AutoPopulateEffect = ({
 
 // ── Form ───────────────────────────────────────────────────────────────────
 
-export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Props) => {
+export const EditAttendanceForm = ({
+  employee,
+  attendance,
+  date,
+  onSuccess,
+}: Props) => {
   const mutate = useUpsertAttendance();
   const { data: activeRate } = useActiveTadaRate();
   const std = employee.standardDutyHours || 8;
@@ -250,8 +276,18 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
     defaultValues: {
       employeeId: employee.id,
       date: date,
-      status: (attendance?.status || "present") as "present" | "absent" | "leave" | "holiday",
-      leaveType: (attendance?.leaveType ?? null) as "sick" | "casual" | "annual" | "unpaid" | "special" | null,
+      status: (attendance?.status || "present") as
+        | "present"
+        | "absent"
+        | "leave"
+        | "holiday",
+      leaveType: (attendance?.leaveType ?? null) as
+        | "sick"
+        | "casual"
+        | "annual"
+        | "unpaid"
+        | "special"
+        | null,
       checkIn: attendance?.checkIn ?? null,
       checkOut: attendance?.checkOut ?? null,
       checkIn2: attendance?.checkIn2 ?? null,
@@ -261,8 +297,13 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
       isNightShift: attendance?.isNightShift ?? false,
       isApprovedLeave: attendance?.isApprovedLeave ?? false,
       overtimeRemarks: attendance?.overtimeRemarks ?? null,
-      overtimeStatus: (attendance?.overtimeStatus ?? "pending") as "pending" | "approved" | "rejected",
-      entrySource: (attendance?.entrySource ?? "manual") as "biometric" | "manual",
+      overtimeStatus: (attendance?.overtimeStatus ?? "pending") as
+        | "pending"
+        | "approved"
+        | "rejected",
+      entrySource: (attendance?.entrySource ?? "manual") as
+        | "biometric"
+        | "manual",
       dutyHours: attendance?.dutyHours ?? null,
       leaveApprovalStatus: attendance?.leaveApprovalStatus ?? "none",
       notes: attendance?.notes ?? null,
@@ -281,7 +322,10 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
     },
     onSubmit: async ({ value }) => {
       const payload = upsertAttendanceSchema.parse(value);
-      await mutate.mutateAsync({ data: payload }, { onSuccess: () => onSuccess() });
+      await mutate.mutateAsync(
+        { data: payload },
+        { onSuccess: () => onSuccess() },
+      );
     },
   });
 
@@ -303,7 +347,6 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
       <AutoPopulate form={form} standardDutyHours={std} />
 
       <FieldGroup className="space-y-0 divide-y divide-border/40">
-
         {/* ── Section: Status ─────────────────────────────────────────── */}
         <SectionBlock icon={CalendarDays} label="Attendance Status">
           <form.Field name="status">
@@ -311,23 +354,28 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
               <Field className="space-y-1.5">
                 <FieldLabel className="sr-only">Status</FieldLabel>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-1 p-1 rounded-lg bg-muted/40 border border-border/50">
-                  {(["present", "leave", "absent", "holiday"] as const).map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => field.handleChange(s)}
-                      className={cn(
-                        "rounded-md py-1.5 text-[13px] font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                        field.state.value === s
-                          ? `bg-background  border border-border/40 ${statusConfig[s].color}`
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-transparent"
-                      )}
-                    >
-                      {statusConfig[s].label}
-                    </button>
-                  ))}
+                  {(["present", "leave", "absent", "holiday"] as const).map(
+                    (s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => field.handleChange(s)}
+                        className={cn(
+                          "rounded-md py-1.5 text-[13px] font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                          field.state.value === s
+                            ? `bg-background  border border-border/40 ${statusConfig[s].color}`
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border border-transparent",
+                        )}
+                      >
+                        {statusConfig[s].label}
+                      </button>
+                    ),
+                  )}
                 </div>
-                <FieldError errors={field.state.meta.errors} className="text-[11px]" />
+                <FieldError
+                  errors={field.state.meta.errors}
+                  className="text-[11px]"
+                />
               </Field>
             )}
           </form.Field>
@@ -344,18 +392,27 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
                         </FieldLabel>
                         <Select
                           value={field.state.value || ""}
-                          onValueChange={(v: any) => field.handleChange(v || null)}
+                          onValueChange={(v: any) =>
+                            field.handleChange(v || null)
+                          }
                         >
                           <SelectTrigger className="h-9 text-[13px] bg-background border-border/60 transition-colors focus:ring-2 focus:ring-primary/20">
                             <SelectValue placeholder="Select leave type…" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectOption value="annual">Annual Leave</SelectOption>
+                            <SelectOption value="annual">
+                              Annual Leave
+                            </SelectOption>
                             <SelectOption value="sick">Sick Leave</SelectOption>
-                            <SelectOption value="special">Special Leave</SelectOption>
+                            <SelectOption value="special">
+                              Special Leave
+                            </SelectOption>
                           </SelectContent>
                         </Select>
-                        <FieldError errors={field.state.meta.errors} className="text-[11px]" />
+                        <FieldError
+                          errors={field.state.meta.errors}
+                          className="text-[11px]"
+                        />
                       </Field>
                     )}
                   </form.Field>
@@ -369,7 +426,9 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
                             Pending Admin Approval
                           </p>
                           <p className="text-[12.5px] text-amber-700/80 dark:text-amber-500/80 leading-relaxed">
-                            This leave request will be routed to an administrator. Salary deductions and Bradford Factor updates are finalized upon approval.
+                            This leave request will be routed to an
+                            administrator. Salary deductions and Bradford Factor
+                            updates are finalized upon approval.
                           </p>
                         </div>
                       </div>
@@ -384,222 +443,310 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
         {/* ── Section: Order Booker Data ────────────────────────────── */}
         {employee.isOrderBooker && (
           <form.Subscribe selector={(s: any) => s.values.status}>
-            {(status: string) => status === "present" && (
-              <SectionBlock icon={Zap} label="Sales & Recovery Log">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <form.Field name="areaVisited">
-                    {(field) => (
-                      <Field className="md:col-span-2 space-y-1">
-                        <FieldLabel className="text-[13px] font-medium text-foreground/90">Area Visited</FieldLabel>
-                        <Input
-                          placeholder="e.g. North Nazimabad..."
-                          value={field.state.value || ""}
-                          onChange={(e) => field.handleChange(e.target.value || null)}
-                          className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
-                        />
-                        <FieldError errors={field.state.meta.errors} className="text-[11px]" />
-                      </Field>
-                    )}
-                  </form.Field>
-
-                  <form.Field name="shopType">
-                    {(field) => (
-                      <Field className="space-y-1">
-                        <FieldLabel className="text-[13px] font-medium text-foreground/90">Shop Type</FieldLabel>
-                        <Select
-                          value={field.state.value}
-                          onValueChange={(v: "old" | "new") => field.handleChange(v)}
-                        >
-                          <SelectTrigger className="h-9 text-[13px] bg-background border-border/60 transition-colors focus:ring-2 focus:ring-primary/20">
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectOption value="old">Existing / Old Shop</SelectOption>
-                            <SelectOption value="new">Newly Onboarded Shop</SelectOption>
-                          </SelectContent>
-                        </Select>
-                        <FieldError errors={field.state.meta.errors} className="text-[11px]" />
-                      </Field>
-                    )}
-                  </form.Field>
-
-                  <form.Field name="isCompanyVehicle">
-                    {(field) => (
-                      <div className="md:col-span-2 mt-1">
-                        <label className={cn(
-                          "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all duration-200 select-none",
-                          field.state.value
-                            ? "bg-indigo-50/50 border-indigo-200 dark:bg-indigo-950/20 dark:border-indigo-900/60"
-                            : "bg-background border-border/60 hover:bg-muted/30"
-                        )}>
-                          <Checkbox
-                            checked={field.state.value}
-                            onCheckedChange={(c) => field.handleChange(!!c)}
-                            className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+            {(status: string) =>
+              status === "present" && (
+                <SectionBlock icon={Zap} label="Sales & Recovery Log">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <form.Field name="areaVisited">
+                      {(field) => (
+                        <Field className="md:col-span-2 space-y-1">
+                          <FieldLabel className="text-[13px] font-medium text-foreground/90">
+                            Area Visited
+                          </FieldLabel>
+                          <Input
+                            placeholder="e.g. North Nazimabad..."
+                            value={field.state.value || ""}
+                            onChange={(e) =>
+                              field.handleChange(e.target.value || null)
+                            }
+                            className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
                           />
-                          <div className="space-y-0.5">
-                            <p className={cn("text-[13px] font-medium", field.state.value ? "text-indigo-700 dark:text-indigo-400" : "text-foreground")}>
-                              Company Vehicle Used
-                            </p>
-                            <p className="text-[12px] text-muted-foreground">
-                              Toggle this if the trip was made using a company-provided car or bike.
-                            </p>
-                          </div>
-                        </label>
-                      </div>
-                    )}
-                  </form.Field>
+                          <FieldError
+                            errors={field.state.meta.errors}
+                            className="text-[11px]"
+                          />
+                        </Field>
+                      )}
+                    </form.Field>
 
-                  <form.Subscribe selector={(s: any) => s.values.isCompanyVehicle}>
-                    {(isCompany: boolean) => (
-                      <>
-                        {!isCompany ? (
-                          <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 animate-in fade-in duration-300">
-                            <form.Field name="distanceKm">
+                    <form.Field name="shopType">
+                      {(field) => (
+                        <Field className="space-y-1">
+                          <FieldLabel className="text-[13px] font-medium text-foreground/90">
+                            Shop Type
+                          </FieldLabel>
+                          <Select
+                            value={field.state.value}
+                            onValueChange={(v: "old" | "new") =>
+                              field.handleChange(v)
+                            }
+                          >
+                            <SelectTrigger className="h-9 text-[13px] bg-background border-border/60 transition-colors focus:ring-2 focus:ring-primary/20">
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectOption value="old">
+                                Existing / Old Shop
+                              </SelectOption>
+                              <SelectOption value="new">
+                                Newly Onboarded Shop
+                              </SelectOption>
+                            </SelectContent>
+                          </Select>
+                          <FieldError
+                            errors={field.state.meta.errors}
+                            className="text-[11px]"
+                          />
+                        </Field>
+                      )}
+                    </form.Field>
+
+                    <form.Field name="isCompanyVehicle">
+                      {(field) => (
+                        <div className="md:col-span-2 mt-1">
+                          <label
+                            className={cn(
+                              "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all duration-200 select-none",
+                              field.state.value
+                                ? "bg-indigo-50/50 border-indigo-200 dark:bg-indigo-950/20 dark:border-indigo-900/60"
+                                : "bg-background border-border/60 hover:bg-muted/30",
+                            )}
+                          >
+                            <Checkbox
+                              checked={field.state.value}
+                              onCheckedChange={(c) => field.handleChange(!!c)}
+                              className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                            />
+                            <div className="space-y-0.5">
+                              <p
+                                className={cn(
+                                  "text-[13px] font-medium",
+                                  field.state.value
+                                    ? "text-indigo-700 dark:text-indigo-400"
+                                    : "text-foreground",
+                                )}
+                              >
+                                Company Vehicle Used
+                              </p>
+                              <p className="text-[12px] text-muted-foreground">
+                                Toggle this if the trip was made using a
+                                company-provided car or bike.
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+                      )}
+                    </form.Field>
+
+                    <form.Subscribe
+                      selector={(s: any) => s.values.isCompanyVehicle}
+                    >
+                      {(isCompany: boolean) => (
+                        <>
+                          {!isCompany ? (
+                            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 animate-in fade-in duration-300">
+                              <form.Field name="distanceKm">
+                                {(field) => (
+                                  <Field className="space-y-1">
+                                    <FieldLabel className="text-[13px] font-medium text-foreground/90">
+                                      Distance (KM)
+                                    </FieldLabel>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      step="0.1"
+                                      placeholder="0.0"
+                                      value={field.state.value || ""}
+                                      onChange={(e) =>
+                                        field.handleChange(
+                                          e.target.value || null,
+                                        )
+                                      }
+                                      className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
+                                    />
+                                    <FieldError
+                                      errors={field.state.meta.errors}
+                                      className="text-[11px]"
+                                    />
+                                  </Field>
+                                )}
+                              </form.Field>
+                              <form.Field name="perKmRate">
+                                {(field) => (
+                                  <Field className="space-y-1">
+                                    <FieldLabel className="text-[13px] font-medium text-foreground/90">
+                                      Rate per KM
+                                    </FieldLabel>
+                                    <div className="relative group/rate">
+                                      <Input
+                                        type="number"
+                                        readOnly
+                                        placeholder={
+                                          activeRate
+                                            ? "Rate loaded..."
+                                            : "Set Global Rate First"
+                                        }
+                                        value={field.state.value || ""}
+                                        className={cn(
+                                          "h-9 text-[13px] bg-muted/50 cursor-not-allowed pr-9 transition-colors",
+                                          !activeRate &&
+                                            "border-rose-300 text-rose-600 dark:border-rose-800 dark:text-rose-400 bg-rose-50/30 dark:bg-rose-950/10",
+                                        )}
+                                      />
+                                      {activeRate ? (
+                                        <CheckCircle2 className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-emerald-500" />
+                                      ) : (
+                                        <AlertCircle className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-rose-500" />
+                                      )}
+                                    </div>
+                                    {!activeRate && (
+                                      <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1 font-medium animate-in fade-in">
+                                        Action Required: First set TADA rate in
+                                        header
+                                      </p>
+                                    )}
+                                    <FieldError
+                                      errors={field.state.meta.errors}
+                                      className="text-[11px]"
+                                    />
+                                  </Field>
+                                )}
+                              </form.Field>
+                            </div>
+                          ) : (
+                            <form.Field name="petrolAmount">
                               {(field) => (
-                                <Field className="space-y-1">
-                                  <FieldLabel className="text-[13px] font-medium text-foreground/90">Distance (KM)</FieldLabel>
+                                <Field className="md:col-span-2 space-y-1 animate-in fade-in duration-300">
+                                  <FieldLabel className="text-[13px] font-medium text-indigo-700 dark:text-indigo-400">
+                                    Reimbursable Fuel Cost (PKR)
+                                  </FieldLabel>
                                   <Input
                                     type="number"
                                     min="0"
-                                    step="0.1"
-                                    placeholder="0.0"
+                                    placeholder="PKR 0"
                                     value={field.state.value || ""}
-                                    onChange={(e) => field.handleChange(e.target.value || null)}
-                                    className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
+                                    onChange={(e) =>
+                                      field.handleChange(e.target.value || null)
+                                    }
+                                    className="h-9 text-[13px] border-indigo-200 focus-visible:ring-indigo-500 bg-indigo-50/30 dark:border-indigo-800/60 dark:bg-indigo-950/20 transition-colors"
                                   />
-                                  <FieldError errors={field.state.meta.errors} className="text-[11px]" />
+                                  <p className="text-[12px] text-muted-foreground mt-1.5 leading-relaxed">
+                                    Since a Company Vehicle was used, per-KM
+                                    transport allowance is disabled. Enter the
+                                    actual fuel expenditure to be reimbursed.
+                                  </p>
+                                  <FieldError
+                                    errors={field.state.meta.errors}
+                                    className="text-[11px]"
+                                  />
                                 </Field>
                               )}
                             </form.Field>
-                            <form.Field name="perKmRate">
-                              {(field) => (
-                                <Field className="space-y-1">
-                                  <FieldLabel className="text-[13px] font-medium text-foreground/90">Rate per KM</FieldLabel>
-                                  <div className="relative group/rate">
-                                    <Input
-                                      type="number"
-                                      readOnly
-                                      placeholder={activeRate ? "Rate loaded..." : "Set Global Rate First"}
-                                      value={field.state.value || ""}
-                                      className={cn(
-                                        "h-9 text-[13px] bg-muted/50 cursor-not-allowed pr-9 transition-colors",
-                                        !activeRate && "border-rose-300 text-rose-600 dark:border-rose-800 dark:text-rose-400 bg-rose-50/30 dark:bg-rose-950/10"
-                                      )}
-                                    />
-                                    {activeRate ? (
-                                      <CheckCircle2 className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-emerald-500" />
-                                    ) : (
-                                      <AlertCircle className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-rose-500" />
-                                    )}
-                                  </div>
-                                  {!activeRate && (
-                                    <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1 font-medium animate-in fade-in">
-                                      Action Required: First set TADA rate in header
-                                    </p>
-                                  )}
-                                  <FieldError errors={field.state.meta.errors} className="text-[11px]" />
-                                </Field>
-                              )}
-                            </form.Field>
-                          </div>
-                        ) : (
-                          <form.Field name="petrolAmount">
-                            {(field) => (
-                              <Field className="md:col-span-2 space-y-1 animate-in fade-in duration-300">
-                                <FieldLabel className="text-[13px] font-medium text-indigo-700 dark:text-indigo-400">
-                                  Reimbursable Fuel Cost (PKR)
-                                </FieldLabel>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  placeholder="PKR 0"
-                                  value={field.state.value || ""}
-                                  onChange={(e) => field.handleChange(e.target.value || null)}
-                                  className="h-9 text-[13px] border-indigo-200 focus-visible:ring-indigo-500 bg-indigo-50/30 dark:border-indigo-800/60 dark:bg-indigo-950/20 transition-colors"
-                                />
-                                <p className="text-[12px] text-muted-foreground mt-1.5 leading-relaxed">
-                                  Since a Company Vehicle was used, per-KM transport allowance is disabled. Enter the actual fuel expenditure to be reimbursed.
-                                </p>
-                                <FieldError errors={field.state.meta.errors} className="text-[11px]" />
-                              </Field>
-                            )}
-                          </form.Field>
-                        )}
-                      </>
-                    )}
-                  </form.Subscribe>
+                          )}
+                        </>
+                      )}
+                    </form.Subscribe>
 
-                  <form.Field name="saleAmount">
-                    {(field) => (
-                      <Field className="space-y-1">
-                        <FieldLabel className="text-[13px] font-medium text-foreground/90">Total Sale</FieldLabel>
-                        <Input
-                          type="number"
-                          min="0"
-                          placeholder="PKR 0"
-                          value={field.state.value || ""}
-                          onChange={(e) => field.handleChange(e.target.value || null)}
-                          className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500/20"
-                        />
-                        <FieldError errors={field.state.meta.errors} className="text-[11px]" />
-                      </Field>
-                    )}
-                  </form.Field>
+                    <form.Field name="saleAmount">
+                      {(field) => (
+                        <Field className="space-y-1">
+                          <FieldLabel className="text-[13px] font-medium text-foreground/90">
+                            Total Sale
+                          </FieldLabel>
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="PKR 0"
+                            value={field.state.value || ""}
+                            onChange={(e) =>
+                              field.handleChange(e.target.value || null)
+                            }
+                            className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500/20"
+                          />
+                          <FieldError
+                            errors={field.state.meta.errors}
+                            className="text-[11px]"
+                          />
+                        </Field>
+                      )}
+                    </form.Field>
 
-                  <form.Field name="recoveryAmount">
-                    {(field) => (
-                      <Field className="space-y-1">
-                        <FieldLabel className="text-[13px] font-medium text-foreground/90">
-                          Recovery <span className="text-muted-foreground font-normal ml-1">(Commission)</span>
-                        </FieldLabel>
-                        <Input
-                          type="number"
-                          min="0"
-                          placeholder="PKR 0"
-                          value={field.state.value || ""}
-                          onChange={(e) => field.handleChange(e.target.value || null)}
-                          className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500/20"
-                        />
-                        <FieldError errors={field.state.meta.errors} className="text-[11px]" />
-                      </Field>
-                    )}
-                  </form.Field>
+                    <form.Field name="recoveryAmount">
+                      {(field) => (
+                        <Field className="space-y-1">
+                          <FieldLabel className="text-[13px] font-medium text-foreground/90">
+                            Recovery{" "}
+                            <span className="text-muted-foreground font-normal ml-1">
+                              (Commission)
+                            </span>
+                          </FieldLabel>
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="PKR 0"
+                            value={field.state.value || ""}
+                            onChange={(e) =>
+                              field.handleChange(e.target.value || null)
+                            }
+                            className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500/20"
+                          />
+                          <FieldError
+                            errors={field.state.meta.errors}
+                            className="text-[11px]"
+                          />
+                        </Field>
+                      )}
+                    </form.Field>
 
-                  <form.Field name="returnAmount">
-                    {(field) => (
-                      <Field className="space-y-1">
-                        <FieldLabel className="text-[13px] font-medium text-foreground/90">Return / Spoilage</FieldLabel>
-                        <Input
-                          type="number"
-                          min="0"
-                          placeholder="PKR 0"
-                          value={field.state.value || ""}
-                          onChange={(e) => field.handleChange(e.target.value || null)}
-                          className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-rose-500/20"
-                        />
-                        <FieldError errors={field.state.meta.errors} className="text-[11px]" />
-                      </Field>
-                    )}
-                  </form.Field>
+                    <form.Field name="returnAmount">
+                      {(field) => (
+                        <Field className="space-y-1">
+                          <FieldLabel className="text-[13px] font-medium text-foreground/90">
+                            Return / Spoilage
+                          </FieldLabel>
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="PKR 0"
+                            value={field.state.value || ""}
+                            onChange={(e) =>
+                              field.handleChange(e.target.value || null)
+                            }
+                            className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-rose-500/20"
+                          />
+                          <FieldError
+                            errors={field.state.meta.errors}
+                            className="text-[11px]"
+                          />
+                        </Field>
+                      )}
+                    </form.Field>
 
-                  <form.Field name="slipNumbers">
-                    {(field) => (
-                      <Field className="space-y-1">
-                        <FieldLabel className="text-[13px] font-medium text-foreground/90">Slip / Invoice #</FieldLabel>
-                        <Input
-                          placeholder="#1001, #1002"
-                          value={field.state.value || ""}
-                          onChange={(e) => field.handleChange(e.target.value || null)}
-                          className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
-                        />
-                        <FieldError errors={field.state.meta.errors} className="text-[11px]" />
-                      </Field>
-                    )}
-                  </form.Field>
-                </div>
-              </SectionBlock>
-            )}
+                    <form.Field name="slipNumbers">
+                      {(field) => (
+                        <Field className="space-y-1">
+                          <FieldLabel className="text-[13px] font-medium text-foreground/90">
+                            Slip / Invoice #
+                          </FieldLabel>
+                          <Input
+                            placeholder="#1001, #1002"
+                            value={field.state.value || ""}
+                            onChange={(e) =>
+                              field.handleChange(e.target.value || null)
+                            }
+                            className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
+                          />
+                          <FieldError
+                            errors={field.state.meta.errors}
+                            className="text-[11px]"
+                          />
+                        </Field>
+                      )}
+                    </form.Field>
+                  </div>
+                </SectionBlock>
+              )
+            }
           </form.Subscribe>
         )}
 
@@ -615,7 +762,12 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
                     <div className="flex items-center gap-3 p-3.5 rounded-lg border border-border/50 bg-muted/30 animate-in fade-in duration-300">
                       <Info className="size-4 text-muted-foreground shrink-0" />
                       <p className="text-[13px] text-muted-foreground">
-                        Time tracking is disabled for the <strong className="text-foreground">{statusConfig[status as keyof typeof statusConfig]?.label || status}</strong> status.
+                        Time tracking is disabled for the{" "}
+                        <strong className="text-foreground">
+                          {statusConfig[status as keyof typeof statusConfig]
+                            ?.label || status}
+                        </strong>{" "}
+                        status.
                       </p>
                     </div>
                   ) : (
@@ -623,7 +775,9 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
                       <form.Field name="entrySource">
                         {(field) => (
                           <Field className="space-y-2">
-                            <FieldLabel className="text-[13px] font-medium text-foreground/90">Entry Source</FieldLabel>
+                            <FieldLabel className="text-[13px] font-medium text-foreground/90">
+                              Entry Source
+                            </FieldLabel>
                             <div className="flex p-1 rounded-lg bg-muted/40 border border-border/50">
                               {[
                                 { value: "biometric", label: "Biometric" },
@@ -632,12 +786,14 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
                                 <button
                                   key={value}
                                   type="button"
-                                  onClick={() => field.handleChange(value as any)}
+                                  onClick={() =>
+                                    field.handleChange(value as any)
+                                  }
                                   className={cn(
                                     "flex-1 rounded-md py-1.5 text-[13px] font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                                     field.state.value === value
                                       ? "bg-background text-foreground  border border-border/40"
-                                      : "text-muted-foreground hover:text-foreground border border-transparent"
+                                      : "text-muted-foreground hover:text-foreground border border-transparent",
                                   )}
                                 >
                                   {label}
@@ -651,21 +807,33 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
                       <Separator className="opacity-50" />
 
                       <div>
-                        <p className="text-[13px] font-medium text-foreground/90 mb-2">Primary Shift</p>
+                        <p className="text-[13px] font-medium text-foreground/90 mb-2">
+                          Primary Shift
+                        </p>
                         <div className="grid grid-cols-2 gap-3">
                           <form.Field name="checkIn">
                             {(field) => (
                               <Field className="space-y-1">
-                                <FieldLabel className="text-[12px] text-muted-foreground">Start Time</FieldLabel>
-                                <TimeInput value={field.state.value} onChange={field.handleChange} />
+                                <FieldLabel className="text-[12px] text-muted-foreground">
+                                  Start Time
+                                </FieldLabel>
+                                <TimeInput
+                                  value={field.state.value}
+                                  onChange={field.handleChange}
+                                />
                               </Field>
                             )}
                           </form.Field>
                           <form.Field name="checkOut">
                             {(field) => (
                               <Field className="space-y-1">
-                                <FieldLabel className="text-[12px] text-muted-foreground">End Time</FieldLabel>
-                                <TimeInput value={field.state.value} onChange={field.handleChange} />
+                                <FieldLabel className="text-[12px] text-muted-foreground">
+                                  End Time
+                                </FieldLabel>
+                                <TimeInput
+                                  value={field.state.value}
+                                  onChange={field.handleChange}
+                                />
                               </Field>
                             )}
                           </form.Field>
@@ -674,22 +842,35 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
 
                       <div>
                         <p className="text-[13px] font-medium text-foreground/90 mb-2">
-                          Secondary Shift <span className="font-normal text-muted-foreground ml-1">(Optional Split)</span>
+                          Secondary Shift{" "}
+                          <span className="font-normal text-muted-foreground ml-1">
+                            (Optional Split)
+                          </span>
                         </p>
                         <div className="grid grid-cols-2 gap-3">
                           <form.Field name="checkIn2">
                             {(field) => (
                               <Field className="space-y-1">
-                                <FieldLabel className="text-[12px] text-muted-foreground">Start Time</FieldLabel>
-                                <TimeInput value={field.state.value} onChange={field.handleChange} />
+                                <FieldLabel className="text-[12px] text-muted-foreground">
+                                  Start Time
+                                </FieldLabel>
+                                <TimeInput
+                                  value={field.state.value}
+                                  onChange={field.handleChange}
+                                />
                               </Field>
                             )}
                           </form.Field>
                           <form.Field name="checkOut2">
                             {(field) => (
                               <Field className="space-y-1">
-                                <FieldLabel className="text-[12px] text-muted-foreground">End Time</FieldLabel>
-                                <TimeInput value={field.state.value} onChange={field.handleChange} />
+                                <FieldLabel className="text-[12px] text-muted-foreground">
+                                  End Time
+                                </FieldLabel>
+                                <TimeInput
+                                  value={field.state.value}
+                                  onChange={field.handleChange}
+                                />
                               </Field>
                             )}
                           </form.Field>
@@ -702,13 +883,17 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
                         <form.Field name="dutyHours">
                           {(field) => (
                             <Field className="space-y-1">
-                              <FieldLabel className="text-[13px] font-medium text-foreground/90">Duty Hours</FieldLabel>
+                              <FieldLabel className="text-[13px] font-medium text-foreground/90">
+                                Duty Hours
+                              </FieldLabel>
                               <Input
                                 type="number"
                                 step="0.01"
                                 placeholder={`e.g. ${std}.00`}
                                 value={field.state.value || ""}
-                                onChange={(e) => field.handleChange(e.target.value || null)}
+                                onChange={(e) =>
+                                  field.handleChange(e.target.value || null)
+                                }
                                 className="h-9 text-[13px] transition-colors bg-background border-border/60 focus-visible:ring-2 focus-visible:ring-emerald-500/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               />
                             </Field>
@@ -718,13 +903,17 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
                         <form.Field name="overtimeHours">
                           {(field) => (
                             <Field className="space-y-1">
-                              <FieldLabel className="text-[13px] font-medium text-foreground/90">Overtime</FieldLabel>
+                              <FieldLabel className="text-[13px] font-medium text-foreground/90">
+                                Overtime
+                              </FieldLabel>
                               <Input
                                 type="number"
                                 step="0.5"
                                 placeholder="0.00"
                                 value={field.state.value || ""}
-                                onChange={(e) => field.handleChange(e.target.value || null)}
+                                onChange={(e) =>
+                                  field.handleChange(e.target.value || null)
+                                }
                                 className="h-9 text-[13px] transition-colors bg-background border-border/60 focus-visible:ring-2 focus-visible:ring-amber-500/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               />
                             </Field>
@@ -732,7 +921,11 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
                         </form.Field>
                       </div>
 
-                      <form.Subscribe selector={(s: any) => parseFloat(s.values.overtimeHours || "0") > 0}>
+                      <form.Subscribe
+                        selector={(s: any) =>
+                          parseFloat(s.values.overtimeHours || "0") > 0
+                        }
+                      >
                         {(hasOT: boolean) =>
                           hasOT && (
                             <div className="space-y-4 p-4 rounded-lg border border-amber-200/60 bg-amber-50/40 dark:border-amber-900/40 dark:bg-amber-950/20 animate-in fade-in duration-300">
@@ -747,15 +940,25 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
                                 {(field) => (
                                   <Field className="space-y-1.5">
                                     <FieldLabel className="text-[12.5px] font-medium text-amber-900/90 dark:text-amber-300/90">
-                                      Reason <span className="text-destructive">*</span>
+                                      Reason{" "}
+                                      <span className="text-destructive">
+                                        *
+                                      </span>
                                     </FieldLabel>
                                     <Textarea
                                       placeholder="Describe why overtime was necessary..."
                                       className="min-h-[70px] text-[13px] resize-none transition-colors focus-visible:ring-amber-500/30 border-amber-200/60 dark:border-amber-800/60 bg-background"
                                       value={field.state.value || ""}
-                                      onChange={(e) => field.handleChange(e.target.value || null)}
+                                      onChange={(e) =>
+                                        field.handleChange(
+                                          e.target.value || null,
+                                        )
+                                      }
                                     />
-                                    <FieldError errors={field.state.meta.errors} className="text-[11px]" />
+                                    <FieldError
+                                      errors={field.state.meta.errors}
+                                      className="text-[11px]"
+                                    />
                                   </Field>
                                 )}
                               </form.Field>
@@ -763,13 +966,18 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
                               <form.Field name="overtimeStatus">
                                 {(field) => (
                                   <div className="flex items-center justify-between border-t border-amber-200/50 dark:border-amber-800/50 pt-3">
-                                    <div className="text-[12.5px] font-medium text-amber-800/70 dark:text-amber-500/80">Approval Status</div>
-                                    <OTStatusBadge status={field.state.value as any} />
+                                    <div className="text-[12.5px] font-medium text-amber-800/70 dark:text-amber-500/80">
+                                      Approval Status
+                                    </div>
+                                    <OTStatusBadge
+                                      status={field.state.value as any}
+                                    />
                                   </div>
                                 )}
                               </form.Field>
                               <p className="text-[12px] text-amber-700/70 dark:text-amber-500/70 leading-relaxed">
-                                Overtime pay is calculated only for Approved records. Status is managed by administrators.
+                                Overtime pay is calculated only for Approved
+                                records. Status is managed by administrators.
                               </p>
                             </div>
                           )
@@ -827,7 +1035,6 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
             )}
           </form.Field>
         </SectionBlock>
-
       </FieldGroup>
 
       {/* ── Submit ──────────────────────────────────────────────────────── */}
@@ -857,11 +1064,21 @@ export const EditAttendanceForm = ({ employee, attendance, date, onSuccess }: Pr
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
-const SectionBlock = ({ icon: Icon, label, children }: { icon: any; label: string; children: React.ReactNode }) => (
+const SectionBlock = ({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: any;
+  label: string;
+  children: React.ReactNode;
+}) => (
   <div className="py-5 first:pt-2 space-y-4">
     <div className="flex items-center gap-2">
       <Icon className="size-4 text-muted-foreground shrink-0" />
-      <h3 className="text-[13px] font-semibold text-foreground tracking-wide uppercase">{label}</h3>
+      <h3 className="text-[13px] font-semibold text-foreground tracking-wide uppercase">
+        {label}
+      </h3>
     </div>
     <div>{children}</div>
   </div>
@@ -872,7 +1089,7 @@ const FlagToggle = ({
   checked,
   onCheckedChange,
   label,
-  colorClass
+  colorClass,
 }: {
   id: string;
   checked: boolean;
@@ -884,7 +1101,7 @@ const FlagToggle = ({
     htmlFor={id}
     className={cn(
       "flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-all duration-200 select-none",
-      checked ? colorClass : "border-border/60 bg-background hover:bg-muted/30"
+      checked ? colorClass : "border-border/60 bg-background hover:bg-muted/30",
     )}
   >
     <Checkbox
@@ -893,19 +1110,45 @@ const FlagToggle = ({
       onCheckedChange={(c) => onCheckedChange(!!c)}
       className="data-[state=checked]:bg-current data-[state=checked]:border-current"
     />
-    <span className={cn("text-[13px] font-medium", !checked && "text-foreground/80")}>{label}</span>
+    <span
+      className={cn(
+        "text-[13px] font-medium",
+        !checked && "text-foreground/80",
+      )}
+    >
+      {label}
+    </span>
   </label>
 );
 
-const OTStatusBadge = ({ status }: { status: "pending" | "approved" | "rejected" | null }) => {
+const OTStatusBadge = ({
+  status,
+}: {
+  status: "pending" | "approved" | "rejected" | null;
+}) => {
   const config = {
-    pending: { label: "Pending", className: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800/60" },
-    approved: { label: "Approved", className: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800/60" },
-    rejected: { label: "Rejected", className: "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/40 dark:text-rose-400 dark:border-rose-800/60" },
+    pending: {
+      label: "Pending",
+      className:
+        "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800/60",
+    },
+    approved: {
+      label: "Approved",
+      className:
+        "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800/60",
+    },
+    rejected: {
+      label: "Rejected",
+      className:
+        "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/40 dark:text-rose-400 dark:border-rose-800/60",
+    },
   };
   const c = config[status || "pending"];
   return (
-    <Badge className={cn("text-[11px] font-semibold px-2 py-0.5", c.className)} variant="outline">
+    <Badge
+      className={cn("text-[11px] font-semibold px-2 py-0.5", c.className)}
+      variant="outline"
+    >
       {c.label}
     </Badge>
   );

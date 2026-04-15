@@ -133,11 +133,7 @@ export const RestDayBadge = () => (
 );
 // ── Employee Cell (shared) ─────────────────────────────────────────────────
 
-const EmployeeCell = ({
-  row,
-}: {
-  row: EmployeeWithAttendance;
-}) => (
+const EmployeeCell = ({ row }: { row: EmployeeWithAttendance }) => (
   <div className="flex items-center gap-3 min-w-[200px]">
     <div className="size-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
       <span className="text-xs font-semibold text-primary">
@@ -196,7 +192,9 @@ export const AttendanceListTable = ({ data, date }: Props) => {
       header: "Check-In",
       cell: ({ row }) => {
         if (isRestDay(date, row.original.restDays))
-          return <span className="text-muted-foreground/40 text-[13px]">—</span>;
+          return (
+            <span className="text-muted-foreground/40 text-[13px]">—</span>
+          );
         return (
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <Clock className="size-3.5 opacity-70" />
@@ -211,7 +209,9 @@ export const AttendanceListTable = ({ data, date }: Props) => {
       header: "Check-Out",
       cell: ({ row }) => {
         if (isRestDay(date, row.original.restDays))
-          return <span className="text-muted-foreground/40 text-[13px]">—</span>;
+          return (
+            <span className="text-muted-foreground/40 text-[13px]">—</span>
+          );
         return (
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <Clock className="size-3.5 opacity-70" />
@@ -226,7 +226,9 @@ export const AttendanceListTable = ({ data, date }: Props) => {
       header: "Duty Hrs",
       cell: ({ row }) => {
         if (isRestDay(date, row.original.restDays))
-          return <span className="text-muted-foreground/40 text-[13px]">—</span>;
+          return (
+            <span className="text-muted-foreground/40 text-[13px]">—</span>
+          );
         return (
           <span className="text-[13px] font-medium">
             {row.original.attendance[0]?.dutyHours
@@ -255,7 +257,9 @@ export const AttendanceListTable = ({ data, date }: Props) => {
       header: "",
       cell: ({ row }) => {
         const rest = isRestDay(date, row.original.restDays);
-        const inactive = row.original.status === "terminated" || row.original.status === "resigned";
+        const inactive =
+          row.original.status === "terminated" ||
+          row.original.status === "resigned";
         const disabled = rest || inactive;
 
         let title = "Edit Attendance";
@@ -323,7 +327,9 @@ export const AttendanceListTable = ({ data, date }: Props) => {
       header: "Area",
       cell: ({ row }) => {
         if (isRestDay(date, row.original.restDays))
-          return <span className="text-muted-foreground/40 text-[13px]">—</span>;
+          return (
+            <span className="text-muted-foreground/40 text-[13px]">—</span>
+          );
         return (
           <div className="flex items-center gap-1.5 text-muted-foreground">
             {row.original.attendance[0]?.areaVisited && (
@@ -360,9 +366,7 @@ export const AttendanceListTable = ({ data, date }: Props) => {
           return <div className="text-right text-muted-foreground/40">—</div>;
         const record = row.original.attendance[0];
         if (!record || record.paymentMode !== "per_km")
-          return (
-            <div className="text-right text-muted-foreground">-</div>
-          );
+          return <div className="text-right text-muted-foreground">-</div>;
         const ta =
           parseFloat(record.distanceKm || "0") *
           parseFloat(record.perKmRate || "0");
@@ -380,7 +384,7 @@ export const AttendanceListTable = ({ data, date }: Props) => {
             return (
               sum +
               parseFloat(rec.distanceKm || "0") *
-              parseFloat(rec.perKmRate || "0")
+                parseFloat(rec.perKmRate || "0")
             );
           }
           return sum;
@@ -399,9 +403,7 @@ export const AttendanceListTable = ({ data, date }: Props) => {
       cell: ({ row }) => {
         if (isRestDay(date, row.original.restDays))
           return <div className="text-right text-muted-foreground/40">—</div>;
-        const val = parseFloat(
-          row.original.attendance[0]?.saleAmount || "0",
-        );
+        const val = parseFloat(row.original.attendance[0]?.saleAmount || "0");
         return (
           <div className="text-right text-[13px] font-medium">
             {val > 0 ? val.toLocaleString() : "-"}
@@ -411,7 +413,9 @@ export const AttendanceListTable = ({ data, date }: Props) => {
       footer: ({ table }) => {
         const total = table.getFilteredRowModel().rows.reduce((sum, row) => {
           if (isRestDay(date, row.original.restDays)) return sum;
-          return sum + parseFloat(row.original.attendance[0]?.saleAmount || "0");
+          return (
+            sum + parseFloat(row.original.attendance[0]?.saleAmount || "0")
+          );
         }, 0);
         return (
           <div className="text-right text-[13px] font-semibold">
@@ -456,9 +460,7 @@ export const AttendanceListTable = ({ data, date }: Props) => {
       cell: ({ row }) => {
         if (isRestDay(date, row.original.restDays))
           return <div className="text-right text-muted-foreground/40">—</div>;
-        const val = parseFloat(
-          row.original.attendance[0]?.returnAmount || "0",
-        );
+        const val = parseFloat(row.original.attendance[0]?.returnAmount || "0");
         return (
           <div className="text-right text-[13px] font-medium text-rose-600 dark:text-rose-500">
             {val > 0 ? val.toLocaleString() : "-"}
@@ -471,7 +473,9 @@ export const AttendanceListTable = ({ data, date }: Props) => {
       header: "",
       cell: ({ row }) => {
         const rest = isRestDay(date, row.original.restDays);
-        const inactive = row.original.status === "terminated" || row.original.status === "resigned";
+        const inactive =
+          row.original.status === "terminated" ||
+          row.original.status === "resigned";
         const disabled = rest || inactive;
 
         let title = "Edit Log";

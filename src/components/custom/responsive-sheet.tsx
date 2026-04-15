@@ -35,7 +35,7 @@ export const ResponsiveSheet = ({
   open,
   onOpenChange,
   className,
-  icon
+  icon,
 }: ResponsiveSheetProps) => {
   const isMobile = useIsMobile();
   const Icon = icon;

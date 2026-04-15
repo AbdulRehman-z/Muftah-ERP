@@ -1,8 +1,24 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getEmployeeAttendanceLogFn } from "@/server-functions/hr/attendance/get-employee-attendance-log-fn";
-import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
+import {
+  format,
+  parseISO,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+} from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { User, Briefcase, Hash, TrendingUp, HandCoins, Receipt, MapPin, Zap, MoonStar } from "lucide-react";
+import {
+  User,
+  Briefcase,
+  Hash,
+  TrendingUp,
+  HandCoins,
+  Receipt,
+  MapPin,
+  Zap,
+  MoonStar,
+} from "lucide-react";
 import { useParams } from "@tanstack/react-router";
 import { DataTable } from "@/components/custom/data-table";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -135,7 +151,12 @@ export const OrderBookerAttendanceLog = ({
       header: "Date",
       cell: ({ row }) => (
         <div className="flex flex-col">
-          <span className={cn("font-semibold text-xs", row.original.isRestDay && "text-muted-foreground/60")}>
+          <span
+            className={cn(
+              "font-semibold text-xs",
+              row.original.isRestDay && "text-muted-foreground/60",
+            )}
+          >
             {format(row.original.day, "dd MMM yyyy")}
           </span>
           <span className="text-[10px] text-muted-foreground">
@@ -235,8 +256,7 @@ export const OrderBookerAttendanceLog = ({
         if (row.original.isRestDay)
           return <span className="text-muted-foreground/40 text-xs">—</span>;
         const r = row.original.record;
-        if (!r)
-          return <span className="text-muted-foreground text-xs">—</span>;
+        if (!r) return <span className="text-muted-foreground text-xs">—</span>;
 
         if (r.isCompanyVehicle) {
           const petrol = parseFloat(r.petrolAmount || "0");
@@ -340,7 +360,9 @@ export const OrderBookerAttendanceLog = ({
                       {restDays
                         .map(
                           (d) =>
-                            ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d],
+                            ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][
+                              d
+                            ],
                         )
                         .join(", ")}
                     </Badge>
@@ -401,7 +423,6 @@ export const OrderBookerAttendanceLog = ({
         showSearch={false}
         showViewOptions={false}
         pageSize={7}
-
       />
     </div>
   );

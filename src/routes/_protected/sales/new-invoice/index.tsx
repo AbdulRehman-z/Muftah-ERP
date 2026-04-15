@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Suspense, useState, useCallback } from "react";
 import { GenericLoader } from "@/components/custom/generic-loader";
 import { invoicesKeys, useGetInvoices, useDeleteInvoice } from "@/hooks/sales/use-invoices";
-import { getInvoicesFn, getInvoiceStatsFn, getInvoiceDetailFn } from "@/server-functions/sales/invoices-fn";
+import { getInvoicesFn, getInvoiceStatsFn } from "@/server-functions/sales/invoices-fn";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -87,7 +87,7 @@ function InvoicesContent() {
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [detailInvoiceId, setDetailInvoiceId] = useState<string | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
-  const [printInvoice, setPrintInvoice] = useState<any>(null);
+  const [printInvoiceId, setPrintInvoiceId] = useState<string | null>(null);
   const [printOpen, setPrintOpen] = useState(false);
 
   // Delete confirmation state
@@ -134,8 +134,8 @@ function InvoicesContent() {
     setDetailSheetOpen(true);
   }, []);
 
-  const handlePrint = useCallback((inv: any) => {
-    setPrintInvoice(inv);
+  const handlePrint = useCallback((id: string) => {
+    setPrintInvoiceId(id);
     setPrintOpen(true);
   }, []);
 
@@ -157,22 +157,11 @@ function InvoicesContent() {
     }
   }, [deleteConfirmId, deleteInvoice, queryClient, page, limit]);
 
-  const handleDetailPrint = useCallback(async (invId: string) => {
-    // Fetch the full invoice data (not just current page data)
-    try {
-      const result = await getInvoiceDetailFn({ data: { id: invId } });
-      setPrintInvoice(result);
-      setPrintOpen(true);
-    } catch {
-      // Fallback: try to find in current page
-      const fallback = invoices.find((i: any) => i.id === invId);
-      if (fallback) {
-        setPrintInvoice(fallback);
-        setPrintOpen(true);
-      }
-    }
+  const handleDetailPrint = useCallback((invId: string) => {
+    setPrintInvoiceId(invId);
+    setPrintOpen(true);
     setDetailSheetOpen(false);
-  }, [invoices]);
+  }, []);
 
   return (
     <div className="space-y-5">
@@ -279,7 +268,7 @@ function InvoicesContent() {
       <InvoicePrintDialog
         open={printOpen}
         onOpenChange={setPrintOpen}
-        invoice={printInvoice}
+        invoiceId={printInvoiceId}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -330,7 +319,7 @@ const InvoiceRow = ({
 }: {
   invoice: any;
   onView: (id: string) => void;
-  onPrint: (inv: any) => void;
+  onPrint: (id: string) => void;
   onDelete: (id: string) => void;
 }) => {
   const credit = Number(invoice.credit);
@@ -410,7 +399,7 @@ const InvoiceRow = ({
       <TableCell>
         <InvoiceActionsMenu
           onView={() => onView(invoice.id)}
-          onPrint={() => onPrint(invoice)}
+          onPrint={() => onPrint(invoice.id)}
           onDelete={() => onDelete(invoice.id)}
         />
       </TableCell>

@@ -107,8 +107,7 @@ export const EmployeeAttendanceLog = ({
   const stats = {
     totalDuty: workingRecords
       .reduce(
-        (acc: number, r: any) =>
-          acc + (parseFloat(r.dutyHours || "0") || 0),
+        (acc: number, r: any) => acc + (parseFloat(r.dutyHours || "0") || 0),
         0,
       )
       .toFixed(1),
@@ -210,31 +209,31 @@ export const EmployeeAttendanceLog = ({
     },
     ...(hasShift2
       ? [
-        {
-          id: "shift2",
-          header: "Shift 2",
-          cell: ({ row }: { row: any }) => {
-            if (row.original.isRestDay)
-              return (
-                <span className="text-muted-foreground/40 text-xs">—</span>
+          {
+            id: "shift2",
+            header: "Shift 2",
+            cell: ({ row }: { row: any }) => {
+              if (row.original.isRestDay)
+                return (
+                  <span className="text-muted-foreground/40 text-xs">—</span>
+                );
+              const record = row.original.record;
+              return record?.checkIn2 ? (
+                <span className="flex items-center gap-1 text-xs">
+                  <span className="text-emerald-600 font-semibold">
+                    {record.checkIn2}
+                  </span>
+                  <span className="text-muted-foreground">–</span>
+                  <span className="text-rose-600 font-semibold">
+                    {record.checkOut2}
+                  </span>
+                </span>
+              ) : (
+                <span className="text-muted-foreground text-xs">—</span>
               );
-            const record = row.original.record;
-            return record?.checkIn2 ? (
-              <span className="flex items-center gap-1 text-xs">
-                <span className="text-emerald-600 font-semibold">
-                  {record.checkIn2}
-                </span>
-                <span className="text-muted-foreground">–</span>
-                <span className="text-rose-600 font-semibold">
-                  {record.checkOut2}
-                </span>
-              </span>
-            ) : (
-              <span className="text-muted-foreground text-xs">—</span>
-            );
-          },
-        } as ColumnDef<DayRow>,
-      ]
+            },
+          } as ColumnDef<DayRow>,
+        ]
       : []),
     {
       id: "duty",
@@ -423,7 +422,9 @@ export const EmployeeAttendanceLog = ({
                       {restDays
                         .map(
                           (d) =>
-                            ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d],
+                            ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][
+                              d
+                            ],
                         )
                         .join(", ")}
                     </Badge>
@@ -437,9 +438,7 @@ export const EmployeeAttendanceLog = ({
         <div
           className={cn(
             "grid grid-cols-2 lg:grid-cols-4 gap-4",
-            showHeader
-              ? "md:col-span-6 lg:col-span-7"
-              : "md:col-span-12",
+            showHeader ? "md:col-span-6 lg:col-span-7" : "md:col-span-12",
           )}
         >
           <StatCard
@@ -480,7 +479,6 @@ export const EmployeeAttendanceLog = ({
         showSearch={false}
         showViewOptions={false}
         pageSize={7}
-
       />
     </div>
   );

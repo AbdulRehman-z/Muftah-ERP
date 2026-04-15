@@ -55,7 +55,6 @@ export function NavUser() {
 
   return (
     <SidebarMenu className="gap-2">
-
       {/* ── User card ────────────────────────────────────────────────────── */}
       <SidebarMenuItem>
         <div
@@ -69,7 +68,8 @@ export function NavUser() {
             transition-all duration-200
           "
           style={{
-            background: "linear-gradient(135deg, rgba(79,70,229,0.25) 0%, rgba(55,48,163,0.15) 100%)",
+            background:
+              "linear-gradient(135deg, rgba(79,70,229,0.25) 0%, rgba(55,48,163,0.15) 100%)",
             border: "1px solid rgba(99,102,241,0.3)",
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
           }}
@@ -77,18 +77,26 @@ export function NavUser() {
           {/* Subtle shimmer in top-right */}
           <div
             className="absolute -top-6 -right-6 w-20 h-20 rounded-full pointer-events-none group-data-[collapsible=icon]:hidden"
-            style={{ background: "radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%)" }}
+            style={{
+              background:
+                "radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%)",
+            }}
           />
 
           {/* Avatar */}
           <Avatar
             className="size-9 rounded-xl shrink-0"
-            style={{ boxShadow: "0 0 0 2px rgba(99,102,241,0.5), 0 0 0 4px rgba(99,102,241,0.15)" }}
+            style={{
+              boxShadow:
+                "0 0 0 2px rgba(99,102,241,0.5), 0 0 0 4px rgba(99,102,241,0.15)",
+            }}
           >
             <AvatarImage src={user.image || ""} alt={user.name} />
             <AvatarFallback
               className="rounded-xl text-[13px] font-bold text-white"
-              style={{ background: "linear-gradient(135deg, #4f46e5, #6366f1)" }}
+              style={{
+                background: "linear-gradient(135deg, #4f46e5, #6366f1)",
+              }}
             >
               {initials}
             </AvatarFallback>
@@ -151,7 +159,10 @@ export function NavUser() {
           }}
         >
           {isLoggingOut ? (
-            <Loader2 className="size-4 shrink-0 animate-spin" style={{ color: "#f87171" }} />
+            <Loader2
+              className="size-4 shrink-0 animate-spin"
+              style={{ color: "#f87171" }}
+            />
           ) : (
             <LogOut className="size-4 shrink-0 transition-colors duration-150" />
           )}
@@ -160,7 +171,6 @@ export function NavUser() {
           </span>
         </button>
       </SidebarMenuItem>
-
     </SidebarMenu>
   );
 }

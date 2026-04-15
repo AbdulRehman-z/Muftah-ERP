@@ -61,7 +61,7 @@ const authRoutesConfig: Record<string, AuthRouteConfig> = {
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
 
-export function RouteComponent() {
+function RouteComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const config = authRoutesConfig[pathname];
