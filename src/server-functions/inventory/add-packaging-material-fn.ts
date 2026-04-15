@@ -6,15 +6,20 @@ import {
   warehouses,
   purchaseRecords,
   supplierPayments,
+  wallets,
+  expenses,
+  transactions,
+  suppliers,
 } from "@/db";
 import { eq, sql } from "drizzle-orm";
 import { requireInventoryManageMiddleware } from "@/lib/middlewares";
 import { addPackagingMaterialSchema } from "@/lib/validators/validators";
+import { createId } from "@paralleldrive/cuid2";
 
 export const addPackagingMaterialFn = createServerFn()
   .middleware([requireInventoryManageMiddleware])
   .inputValidator(addPackagingMaterialSchema)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     return await db.transaction(async (tx) => {
       // Validate Warehouse
       const warehouse = await tx.query.warehouses.findFirst({
@@ -145,11 +150,11 @@ export const addPackagingMaterialFn = createServerFn()
           parseFloat(data.costPerUnit) * parseFloat(data.quantity)
         ).toFixed(2);
 
-        // Auto-calculate payment amount based on payment status
+        // Determine paid amount based on paymentStatus
         let amountToRecord = 0;
-        if (data.paymentStatus === "paid_full") {
+        if (data.paymentStatus === "paid") {
           amountToRecord = parseFloat(totalCost);
-        } else if (data.paymentStatus === "credit" && data.amountPaid) {
+        } else if (data.paymentStatus === "partial" && data.amountPaid) {
           amountToRecord = parseFloat(data.amountPaid);
         }
 
@@ -168,7 +173,6 @@ export const addPackagingMaterialFn = createServerFn()
             paymentMethod: data.paymentMethod,
             bankName: data.bankName,
             transactionId: data.transactionId || null,
-            paidBy: data.paidBy,
           })
           .returning();
 
@@ -180,11 +184,71 @@ export const addPackagingMaterialFn = createServerFn()
             method: data.paymentMethod,
             bankName: data.bankName,
             reference: data.transactionId || undefined,
-            paidBy: data.paidBy,
             notes:
-              data.paymentStatus === "credit"
+              data.paymentStatus === "partial"
                 ? "Partial payment for stock purchase"
                 : "Full payment for stock purchase",
+          });
+        }
+
+        // 4. Conditionally create expense and debit wallet
+        const walletId = data.walletId ?? data.paymentMethod;
+        if (
+          walletId &&
+          walletId !== "pay_later" &&
+          (data.paymentStatus === "paid" || data.paymentStatus === "partial")
+        ) {
+          const expenseAmount =
+            data.paymentStatus === "paid"
+              ? parseFloat(totalCost)
+              : parseFloat(data.amountPaid ?? "0");
+
+          // Look up supplier name for expense description
+          const [supplier] = await tx
+            .select()
+            .from(suppliers)
+            .where(eq(suppliers.id, data.supplierId));
+          const supplierName = supplier?.supplierName ?? "Unknown Supplier";
+
+          // Balance check
+          const [wallet] = await tx
+            .select()
+            .from(wallets)
+            .where(eq(wallets.id, walletId));
+          if (!wallet) throw new Error("Wallet not found");
+          const currentBalance = parseFloat(wallet.balance || "0");
+          if (currentBalance < expenseAmount) {
+            throw new Error(
+              `Insufficient balance in "${wallet.name}". Available: PKR ${currentBalance.toLocaleString()}, Required: PKR ${expenseAmount.toLocaleString()}`,
+            );
+          }
+
+          // Debit wallet
+          await tx
+            .update(wallets)
+            .set({ balance: sql`${wallets.balance} - ${expenseAmount}` })
+            .where(eq(wallets.id, walletId));
+
+          // Insert expense
+          const expenseId = createId();
+          await tx.insert(expenses).values({
+            id: expenseId,
+            description: `Supplier Purchase: ${data.name} from ${supplierName}`,
+            category: "Supplier Purchase",
+            amount: expenseAmount.toString(),
+            walletId: walletId,
+            performedById: context.session.user.id,
+          });
+
+          // Insert transaction journal entry
+          await tx.insert(transactions).values({
+            id: createId(),
+            walletId: walletId,
+            type: "debit",
+            amount: expenseAmount.toString(),
+            source: "Expense",
+            referenceId: expenseId,
+            performedById: context.session.user.id,
           });
         }
       }

@@ -57,159 +57,49 @@ export const addWarehouseSchema = z.object({
   longitude: z.string().min(1, "Longitude is required"),
 });
 
-export const addChemicalSchema = z
-  .object({
-    name: z.string().min(1, "Material name is required"),
-    unit: z.enum(["kg", "liters"]),
-    costPerUnit: z.string().min(1, "Cost per unit is required"),
-    minimumStockLevel: z.string().min(1, "Minimum stock level is required"),
-    warehouseId: z.string().min(1, "Warehouse is required"),
-    quantity: z.string().min(1, "Quantity is required"),
-    supplierId: z.string().min(1, "Supplier is required"),
-    // New Fields
-    packagingType: z.string(),
-    packagingSize: z.string(),
-    notes: z.string(),
-    paymentMethod: z.enum(["cash", "bank_transfer", "cheque", "pay_later"]),
-    paymentStatus: z.enum(["paid_full", "credit"]),
-    amountPaid: z.string(),
-    transactionId: z.string(),
-    bankName: z.string(),
-    paidBy: z.string(),
-  })
-  .refine(
-    (data) => {
-      if (data.paymentMethod !== "pay_later") {
-        return !!data.paidBy && data.paidBy.trim().length > 0;
-      }
-      return true;
-    },
-    {
-      message: "Paid By is required",
-      path: ["paidBy"],
-    },
-  )
-  .refine(
-    (data) => {
-      if (["bank_transfer", "cheque"].includes(data.paymentMethod)) {
-        return !!data.bankName && data.bankName.length > 0;
-      }
-      return true;
-    },
-    {
-      message: "Bank Name is required",
-      path: ["bankName"],
-    },
-  )
-  .refine(
-    (data) => {
-      if (
-        ["bank_transfer", "cheque"].includes(data.paymentMethod) &&
-        !data.transactionId
-      ) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: "Transaction ID / Cheque Number is required",
-      path: ["transactionId"],
-    },
-  )
-  .refine(
-    (data) => {
-      if (
-        data.paymentStatus === "credit" &&
-        data.paymentMethod !== "pay_later"
-      ) {
-        return !!data.amountPaid && parseFloat(data.amountPaid) > 0;
-      }
-      return true;
-    },
-    {
-      message: "Amount Paid is required for partial payments",
-      path: ["amountPaid"],
-    },
-  );
+export const addChemicalSchema = z.object({
+  name: z.string().min(1, "Material name is required"),
+  unit: z.enum(["kg", "liters"]),
+  costPerUnit: z.string().min(1, "Cost per unit is required"),
+  minimumStockLevel: z.string().min(1, "Minimum stock level is required"),
+  warehouseId: z.string().min(1, "Warehouse is required"),
+  quantity: z.string().min(1, "Quantity is required"),
+  supplierId: z.string().min(1, "Supplier is required"),
+  // New Fields
+  packagingType: z.string(),
+  packagingSize: z.string(),
+  notes: z.string(),
+  paymentMethod: z.string(),
+  walletId: z.string().optional().nullable(),
+  paymentStatus: z.enum(["paid", "partial", "unpaid"]).optional(),
+  amountPaid: z.string(),
+  transactionId: z.string(),
+  bankName: z.string(),
+});
 
-export const addPackagingMaterialSchema = z
-  .object({
-    name: z.string().min(1, "Material name is required"),
-    warehouseId: z.string().min(1, "Warehouse is required"),
-    quantity: z.string().min(1, "Quantity is required"),
-    costPerUnit: z.string().min(1, "Cost per unit is required"),
-    minimumStockLevel: z.number().int().min(0),
-    type: z.enum(["primary", "master", "sticker", "extra"]),
-    capacity: z.string(),
-    capacityUnit: z.string(),
-    // New Fields
-    weightPerPack: z.string(),
-    pricePerKg: z.string(),
-    associatedStickerId: z.string(),
-    stickerCost: z.string(),
-    supplierId: z.string().min(1, "Supplier is required"),
-    notes: z.string(),
-    paymentMethod: z.enum(["cash", "bank_transfer", "cheque", "pay_later"]),
-    paymentStatus: z.enum(["paid_full", "credit"]),
-    amountPaid: z.string(),
-    transactionId: z.string(),
-    bankName: z.string(),
-    paidBy: z.string(),
-  })
-  .refine(
-    (data) => {
-      if (data.paymentMethod !== "pay_later") {
-        return !!data.paidBy && data.paidBy.trim().length > 0;
-      }
-      return true;
-    },
-    {
-      message: "Paid By is required",
-      path: ["paidBy"],
-    },
-  )
-  .refine(
-    (data) => {
-      if (["bank_transfer", "cheque"].includes(data.paymentMethod)) {
-        return !!data.bankName && data.bankName.length > 0;
-      }
-      return true;
-    },
-    {
-      message: "Bank Name is required",
-      path: ["bankName"],
-    },
-  )
-  .refine(
-    (data) => {
-      if (
-        ["bank_transfer", "cheque"].includes(data.paymentMethod) &&
-        !data.transactionId
-      ) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: "Transaction ID / Cheque Number is required",
-      path: ["transactionId"],
-    },
-  )
-  .refine(
-    (data) => {
-      if (
-        data.paymentStatus === "credit" &&
-        data.paymentMethod !== "pay_later"
-      ) {
-        return !!data.amountPaid && parseFloat(data.amountPaid) > 0;
-      }
-      return true;
-    },
-    {
-      message: "Amount Paid is required for partial payments",
-      path: ["amountPaid"],
-    },
-  );
+export const addPackagingMaterialSchema = z.object({
+  name: z.string().min(1, "Material name is required"),
+  warehouseId: z.string().min(1, "Warehouse is required"),
+  quantity: z.string().min(1, "Quantity is required"),
+  costPerUnit: z.string().min(1, "Cost per unit is required"),
+  minimumStockLevel: z.number().int().min(0),
+  type: z.enum(["primary", "master", "sticker", "extra"]),
+  capacity: z.string(),
+  capacityUnit: z.string(),
+  // New Fields
+  weightPerPack: z.string(),
+  pricePerKg: z.string(),
+  associatedStickerId: z.string(),
+  stickerCost: z.string(),
+  supplierId: z.string().min(1, "Supplier is required"),
+  notes: z.string(),
+  paymentMethod: z.string(),
+  walletId: z.string().optional().nullable(),
+  paymentStatus: z.enum(["paid", "partial", "unpaid"]).optional(),
+  amountPaid: z.string(),
+  transactionId: z.string(),
+  bankName: z.string(),
+});
 
 export const addProductSchema = z.object({
   name: z.string().min(1, "Product name is required"),

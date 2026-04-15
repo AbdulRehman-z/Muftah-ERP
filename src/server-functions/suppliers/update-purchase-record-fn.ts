@@ -1,8 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
-import { db, purchaseRecords, materialStock } from "@/db";
+import { db, purchaseRecords, materialStock, wallets, expenses, transactions } from "@/db";
 import { eq, sql, and } from "drizzle-orm";
 import { requireSuppliersManageMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
+import { createId } from "@paralleldrive/cuid2";
 
 import { chemicals, packagingMaterials } from "@/db/schemas/inventory-schema";
 
@@ -10,12 +11,16 @@ const updatePurchaseSchema = z.object({
   id: z.string(),
   quantity: z.string().optional(),
   cost: z.string().optional(),
+  paidAmount: z.string().optional(),
   notes: z.string().optional(),
   transactionId: z.string().optional().nullable(),
   invoiceNumber: z.string().optional().nullable(),
   // Payment fields
   paymentMethod: z.string().optional().nullable(),
-  paidBy: z.string().optional().nullable(),
+  walletId: z.string().optional().nullable(),
+  paymentStatus: z.enum(["paid", "partial", "unpaid"]).optional(),
+  // Supplier/material info for expense description
+  supplierName: z.string().optional(),
   // Material fields
   materialName: z.string().optional(),
   capacity: z.string().optional(),
@@ -27,7 +32,7 @@ const updatePurchaseSchema = z.object({
 export const updatePurchaseRecordFn = createServerFn()
   .middleware([requireSuppliersManageMiddleware])
   .inputValidator(updatePurchaseSchema)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     return await db.transaction(async (tx) => {
       // 1. Get existing purchase record
       const existingRecord = await tx.query.purchaseRecords.findFirst({
@@ -110,9 +115,6 @@ export const updatePurchaseRecordFn = createServerFn()
       if (data.paymentMethod) {
         updateData.paymentMethod = data.paymentMethod;
       }
-      if (data.paidBy !== undefined) {
-        updateData.paidBy = data.paidBy || null;
-      }
 
       if (data.quantity && data.cost) {
         updateData.quantity = data.quantity;
@@ -126,6 +128,59 @@ export const updatePurchaseRecordFn = createServerFn()
         .update(purchaseRecords)
         .set(updateData)
         .where(eq(purchaseRecords.id, data.id));
+
+      // 5. Conditionally create expense and debit wallet
+      if (
+        data.walletId &&
+        data.walletId !== "pay_later" &&
+        (data.paymentStatus === "paid" || data.paymentStatus === "partial")
+      ) {
+        const expenseAmount =
+          data.paymentStatus === "paid"
+            ? parseFloat(data.cost ?? existingRecord.cost)
+            : parseFloat(data.paidAmount ?? "0");
+
+        // Balance check
+        const [wallet] = await tx
+          .select()
+          .from(wallets)
+          .where(eq(wallets.id, data.walletId));
+        if (!wallet) throw new Error("Wallet not found");
+        const currentBalance = parseFloat(wallet.balance || "0");
+        if (currentBalance < expenseAmount) {
+          throw new Error(
+            `Insufficient balance in "${wallet.name}". Available: PKR ${currentBalance.toLocaleString()}, Required: PKR ${expenseAmount.toLocaleString()}`,
+          );
+        }
+
+        // Debit wallet
+        await tx
+          .update(wallets)
+          .set({ balance: sql`${wallets.balance} - ${expenseAmount}` })
+          .where(eq(wallets.id, data.walletId));
+
+        // Insert expense
+        const expenseId = createId();
+        await tx.insert(expenses).values({
+          id: expenseId,
+          description: `Supplier Purchase: ${data.materialName} from ${data.supplierName}`,
+          category: "Supplier Purchase",
+          amount: expenseAmount.toString(),
+          walletId: data.walletId,
+          performedById: context.session.user.id,
+        });
+
+        // Insert transaction journal entry
+        await tx.insert(transactions).values({
+          id: createId(),
+          walletId: data.walletId,
+          type: "debit",
+          amount: expenseAmount.toString(),
+          source: "Expense",
+          referenceId: expenseId,
+          performedById: context.session.user.id,
+        });
+      }
 
       return { success: true };
     });
