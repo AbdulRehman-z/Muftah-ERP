@@ -182,6 +182,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                 unitType: "carton" as "carton" | "units",
                 numberOfCartons: 1,
                 numberOfUnits: 0,
+                discountCartons: 0,
                 hsnCode: "",
                 perCartonPrice: 0,
                 retailPrice: 0,
@@ -626,9 +627,9 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
 
                                                 {/* Desktop column headers */}
                                                 <div className="hidden md:grid items-center gap-2 px-3 pb-1 border-b"
-                                                    style={{ gridTemplateColumns: "2.2fr 1fr 0.7fr 1.2fr 1fr 1fr 0.8fr 32px" }}
+                                                    style={{ gridTemplateColumns: "2.2fr 1fr 0.7fr 0.7fr 1.2fr 1fr 1fr 0.8fr 32px" }}
                                                 >
-                                                    {["Product", "Sale Type", "HSN", "Qty", "Unit Cost", "Retail MRP", "Amount", ""].map((h) => (
+                                                    {["Product", "Unit Type", "HSN", "Disc.", "Qty", "Unit Cost", "Retail MRP", "Amount", ""].map((h) => (
                                                         <div key={h} className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                                                             {h}
                                                         </div>
@@ -645,7 +646,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                         const totalStockU = stockC * cpp + stockU;
 
                                                         const requestedU = item.unitType === "carton"
-                                                            ? (item.numberOfCartons || 0) * cpp
+                                                            ? ((item.numberOfCartons || 0) + (item.discountCartons || 0)) * cpp
                                                             : (item.numberOfUnits || 0);
 
                                                         const lineAmount = item.unitType === "carton"
@@ -672,7 +673,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                                 {/* ─ Desktop ─ */}
                                                                 <div
                                                                     className="hidden md:grid items-start gap-2"
-                                                                    style={{ gridTemplateColumns: "2.2fr 1fr 0.7fr 1.2fr 1fr 1fr 0.8fr 32px" }}
+                                                                    style={{ gridTemplateColumns: "2.2fr 1fr 0.7fr 0.7fr 1.2fr 1fr 1fr 0.8fr 32px" }}
                                                                 >
                                                                     {/* Product */}
                                                                     <form.Field
@@ -689,6 +690,14 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                                                         form.setFieldValue(`items[${index}].pack`, s?.recipe?.name || "");
                                                                                         if (s?.recipe?.hsnCode) {
                                                                                             form.setFieldValue(`items[${index}].hsnCode`, s.recipe.hsnCode);
+                                                                                        }
+                                                                                        // Auto-populate Unit Cost from recipe's estimated cost
+                                                                                        if (s?.recipe?.estimatedCostPerContainer) {
+                                                                                            const cpp = s.recipe.containersPerCarton || 1;
+                                                                                            const perCartonCost = Number(s.recipe.estimatedCostPerContainer) * cpp;
+                                                                                            if (perCartonCost > 0) {
+                                                                                                form.setFieldValue(`items[${index}].perCartonPrice`, Math.round(perCartonCost));
+                                                                                            }
                                                                                         }
                                                                                     }}
                                                                                 >
@@ -725,6 +734,11 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                                                         <span className="text-emerald-600 flex items-center gap-0.5">
                                                                                             <CheckCircle2 className="size-3" />
                                                                                             {stockC}C / {stockU}U available
+                                                                                            {(item.discountCartons || 0) > 0 && (
+                                                                                                <span className="ml-1 text-amber-600 font-semibold">
+                                                                                                    (+{item.discountCartons} free)
+                                                                                                </span>
+                                                                                            )}
                                                                                         </span>
                                                                                     ) : (
                                                                                         <span className="text-muted-foreground">No stock info</span>
@@ -786,6 +800,30 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                                                     onChange={(e) => sf.handleChange(e.target.value)}
                                                                                 />
                                                                                 <FieldError errors={sf.state.meta.errors} />
+                                                                            </div>
+                                                                        )}
+                                                                    </form.Field>
+
+                                                                    {/* Discount Cartons — only relevant for carton unit type */}
+                                                                    <form.Field name={`items[${index}].discountCartons`}>
+                                                                        {(sf) => (
+                                                                            <div className="relative">
+                                                                                <Input
+                                                                                    type="number"
+                                                                                    min="0"
+                                                                                    className={cn(
+                                                                                        "h-9 text-xs pr-7",
+                                                                                        item.unitType !== "carton" && "opacity-40 pointer-events-none",
+                                                                                    )}
+                                                                                    value={item.unitType === "carton" ? sf.state.value : 0}
+                                                                                    onFocus={handleFocus}
+                                                                                    onChange={(e) => sf.handleChange(Number(e.target.value))}
+                                                                                    disabled={item.unitType !== "carton"}
+                                                                                    title={item.unitType !== "carton" ? "Discount cartons only apply to carton orders" : "Free cartons given to customer (deducted from stock, not billed)"}
+                                                                                />
+                                                                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-muted-foreground font-medium pointer-events-none">
+                                                                                    +
+                                                                                </span>
                                                                             </div>
                                                                         )}
                                                                     </form.Field>
@@ -937,6 +975,16 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                                                         const s = availableStock.find((s) => s.recipeId === val);
                                                                                         sf.handleChange(val);
                                                                                         form.setFieldValue(`items[${index}].pack`, s?.recipe?.name || "");
+                                                                                        if (s?.recipe?.hsnCode) {
+                                                                                            form.setFieldValue(`items[${index}].hsnCode`, s.recipe.hsnCode);
+                                                                                        }
+                                                                                        if (s?.recipe?.estimatedCostPerContainer) {
+                                                                                            const cpp = s.recipe.containersPerCarton || 1;
+                                                                                            const perCartonCost = Number(s.recipe.estimatedCostPerContainer) * cpp;
+                                                                                            if (perCartonCost > 0) {
+                                                                                                form.setFieldValue(`items[${index}].perCartonPrice`, Math.round(perCartonCost));
+                                                                                            }
+                                                                                        }
                                                                                     }}
                                                                                 >
                                                                                     <SelectTrigger className="text-xs">
@@ -984,6 +1032,32 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                                             )}
                                                                         </form.Field>
                                                                     </div>
+
+                                                                    {/* Discount cartons (mobile) — only shown for carton type */}
+                                                                    {item.unitType === "carton" && (
+                                                                        <form.Field name={`items[${index}].discountCartons`}>
+                                                                            {(sf) => (
+                                                                                <Field>
+                                                                                    <FieldLabel className="text-xs flex items-center gap-1">
+                                                                                        Discount Ctns
+                                                                                        <span className="text-[10px] text-muted-foreground font-normal">(free)</span>
+                                                                                    </FieldLabel>
+                                                                                    <Input
+                                                                                        type="number"
+                                                                                        min="0"
+                                                                                        className="text-xs"
+                                                                                        value={sf.state.value}
+                                                                                        onFocus={handleFocus}
+                                                                                        onChange={(e) => sf.handleChange(Number(e.target.value))}
+                                                                                        placeholder="0"
+                                                                                    />
+                                                                                    <FieldDescription className="text-[10px]">
+                                                                                        Deducted from stock, not billed
+                                                                                    </FieldDescription>
+                                                                                </Field>
+                                                                            )}
+                                                                        </form.Field>
+                                                                    )}
 
                                                                     <div className="grid grid-cols-3 gap-3">
                                                                         <Field>
@@ -1072,6 +1146,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                             unitType: "carton",
                                                             numberOfCartons: 1,
                                                             numberOfUnits: 0,
+                                                            discountCartons: 0,
                                                             hsnCode: "",
                                                             perCartonPrice: 0,
                                                             retailPrice: 0,

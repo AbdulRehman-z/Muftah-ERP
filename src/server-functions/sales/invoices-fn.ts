@@ -158,12 +158,21 @@ export const createInvoiceFn = createServerFn()
           (stock.quantityCartons ?? 0) * containersPerCarton +
           (stock.quantityContainers ?? 0);
 
+        // Discount cartons are physically dispatched — include them in the
+        // stock check. They are free (not billed) but leave the warehouse.
+        const discountUnits =
+          item.unitType === "carton"
+            ? (item.discountCartons ?? 0) * containersPerCarton
+            : 0;
+
         const requestedUnits =
           item.unitType === "carton"
             ? item.numberOfCartons * containersPerCarton
             : item.numberOfUnits;
 
-        if (requestedUnits > totalAvailableUnits) {
+        const totalDispatchedUnits = requestedUnits + discountUnits;
+
+        if (totalDispatchedUnits > totalAvailableUnits) {
           throw new Error(
             `Not enough stock for "${item.pack}". ` +
             `Available: ${Math.floor(totalAvailableUnits / containersPerCarton)} cartons & ` +
@@ -171,6 +180,7 @@ export const createInvoiceFn = createServerFn()
           );
         }
 
+        // Line amount is based only on billed cartons — discount cartons are free
         const lineAmount =
           item.unitType === "carton"
             ? item.numberOfCartons * item.perCartonPrice
@@ -178,14 +188,13 @@ export const createInvoiceFn = createServerFn()
 
         totalAmount += lineAmount;
 
-        // Derive weight from fillAmount+fillUnit (ml ≈ g for detergents, g direct)
-        // No weightPerContainer field exists on recipes schema — use fillAmount instead.
+        // Weight includes both billed and discount cartons (all physically dispatched)
         if (stock.recipe.fillAmount && stock.recipe.fillUnit) {
           const fillGrams =
             stock.recipe.fillUnit === "ml" || stock.recipe.fillUnit === "g"
               ? Number(stock.recipe.fillAmount)
               : 0; // unsupported unit — skip
-          totalWeightKg += requestedUnits * (fillGrams / 1000);
+          totalWeightKg += totalDispatchedUnits * (fillGrams / 1000);
         }
       }
 
@@ -293,7 +302,15 @@ export const createInvoiceFn = createServerFn()
             ? item.numberOfCartons * containersPerCarton
             : item.numberOfUnits;
 
-        const remainingUnits = totalAvailableUnits - requestedUnits;
+        const discountUnits =
+          item.unitType === "carton"
+            ? (item.discountCartons ?? 0) * containersPerCarton
+            : 0;
+
+        // Total dispatched = billed + free (discount) cartons
+        const totalDispatchedUnits = requestedUnits + discountUnits;
+
+        const remainingUnits = totalAvailableUnits - totalDispatchedUnits;
 
         await tx
           .update(finishedGoodsStock)
@@ -314,12 +331,13 @@ export const createInvoiceFn = createServerFn()
             : item.numberOfUnits * (item.perCartonPrice / containersPerCarton);
 
         // Weight derived from fillAmount (no weightPerContainer on recipes schema)
+        // Includes both billed and discount cartons — all physically dispatched
         const fillGrams =
           stock.recipe.fillAmount &&
             (stock.recipe.fillUnit === "ml" || stock.recipe.fillUnit === "g")
             ? Number(stock.recipe.fillAmount)
             : 0;
-        const lineWeightKg = requestedUnits * (fillGrams / 1000);
+        const lineWeightKg = totalDispatchedUnits * (fillGrams / 1000);
 
         // BUG FIX: margin was retailPrice - perCartonPrice (apples vs oranges).
         // Correct: compare per-unit selling price vs per-unit cost.
@@ -333,6 +351,7 @@ export const createInvoiceFn = createServerFn()
           recipeId: item.recipeId,
           pack: item.pack,
           numberOfCartons: item.unitType === "carton" ? item.numberOfCartons : 0,
+          discountCartons: item.unitType === "carton" ? (item.discountCartons ?? 0) : 0,
           quantity: item.unitType === "units" ? item.numberOfUnits : 0,
           perCartonPrice: item.perCartonPrice.toString(),
           amount: lineAmount.toString(),
@@ -386,36 +405,77 @@ export const getInvoiceDetailFn = createServerFn()
   });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// GET INVOICE STATS (KPI aggregates)
+// GET INVOICE STATS (KPI aggregates, accepts same filters as list)
 // ═══════════════════════════════════════════════════════════════════════════
 export const getInvoiceStatsFn = createServerFn()
   .middleware([requireSalesViewMiddleware])
-  .handler(async () => {
-    const now = new Date();
-    const monthStart = startOfMonth(now);
-    const monthEnd = endOfMonth(now);
+  .inputValidator((input: any) =>
+    z.object({
+      dateFrom: z.string().optional(),
+      dateTo: z.string().optional(),
+      status: z.enum(["paid", "credit", "partial"]).optional(),
+      customerType: z.enum(["distributor", "retailer"]).optional(),
+      warehouseId: z.string().optional(),
+      amountMin: z.number().min(0).optional(),
+      amountMax: z.number().min(0).optional(),
+    }).passthrough().parse(input),
+  )
+  .handler(async ({ data }) => {
+    const conditions: SQL[] = [];
+
+    if (data.dateFrom) {
+      const from = parseISO(data.dateFrom);
+      if (isValid(from)) conditions.push(gte(invoices.date, from));
+    }
+    if (data.dateTo) {
+      const to = parseISO(data.dateTo);
+      if (isValid(to)) conditions.push(lte(invoices.date, to));
+    }
+
+    const statusCondition = buildStatusCondition(data.status ?? "");
+    if (statusCondition) conditions.push(statusCondition);
+
+    if (data.customerType) {
+      conditions.push(eq(customers.customerType, data.customerType));
+    }
+
+    if (data.warehouseId) {
+      conditions.push(eq(invoices.warehouseId, data.warehouseId));
+    }
+
+    if (data.amountMin !== undefined) {
+      conditions.push(gte(invoices.totalPrice, data.amountMin.toString()));
+    }
+    if (data.amountMax !== undefined) {
+      conditions.push(lte(invoices.totalPrice, data.amountMax.toString()));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     // Total invoices count
     const [countResult] = await db
       .select({ value: count() })
-      .from(invoices);
+      .from(invoices)
+      .leftJoin(customers, eq(invoices.customerId, customers.id))
+      .where(whereClause);
 
-    // Total revenue (all time)
+    // Total revenue
     const [revenueResult] = await db
       .select({ value: sum(invoices.totalPrice) })
-      .from(invoices);
+      .from(invoices)
+      .leftJoin(customers, eq(invoices.customerId, customers.id))
+      .where(whereClause);
 
-    // Total outstanding credit (all time)
+    // Total outstanding credit
+    const outstandingConditions = [...(conditions.length > 0 ? [conditions] : [])];
+    outstandingConditions.push(gt(invoices.credit, "0"));
+    const outstandingWhere = and(...outstandingConditions.flat());
+
     const [outstandingResult] = await db
       .select({ value: sum(invoices.credit) })
       .from(invoices)
-      .where(gt(invoices.credit, "0"));
-
-    // This month's revenue
-    const [monthRevenueResult] = await db
-      .select({ value: sum(invoices.totalPrice) })
-      .from(invoices)
-      .where(and(gte(invoices.date, monthStart), lte(invoices.date, monthEnd)));
+      .leftJoin(customers, eq(invoices.customerId, customers.id))
+      .where(outstandingWhere);
 
     // Average invoice value
     const avgValue = countResult.value > 0
@@ -426,7 +486,7 @@ export const getInvoiceStatsFn = createServerFn()
       totalInvoices: Number(countResult.value) || 0,
       totalRevenue: Number(revenueResult.value) || 0,
       totalOutstanding: Number(outstandingResult.value) || 0,
-      monthRevenue: Number(monthRevenueResult.value) || 0,
+      monthRevenue: Number(revenueResult.value) || 0, // same as totalRevenue when filtered
       averageInvoiceValue: avgValue,
     };
   });

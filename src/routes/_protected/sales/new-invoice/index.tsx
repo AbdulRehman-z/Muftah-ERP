@@ -166,7 +166,17 @@ function InvoicesContent() {
   return (
     <div className="space-y-5">
       {/* KPI Cards */}
-      <InvoiceKpiCards />
+      <InvoiceKpiCards
+        filters={{
+          dateFrom: filters.dateFrom,
+          dateTo: filters.dateTo,
+          status: filters.status !== "all" ? filters.status : undefined,
+          customerType: filters.customerType !== "all" ? filters.customerType : undefined,
+          warehouseId: filters.warehouseId,
+          amountMin: filters.amountMin,
+          amountMax: filters.amountMax,
+        }}
+      />
 
       {/* Filters */}
       <InvoiceFilters

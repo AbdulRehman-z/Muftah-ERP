@@ -1,5 +1,5 @@
 {
-  "id": "4b8202c7-5dcc-4ba4-b7a5-8d1d25168f15",
+  "id": "117c21bf-f9b2-4a5d-a8c2-d45704200760",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -4688,6 +4688,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'0'"
+        },
+        "discount_cartons": {
+          "name": "discount_cartons",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         },
         "hsn_code": {
           "name": "hsn_code",

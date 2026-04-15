@@ -195,6 +195,7 @@ const InvoiceDetailContent = ({
                 <TableHead className="text-[11px]">#</TableHead>
                 <TableHead className="text-[11px]">Product</TableHead>
                 <TableHead className="text-[11px] text-right">Cartons</TableHead>
+                <TableHead className="text-[11px] text-right">Disc. Ctns</TableHead>
                 <TableHead className="text-[11px] text-right">Units</TableHead>
                 <TableHead className="text-[11px] text-right">Price/Ctn</TableHead>
                 <TableHead className="text-[11px] text-right">Amount</TableHead>
@@ -207,6 +208,13 @@ const InvoiceDetailContent = ({
                   <TableCell className="text-sm tabular-nums">{i + 1}</TableCell>
                   <TableCell className="text-sm font-medium">{item.pack}</TableCell>
                   <TableCell className="text-sm tabular-nums text-right">{item.numberOfCartons}</TableCell>
+                  <TableCell className="text-sm tabular-nums text-right">
+                    {Number(item.discountCartons) > 0 ? (
+                      <span className="text-amber-600 font-semibold">+{item.discountCartons}</span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-sm tabular-nums text-right">{item.quantity}</TableCell>
                   <TableCell className="text-sm tabular-nums text-right">{PKR(Number(item.perCartonPrice))}</TableCell>
                   <TableCell className="text-sm tabular-nums text-right font-semibold">{PKR(Number(item.amount))}</TableCell>
@@ -214,7 +222,7 @@ const InvoiceDetailContent = ({
                 </TableRow>
               ))}
               <TableRow className="bg-muted/30 font-semibold">
-                <TableCell colSpan={4} className="text-right text-sm">Totals</TableCell>
+                <TableCell colSpan={5} className="text-right text-sm">Totals</TableCell>
                 <TableCell className="text-sm text-right">—</TableCell>
                 <TableCell className="text-sm text-right font-bold">{PKR(total)}</TableCell>
                 <TableCell className="text-sm text-right">

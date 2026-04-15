@@ -18,7 +18,7 @@ export const invoicesKeys = {
   all: ["invoices"] as const,
   list: (params: any) => [...invoicesKeys.all, "list", params] as const,
   detail: (id: string) => [...invoicesKeys.all, "detail", id] as const,
-  stats: () => [...invoicesKeys.all, "stats"] as const,
+  stats: (params?: any) => [...invoicesKeys.all, "stats", params] as const,
 };
 
 export const useGetInvoices = (params: {
@@ -52,10 +52,18 @@ export const useGetInvoiceDetail = (id: string) => {
   });
 };
 
-export const useGetInvoiceStats = () => {
+export const useGetInvoiceStats = (params?: {
+  dateFrom?: string;
+  dateTo?: string;
+  status?: "paid" | "credit" | "partial";
+  customerType?: "distributor" | "retailer";
+  warehouseId?: string;
+  amountMin?: number;
+  amountMax?: number;
+}) => {
   return useSuspenseQuery({
-    queryKey: invoicesKeys.stats(),
-    queryFn: () => getInvoiceStatsFn(),
+    queryKey: invoicesKeys.stats(params ?? {}),
+    queryFn: () => getInvoiceStatsFn({ data: params ?? {} }),
     gcTime: 60_000,
     staleTime: 30_000,
   });

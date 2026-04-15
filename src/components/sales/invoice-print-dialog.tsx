@@ -54,7 +54,6 @@ const InvoicePrintContent = ({
   invoiceId: string;
   onClose: () => void;
 }) => {
-  const [template, setTemplate] = useState<"distributor" | "retailer" | "auto">("auto");
   const printRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -69,11 +68,8 @@ const InvoicePrintContent = ({
   });
 
   const isDistributor = invoice?.customer?.customerType === "distributor";
-  const resolvedTemplate: "distributor" | "retailer" = template === "auto"
-    ? (isDistributor ? "distributor" : "retailer")
-    : template;
 
-  // Memoise transformed data so template switching doesn't recompute
+  // Memoise transformed data
   const distributorData = useMemo<DistributorInvoiceData | null>(() => {
     if (!invoice) return null;
     return buildDistributorData(invoice);
@@ -124,33 +120,44 @@ const InvoicePrintContent = ({
         <span className="text-xs text-muted-foreground font-medium mr-1">
           Template:
         </span>
-        <Button
-          variant={resolvedTemplate === "distributor" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setTemplate("distributor")}
-          className="text-xs h-7"
-        >
-          <FileText className="size-3 mr-1" />
-          Distributor
-        </Button>
-        <Button
-          variant={resolvedTemplate === "retailer" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setTemplate("retailer")}
-          className="text-xs h-7"
-        >
-          <FileText className="size-3 mr-1" />
-          Retailer
-        </Button>
-        <Badge variant="outline" className="ml-auto text-xs capitalize">
-          {invoice.customer?.customerType ?? "retailer"}
-        </Badge>
+        {/* Show only the relevant template button; hide the other */}
+        {isDistributor ? (
+          <>
+            <Button
+              variant="default"
+              size="sm"
+              className="text-xs h-7"
+              disabled
+            >
+              <FileText className="size-3 mr-1" />
+              Distributor
+            </Button>
+            <Badge variant="outline" className="ml-auto text-xs capitalize">
+              {invoice.customer?.customerType ?? "distributor"}
+            </Badge>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="default"
+              size="sm"
+              className="text-xs h-7"
+              disabled
+            >
+              <FileText className="size-3 mr-1" />
+              Retailer
+            </Button>
+            <Badge variant="outline" className="ml-auto text-xs capitalize">
+              {invoice.customer?.customerType ?? "retailer"}
+            </Badge>
+          </>
+        )}
       </div>
 
       {/* Preview pane */}
       <div className="flex-1 overflow-auto border rounded-lg bg-gray-50 dark:bg-zinc-900 p-4 min-h-[400px]">
         <div ref={printRef}>
-          {resolvedTemplate === "distributor" && distributorData ? (
+          {isDistributor && distributorData ? (
             <DistributorInvoiceView invoice={distributorData} showActions={false} />
           ) : retailerData ? (
             <RetailerInvoiceView invoice={retailerData} showActions={false} />
@@ -199,7 +206,7 @@ const buildDistributorData = (inv: any): DistributorInvoiceData => ({
     itemCode: item.recipeId?.slice(-6).toUpperCase() ?? "—",
     itemDescription: item.pack,
     cartonQty: fmtCartonQty(item.numberOfCartons ?? 0),
-    schemeCarton: "0 - 0",
+    schemeCarton: item.discountCartons > 0 ? fmtCartonQty(item.discountCartons) : "0 - 0",
     cartonRate: Number(item.perCartonPrice) || 0,
     grossAmount: Number(item.amount) || 0,
     discount: 0,
@@ -227,7 +234,9 @@ const buildRetailerData = (inv: any): RetailerInvoiceData => {
       hsnCode: item.hsnCode ?? "—",
       gstRate: 0,
       rate: Number(item.perCartonPrice) || 0,
-      qty: item.numberOfCartons || item.quantity || 0,
+      qty: item.discountCartons > 0
+        ? `${item.numberOfCartons || item.quantity || 0}+${item.discountCartons}`
+        : (item.numberOfCartons || item.quantity || 0),
       grossAmount: Number(item.amount) || 0,
       netAmount: Number(item.amount) || 0,
     })),

@@ -138,7 +138,7 @@ export const FinishedGoodsTable = ({
           return (
             <div className="flex flex-col">
               <span className="font-mono font-bold">
-                {fg.quantityCartons * (fg.recipe.containersPerCarton || 0) +
+                {fg.quantityCartons * (fg.recipe.containersPerCarton || 1) +
                   fg.quantityContainers}
               </span>
               <span className="text-[10px] uppercase text-muted-foreground">
@@ -154,7 +154,7 @@ export const FinishedGoodsTable = ({
         cell: ({ row }) => {
           const fg = row.original;
           const totalUnits =
-            fg.quantityCartons * (fg.recipe.containersPerCarton || 0) +
+            fg.quantityCartons * (fg.recipe.containersPerCarton || 1) +
             fg.quantityContainers;
 
           if (totalUnits <= 0) {
@@ -263,9 +263,7 @@ export const FinishedGoodsTable = ({
         columns={columns}
         data={data.filter(
           (item) =>
-            item.quantityCartons * (item.recipe.containersPerCarton || 0) +
-            item.quantityContainers >
-            0,
+            item.quantityCartons > 0 || item.quantityContainers > 0,
         )}
         searchKey="product"
         searchPlaceholder="Filter finished goods..."

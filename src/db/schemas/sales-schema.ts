@@ -105,6 +105,7 @@ export const invoiceItems = pgTable("invoice_items", {
     .notNull()
     .default("0"),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull().default("0"),
+  discountCartons: integer("discount_cartons").notNull().default(0),
   hsnCode: text("hsn_code").notNull(),
   retailPrice: decimal("retail_price", { precision: 12, scale: 2 })
     .notNull()

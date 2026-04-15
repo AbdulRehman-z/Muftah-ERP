@@ -593,6 +593,7 @@ CREATE TABLE "invoice_items" (
 	"total_weight" numeric(12, 3) DEFAULT '0' NOT NULL,
 	"per_carton_price" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"amount" numeric(12, 2) DEFAULT '0' NOT NULL,
+	"discount_cartons" integer DEFAULT 0 NOT NULL,
 	"hsn_code" text NOT NULL,
 	"retail_price" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"margin" numeric(12, 2) DEFAULT '0' NOT NULL,

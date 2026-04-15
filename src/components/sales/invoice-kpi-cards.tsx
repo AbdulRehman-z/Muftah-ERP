@@ -11,7 +11,26 @@ import { cn } from "@/lib/utils";
 const PKR = (v: number) =>
   `PKR ${v.toLocaleString("en-PK", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
-const cards = [
+interface Props {
+  filters?: {
+    dateFrom?: string;
+    dateTo?: string;
+    status?: string;
+    customerType?: string;
+    warehouseId?: string;
+    amountMin?: number;
+    amountMax?: number;
+  };
+}
+
+const cards: {
+  key: "totalInvoices" | "totalRevenue" | "totalOutstanding" | "averageInvoiceValue";
+  label: string;
+  icon: React.ElementType;
+  format: (v: number) => string;
+  color: string;
+  bg: string;
+}[] = [
   {
     key: "totalInvoices",
     label: "Total Invoices",
@@ -21,8 +40,8 @@ const cards = [
     bg: "bg-blue-50 dark:bg-blue-950/30",
   },
   {
-    key: "monthRevenue",
-    label: "Revenue This Month",
+    key: "totalRevenue",
+    label: "Revenue",
     icon: TrendingUp,
     format: PKR,
     color: "text-emerald-600",
@@ -44,16 +63,16 @@ const cards = [
     color: "text-amber-600",
     bg: "bg-amber-50 dark:bg-amber-950/30",
   },
-] as const;
+];
 
-export const InvoiceKpiCards = () => {
-  const { data: stats } = useGetInvoiceStats();
+export const InvoiceKpiCards = ({ filters }: Props) => {
+  const { data: stats } = useGetInvoiceStats(filters);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((card) => {
         const Icon = card.icon;
-        const value = stats[card.key as keyof typeof stats] as number;
+        const value = stats[card.key] as number;
 
         return (
           <Card key={card.key} className="border-border/60 overflow-hidden group hover:shadow-md transition-shadow duration-300">
