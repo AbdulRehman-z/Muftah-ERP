@@ -4,13 +4,26 @@ import { admin as adminPlugin } from "better-auth/plugins/admin";
 import { twoFactor } from "better-auth/plugins/two-factor";
 import { account, db, session, user, verification } from "../db";
 import { resetPasswordTemplate } from "../email-templates/reset-password-template";
-import { verificationEmailTemplate } from "../email-templates/verify-email-template";
-import { sendEmail } from "./email-client";
+import { sendEmail, verifySmtpConnection } from "./email-client";
 import { getAuthBaseUrl } from "./auth-url";
 import { ac, admin, financeManager, operator, superAdmin } from "./permissions";
 
 const authBaseUrl = getAuthBaseUrl();
 const trustedOrigins = authBaseUrl ? [authBaseUrl] : [];
+const isDeploymentRuntime =
+  process.env.NODE_ENV === "production" || process.env.NODE_ENV === "staging";
+
+if (isDeploymentRuntime && !process.env.BETTER_AUTH_SECRET) {
+  throw new Error("BETTER_AUTH_SECRET environment variable is required");
+}
+
+if (isDeploymentRuntime && !process.env.BETTER_AUTH_URL) {
+  throw new Error("BETTER_AUTH_URL environment variable is required");
+}
+
+if (typeof window === "undefined") {
+  void verifySmtpConnection();
+}
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
