@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { addSupplierFn } from "@/server-functions/suppliers/add-supplier-fn";
+import { getSuppliersFn } from "@/server-functions/suppliers/get-suppliers-fn";
 import { supplierSchema } from "@/lib/validators";
 import { Textarea } from "../ui/textarea";
 import {
@@ -28,14 +29,34 @@ type Props = {
   onSuccess: () => void;
 };
 
+type SuppliersList = Awaited<ReturnType<typeof getSuppliersFn>>;
+type SupplierListItem = SuppliersList[number];
+
 export const AddSupplierForm = ({ onSuccess }: Props) => {
   const queryClient = useQueryClient();
 
   const mutate = useMutation({
     mutationFn: addSupplierFn,
-    onSuccess: () => {
+    onSuccess: async (newSupplier) => {
+      const optimisticSupplier = {
+        ...newSupplier,
+        purchases: [],
+        payments: [],
+        totalPurchases: 0,
+        totalPayments: 0,
+        balance: 0,
+      } as SupplierListItem;
+
+      queryClient.setQueryData<SuppliersList>(["suppliers"], (current) => {
+        if (!current) return [optimisticSupplier];
+        return [
+          optimisticSupplier,
+          ...current.filter((supplier) => supplier.id !== optimisticSupplier.id),
+        ];
+      });
+
+      await queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       toast.success("Supplier added successfully");
-      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       onSuccess();
     },
     onError: (error) => {
@@ -48,7 +69,7 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
       supplierName: "",
       supplierShopName: "",
       email: "",
-      // nationalId: "",x
+      nationalId: "",
       phone: "",
       address: "",
       city: "",

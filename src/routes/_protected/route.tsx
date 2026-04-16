@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { AppSidebar } from "@/components/custom/app-sidebar";
+import { EnvironmentIndicator } from "@/components/custom/environment-indicator";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { getViewerAccessFn } from "@/server-functions/auth/get-viewer-access-fn";
 import { canAccessPath } from "@/lib/rbac";
@@ -35,6 +36,9 @@ function RouteComponent() {
     <SidebarProvider defaultOpen>
       <AppSidebar />
       <SidebarInset className="relative px-10 py-7 ">
+        <div className="absolute right-4 top-4 z-30 sm:right-6 sm:top-6">
+          <EnvironmentIndicator />
+        </div>
         <Outlet />
       </SidebarInset>
     </SidebarProvider>
