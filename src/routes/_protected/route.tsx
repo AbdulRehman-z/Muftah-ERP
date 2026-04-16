@@ -36,7 +36,7 @@ function RouteComponent() {
     <SidebarProvider defaultOpen>
       <AppSidebar />
       <SidebarInset className="relative px-10 py-7 ">
-        <div className="absolute right-4 top-4 z-30 sm:right-6 sm:top-6">
+        <div className="mb-4 flex items-center justify-end">
           <EnvironmentIndicator />
         </div>
         <Outlet />
