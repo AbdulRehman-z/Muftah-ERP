@@ -5,10 +5,13 @@ type EnvironmentKind = "production" | "staging" | "development" | "test" | "cust
 
 const clientEnv = import.meta.env as Record<string, string | boolean | undefined>;
 
-function resolveEnvironment() {
-  const raw = String(clientEnv.VITE_APP_ENV ?? import.meta.env.MODE ?? "unknown")
+const normalizeEnv = (value: string | boolean | undefined) =>
+  String(value ?? "")
     .trim()
     .toLowerCase();
+
+const toEnvironment = (raw: string) => {
+  if (!raw) return null;
 
   if (raw === "production" || raw === "prod") {
     return { kind: "production" as EnvironmentKind, label: "PRODUCTION", value: raw };
@@ -28,9 +31,47 @@ function resolveEnvironment() {
 
   return {
     kind: "custom" as EnvironmentKind,
-    label: raw ? raw.toUpperCase() : "UNKNOWN",
+    label: raw.toUpperCase(),
     value: raw,
   };
+};
+
+const resolveFromHostname = () => {
+  if (typeof window === "undefined") return null;
+
+  const hostname = window.location.hostname.toLowerCase();
+
+  if (hostname.includes("staging")) {
+    return { kind: "staging" as EnvironmentKind, label: "STAGING", value: "staging" };
+  }
+
+  if (
+    hostname === "localhost" ||
+    hostname.startsWith("127.") ||
+    hostname.startsWith("192.168.")
+  ) {
+    return { kind: "development" as EnvironmentKind, label: "DEVELOPMENT", value: "development" };
+  }
+
+  return null;
+};
+
+function resolveEnvironment() {
+  const explicitEnv =
+    normalizeEnv(clientEnv.VITE_APP_ENV) ||
+    normalizeEnv(clientEnv.VITE_ENV) ||
+    normalizeEnv(clientEnv.VITE_DEPLOY_ENV);
+
+  const explicitMatch = toEnvironment(explicitEnv);
+  if (explicitMatch) return explicitMatch;
+
+  const hostMatch = resolveFromHostname();
+  if (hostMatch) return hostMatch;
+
+  const modeMatch = toEnvironment(normalizeEnv(import.meta.env.MODE));
+  if (modeMatch) return modeMatch;
+
+  return { kind: "custom" as EnvironmentKind, label: "UNKNOWN", value: "unknown" };
 }
 
 const envStyles: Record<EnvironmentKind, string> = {
