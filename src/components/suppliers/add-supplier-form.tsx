@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { addSupplierFn } from "@/server-functions/suppliers/add-supplier-fn";
+import { getSuppliersFn } from "@/server-functions/suppliers/get-suppliers-fn";
 import { supplierSchema } from "@/lib/validators";
 import { Textarea } from "../ui/textarea";
 import {
@@ -28,14 +29,61 @@ type Props = {
   onSuccess: () => void;
 };
 
+type SuppliersList = Awaited<ReturnType<typeof getSuppliersFn>>;
+type SupplierListItem = SuppliersList[number];
+
 export const AddSupplierForm = ({ onSuccess }: Props) => {
   const queryClient = useQueryClient();
 
   const mutate = useMutation({
     mutationFn: addSupplierFn,
-    onSuccess: () => {
+    onSuccess: async (newSupplier, variables) => {
+      const submitted = (variables as { data?: Record<string, unknown> } | undefined)?.data;
+      const nowIso = new Date().toISOString();
+      const emailValue =
+        (newSupplier as any)?.email ?? String(submitted?.email ?? "");
+      const nationalIdValue =
+        (newSupplier as any)?.nationalId ?? String(submitted?.nationalId ?? "");
+
+      const optimisticSupplier = {
+        id: (newSupplier as any)?.id ?? `temp-supplier-${Date.now()}`,
+        supplierName:
+          (newSupplier as any)?.supplierName ??
+          String(submitted?.supplierName ?? "New Supplier"),
+        supplierShopName:
+          (newSupplier as any)?.supplierShopName ??
+          String(submitted?.supplierShopName ?? ""),
+        email: emailValue || null,
+        phone: (newSupplier as any)?.phone ?? String(submitted?.phone ?? ""),
+        nationalId: nationalIdValue || null,
+        address: (newSupplier as any)?.address ?? String(submitted?.address ?? ""),
+        city: (newSupplier as any)?.city ?? String(submitted?.city ?? ""),
+        state: (newSupplier as any)?.state ?? String(submitted?.state ?? ""),
+        notes: (newSupplier as any)?.notes ?? String(submitted?.notes ?? ""),
+        createdAt: (newSupplier as any)?.createdAt ?? nowIso,
+        updatedAt: (newSupplier as any)?.updatedAt ?? nowIso,
+        purchases: [],
+        payments: [],
+        totalPurchases: 0,
+        totalPayments: 0,
+        balance: 0,
+      } as SupplierListItem;
+
+      queryClient.setQueryData<SuppliersList>(["suppliers"], (current) => {
+        if (!current) return [optimisticSupplier];
+        return [
+          optimisticSupplier,
+          ...current.filter((supplier) => supplier.id !== optimisticSupplier.id),
+        ];
+      });
+
+      // Keep the optimistic list visible immediately; defer network refetch to avoid
+      // first-insert stale overwrite cases in some environments.
+      queryClient.invalidateQueries({
+        queryKey: ["suppliers"],
+        refetchType: "none",
+      });
       toast.success("Supplier added successfully");
-      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       onSuccess();
     },
     onError: (error) => {
@@ -48,7 +96,7 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
       supplierName: "",
       supplierShopName: "",
       email: "",
-      // nationalId: "",x
+      nationalId: "",
       phone: "",
       address: "",
       city: "",

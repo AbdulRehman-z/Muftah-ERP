@@ -13,6 +13,7 @@ import { Route as ProtectedRouteRouteImport } from './routes/_protected/route'
 import { Route as AuthLayoutRouteRouteImport } from './routes/_authLayout/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvestorIndexRouteImport } from './routes/investor/index'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ProtectedUserManagementIndexRouteImport } from './routes/_protected/user-management/index'
 import { Route as ProtectedSuppliersIndexRouteImport } from './routes/_protected/suppliers/index'
 import { Route as ProtectedOperatorIndexRouteImport } from './routes/_protected/operator/index'
@@ -65,6 +66,11 @@ const IndexRoute = IndexRouteImport.update({
 const InvestorIndexRoute = InvestorIndexRouteImport.update({
   id: '/investor/',
   path: '/investor/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProtectedUserManagementIndexRoute =
@@ -270,6 +276,7 @@ const ProtectedHrPayrollEmployeeEmployeeIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/health': typeof ApiHealthRoute
   '/investor/': typeof InvestorIndexRoute
   '/operator/$runId': typeof ProtectedOperatorRunIdRoute
   '/suppliers/$supplierId': typeof ProtectedSuppliersSupplierIdRoute
@@ -309,6 +316,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/health': typeof ApiHealthRoute
   '/investor': typeof InvestorIndexRoute
   '/operator/$runId': typeof ProtectedOperatorRunIdRoute
   '/suppliers/$supplierId': typeof ProtectedSuppliersSupplierIdRoute
@@ -351,6 +359,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authLayout': typeof AuthLayoutRouteRouteWithChildren
   '/_protected': typeof ProtectedRouteRouteWithChildren
+  '/api/health': typeof ApiHealthRoute
   '/investor/': typeof InvestorIndexRoute
   '/_protected/operator/$runId': typeof ProtectedOperatorRunIdRoute
   '/_protected/suppliers/$supplierId': typeof ProtectedSuppliersSupplierIdRoute
@@ -392,6 +401,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/api/health'
     | '/investor/'
     | '/operator/$runId'
     | '/suppliers/$supplierId'
@@ -431,6 +441,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/api/health'
     | '/investor'
     | '/operator/$runId'
     | '/suppliers/$supplierId'
@@ -472,6 +483,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authLayout'
     | '/_protected'
+    | '/api/health'
     | '/investor/'
     | '/_protected/operator/$runId'
     | '/_protected/suppliers/$supplierId'
@@ -514,6 +526,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthLayoutRouteRoute: typeof AuthLayoutRouteRouteWithChildren
   ProtectedRouteRoute: typeof ProtectedRouteRouteWithChildren
+  ApiHealthRoute: typeof ApiHealthRoute
   InvestorIndexRoute: typeof InvestorIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiInternalBootstrapAdminRoute: typeof ApiInternalBootstrapAdminRoute
@@ -547,6 +560,13 @@ declare module '@tanstack/react-router' {
       path: '/investor'
       fullPath: '/investor/'
       preLoaderRoute: typeof InvestorIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_protected/user-management/': {
@@ -896,6 +916,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthLayoutRouteRoute: AuthLayoutRouteRouteWithChildren,
   ProtectedRouteRoute: ProtectedRouteRouteWithChildren,
+  ApiHealthRoute: ApiHealthRoute,
   InvestorIndexRoute: InvestorIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiInternalBootstrapAdminRoute: ApiInternalBootstrapAdminRoute,

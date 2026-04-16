@@ -82,7 +82,7 @@ function PageSkeleton() {
 
 function RouteComponent() {
   return (
-    <div className="w-full max-w-[1440px] mx-auto">
+    <div className="space-y-6">
       <Suspense fallback={<PageSkeleton />}>
         <UsersTable />
       </Suspense>
