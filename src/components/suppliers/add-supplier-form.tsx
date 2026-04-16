@@ -55,7 +55,12 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
         ];
       });
 
-      await queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      // Keep the optimistic list visible immediately; defer network refetch to avoid
+      // first-insert stale overwrite cases in some environments.
+      queryClient.invalidateQueries({
+        queryKey: ["suppliers"],
+        refetchType: "none",
+      });
       toast.success("Supplier added successfully");
       onSuccess();
     },
