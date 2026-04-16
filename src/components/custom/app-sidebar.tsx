@@ -21,6 +21,7 @@ import { getAccessibleNavigationItems } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
 import { useViewerAccess } from "@/hooks/use-viewer-access";
 import { NavUser } from "./nav-user";
+import { EnvironmentIndicator } from "./environment-indicator";
 import { ScrollArea } from "../ui/scroll-area";
 
 // ── Path helpers ───────────────────────────────────────────────────────────────
@@ -398,7 +399,10 @@ export const AppSidebar = () => {
       <div className="mx-3 h-px bg-sidebar-border/60 group-data-[collapsible=icon]:mx-2" />
 
       {/* ── Footer ────────────────────────────────────────────────────────── */}
-      <SidebarFooter className="px-2 py-2">
+      <SidebarFooter className="px-2 py-2 gap-2">
+        <div className="px-1 group-data-[collapsible=icon]:hidden">
+          <EnvironmentIndicator />
+        </div>
         <NavUser />
       </SidebarFooter>
     </Sidebar>
