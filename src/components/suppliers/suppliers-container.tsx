@@ -71,7 +71,9 @@ export const SupplierContainer = () => {
     queryFn: getSuppliersFn,
   });
 
-  if (suppliers.length === 0) {
+  const safeSuppliers = Array.isArray(suppliers) ? suppliers : [];
+
+  if (safeSuppliers.length === 0) {
     return (
       <motion.div
         initial={{ opacity: 0 }}
@@ -91,9 +93,9 @@ export const SupplierContainer = () => {
     );
   }
 
-  const filteredSuppliers = suppliers.filter((supplier) => {
+  const filteredSuppliers = safeSuppliers.filter((supplier) => {
     const matchesSearch =
-      supplier.supplierName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (supplier.supplierName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (supplier.supplierShopName || "")
         .toLowerCase()
         .includes(searchQuery.toLowerCase()) ||
@@ -102,7 +104,7 @@ export const SupplierContainer = () => {
     if (!matchesSearch) return false;
 
     if (dateFilter !== "all") {
-      const createdAt = new Date(supplier.createdAt);
+      const createdAt = supplier.createdAt ? new Date(supplier.createdAt) : new Date(0);
       if (dateFilter === "today" && !isToday(createdAt)) return false;
       if (dateFilter === "this_month" && !isThisMonth(createdAt)) return false;
       if (
@@ -129,7 +131,10 @@ export const SupplierContainer = () => {
     (s) => s.totalPurchases > 0,
   ).length;
   const recentlyAdded = filteredSuppliers.filter((s) =>
-    isAfter(new Date(s.createdAt), startOfDays(subMonths(new Date(), 1))),
+    isAfter(
+      s.createdAt ? new Date(s.createdAt) : new Date(0),
+      startOfDay(subMonths(new Date(), 1)),
+    ),
   ).length;
 
   return (
@@ -299,5 +304,3 @@ function SharpKPICard({ label, value, icon: Icon, theme, subtext }: SharpKPICard
     </motion.div>
   );
 }
-
-const startOfDays = (date: Date) => startOfDay(date);

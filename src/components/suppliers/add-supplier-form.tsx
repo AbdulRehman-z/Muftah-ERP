@@ -37,9 +37,31 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
 
   const mutate = useMutation({
     mutationFn: addSupplierFn,
-    onSuccess: async (newSupplier) => {
+    onSuccess: async (newSupplier, variables) => {
+      const submitted = (variables as { data?: Record<string, unknown> } | undefined)?.data;
+      const nowIso = new Date().toISOString();
+      const emailValue =
+        (newSupplier as any)?.email ?? String(submitted?.email ?? "");
+      const nationalIdValue =
+        (newSupplier as any)?.nationalId ?? String(submitted?.nationalId ?? "");
+
       const optimisticSupplier = {
-        ...newSupplier,
+        id: (newSupplier as any)?.id ?? `temp-supplier-${Date.now()}`,
+        supplierName:
+          (newSupplier as any)?.supplierName ??
+          String(submitted?.supplierName ?? "New Supplier"),
+        supplierShopName:
+          (newSupplier as any)?.supplierShopName ??
+          String(submitted?.supplierShopName ?? ""),
+        email: emailValue || null,
+        phone: (newSupplier as any)?.phone ?? String(submitted?.phone ?? ""),
+        nationalId: nationalIdValue || null,
+        address: (newSupplier as any)?.address ?? String(submitted?.address ?? ""),
+        city: (newSupplier as any)?.city ?? String(submitted?.city ?? ""),
+        state: (newSupplier as any)?.state ?? String(submitted?.state ?? ""),
+        notes: (newSupplier as any)?.notes ?? String(submitted?.notes ?? ""),
+        createdAt: (newSupplier as any)?.createdAt ?? nowIso,
+        updatedAt: (newSupplier as any)?.updatedAt ?? nowIso,
         purchases: [],
         payments: [],
         totalPurchases: 0,
