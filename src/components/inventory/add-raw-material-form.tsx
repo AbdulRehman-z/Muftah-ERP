@@ -63,7 +63,7 @@ export const AddRawMaterialForm = ({
       supplierId: preselectedSupplierId || "",
       notes: "",
       paymentMethod: "pay_later",
-      paymentStatus: "paid" as "paid" | "partial" | "unpaid",
+      paymentStatus: "unpaid" as "paid" | "partial" | "unpaid",
       amountPaid: "",
       transactionId: "",
       bankName: "",
@@ -288,6 +288,8 @@ export const AddRawMaterialForm = ({
                     if (val === "pay_later") {
                       form.setFieldValue("paymentStatus", "unpaid");
                       form.setFieldValue("amountPaid", "");
+                    } else {
+                      form.setFieldValue("paymentStatus", "paid");
                     }
                   }}
                 />
