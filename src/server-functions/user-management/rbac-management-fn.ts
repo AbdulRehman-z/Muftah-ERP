@@ -150,12 +150,8 @@ async function listRolesWithMeta() {
 function resolveLandingPath(
   requestedPath: string,
   permissionKeys: Iterable<string>,
-  roleSlug?: string,
+  _roleSlug?: string,
 ) {
-  if (roleSlug === "super-admin") {
-    return "/user-management";
-  }
-
   if (
     LANDING_PATH_OPTIONS.includes(requestedPath as (typeof LANDING_PATH_OPTIONS)[number]) &&
     canAccessPath(requestedPath, permissionKeys)

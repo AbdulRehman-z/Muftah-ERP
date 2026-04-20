@@ -66,11 +66,8 @@ async function upsertRoleSeed(
     .onConflictDoUpdate({
       target: appRoles.slug,
       set: {
-        name: roleSeed.name,
-        description: roleSeed.description,
         isSystem: true,
-        priority: roleSeed.priority,
-        defaultLandingPath: roleSeed.defaultLandingPath,
+        isArchived: false,
         updatedAt: new Date(),
       },
     })

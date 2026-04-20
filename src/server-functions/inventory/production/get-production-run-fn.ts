@@ -62,6 +62,7 @@ export const getProductionRunsFn = createServerFn()
         },
         warehouse: true,
         operator: true,
+        initiator: true,
         materialsUsed: true,
       },
       limit: data?.runId ? 1 : operatorOnlyAccess ? 25 : 10,

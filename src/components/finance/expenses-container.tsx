@@ -22,7 +22,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { DataTable } from "@/components/custom/data-table";
 import type { ColumnDef } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
@@ -62,10 +62,16 @@ export const ExpensesContainer = () => {
     queryFn: () => listExpenseCategoriesFn(),
   });
 
+  const today = new Date();
+  const dateFrom = startOfMonth(today).toISOString();
+  const dateTo = endOfMonth(today).toISOString();
+
   const { data, isFetching } = useExpenses({
     page,
     limit: LIMIT,
     category: categoryFilter === "all" ? undefined : categoryFilter,
+    dateFrom,
+    dateTo,
   });
 
   const expenses = data?.data ?? [];

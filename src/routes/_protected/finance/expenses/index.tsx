@@ -4,11 +4,17 @@ import { GenericLoader } from "@/components/custom/generic-loader";
 import { getExpensesFn } from "@/server-functions/finance-fn";
 import { ExpensesContainer } from "@/components/finance/expenses-container";
 
+import { startOfMonth, endOfMonth } from "date-fns";
+
 export const Route = createFileRoute("/_protected/finance/expenses/")({
   loader: async ({ context }) => {
+    const today = new Date();
+    const dateFrom = startOfMonth(today).toISOString();
+    const dateTo = endOfMonth(today).toISOString();
+
     void context.queryClient.prefetchQuery({
-      queryKey: ["expenses"],
-      queryFn: () => getExpensesFn({ data: {} }),
+      queryKey: ["expenses", { page: 1, limit: 20, dateFrom, dateTo }],
+      queryFn: () => getExpensesFn({ data: { dateFrom, dateTo } }),
     });
   },
   component: RouteComponent,

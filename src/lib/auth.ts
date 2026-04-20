@@ -53,7 +53,7 @@ export const auth = betterAuth({
     // },
   },
   emailAndPassword: {
-    autoSignIn: true,
+    // autoSignIn: true,
     requireEmailVerification: false,
     enabled: true,
     sendResetPassword: async ({ user, url }) => {

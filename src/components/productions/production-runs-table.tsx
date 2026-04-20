@@ -59,6 +59,7 @@ export const ProductionRunsTable = ({
     null,
   );
   const [cancelReason, setCancelReason] = useState("");
+  const [shortfallReason, setShortfallReason] = useState("");
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -234,8 +235,13 @@ export const ProductionRunsTable = ({
                   Units
                 </span>
               </p>
+              {run.shortfallUnits > 0 && (
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[9px] px-1 py-0 h-4 mt-1 font-bold">
+                  SHORT: {run.shortfallUnits}
+                </Badge>
+              )}
               {perCarton > 0 && produced > 0 && (
-                <p className="text-[10px] text-muted-foreground font-bold uppercase leading-none">
+                <p className="text-[10px] text-muted-foreground font-bold uppercase leading-none mt-1">
                   {cartons > 0 ? `${cartons} Cartons ` : ""}
                   {loose > 0 ? `+ ${loose} Loose` : ""}
                 </p>
@@ -486,16 +492,57 @@ export const ProductionRunsTable = ({
               This will create finished goods in the warehouse. You can transfer
               them to other warehouses afterwards.
             </AlertDialogDescription>
+            {(() => {
+              const runToFinish = runs.find(r => r.id === finishDialogRunId);
+              if (!runToFinish || (runToFinish.completedUnits || 0) >= runToFinish.containersProduced) return null;
+              
+              return (
+                <div className="mt-4 p-4 rounded-lg bg-amber-50 border border-amber-100 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="size-5 text-amber-600 mt-0.5 shrink-0" />
+                    <div>
+                      <h4 className="text-sm font-bold text-amber-900">Shortfall Detected</h4>
+                      <p className="text-xs text-amber-800/80 leading-relaxed mt-1">
+                        Actual production ({runToFinish.completedUnits}) is below the target ({runToFinish.containersProduced}). 
+                        By completing this run, you are acknowledging the loss of {runToFinish.containersProduced - (runToFinish.completedUnits || 0)} units.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-amber-900">Reason for Shortfall</Label>
+                    <Textarea 
+                      placeholder="e.g., Quality control failure, material spillage..."
+                      value={shortfallReason}
+                      onChange={(e) => setShortfallReason(e.target.value)}
+                      className="bg-white"
+                    />
+                  </div>
+                </div>
+              );
+            })()}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
               onClick={() => {
+                const runToFinish = runs.find(r => r.id === finishDialogRunId);
+                const isShort = runToFinish && (runToFinish.completedUnits || 0) < runToFinish.containersProduced;
+
+                if (isShort && !shortfallReason.trim()) {
+                  toast.error("Shortfall reason required", {
+                    description: "You must provide a reason for completing this run with missing units."
+                  });
+                  return;
+                }
+
                 if (!finishDialogRunId) return;
                 completeProduction.mutate(
                   {
-                    data: { productionRunId: finishDialogRunId },
+                    data: { 
+                      productionRunId: finishDialogRunId,
+                      shortfallReason: shortfallReason.trim() || undefined
+                    },
                   },
                   {
                     onSuccess: () => {
@@ -503,6 +550,7 @@ export const ProductionRunsTable = ({
                         description: "Finished goods added to inventory.",
                       });
                       setFinishDialogRunId(null);
+                      setShortfallReason("");
                     },
                     onError: (err) => {
                       toast.error("Failed to complete production", {

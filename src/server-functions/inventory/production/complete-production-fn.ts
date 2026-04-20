@@ -16,6 +16,7 @@ import { hasPermission } from "@/lib/rbac";
 
 const completeProductionSchema = z.object({
   productionRunId: z.string().min(1, "Production run ID is required"),
+  shortfallReason: z.string().optional(),
 });
 
 export const completeProductionFn = createServerFn()
@@ -66,10 +67,19 @@ export const completeProductionFn = createServerFn()
       }
 
       // 3. Calculate Final Output (Cartons vs Loose) based on ACTUAL production
-      // Check if operator clicked Complete without logging any units. If so, default to target run.
       let totalUnitsProduced = productionRun.completedUnits || 0;
-      if (totalUnitsProduced === 0) {
-        // Operator did not partially log units, assume they completed the target quantity
+      let shortfallUnits = 0;
+
+      if (totalUnitsProduced < productionRun.containersProduced) {
+        if (!data.shortfallReason) {
+          throw new Error(
+            `Production is short by ${productionRun.containersProduced - totalUnitsProduced} units. Please provide a reason for the shortfall to complete this run early.`,
+          );
+        }
+        // Operator explicitly closed it early with a variance
+        shortfallUnits = productionRun.containersProduced - totalUnitsProduced;
+      } else if (totalUnitsProduced === 0 && productionRun.containersProduced > 0) {
+        // Fallback for unexpected zero
         totalUnitsProduced = productionRun.containersProduced;
       }
 
@@ -181,25 +191,33 @@ export const completeProductionFn = createServerFn()
       }
 
       // 5. Stock Reconciliation (Cartonization)
-      if (finalCartons > 0) {
-        const unitsToDeductFromLoose = finalCartons * itemsPerCarton;
+      const [existingStock] = await tx
+        .select()
+        .from(finishedGoodsStock)
+        .where(
+          and(
+            eq(finishedGoodsStock.warehouseId, productionRun.warehouseId),
+            eq(finishedGoodsStock.recipeId, productionRun.recipeId),
+          ),
+        );
 
-        const [existingStock] = await tx
-          .select()
-          .from(finishedGoodsStock)
-          .where(
-            and(
-              eq(finishedGoodsStock.warehouseId, productionRun.warehouseId),
-              eq(finishedGoodsStock.recipeId, productionRun.recipeId),
-            ),
-          );
-
+      if (itemsPerCarton > 0 && recipe.cartonPackagingId) {
+        // Recipe has carton packaging — apply carton/loose split
         if (existingStock) {
+          // If units were incrementally logged (completedUnits > 0), the loose units are already
+          // in stock from prior progress logs. We need to convert accumulated loose into cartons.
+          // If no incremental logging (completedUnits === 0), we add the full output directly.
+          const unitsToDeductFromLoose = finalCartons * itemsPerCarton;
+          const looseAdjustment =
+            productionRun.completedUnits === 0
+              ? finalLoose
+              : -unitsToDeductFromLoose;
+
           await tx
             .update(finishedGoodsStock)
             .set({
               quantityCartons: sql`${finishedGoodsStock.quantityCartons} + ${finalCartons}`,
-              quantityContainers: sql`${finishedGoodsStock.quantityContainers} + ${totalUnitsProduced === productionRun.containersProduced && productionRun.completedUnits === 0 ? finalLoose : `- ${unitsToDeductFromLoose}`}`,
+              quantityContainers: sql`${finishedGoodsStock.quantityContainers} + ${looseAdjustment}`,
               updatedAt: new Date(),
             })
             .where(eq(finishedGoodsStock.id, existingStock.id));
@@ -208,36 +226,32 @@ export const completeProductionFn = createServerFn()
             warehouseId: productionRun.warehouseId,
             recipeId: productionRun.recipeId,
             quantityCartons: finalCartons,
-            quantityContainers: finalLoose, 
+            quantityContainers: finalLoose,
           });
         }
-      } else if (totalUnitsProduced > 0 && productionRun.completedUnits === 0) {
-        // They didn't incrementally add loose units, we must ensure they are added to the stock since we auto-assumed target.
-         const [existingStock] = await tx
-          .select()
-          .from(finishedGoodsStock)
-          .where(
-            and(
-               eq(finishedGoodsStock.warehouseId, productionRun.warehouseId),
-               eq(finishedGoodsStock.recipeId, productionRun.recipeId),
-             ),
-           );
-         if (existingStock) {
-           await tx
-             .update(finishedGoodsStock)
-             .set({
-               quantityContainers: sql`${finishedGoodsStock.quantityContainers} + ${finalLoose}`,
-               updatedAt: new Date(),
-             })
-             .where(eq(finishedGoodsStock.id, existingStock.id));
-         } else {
-           await tx.insert(finishedGoodsStock).values({
-             warehouseId: productionRun.warehouseId,
-             recipeId: productionRun.recipeId,
-             quantityCartons: 0,
-             quantityContainers: finalLoose, 
-           });
-         }
+      } else {
+        // Loose-only recipe — NEVER touch quantityCartons; all units go to quantityContainers.
+        // Only add units if they were NOT already incrementally logged via progress updates.
+        if (productionRun.completedUnits === 0 && totalUnitsProduced > 0) {
+          if (existingStock) {
+            await tx
+              .update(finishedGoodsStock)
+              .set({
+                quantityContainers: sql`${finishedGoodsStock.quantityContainers} + ${totalUnitsProduced}`,
+                updatedAt: new Date(),
+              })
+              .where(eq(finishedGoodsStock.id, existingStock.id));
+          } else {
+            await tx.insert(finishedGoodsStock).values({
+              warehouseId: productionRun.warehouseId,
+              recipeId: productionRun.recipeId,
+              quantityCartons: 0,
+              quantityContainers: totalUnitsProduced,
+            });
+          }
+        }
+        // If completedUnits > 0, units were already added to stock via log-production-progress-fn.
+        // No further stock update needed here.
       }
 
 
@@ -264,9 +278,11 @@ export const completeProductionFn = createServerFn()
           actualCompletionDate: new Date(),
           cartonsProduced: finalCartons,
           looseUnitsProduced: finalLoose,
-          completedUnits: totalUnitsProduced, // Update completedUnits in case it was auto-filled from 0
+          completedUnits: totalUnitsProduced,
           totalPackagingCost: finalPackagingCost.toFixed(2),
           totalProductionCost: finalProductionCost.toFixed(2),
+          shortfallUnits: shortfallUnits,
+          shortfallReason: data.shortfallReason || null,
         })
         .where(eq(productionRuns.id, productionRun.id));
 
@@ -281,6 +297,8 @@ export const completeProductionFn = createServerFn()
           completedUnits: totalUnitsProduced,
           totalPackagingCost: finalPackagingCost.toFixed(2),
           totalProductionCost: finalProductionCost.toFixed(2),
+          shortfallUnits: shortfallUnits,
+          shortfallReason: data.shortfallReason || null,
         },
       };
     });

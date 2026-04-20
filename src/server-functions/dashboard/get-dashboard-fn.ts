@@ -106,7 +106,7 @@ export const getDashboardStatsFn = createServerFn()
             (
               ${finishedGoodsStock.quantityCartons} * coalesce(${recipes.containersPerCarton}, 0)
               + ${finishedGoodsStock.quantityContainers}
-            )::numeric * coalesce(${recipes.estimatedCostPerContainer}, 0)::numeric
+            )::numeric * coalesce(nullif(trim(${recipes.estimatedCostPerContainer}::text), '')::numeric, 0)
           ), 0)`,
         })
         .from(finishedGoodsStock)
@@ -169,9 +169,9 @@ export const getDashboardStatsFn = createServerFn()
     // ── Chart: single GROUP BY query per source — filtered by date range ──
     // Calculate the chart window: from rangeStart to rangeEnd, grouped by month
 
-    const chartWindowStart = startOfMonth(rangeStart);
+    const chartWindowStart = rangeStart;
 
-    const [chartRevenue, chartExpenses, chartPayrolls] = await Promise.all([
+    const [chartRevenue, chartExpenses, chartPayrolls, chartMaterialCosts] = await Promise.all([
       // Revenue by month
       db
         .select({
@@ -205,12 +205,31 @@ export const getDashboardStatsFn = createServerFn()
         .where(and(gte(payrolls.createdAt, chartWindowStart), lte(payrolls.createdAt, rangeEnd)))
         .groupBy(sql`date_trunc('month', ${payrolls.createdAt})`)
         .orderBy(sql`date_trunc('month', ${payrolls.createdAt})`),
+
+      // Material consumption cost by month (for chart expense series)
+      db
+        .select({
+          month: sql<string>`to_char(date_trunc('month', ${productionRuns.actualCompletionDate}), 'YYYY-MM-01')`,
+          total: sql<string>`coalesce(sum(${productionMaterialsUsed.totalCost}), 0)`,
+        })
+        .from(productionMaterialsUsed)
+        .innerJoin(productionRuns, eq(productionMaterialsUsed.productionRunId, productionRuns.id))
+        .where(
+          and(
+            eq(productionRuns.status, "completed"),
+            gte(productionRuns.actualCompletionDate, chartWindowStart),
+            lte(productionRuns.actualCompletionDate, rangeEnd),
+          ),
+        )
+        .groupBy(sql`date_trunc('month', ${productionRuns.actualCompletionDate})`)
+        .orderBy(sql`date_trunc('month', ${productionRuns.actualCompletionDate})`),
     ]);
 
     // Build lookup maps for O(1) merge
     const revenueByMonth = new Map(chartRevenue.map((r) => [r.month, toFloat(r.total)]));
     const expensesByMonth = new Map(chartExpenses.map((r) => [r.month, toFloat(r.total)]));
     const payrollByMonth = new Map(chartPayrolls.map((r) => [r.month, toFloat(r.total)]));
+    const materialCostByMonth = new Map(chartMaterialCosts.map((r) => [r.month, toFloat(r.total)]));
 
     // Generate month keys from chartWindowStart to rangeEnd
     // Use endOfMonth to ensure we capture the full range
@@ -223,7 +242,7 @@ export const getDashboardStatsFn = createServerFn()
       const key = format(mDate, "yyyy-MM-01");
       const label = format(mDate, "01 MMM");
       const rev = revenueByMonth.get(key) ?? 0;
-      const exp = (expensesByMonth.get(key) ?? 0) + (payrollByMonth.get(key) ?? 0);
+      const exp = (expensesByMonth.get(key) ?? 0) + (payrollByMonth.get(key) ?? 0) + (materialCostByMonth.get(key) ?? 0);
       const payroll = payrollByMonth.get(key) ?? 0;
       return { month: label, revenue: rev, expenses: exp, payroll };
     });

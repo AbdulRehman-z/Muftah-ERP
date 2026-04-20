@@ -12,11 +12,9 @@ import {
   FlaskConical,
   ChevronRight,
   Clock,
-  CheckCircle2,
   AlertCircle,
   BarChart3,
   Receipt,
-  Calendar1Icon,
   ArrowLeft,
   AlertTriangle,
 } from "lucide-react";
@@ -309,7 +307,12 @@ function ProductionRunDetailsPage() {
             </Card>
 
             {/* Yield Stats */}
-            <Card className="bg-background/50 border ">
+            <Card className="bg-background/50 border relative overflow-hidden">
+              {(run.shortfallUnits ?? 0) > 0 && (
+                <div className="absolute top-0 right-0 py-1.5 px-3 bg-amber-500 text-white text-[9px] font-black uppercase tracking-widest rotate-0 origin-top-right">
+                  Shortfall Detected
+                </div>
+              )}
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                   <BarChart3 className="size-4" />
@@ -322,17 +325,26 @@ function ProductionRunDetailsPage() {
                     <span className="text-sm font-medium text-muted-foreground">
                       Total Units
                     </span>
-                    <span className="text-2xl font-black">
+                    <span className="text-2xl font-black tabular-nums">
                       {run.completedUnits}{" "}
                       <span className="text-xs font-bold text-muted-foreground">
                         / {run.containersProduced}
                       </span>
                     </span>
                   </div>
-                  <Progress
-                    value={(run.completedUnits! / run.containersProduced) * 100}
-                    className="h-2"
-                  />
+                  <div className="relative pt-1">
+                    <Progress
+                      value={(run.completedUnits! / run.containersProduced) * 100}
+                      className="h-2"
+                    />
+                    {((run.shortfallUnits ?? 0) > 0) && (
+                      <div 
+                        className="absolute top-0 h-4 w-0.5 bg-destructive z-10 opacity-60"
+                        style={{ left: `${(run.completedUnits! / run.containersProduced) * 100}%` }}
+                        title={`Shortfall of ${run.shortfallUnits} units`}
+                      />
+                    )}
+                  </div>
                   <div className="grid grid-cols-2 gap-2 text-xs pt-1">
                     <div className="bg-muted/30 p-2 rounded">
                       <p className="text-muted-foreground text-[10px] uppercase font-bold">
@@ -345,13 +357,18 @@ function ProductionRunDetailsPage() {
                         )}
                       </p>
                     </div>
-                    <div className="bg-amber-50/50 border border-amber-100 p-2 rounded text-amber-900">
+                    <div className="bg-amber-50/50 border border-amber-100 p-2 rounded text-amber-900 shrink-0">
                       <p className="text-amber-800/70 text-[10px] uppercase font-bold">
-                        Loose Units
+                        Loose/Short
                       </p>
-                      <p className="font-bold text-base">
+                      <p className="font-bold text-base flex items-baseline gap-1.5">
                         {run.completedUnits! %
                           (run.recipe.containersPerCarton || 1)}
+                        {((run.shortfallUnits ?? 0) > 0) && (
+                          <span className="text-[10px] text-destructive font-black">
+                            ({run.shortfallUnits}V)
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -468,6 +485,26 @@ function ProductionRunDetailsPage() {
 
             {/* Sidebar: Details & Failure Notes */}
             <div className="space-y-6">
+              {/* Shortfall Reason Section */}
+              {((run.shortfallUnits ?? 0) > 0) && (
+                <Card className="bg-red-50 border-red-200">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xs font-black uppercase tracking-widest text-red-600 flex items-center gap-2">
+                      <AlertTriangle className="size-4" />
+                      Shortfall / Variance Reason
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm font-bold text-red-900 leading-relaxed bg-white/50 border border-red-100 p-3 rounded italic">
+                      "{run.shortfallReason || "No explanation provided."}"
+                    </div>
+                    <div className="mt-3 text-[10px] text-red-600 font-medium italic">
+                      * This run was forced closed early with {run.shortfallUnits} missing units.
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Failure / Notes Section */}
               <Card
                 className={
@@ -521,12 +558,24 @@ function ProductionRunDetailsPage() {
                   </div>
                   <Separator />
                   <div className="flex items-center gap-3">
-                    <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    <div className="size-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600">
                       <User className="size-4" />
                     </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground font-bold uppercase">
-                        Operator
+                        Initiated By
+                      </p>
+                      <p className="text-sm font-bold">{run.initiator?.name || "System"}</p>
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center gap-3">
+                    <div className="size-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600">
+                      <User className="size-4" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase">
+                        Assigned Operator
                       </p>
                       <p className="text-sm font-bold">{run.operator.name}</p>
                     </div>

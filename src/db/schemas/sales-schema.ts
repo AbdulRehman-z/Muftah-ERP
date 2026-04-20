@@ -98,6 +98,7 @@ export const invoiceItems = pgTable("invoice_items", {
   recipeId: text("recipe_id").references(() => recipes.id), // For stock checks against Finished Goods
   numberOfCartons: integer("number_of_cartons").notNull().default(0),
   quantity: integer("quantity").notNull().default(0), // Loose units
+  packsPerCarton: integer("packs_per_carton").notNull().default(0),
   totalWeight: decimal("total_weight", { precision: 12, scale: 3 })
     .notNull()
     .default("0"),

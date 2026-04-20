@@ -4,6 +4,7 @@ import { Info, Loader2, Factory } from "lucide-react";
 import { useState } from "react";
 import { getRecipesFn } from "@/server-functions/inventory/recipes/get-recipe-fn";
 import { getWarehousesFn } from "@/server-functions/inventory/get-warehouses-fn";
+import { getOperatorsFn } from "@/server-functions/inventory/production/get-operators-fn";
 import { useCreateProductionRun } from "@/hooks/stock/use-create-production-run";
 import { ResponsiveDialog } from "../custom/responsive-dialog";
 import { Alert, AlertDescription } from "../ui/alert";
@@ -41,12 +42,18 @@ export const CreateProductionRunDialog = ({
     queryFn: getWarehousesFn,
   });
 
+  const { data: operators } = useSuspenseQuery({
+    queryKey: ["operators-list"],
+    queryFn: getOperatorsFn,
+  });
+
   const mutation = useCreateProductionRun();
 
   const form = useForm({
     defaultValues: {
       recipeId: "",
       warehouseId: "",
+      operatorId: "",
       batchesProduced: 1,
       cartonsProduced: 0,
       looseUnitsProduced: 0,
@@ -145,6 +152,34 @@ export const CreateProductionRunDialog = ({
         }}
       >
         <FieldGroup>
+          {/* Operator Selection */}
+          <form.Field name="operatorId">
+            {(field) => (
+              <Field>
+                <FieldLabel>Assigned Operator</FieldLabel>
+                <p className="text-[10px] text-muted-foreground mb-2">
+                  Assign the floor operator who will log the production inputs.
+                </p>
+                <Select
+                  value={field.state.value}
+                  onValueChange={(value) => field.handleChange(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select operator..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {operators.map((op) => (
+                      <SelectItem key={op.id} value={op.id}>
+                        {op.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FieldError errors={field.state.meta.errors} />
+              </Field>
+            )}
+          </form.Field>
+
           {/* Warehouse Selection */}
           <form.Field name="warehouseId">
             {(field) => (

@@ -80,11 +80,13 @@ export const useExpenses = (params: {
     page?: number;
     limit?: number;
     category?: string;
+    dateFrom?: string;
+    dateTo?: string;
 } = {}) => {
-    const { page = 1, limit = 20, category } = params;
+    const { page = 1, limit = 20, category, dateFrom, dateTo } = params;
     return useQuery({
-        queryKey: ["expenses", { page, limit, category }],
-        queryFn: () => getExpensesFn({ data: { page, limit, category } }),
+        queryKey: ["expenses", { page, limit, category, dateFrom, dateTo }],
+        queryFn: () => getExpensesFn({ data: { page, limit, category, dateFrom, dateTo } }),
         placeholderData: (prev) => prev, // keep previous page visible while fetching next
     });
 };
@@ -94,13 +96,16 @@ export const useExpenses = (params: {
 export const useTransactions = (params: {
     walletId?: string;
     source?: string;
+    type?: "credit" | "debit";
+    dateFrom?: string;
+    dateTo?: string;
     page?: number;
     limit?: number;
 } = {}) => {
-    const { walletId, source, page = 1, limit = 20 } = params;
+    const { walletId, source, type, dateFrom, dateTo, page = 1, limit = 20 } = params;
     return useQuery({
-        queryKey: ["transactions", { walletId, source, page, limit }],
-        queryFn: () => getTransactionsFn({ data: { walletId, source, page, limit } }),
+        queryKey: ["transactions", { walletId, source, type, dateFrom, dateTo, page, limit }],
+        queryFn: () => getTransactionsFn({ data: { walletId, source, type, dateFrom, dateTo, page, limit } }),
         placeholderData: (prev) => prev,
     });
 };
@@ -108,10 +113,11 @@ export const useTransactions = (params: {
 // Keep a separate hook for the finance dashboard "recent activity" strip
 // so it stays a lightweight fixed-limit fetch and doesn't share cache with
 // the paginated ledger page.
-export const useRecentTransactions = (limit = 10) => {
+export const useRecentTransactions = (params?: { limit?: number; dateFrom?: string; dateTo?: string }) => {
+    const { limit = 10, dateFrom, dateTo } = params || {};
     return useQuery({
-        queryKey: ["transactions-recent", limit],
-        queryFn: () => getTransactionsFn({ data: { page: 1, limit } }),
+        queryKey: ["transactions-recent", { limit, dateFrom, dateTo }],
+        queryFn: () => getTransactionsFn({ data: { page: 1, limit, dateFrom, dateTo } }),
         staleTime: 30_000,
     });
 };

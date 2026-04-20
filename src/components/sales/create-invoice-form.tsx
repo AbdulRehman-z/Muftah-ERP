@@ -27,12 +27,14 @@ import { Field, FieldError, FieldGroup, FieldLabel, FieldDescription } from "../
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { effectiveCPP } from "@/server-functions/sales/invoices-fn";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type Props = {
     onSuccess: () => void;
     onCancel: () => void;
+    onDirtyChange?: (isDirty: boolean) => void;
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -125,9 +127,57 @@ const ModeToggle = ({
     </div>
 );
 
+/** CartonCompositionBadge — shows effective packs/carton with recipe default context */
+const CartonCompositionBadge = ({
+    recipeDefault,
+    effectiveValue,
+}: {
+    recipeDefault: number;
+    effectiveValue: number;
+}) => (
+    <TooltipProvider>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Badge variant="secondary" className="text-[9px] px-1.5 h-5 cursor-help gap-1">
+                    <Layers className="size-2.5" />
+                    {effectiveValue === recipeDefault
+                        ? `${recipeDefault} (default)`
+                        : `${effectiveValue} / ${recipeDefault} default`}
+                </Badge>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+                Recipe default: {recipeDefault} packs/carton
+                {effectiveValue !== recipeDefault && ` · Override: ${effectiveValue}`}
+            </TooltipContent>
+        </Tooltip>
+    </TooltipProvider>
+);
+
+// ── DirtyStateNotifier ───────────────────────────────────────────────────────
+// Subscribes to form dirty state and notifies the parent via callback.
+// Extracted as a component so useEffect can be called at the top level.
+const DirtyStateNotifier = ({
+    form,
+    onDirtyChange,
+}: {
+    form: any;
+    onDirtyChange: (isDirty: boolean) => void;
+}) => {
+    return (
+        <form.Subscribe
+            selector={(s: any) => s.isDirty}
+            children={(dirty: boolean) => {
+                // eslint-disable-next-line react-hooks/rules-of-hooks
+                useEffect(() => { onDirtyChange(dirty); }, [dirty]);
+                return null;
+            }}
+        />
+    );
+};
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
+export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props) => {
     const { data: customers } = useGetAllCustomers();
     const { data: inventoryData } = useSuspenseQuery({
         queryKey: ["inventory"],
@@ -183,6 +233,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                 numberOfCartons: 1,
                 numberOfUnits: 0,
                 discountCartons: 0,
+                packsPerCarton: 0,
                 hsnCode: "",
                 perCartonPrice: 0,
                 retailPrice: 0,
@@ -320,6 +371,10 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
             onSubmit={(e) => { e.preventDefault(); e.stopPropagation(); form.handleSubmit(); }}
             className="space-y-5 pb-12 mt-2"
         >
+            {/* Notify parent of dirty state changes */}
+            {onDirtyChange && (
+                <DirtyStateNotifier form={form} onDirtyChange={onDirtyChange} />
+            )}
             <FieldGroup>
 
                 {/* ═══════════════════════════════════════════════════════════
@@ -629,7 +684,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                 <div className="hidden md:grid items-center gap-2 px-3 pb-1 border-b"
                                                     style={{ gridTemplateColumns: "2.2fr 1fr 0.7fr 0.7fr 1.2fr 1fr 1fr 0.8fr 32px" }}
                                                 >
-                                                    {["Product", "Unit Type", "HSN", "Disc.", "Qty", "Unit Cost", "Retail MRP", "Amount", ""].map((h) => (
+                                                    {["Product", "Unit Type", "HSN", "Packs/Ctn", "Qty", "Unit Cost", "Retail MRP", "Amount", ""].map((h) => (
                                                         <div key={h} className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                                                             {h}
                                                         </div>
@@ -641,20 +696,21 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                         const item = watchedItems[index] || {};
                                                         const stock = availableStock.find((s) => s.recipe?.id === item.recipeId);
                                                         const cpp = stock?.recipe?.containersPerCarton || 1;
+                                                        const eCPP = effectiveCPP(item.packsPerCarton ?? 0, cpp);
                                                         const stockC = stock?.quantityCartons ?? 0;
                                                         const stockU = stock?.quantityContainers ?? 0;
                                                         const totalStockU = stockC * cpp + stockU;
 
                                                         const requestedU = item.unitType === "carton"
-                                                            ? ((item.numberOfCartons || 0) + (item.discountCartons || 0)) * cpp
+                                                            ? ((item.numberOfCartons || 0) + (item.discountCartons || 0)) * eCPP
                                                             : (item.numberOfUnits || 0);
 
                                                         const lineAmount = item.unitType === "carton"
                                                             ? (item.numberOfCartons || 0) * (item.perCartonPrice || 0)
-                                                            : (item.numberOfUnits || 0) * ((item.perCartonPrice || 0) / cpp);
+                                                            : (item.numberOfUnits || 0) * ((item.perCartonPrice || 0) / eCPP);
 
                                                         // Per-unit comparison for margin
-                                                        const perUnitCost = (item.perCartonPrice || 0) / Math.max(1, cpp);
+                                                        const perUnitCost = (item.perCartonPrice || 0) / Math.max(1, eCPP);
                                                         const perUnitRetail = item.retailPrice || 0;
                                                         const unitMargin = perUnitRetail - perUnitCost;
 
@@ -691,6 +747,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                                                         if (s?.recipe?.hsnCode) {
                                                                                             form.setFieldValue(`items[${index}].hsnCode`, s.recipe.hsnCode);
                                                                                         }
+                                                                                        form.setFieldValue(`items[${index}].packsPerCarton`, s?.recipe?.containersPerCarton ?? 0);
                                                                                         // Auto-populate Unit Cost from recipe's estimated cost
                                                                                         if (s?.recipe?.estimatedCostPerContainer) {
                                                                                             const cpp = s.recipe.containersPerCarton || 1;
@@ -744,7 +801,38 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                                                         <span className="text-muted-foreground">No stock info</span>
                                                                                     )}
                                                                                 </div>
+
+                                                                                {/* Discount cartons — inline sub-field, carton mode only */}
+                                                                                {item.unitType === "carton" && (
+                                                                                    <form.Field name={`items[${index}].discountCartons`}>
+                                                                                        {(sf) => (
+                                                                                            <div className="flex items-center gap-1 mt-1">
+                                                                                                <span className="text-[9px] text-muted-foreground font-medium whitespace-nowrap">Free ctns</span>
+                                                                                                <div className="relative w-14">
+                                                                                                    <Input
+                                                                                                        type="number"
+                                                                                                        min="0"
+                                                                                                        className="h-6 text-[10px] pr-1 pl-1.5"
+                                                                                                        value={sf.state.value}
+                                                                                                        onFocus={handleFocus}
+                                                                                                        onChange={(e) => sf.handleChange(Number(e.target.value))}
+                                                                                                        title="Free cartons given to customer (deducted from stock, not billed)"
+                                                                                                    />
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </form.Field>
+                                                                                )}
+
                                                                                 <FieldError errors={sf.state.meta.errors} />
+
+                                                                                {/* CartonCompositionBadge — carton mode + product selected */}
+                                                                                {item.unitType === "carton" && stock && (
+                                                                                    <CartonCompositionBadge
+                                                                                        recipeDefault={cpp}
+                                                                                        effectiveValue={eCPP}
+                                                                                    />
+                                                                                )}
                                                                             </div>
                                                                         )}
                                                                     </form.Field>
@@ -804,8 +892,8 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                                         )}
                                                                     </form.Field>
 
-                                                                    {/* Discount Cartons — only relevant for carton unit type */}
-                                                                    <form.Field name={`items[${index}].discountCartons`}>
+                                                                    {/* Packs/Ctn — only active for carton unit type */}
+                                                                    <form.Field name={`items[${index}].packsPerCarton`}>
                                                                         {(sf) => (
                                                                             <div className="relative">
                                                                                 <Input
@@ -819,10 +907,10 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                                                     onFocus={handleFocus}
                                                                                     onChange={(e) => sf.handleChange(Number(e.target.value))}
                                                                                     disabled={item.unitType !== "carton"}
-                                                                                    title={item.unitType !== "carton" ? "Discount cartons only apply to carton orders" : "Free cartons given to customer (deducted from stock, not billed)"}
+                                                                                    title={item.unitType !== "carton" ? "Packs per carton only applies to carton orders" : "Override packs per carton (0 = use recipe default)"}
                                                                                 />
                                                                                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-muted-foreground font-medium pointer-events-none">
-                                                                                    +
+                                                                                    pks
                                                                                 </span>
                                                                             </div>
                                                                         )}
@@ -885,7 +973,11 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                                                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[9px] text-muted-foreground font-semibold pointer-events-none">
                                                                                     ₨
                                                                                 </span>
-                                                                                <span className="block text-[9px] text-center text-muted-foreground mt-0.5">/carton</span>
+                                                                                <span className="block text-[9px] text-center text-muted-foreground mt-0.5">
+                                                                                    {stock && item.unitType === "carton"
+                                                                                        ? `= ${eCPP} pks × ₨${((item.perCartonPrice || 0) / eCPP).toFixed(1)}`
+                                                                                        : "/carton"}
+                                                                                </span>
                                                                             </div>
                                                                         )}
                                                                     </form.Field>
@@ -978,6 +1070,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                                                         if (s?.recipe?.hsnCode) {
                                                                                             form.setFieldValue(`items[${index}].hsnCode`, s.recipe.hsnCode);
                                                                                         }
+                                                                                        form.setFieldValue(`items[${index}].packsPerCarton`, s?.recipe?.containersPerCarton ?? 0);
                                                                                         if (s?.recipe?.estimatedCostPerContainer) {
                                                                                             const cpp = s.recipe.containersPerCarton || 1;
                                                                                             const perCartonCost = Number(s.recipe.estimatedCostPerContainer) * cpp;
@@ -1001,6 +1094,14 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                                             </Field>
                                                                         )}
                                                                     </form.Field>
+
+                                                                    {/* CartonCompositionBadge — mobile, carton mode + product selected */}
+                                                                    {item.unitType === "carton" && stock && (
+                                                                        <CartonCompositionBadge
+                                                                            recipeDefault={cpp}
+                                                                            effectiveValue={eCPP}
+                                                                        />
+                                                                    )}
 
                                                                     <div className="grid grid-cols-2 gap-3">
                                                                         <form.Field name={`items[${index}].unitType`}>
@@ -1032,6 +1133,29 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                                             )}
                                                                         </form.Field>
                                                                     </div>
+
+                                                                    {/* Packs/Carton (mobile) — only shown for carton type */}
+                                                                    {item.unitType === "carton" && (
+                                                                        <form.Field name={`items[${index}].packsPerCarton`}>
+                                                                            {(sf) => (
+                                                                                <Field>
+                                                                                    <FieldLabel className="text-xs">Packs/Carton</FieldLabel>
+                                                                                    <Input
+                                                                                        type="number"
+                                                                                        min="0"
+                                                                                        className="text-xs"
+                                                                                        value={sf.state.value}
+                                                                                        onFocus={handleFocus}
+                                                                                        onChange={(e) => sf.handleChange(Number(e.target.value))}
+                                                                                        placeholder="0"
+                                                                                    />
+                                                                                    <FieldDescription className="text-[10px]">
+                                                                                        0 = use recipe default
+                                                                                    </FieldDescription>
+                                                                                </Field>
+                                                                            )}
+                                                                        </form.Field>
+                                                                    )}
 
                                                                     {/* Discount cartons (mobile) — only shown for carton type */}
                                                                     {item.unitType === "carton" && (
@@ -1147,6 +1271,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel }: Props) => {
                                                             numberOfCartons: 1,
                                                             numberOfUnits: 0,
                                                             discountCartons: 0,
+                                                            packsPerCarton: 0,
                                                             hsnCode: "",
                                                             perCartonPrice: 0,
                                                             retailPrice: 0,
@@ -1455,9 +1580,10 @@ function computeTotal(items: any[], availableStock: any[]): number {
     return items.reduce((acc: number, item: any) => {
         const stock = availableStock.find((s) => s.recipe?.id === item.recipeId);
         const cpp = stock?.recipe?.containersPerCarton || 1;
+        const eCPP = effectiveCPP(item.packsPerCarton ?? 0, cpp);
         const line = item.unitType === "carton"
             ? (item.numberOfCartons || 0) * (item.perCartonPrice || 0)
-            : (item.numberOfUnits || 0) * ((item.perCartonPrice || 0) / cpp);
+            : (item.numberOfUnits || 0) * ((item.perCartonPrice || 0) / eCPP);
         return acc + line;
     }, 0);
 }

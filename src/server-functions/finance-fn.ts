@@ -5,7 +5,8 @@ import {
   requireFinanceManageMiddleware,
   requireFinanceViewMiddleware,
 } from "@/lib/middlewares";
-import { and, count, eq, SQL, sql } from "drizzle-orm";
+import { and, count, eq, SQL, sql, gte, lte } from "drizzle-orm";
+import { parseISO, isValid } from "date-fns";
 import { z } from "zod";
 import { createId } from "@paralleldrive/cuid2";
 
@@ -221,14 +222,26 @@ export const getExpensesFn = createServerFn()
       category: z.string().optional(),
       page: z.number().int().positive().default(1),
       limit: z.number().int().positive().default(20),
+      dateFrom: z.string().optional(),
+      dateTo: z.string().optional(),
     }),
   )
   .handler(async ({ data }) => {
     const offset = (data.page - 1) * data.limit;
 
-    const whereClause = data.category
-      ? eq(expenses.category, data.category)
-      : undefined;
+    const conditions: SQL[] = [];
+    if (data.category) conditions.push(eq(expenses.category, data.category));
+    
+    if (data.dateFrom) {
+      const from = parseISO(data.dateFrom);
+      if (isValid(from)) conditions.push(gte(expenses.createdAt, from));
+    }
+    if (data.dateTo) {
+      const to = parseISO(data.dateTo);
+      if (isValid(to)) conditions.push(lte(expenses.createdAt, to));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [{ value: total }] = await db
       .select({ value: count() })
@@ -267,6 +280,9 @@ export const getTransactionsFn = createServerFn()
     z.object({
       walletId: z.string().optional(),
       source: z.string().optional(), // filter by source e.g. "Payroll", "Expense"
+      type: z.enum(["credit", "debit"]).optional(),
+      dateFrom: z.string().optional(),
+      dateTo: z.string().optional(),
       page: z.number().int().positive().default(1),
       limit: z.number().int().positive().default(20),
     }),
@@ -277,6 +293,17 @@ export const getTransactionsFn = createServerFn()
     const conditions: SQL[] = [];
     if (data.walletId) conditions.push(eq(transactions.walletId, data.walletId));
     if (data.source) conditions.push(eq(transactions.source, data.source));
+    if (data.type) conditions.push(eq(transactions.type, data.type));
+    
+    if (data.dateFrom) {
+      const from = parseISO(data.dateFrom);
+      if (isValid(from)) conditions.push(gte(transactions.createdAt, from));
+    }
+    if (data.dateTo) {
+      const to = parseISO(data.dateTo);
+      if (isValid(to)) conditions.push(lte(transactions.createdAt, to));
+    }
+
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [{ value: total }] = await db

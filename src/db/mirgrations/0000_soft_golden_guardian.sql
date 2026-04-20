@@ -590,6 +590,7 @@ CREATE TABLE "invoice_items" (
 	"recipe_id" text,
 	"number_of_cartons" integer DEFAULT 0 NOT NULL,
 	"quantity" integer DEFAULT 0 NOT NULL,
+	"packs_per_carton" integer DEFAULT 0 NOT NULL,
 	"total_weight" numeric(12, 3) DEFAULT '0' NOT NULL,
 	"per_carton_price" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"amount" numeric(12, 2) DEFAULT '0' NOT NULL,

@@ -4,19 +4,26 @@ import { GenericLoader } from "@/components/custom/generic-loader";
 import { FinanceContainer } from "@/components/finance/finance-container";
 import { getWalletsListFn, getTransactionsFn, getExpensesFn } from "@/server-functions/finance-fn";
 
+import { startOfMonth, endOfMonth } from "date-fns";
+
 export const Route = createFileRoute("/_protected/finance/accounts/")({
   loader: async ({ context }) => {
     void context.queryClient.prefetchQuery({
       queryKey: ["wallets"],
       queryFn: getWalletsListFn,
     });
+
+    const today = new Date();
+    const dateFrom = startOfMonth(today).toISOString();
+    const dateTo = endOfMonth(today).toISOString();
+
     void context.queryClient.prefetchQuery({
-      queryKey: ["transactions"],
-      queryFn: () => getTransactionsFn({ data: { limit: 20 } }),
+      queryKey: ["transactions-recent", { limit: 20, dateFrom, dateTo }],
+      queryFn: () => getTransactionsFn({ data: { limit: 20, dateFrom, dateTo } }),
     });
     void context.queryClient.prefetchQuery({
-      queryKey: ["expenses"],
-      queryFn: () => getExpensesFn({ data: {} }),
+      queryKey: ["expenses", { page: 1, limit: 20, dateFrom, dateTo }],
+      queryFn: () => getExpensesFn({ data: { dateFrom, dateTo } }),
     });
   },
   component: RouteComponent,

@@ -236,30 +236,41 @@ export const logProductionProgressFn = createServerFn()
       });
 
       if (existingStock) {
-        if (
-          isNowComplete &&
-          recipe.containersPerCarton &&
-          recipe.containersPerCarton > 0 &&
-          recipe.cartonPackagingId
-        ) {
-          // On completion: convert all accumulated loose units to cartons + remaining loose
-          const totalLooseInStock =
-            existingStock.quantityContainers + data.unitsProduced;
-          const cartonsFromLoose = Math.floor(
-            totalLooseInStock / recipe.containersPerCarton,
-          );
-          const remainingLoose = totalLooseInStock % recipe.containersPerCarton;
+        if (isNowComplete) {
+          if (
+            recipe.containersPerCarton &&
+            recipe.containersPerCarton > 0 &&
+            recipe.cartonPackagingId
+          ) {
+            // On completion with carton packaging: convert all accumulated loose units to cartons + remaining loose
+            const totalLooseInStock =
+              existingStock.quantityContainers + data.unitsProduced;
+            const cartonsFromLoose = Math.floor(
+              totalLooseInStock / recipe.containersPerCarton,
+            );
+            const remainingLoose =
+              totalLooseInStock % recipe.containersPerCarton;
 
-          await tx
-            .update(finishedGoodsStock)
-            .set({
-              quantityCartons: sql`${finishedGoodsStock.quantityCartons} + ${cartonsFromLoose}`,
-              quantityContainers: remainingLoose,
-              updatedAt: new Date(),
-            })
-            .where(eq(finishedGoodsStock.id, existingStock.id));
+            await tx
+              .update(finishedGoodsStock)
+              .set({
+                quantityCartons: sql`${finishedGoodsStock.quantityCartons} + ${cartonsFromLoose}`,
+                quantityContainers: remainingLoose,
+                updatedAt: new Date(),
+              })
+              .where(eq(finishedGoodsStock.id, existingStock.id));
+          } else {
+            // Loose-only recipe on completion — NEVER touch quantityCartons
+            await tx
+              .update(finishedGoodsStock)
+              .set({
+                quantityContainers: sql`${finishedGoodsStock.quantityContainers} + ${data.unitsProduced}`,
+                updatedAt: new Date(),
+              })
+              .where(eq(finishedGoodsStock.id, existingStock.id));
+          }
         } else {
-          // Normal incremental: just add to loose containers
+          // Incremental progress — always add to loose containers
           await tx
             .update(finishedGoodsStock)
             .set({

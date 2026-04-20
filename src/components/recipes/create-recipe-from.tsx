@@ -15,6 +15,11 @@ import {
   Scale,
   ArrowRight,
   ListPlusIcon,
+  ChevronRight,
+  Beaker,
+  Boxes,
+  TrendingUp,
+  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "../ui/field";
@@ -60,104 +65,155 @@ type Props = {
   initialRecipe?: Recipe;
 };
 
-// Unit Conversion Helpers
 const convertToBase = (
   value: number,
   unit: string,
 ): { val: number; type: "mass" | "volume" } => {
   switch (unit) {
-    case "kg":
-      return { val: value, type: "mass" };
-    case "g":
-      return { val: value / 1000, type: "mass" };
+    case "kg": return { val: value, type: "mass" };
+    case "g": return { val: value / 1000, type: "mass" };
     case "liters":
-    case "L":
-      return { val: value, type: "volume" };
-    case "ml":
-      return { val: value / 1000, type: "volume" };
-    default:
-      return { val: value, type: "mass" }; // Fallback
+    case "L": return { val: value, type: "volume" };
+    case "ml": return { val: value / 1000, type: "volume" };
+    default: return { val: value, type: "mass" };
   }
 };
 
-// Formatting Helper - remove trailing zeros
 const formatNumber = (num: number | string) => {
   if (!num) return "";
   return parseFloat(num.toString()).toString();
 };
 
+// ── Mini bar for cost distribution ────────────────────────────────────────────
+function CostBar({
+  value,
+  total,
+  color,
+}: {
+  value: number;
+  total: number;
+  color: string;
+}) {
+  const pct = total > 0 ? Math.min((value / total) * 100, 100) : 0;
+  return (
+    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+      <div
+        className={cn("h-full rounded-full transition-all duration-700", color)}
+        style={{ width: `${pct}%` }}
+      />
+    </div>
+  );
+}
+
+// ── Stock status row ───────────────────────────────────────────────────────────
+function StockIndicator({
+  current,
+  needed,
+  unit,
+}: {
+  current: number;
+  needed: number;
+  unit?: string;
+}) {
+  const sufficient = current >= needed;
+  const pct = needed > 0 ? Math.min((current / needed) * 100, 100) : 100;
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-[10px]">
+        <span className="text-muted-foreground">
+          Stock: <span className="font-semibold text-foreground">{current.toLocaleString()}</span>{unit ? ` ${unit}` : ""}
+        </span>
+        <span className={cn("font-semibold", sufficient ? "text-emerald-600" : "text-destructive")}>
+          {sufficient ? `+${(current - needed).toLocaleString()} left` : `${(needed - current).toLocaleString()} short`}
+        </span>
+      </div>
+      <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
+        <div
+          className={cn("h-full rounded-full transition-all duration-500", sufficient ? "bg-emerald-500" : "bg-destructive")}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Section header ─────────────────────────────────────────────────────────────
+function SectionHeader({
+  step,
+  icon: Icon,
+  title,
+  description,
+  badge,
+}: {
+  step?: number;
+  icon: React.ElementType;
+  title: string;
+  description?: string;
+  badge?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 shrink-0">
+        {step ? (
+          <span className="text-xs font-bold text-primary">{step}</span>
+        ) : (
+          <Icon className="size-4 text-primary" />
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-foreground">{title}</p>
+        {description && <p className="text-xs text-muted-foreground">{description}</p>}
+      </div>
+      {badge}
+    </div>
+  );
+}
+
 export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
   const createRecipeMutation = useCreateRecipe();
   const updateRecipeMutation = useUpdateRecipe();
 
-  const { data: products } = useSuspenseQuery({
-    queryKey: ["products"],
-    queryFn: getProductsFn,
-  });
-
-  const { data: materials } = useSuspenseQuery({
-    queryKey: ["materials"],
-    queryFn: getMaterialsFn,
-  });
-
-  const { data: warehouses } = useSuspenseQuery({
-    queryKey: ["warehouses"],
-    queryFn: getWarehousesFn,
-  });
+  const { data: products } = useSuspenseQuery({ queryKey: ["products"], queryFn: getProductsFn });
+  const { data: materials } = useSuspenseQuery({ queryKey: ["materials"], queryFn: getMaterialsFn });
+  const { data: warehouses } = useSuspenseQuery({ queryKey: ["warehouses"], queryFn: getWarehousesFn });
 
   const [tempMaterialId, setTempMaterialId] = useState<string>("");
   const [tempPackagingId, setTempPackagingId] = useState<string>("");
-
-  // State for temporary quantities
   const [tempIngQty, setTempIngQty] = useState("");
   const [tempPkgQty, setTempPkgQty] = useState("1");
-
-  // UI-only state to handle "Cartons Count" logic
   const [cartonsCount, setCartonsCount] = useState<number>(0);
-  const [tempPkgUnit, setTempPkgUnit] = useState<"per_unit" | "per_carton">(
-    "per_unit",
-  );
+  const [tempPkgUnit, setTempPkgUnit] = useState<"per_unit" | "per_carton">("per_unit");
 
   const form = useForm({
     defaultValues: {
       productId: initialRecipe?.productId || "",
       name: initialRecipe?.name || "",
-      batchSize: initialRecipe?.batchSize
-        ? formatNumber(initialRecipe.batchSize)
-        : "",
+      batchSize: initialRecipe?.batchSize ? formatNumber(initialRecipe.batchSize) : "",
       batchUnit: (initialRecipe?.batchUnit as "kg" | "liters") || "liters",
-      fillAmount: initialRecipe?.fillAmount
-        ? formatNumber(initialRecipe.fillAmount)
-        : "",
-      fillUnit:
-        (initialRecipe?.fillUnit as "g" | "kg" | "ml" | "L") ||
-        (initialRecipe?.batchUnit === "kg" ? "g" : "ml"),
+      fillAmount: initialRecipe?.fillAmount ? formatNumber(initialRecipe.fillAmount) : "",
+      fillUnit: (initialRecipe?.fillUnit as "g" | "kg" | "ml" | "L") || (initialRecipe?.batchUnit === "kg" ? "g" : "ml"),
       containerType: (initialRecipe?.containerType as "pack") || "pack",
       containerPackagingId: initialRecipe?.containerPackagingId || "",
       containersPerCarton: initialRecipe?.containersPerCarton || 0,
       cartonPackagingId: initialRecipe?.cartonPackagingId || "",
       minimumStockLevel: initialRecipe?.minimumStockLevel || 0,
       producedUnits: initialRecipe?.targetUnitsPerBatch || 0,
-      ingredients:
-        initialRecipe?.ingredients.map((ing) => ({
-          chemicalId: ing.chemicalId,
-          quantityPerBatch: formatNumber(ing.quantityPerBatch),
-        })) || [],
-      additionalPackaging:
-        (initialRecipe?.packaging || []).map((pkg: any) => ({
-          packagingMaterialId: pkg.packagingMaterialId,
-          quantityPerContainer: Number(pkg.quantityPerContainer) || 1,
-        })) || [],
+      ingredients: initialRecipe?.ingredients.map((ing) => ({
+        chemicalId: ing.chemicalId,
+        quantityPerBatch: formatNumber(ing.quantityPerBatch),
+      })) || [],
+      additionalPackaging: (initialRecipe?.packaging || []).map((pkg: any) => ({
+        packagingMaterialId: pkg.packagingMaterialId,
+        quantityPerContainer: Number(pkg.quantityPerContainer) || 1,
+      })) || [],
     },
     onSubmit: async ({ value }) => {
       try {
         const validationResult = createRecipeSchema.safeParse(value);
         if (!validationResult.success) {
-          const firstError = validationResult.error.issues[0];
-          toast.error(firstError?.message || "Validation failed");
+          toast.error(validationResult.error.issues[0]?.message || "Validation failed");
           return;
         }
-
         const recipeData = {
           productId: value.productId,
           name: value.name,
@@ -174,18 +230,10 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
           ingredients: value.ingredients,
           additionalPackaging: value.additionalPackaging,
         };
-
         if (initialRecipe) {
-          await updateRecipeMutation.mutateAsync({
-            data: {
-              ...recipeData,
-              id: initialRecipe.id,
-            },
-          });
+          await updateRecipeMutation.mutateAsync({ data: { ...recipeData, id: initialRecipe.id } });
         } else {
-          await createRecipeMutation.mutateAsync({
-            data: recipeData,
-          });
+          await createRecipeMutation.mutateAsync({ data: recipeData });
         }
         onOpenChange(false);
       } catch (error) {
@@ -196,62 +244,28 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
 
   const values = useStore(form.store, (state) => state.values);
 
-  // Filter Packaging Materials by Type
-  const primaryPackagings = useMemo(
-    () => materials.packagings.filter((p) => !p.type || p.type === "primary"),
-    [materials.packagings],
-  );
-  const masterPackagings = useMemo(
-    () => materials.packagings.filter((p) => p.type === "master"),
-    [materials.packagings],
-  );
-  // Fallback if no type set yet (legacy data) -> assume primary if not explicitly master
+  const primaryPackagings = useMemo(() => materials.packagings.filter((p) => !p.type || p.type === "primary"), [materials.packagings]);
+  const masterPackagings = useMemo(() => materials.packagings.filter((p) => p.type === "master"), [materials.packagings]);
+  const selectedContainer = useMemo(() => materials.packagings.find((c) => c.id === values.containerPackagingId), [values.containerPackagingId, materials.packagings]);
+  const selectedCarton = useMemo(() => materials.packagings.find((c) => c.id === values.cartonPackagingId), [values.cartonPackagingId, materials.packagings]);
 
-  const selectedContainer = useMemo(
-    () =>
-      materials.packagings.find((c) => c.id === values.containerPackagingId),
-    [values.containerPackagingId, materials.packagings],
-  );
-
-  const selectedCarton = useMemo(
-    () => materials.packagings.find((c) => c.id === values.cartonPackagingId),
-    [values.cartonPackagingId, materials.packagings],
-  );
-
-  // Initialize cartons count from initial state if needed
   useEffect(() => {
-    if (
-      initialRecipe?.targetUnitsPerBatch &&
-      initialRecipe?.containersPerCarton
-    ) {
-      setCartonsCount(
-        Math.ceil(
-          initialRecipe.targetUnitsPerBatch / initialRecipe.containersPerCarton,
-        ),
-      );
+    if (initialRecipe?.targetUnitsPerBatch && initialRecipe?.containersPerCarton) {
+      setCartonsCount(Math.ceil(initialRecipe.targetUnitsPerBatch / initialRecipe.containersPerCarton));
     }
   }, [initialRecipe]);
 
-  // Update form's `containersPerCarton` when `cartonsCount` or `producedUnits` changes
-  // BUT only if we don't have a fixed capacity carton selected
   useEffect(() => {
     if (selectedCarton?.capacity) {
-      form.setFieldValue(
-        "containersPerCarton",
-        parseFloat(selectedCarton.capacity),
-      );
+      form.setFieldValue("containersPerCarton", parseFloat(selectedCarton.capacity));
       return;
     }
-
     if (values.producedUnits > 0 && cartonsCount > 0) {
       const cap = Math.floor(values.producedUnits / cartonsCount);
-      if (values.containersPerCarton !== cap) {
-        form.setFieldValue("containersPerCarton", cap);
-      }
+      if (values.containersPerCarton !== cap) form.setFieldValue("containersPerCarton", cap);
     }
   }, [cartonsCount, values.producedUnits, form, selectedCarton]);
 
-  // Auto-fill additional material quantity based on cartons count for stickers
   useEffect(() => {
     if (!tempPackagingId) return;
     const mat = materials.packagings.find((p) => p.id === tempPackagingId);
@@ -264,96 +278,47 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
     }
   }, [tempPackagingId, materials.packagings, cartonsCount]);
 
-  // Auto-populate Primary Container details
   useEffect(() => {
     if (selectedContainer) {
-      if (selectedContainer.capacity) {
-        form.setFieldValue("fillAmount", selectedContainer.capacity);
-      }
-      if (selectedContainer.capacityUnit) {
-        form.setFieldValue(
-          "fillUnit",
-          selectedContainer.capacityUnit as "ml" | "L" | "g" | "kg",
-        );
-      }
+      if (selectedContainer.capacity) form.setFieldValue("fillAmount", selectedContainer.capacity);
+      if (selectedContainer.capacityUnit) form.setFieldValue("fillUnit", selectedContainer.capacityUnit as "ml" | "L" | "g" | "kg");
     } else {
-      // Reset if no container selected (or if user manually cleared it)
-      // This ensures values don't linger when the source (container) is removed
       form.setFieldValue("fillAmount", "");
-      form.setFieldValue("fillUnit", "ml"); // Default fallback
+      form.setFieldValue("fillUnit", "ml");
     }
   }, [selectedContainer, form]);
 
-  // Handle Primary Container Qty Override
-  // Usually matched 1:1 with producedUnits (Yield), but user wants to edit it.
-  // However, if producedUnits (Yield) changes, primary qty should update?
-  // Let's assume producedUnits IS the primary yield. Editing it updates producedUnits.
-  // So the input for primaryContainerQty IS effectively producedUnits override specific to packaging section?
-  // Or user wants to specify: "I produced 600 units (yield), but used 605 sachets (wastage)".
-  // Currently schema doesn't support wastage on packaging directly, but we can just use additionalPackaging logic?
-  // No, createRecipeSchema assumes 1 container per unit implicitly.
-  // Let's bind it to producedUnits for now, but editable.
-
-  // --- CALCULATIONS & ANALYSIS ---
-
-  // Mass Balance Check
-
-  // Auto-populate Carton Capacity if defined in Master Packaging
   const mountTimeRef = useRef(Date.now());
   useEffect(() => {
     if (selectedCarton?.capacity && values.producedUnits > 0) {
       const definedCapacity = parseFloat(selectedCarton.capacity);
-      // If defined capacity exists, we FORCE cartons count based on it
       const neededCartons = Math.ceil(values.producedUnits / definedCapacity);
       if (cartonsCount !== neededCartons) {
         setCartonsCount(neededCartons);
-        // Only show toast for user-triggered changes, not initialization
-        // Guard for 500ms after mount to cover async form population re-renders
         const isInitializing = Date.now() - mountTimeRef.current < 500;
         if (!isInitializing) {
-          toast.info(
-            `Carton count adjusted to ${neededCartons} based on standard capacity (${definedCapacity}/box)`,
-          );
+          toast.info(`Carton count adjusted to ${neededCartons} (${definedCapacity} units/box)`);
         }
       }
     }
   }, [selectedCarton, values.producedUnits]);
 
-  // Mass Balance Check
   const massBalance = useMemo(() => {
     const batchSize = parseFloat(values.batchSize) || 0;
     const fillAmount = parseFloat(values.fillAmount) || 0;
     const targetUnits = values.producedUnits || 0;
-
     if (!batchSize || !fillAmount || !targetUnits) return null;
-
     const batch = convertToBase(batchSize, values.batchUnit);
     const fill = convertToBase(fillAmount, values.fillUnit);
-
-    const totalFillingMass = fill.val * targetUnits; // in base unit (kg or L)
+    const totalFillingMass = fill.val * targetUnits;
     const discrepancy = batch.val - totalFillingMass;
     const efficiency = (totalFillingMass / batch.val) * 100;
-
-    // Strict Check: 99% - 101% is OK. Outside is Warning.
     const isStrictlyBalanced = efficiency >= 99 && efficiency <= 101;
-
-    // Detect "Grams vs Kg" mismatch (Factor of 1000)
     const isUnitMismatch = Math.abs(efficiency - 0.1) < 0.05;
-
-    // Suggestions
     const suggestedPacks = Math.round(batch.val / fill.val);
     const suggestedFill = batch.val / targetUnits;
-    const suggestedBatch = totalFillingMass;
-
-    // Auto-convert suggestedFill back to input unit for display
     let displaySuggestedFill = suggestedFill;
-    if (values.fillUnit === "g" || values.fillUnit === "ml")
-      displaySuggestedFill *= 1000;
-
-    // Auto-convert suggestedBatch to input unit
-    const displaySuggestedBatch = suggestedBatch;
-    // if (values.batchUnit === 'g' || values.batchUnit === 'ml') displaySuggestedBatch *= 1000; // Batch only allows kg/liters
-
+    if (values.fillUnit === "g" || values.fillUnit === "ml") displaySuggestedFill *= 1000;
     return {
       batchBase: batch.val,
       fillBase: fill.val,
@@ -363,361 +328,217 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
       matchType: batch.type === fill.type,
       suggestedPacks,
       suggestedFill: displaySuggestedFill,
-      suggestedBatch: displaySuggestedBatch,
+      suggestedBatch: totalFillingMass,
       isUnitMismatch,
       isStrictlyBalanced,
     };
-  }, [
-    values.batchSize,
-    values.batchUnit,
-    values.fillAmount,
-    values.fillUnit,
-    values.producedUnits,
-  ]);
+  }, [values.batchSize, values.batchUnit, values.fillAmount, values.fillUnit, values.producedUnits]);
 
-  // Cost Calcs
-  const ingredientsCost = useMemo(() => {
-    return values.ingredients.reduce((total, ing) => {
-      const material = materials.chemicals.find((m) => m.id === ing.chemicalId);
-      if (!material) return total;
-      const costPerUnit = parseFloat(material.costPerUnit?.toString() || "0");
-      const quantity = parseFloat(ing.quantityPerBatch || "0");
-      return total + costPerUnit * quantity;
-    }, 0);
-  }, [values.ingredients, materials.chemicals]);
+  const ingredientsCost = useMemo(() => values.ingredients.reduce((total, ing) => {
+    const material = materials.chemicals.find((m) => m.id === ing.chemicalId);
+    if (!material) return total;
+    return total + parseFloat(material.costPerUnit?.toString() || "0") * parseFloat(ing.quantityPerBatch || "0");
+  }, 0), [values.ingredients, materials.chemicals]);
 
   const containersCost = useMemo(() => {
     if (!selectedContainer) return 0;
-    const costPerUnit = parseFloat(
-      selectedContainer.costPerUnit?.toString() || "0",
-    );
-    return (values.producedUnits || 0) * costPerUnit;
+    return (values.producedUnits || 0) * parseFloat(selectedContainer.costPerUnit?.toString() || "0");
   }, [selectedContainer, values.producedUnits]);
 
   const cartonsCalculation = useMemo(() => {
     if (!selectedCarton) return { boxesNeeded: 0, cost: 0 };
-    const costPerUnit = parseFloat(
-      selectedCarton.costPerUnit?.toString() || "0",
-    );
-    return {
-      boxesNeeded: cartonsCount,
-      cost: cartonsCount * costPerUnit,
-    };
+    return { boxesNeeded: cartonsCount, cost: cartonsCount * parseFloat(selectedCarton.costPerUnit?.toString() || "0") };
   }, [selectedCarton, cartonsCount]);
 
-  const additionalPackagingCost = useMemo(() => {
-    return values.additionalPackaging.reduce((total, pkg) => {
-      const material = materials.packagings.find(
-        (m) => m.id === pkg.packagingMaterialId,
-      );
-      if (!material) return total;
-      const costPerUnit = parseFloat(material.costPerUnit?.toString() || "0");
-      // Use Math.round to avoid floating-point precision errors
-      const totalQty = Math.round(
-        pkg.quantityPerContainer * (values.producedUnits || 0)
-      );
-      return total + costPerUnit * totalQty;
-    }, 0);
-  }, [values.additionalPackaging, materials.packagings, values.producedUnits]);
+  const additionalPackagingCost = useMemo(() => values.additionalPackaging.reduce((total, pkg) => {
+    const material = materials.packagings.find((m) => m.id === pkg.packagingMaterialId);
+    if (!material) return total;
+    const totalQty = Math.round(pkg.quantityPerContainer * (values.producedUnits || 0));
+    return total + parseFloat(material.costPerUnit?.toString() || "0") * totalQty;
+  }, 0), [values.additionalPackaging, materials.packagings, values.producedUnits]);
 
-  const totalCost =
-    ingredientsCost +
-    containersCost +
-    cartonsCalculation.cost +
-    additionalPackagingCost;
-  const costPerUnit =
-    values.producedUnits > 0 ? totalCost / values.producedUnits : 0;
+  const totalCost = ingredientsCost + containersCost + cartonsCalculation.cost + additionalPackagingCost;
+  const costPerUnit = values.producedUnits > 0 ? totalCost / values.producedUnits : 0;
 
-  // --- HANDLERS ---
   const handleAddIngredient = () => {
-    if (!tempMaterialId || !tempIngQty) {
-      toast.error("Please select an ingredient and enter a quantity");
-      return;
-    }
+    if (!tempMaterialId || !tempIngQty) { toast.error("Select an ingredient and enter a quantity"); return; }
     const material = materials.chemicals.find((m) => m.id === tempMaterialId);
-    const validationResult = ingredientSelectionSchema.safeParse({
-      chemicalId: tempMaterialId,
-      quantityPerBatch: tempIngQty,
-    });
-    if (!validationResult.success) {
-      toast.error(validationResult.error.issues[0].message);
-      return;
-    }
+    const validationResult = ingredientSelectionSchema.safeParse({ chemicalId: tempMaterialId, quantityPerBatch: tempIngQty });
+    if (!validationResult.success) { toast.error(validationResult.error.issues[0].message); return; }
     if (values.ingredients.some((ing) => ing.chemicalId === tempMaterialId)) {
-      toast.error(
-        `${material?.name} is already added. Update its quantity in the list.`,
-      );
-      return;
+      toast.error(`${material?.name} is already added.`); return;
     }
-    form.setFieldValue("ingredients", [
-      ...values.ingredients,
-      validationResult.data,
-    ]);
-    setTempMaterialId("");
-    setTempIngQty("");
+    form.setFieldValue("ingredients", [...values.ingredients, validationResult.data]);
+    setTempMaterialId(""); setTempIngQty("");
   };
 
   const handleUpdateIngredient = (index: number, quantity: string) => {
     const newIngredients = [...values.ingredients];
-    newIngredients[index] = {
-      ...newIngredients[index],
-      quantityPerBatch: quantity,
-    };
+    newIngredients[index] = { ...newIngredients[index], quantityPerBatch: quantity };
     form.setFieldValue("ingredients", newIngredients);
   };
 
   const handleRemoveIngredient = (index: number) => {
-    form.setFieldValue(
-      "ingredients",
-      values.ingredients.filter((_, i) => i !== index),
-    );
+    form.setFieldValue("ingredients", values.ingredients.filter((_, i) => i !== index));
   };
 
   const handleAddAdditionalPackaging = () => {
     if (!tempPackagingId || !tempPkgQty) return;
     const qty = parseFloat(tempPkgQty);
-    // For per_carton items (stickers), store the exact ratio using full precision
-    // cartonsCount / producedUnits gives us the per-unit ratio
-    const finalQty =
-      tempPkgUnit === "per_carton"
-        ? cartonsCount > 0 && values.producedUnits > 0
-          ? (qty * cartonsCount) / values.producedUnits
-          : qty
-        : qty;
-
-    const validationResult = additionalPackagingItemSchema.safeParse({
-      packagingMaterialId: tempPackagingId,
-      quantityPerContainer: finalQty,
-    });
-    if (!validationResult.success) {
-      toast.error(validationResult.error.issues[0].message);
-      return;
-    }
-    if (
-      values.additionalPackaging.some(
-        (pkg) => pkg.packagingMaterialId === tempPackagingId,
-      )
-    ) {
-      toast.error("Item already added.");
-      return;
-    }
-    form.setFieldValue("additionalPackaging", [
-      ...values.additionalPackaging,
-      validationResult.data,
-    ]);
-    setTempPackagingId("");
-    setTempPkgQty("1");
+    const finalQty = tempPkgUnit === "per_carton"
+      ? (cartonsCount > 0 && values.producedUnits > 0 ? (qty * cartonsCount) / values.producedUnits : qty)
+      : qty;
+    const validationResult = additionalPackagingItemSchema.safeParse({ packagingMaterialId: tempPackagingId, quantityPerContainer: finalQty });
+    if (!validationResult.success) { toast.error(validationResult.error.issues[0].message); return; }
+    if (values.additionalPackaging.some((pkg) => pkg.packagingMaterialId === tempPackagingId)) { toast.error("Item already added."); return; }
+    form.setFieldValue("additionalPackaging", [...values.additionalPackaging, validationResult.data]);
+    setTempPackagingId(""); setTempPkgQty("1");
   };
 
   const handleRemoveAdditionalPackaging = (index: number) => {
-    form.setFieldValue(
-      "additionalPackaging",
-      values.additionalPackaging.filter((_, i) => i !== index),
-    );
+    form.setFieldValue("additionalPackaging", values.additionalPackaging.filter((_, i) => i !== index));
   };
 
-  const getStockStatus = (
-    materialId: string,
-    type: "chemical" | "packaging",
-    neededQty: number,
-  ) => {
-    const material =
-      type === "chemical"
-        ? materials.chemicals.find((m) => m.id === materialId)
-        : materials.packagings.find((m) => m.id === materialId);
-
+  const getStockStatus = (materialId: string, type: "chemical" | "packaging", neededQty: number) => {
+    const material = type === "chemical"
+      ? materials.chemicals.find((m) => m.id === materialId)
+      : materials.packagings.find((m) => m.id === materialId);
     if (!material) return { available: false, current: 0, remaining: 0 };
-
-    const totalStock =
-      material.stock?.reduce((sum, s) => {
-        const wh = warehouses.find((w) => w.id === s.warehouseId);
-        return wh?.isActive ? sum + parseFloat(s.quantity.toString()) : sum;
-      }, 0) || 0;
-
-    return {
-      available: totalStock >= neededQty,
-      current: totalStock,
-      remaining: totalStock - neededQty,
-    };
+    const totalStock = material.stock?.reduce((sum, s) => {
+      const wh = warehouses.find((w) => w.id === s.warehouseId);
+      return wh?.isActive ? sum + parseFloat(s.quantity.toString()) : sum;
+    }, 0) || 0;
+    return { available: totalStock >= neededQty, current: totalStock, remaining: totalStock - neededQty };
   };
+
+  const isSaving = createRecipeMutation.isPending || updateRecipeMutation.isPending;
+  const hasLooseUnits = cartonsCount > 0 && values.producedUnits > 0 && values.containersPerCarton > 0 && values.producedUnits % values.containersPerCarton !== 0;
 
   return (
-    <div className="flex flex-col h-full bg-muted/5">
-      <div className="flex items-center justify-between px-6 py-4 border-b bg-background sticky top-0 z-10 w-full">
-        <div className="flex items-center gap-2">
+    <div className="flex flex-col h-full bg-muted/10">
+      {/* ── Top bar ─────────────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between px-6 py-3.5 border-b bg-background sticky top-0 z-10">
+        <div className="flex items-center gap-3">
           <div className="p-2 bg-primary/10 rounded-lg">
-            <FlaskConical className="size-5 text-primary" />
+            <FlaskConical className="size-4 text-primary" />
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight">
-              {initialRecipe
-                ? "Update Recipe Configuration"
-                : "New Recipe Formulation"}
+            <h1 className="text-sm font-bold">
+              {initialRecipe ? "Edit Recipe" : "New Recipe"}
             </h1>
-            <p className="text-xs text-muted-foreground">
-              Configure batch parameters, ingredients, and packaging.
+            <p className="text-[11px] text-muted-foreground leading-none mt-0.5">
+              Batch parameters, formulation & packaging
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-          >
-            <X className="size-4 mr-2" />
-            Cancel
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="text-muted-foreground">
+            <X className="size-4 mr-1.5" /> Cancel
           </Button>
-          <Button
-            // size="sm"
-            onClick={() => form.handleSubmit()}
-            disabled={
-              createRecipeMutation.isPending || updateRecipeMutation.isPending
-            }
-            className="min-w-[140px]"
-          >
-            {createRecipeMutation.isPending ||
-              updateRecipeMutation.isPending ? (
-              <Loader2 className="size-4 animate-spin mr-2" />
-            ) : (
-              <Save className="size-4 mr-2" />
-            )}
-            {initialRecipe ? "Save Changes" : "Create Recipe"}
+          <Button onClick={() => form.handleSubmit()} disabled={isSaving} className="min-w-[130px] gap-2">
+            {isSaving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+            {isSaving ? "Saving…" : initialRecipe ? "Save Changes" : "Create Recipe"}
           </Button>
         </div>
       </div>
 
-      <ScrollArea className="flex-1 w-full">
-        <div className="p-6 pb-24">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-[1600px] mx-auto">
-            {/* --- LEFT COLUMN: CONFIGURATION --- */}
-            <div className="space-y-6">
-              {/* 1. Basic Information & Mass Balance */}
-              <Card className=" border-border/60">
-                <CardHeader className="bg-muted/30 pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                      <Info className="size-4" />
-                      Batch Fundamentals
-                    </CardTitle>
-                  </div>
+      <ScrollArea className="flex-1">
+        <div className="p-5 pb-20">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 max-w-[1400px] mx-auto">
+
+            {/* ═══════════════════════════════════════════════════════════════
+                LEFT — CONFIGURATION
+            ══════════════════════════════════════════════════════════════════ */}
+            <div className="space-y-5">
+
+              {/* ── SECTION 1: Batch Fundamentals ─────────────────────────── */}
+              <Card className="border-border/50">
+                <CardHeader className="px-5 py-4 border-b border-border/40">
+                  <SectionHeader
+                    step={1}
+                    icon={Info}
+                    title="Batch Fundamentals"
+                    description="Define the core production parameters for this recipe"
+                  />
                 </CardHeader>
-                <CardContent className="pt-6 space-y-6">
-                  {/* Mass Balance Check Notification */}
-                  {massBalance &&
-                    (massBalance.discrepancy > 0.01 ||
-                      massBalance.discrepancy < -0.01) && (
-                      <div
-                        className={cn(
-                          "rounded-lg border p-4 text-sm relative overflow-hidden transition-all duration-300",
+                <CardContent className="p-5 space-y-5">
+
+                  {/* Mass balance notification */}
+                  {massBalance && (massBalance.discrepancy > 0.01 || massBalance.discrepancy < -0.01) && (
+                    <div className={cn(
+                      "rounded-xl border p-4 space-y-3 transition-all",
+                      massBalance.isStrictlyBalanced
+                        ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900"
+                        : "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900",
+                    )}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Scale className={cn("size-4", massBalance.isStrictlyBalanced ? "text-emerald-600" : "text-amber-600")} />
+                          <span className={cn("text-xs font-semibold", massBalance.isStrictlyBalanced ? "text-emerald-700" : "text-amber-700")}>
+                            Yield Analysis
+                          </span>
+                        </div>
+                        <span className={cn(
+                          "text-xs font-mono font-bold px-2 py-0.5 rounded-full",
                           massBalance.isStrictlyBalanced
-                            ? "bg-emerald-50 border-emerald-200 text-emerald-900"
-                            : "bg-destructive/5 border-destructive/20 text-destructive",
-                        )}
-                      >
-                        <div className="flex items-center gap-2 font-semibold mb-3">
-                          <Scale className="size-4" />
-                          <span>Production Yield Analysis</span>
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "ml-auto border-black/10",
-                              massBalance.isStrictlyBalanced
-                                ? "bg-emerald-100/50"
-                                : "bg-destructive/10",
-                            )}
-                          >
-                            Eff:{" "}
-                            {formatNumber(massBalance.efficiency.toFixed(1))}%
-                          </Badge>
-                        </div>
-
-                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 text-xs">
-                          <div className="bg-white/40 p-2 rounded">
-                            <span className="block uppercase text-[10px] font-bold opacity-60">
-                              Batch Input
-                            </span>
-                            <span className="font-mono text-lg font-bold block">
-                              {formatNumber(massBalance.batchBase)} kg
-                            </span>
-                          </div>
-                          <div className="text-center opacity-50">
-                            <ArrowRight className="size-4" />
-                          </div>
-                          <div className="bg-white/40 p-2 rounded">
-                            <span className="block uppercase text-[10px] font-bold opacity-60">
-                              Packed Output
-                            </span>
-                            <span className="font-mono text-lg font-bold block">
-                              {formatNumber(
-                                massBalance.totalFillingMass.toFixed(3),
-                              )}{" "}
-                              kg
-                            </span>
-                          </div>
-                        </div>
-
-                        {(!massBalance.isStrictlyBalanced ||
-                          massBalance.isUnitMismatch) && (
-                            <div className="mt-3 text-xs opacity-90 font-medium">
-                              <p>
-                                Yield is out of strict balance (99%-101%).
-                                {massBalance.isUnitMismatch
-                                  ? " Likely unit mismatch (g vs kg)."
-                                  : " Please verify inputs."}
-                              </p>
-                              {massBalance.isUnitMismatch && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="mt-2 h-7 text-xs bg-white border-destructive/30 hover:bg-destructive/5"
-                                  onClick={() => {
-                                    form.setFieldValue(
-                                      "batchSize",
-                                      formatNumber(massBalance.suggestedBatch),
-                                    );
-                                    toast.success(
-                                      "Batch Size corrected based on yield.",
-                                    );
-                                  }}
-                                >
-                                  Fix Batch Size to{" "}
-                                  {formatNumber(massBalance.suggestedBatch)}{" "}
-                                  {values.batchUnit}
-                                </Button>
-                              )}
-                            </div>
-                          )}
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400"
+                            : "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400",
+                        )}>
+                          {formatNumber(massBalance.efficiency.toFixed(1))}% efficient
+                        </span>
                       </div>
-                    )}
 
-                  {/* Form Fields - Grid Layout */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Efficiency bar */}
+                      <div className="space-y-1.5">
+                        <div className="h-2 bg-black/10 rounded-full overflow-hidden">
+                          <div
+                            className={cn("h-full rounded-full transition-all duration-500",
+                              massBalance.isStrictlyBalanced ? "bg-emerald-500" : "bg-amber-500"
+                            )}
+                            style={{ width: `${Math.min(massBalance.efficiency, 100)}%` }}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-white/50 dark:bg-black/20 rounded-lg p-2.5">
+                            <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-0.5">Batch Input</p>
+                            <p className="text-base font-bold font-mono">{formatNumber(massBalance.batchBase)} <span className="text-xs font-medium text-muted-foreground">{values.batchUnit}</span></p>
+                          </div>
+                          <div className="bg-white/50 dark:bg-black/20 rounded-lg p-2.5">
+                            <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-0.5">Packed Output</p>
+                            <p className="text-base font-bold font-mono">{formatNumber(massBalance.totalFillingMass.toFixed(3))} <span className="text-xs font-medium text-muted-foreground">{values.batchUnit}</span></p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {(!massBalance.isStrictlyBalanced || massBalance.isUnitMismatch) && (
+                        <div className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-400">
+                          <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
+                          <div className="space-y-1.5">
+                            <p>Yield outside 99–101% tolerance.{massBalance.isUnitMismatch ? " Possible unit mismatch (g vs kg)." : " Verify batch inputs."}</p>
+                            {massBalance.isUnitMismatch && (
+                              <Button variant="outline" size="sm" className="h-7 text-xs border-amber-300 bg-white hover:bg-amber-50"
+                                onClick={() => { form.setFieldValue("batchSize", formatNumber(massBalance.suggestedBatch)); toast.success("Batch size corrected."); }}>
+                                Fix to {formatNumber(massBalance.suggestedBatch)} {values.batchUnit}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Core fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <form.Field name="productId">
                       {(field) => (
-                        <Field className="space-y-1.5 flex flex-col justify-end">
-                          <FieldLabel className="text-xs font-bold uppercase text-muted-foreground/80 tracking-wide">
-                            Target Product
-                          </FieldLabel>
-                          <Select
-                            value={field.state.value}
-                            onValueChange={field.handleChange}
-                          >
-                            <SelectTrigger
-                              className={cn(
-                                "h-11 bg-background/50",
-                                field.state.meta.errors.length &&
-                                "border-destructive",
-                              )}
-                            >
-                              <SelectValue placeholder="Select Product" />
+                        <Field className="space-y-1.5">
+                          <FieldLabel className="text-xs font-medium text-muted-foreground">Target product</FieldLabel>
+                          <Select value={field.state.value} onValueChange={field.handleChange}>
+                            <SelectTrigger className={cn("h-10 bg-background", field.state.meta.errors.length && "border-destructive")}>
+                              <SelectValue placeholder="Select product…" />
                             </SelectTrigger>
                             <SelectContent>
-                              {products.map((p) => (
-                                <SelectItem key={p.id} value={p.id}>
-                                  {p.name}
-                                </SelectItem>
-                              ))}
+                              {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                             </SelectContent>
                           </Select>
                           <FieldError errors={field.state.meta.errors} />
@@ -727,60 +548,39 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
 
                     <form.Field name="name">
                       {(field) => (
-                        <Field className="space-y-1.5 flex flex-col justify-end">
-                          <FieldLabel className="text-xs font-bold uppercase text-muted-foreground/80 tracking-wide">
-                            Recipe Name
-                          </FieldLabel>
+                        <Field className="space-y-1.5">
+                          <FieldLabel className="text-xs font-medium text-muted-foreground">Recipe name</FieldLabel>
                           <Input
-                            {...field.state}
                             value={field.state.value}
                             onChange={(e) => field.handleChange(e.target.value)}
                             placeholder="e.g. Standard Summer Batch"
-                            className={cn(
-                              "h-11",
-                              field.state.meta.errors.length &&
-                              "border-destructive",
-                            )}
+                            className={cn("h-10", field.state.meta.errors.length && "border-destructive")}
                           />
                           <FieldError errors={field.state.meta.errors} />
                         </Field>
                       )}
                     </form.Field>
 
-                    <div className="space-y-1.5 flex flex-col justify-end">
-                      <FieldLabel className="text-xs font-bold uppercase text-muted-foreground/80 tracking-wide">
-                        Total Batch Size
-                      </FieldLabel>
+                    {/* Batch size + unit */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Total batch size</label>
                       <div className="flex gap-2">
                         <form.Field name="batchSize">
                           {(field) => (
-                            <div className="flex-1">
-                              <Input
-                                type="number"
-                                placeholder="0"
-                                value={field.state.value}
-                                onChange={(e) =>
-                                  field.handleChange(e.target.value)
-                                }
-                                className={cn(
-                                  "w-full h-11 font-bold text-lg",
-                                  field.state.meta.errors.length &&
-                                  "border-destructive",
-                                )}
-                                step="0.01"
-                              />
-                            </div>
+                            <Input
+                              type="number"
+                              placeholder="0.00"
+                              value={field.state.value}
+                              onChange={(e) => field.handleChange(e.target.value)}
+                              className={cn("flex-1 h-10 font-mono font-semibold text-base", field.state.meta.errors.length && "border-destructive")}
+                              step="0.01"
+                            />
                           )}
                         </form.Field>
                         <form.Field name="batchUnit">
                           {(field) => (
-                            <Select
-                              value={field.state.value}
-                              onValueChange={(val) =>
-                                field.handleChange(val as "kg" | "liters")
-                              }
-                            >
-                              <SelectTrigger className="w-24 h-11 bg-muted/20">
+                            <Select value={field.state.value} onValueChange={(v) => field.handleChange(v as "kg" | "liters")}>
+                              <SelectTrigger className="w-24 h-10 bg-muted/40">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -795,18 +595,13 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
 
                     <form.Field name="producedUnits">
                       {(field) => (
-                        <Field className="space-y-1.5 flex flex-col justify-end">
-                          <FieldLabel className="text-xs font-bold uppercase text-muted-foreground/80 tracking-wide">
-                            Target Packs (Yield)
-                          </FieldLabel>
+                        <Field className="space-y-1.5">
+                          <FieldLabel className="text-xs font-medium text-muted-foreground">Target yield (units)</FieldLabel>
                           <Input
                             type="number"
                             value={field.state.value}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value) || 0;
-                              field.handleChange(val);
-                            }}
-                            className="h-11 font-bold text-lg"
+                            onChange={(e) => field.handleChange(parseInt(e.target.value) || 0)}
+                            className="h-10 font-mono font-semibold text-base"
                           />
                           <FieldError errors={field.state.meta.errors} />
                         </Field>
@@ -815,19 +610,14 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
 
                     <form.Field name="minimumStockLevel">
                       {(field) => (
-                        <Field className="space-y-1.5 flex flex-col justify-end">
-                          <FieldLabel className="text-xs font-bold uppercase text-muted-foreground/80 tracking-wide">
-                            Low Stock Alert (Units)
-                          </FieldLabel>
+                        <Field className="space-y-1.5">
+                          <FieldLabel className="text-xs font-medium text-muted-foreground">Low stock alert (units)</FieldLabel>
                           <Input
                             type="number"
                             value={field.state.value}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value) || 0;
-                              field.handleChange(val);
-                            }}
-                            className="h-11 font-bold text-lg"
-                            placeholder="e.g. 1000"
+                            onChange={(e) => field.handleChange(parseInt(e.target.value) || 0)}
+                            placeholder="1000"
+                            className="h-10 font-mono font-semibold"
                           />
                           <FieldError errors={field.state.meta.errors} />
                         </Field>
@@ -837,40 +627,38 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                 </CardContent>
               </Card>
 
-              {/* 2. Ingredients */}
-              <Card className=" border-border/60">
-                <CardHeader className="bg-muted/30 pb-4 flex flex-row items-center justify-between">
-                  <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                    <FlaskConical className="size-4" />
-                    Chemical Formulation
-                  </CardTitle>
-                  <Badge variant="secondary" className="font-mono">
-                    {values.ingredients.length} items
-                  </Badge>
+              {/* ── SECTION 2: Chemical Formulation ───────────────────────── */}
+              <Card className="border-border/50">
+                <CardHeader className="px-5 py-4 border-b border-border/40">
+                  <SectionHeader
+                    step={2}
+                    icon={Beaker}
+                    title="Chemical Formulation"
+                    description="Add raw material ingredients and their quantities per batch"
+                    badge={
+                      values.ingredients.length > 0 && (
+                        <Badge variant="secondary" className="font-mono text-xs">
+                          {values.ingredients.length} items
+                        </Badge>
+                      )
+                    }
+                  />
                 </CardHeader>
-                <CardContent className="pt-6 space-y-6">
-                  {/* Add Ingredient Row */}
-                  <div className="flex gap-2 p-3 bg-primary/5 rounded-lg border border-primary/10">
-                    <Select
-                      value={tempMaterialId}
-                      onValueChange={setTempMaterialId}
-                    >
-                      <SelectTrigger className="flex-1 bg-background h-10">
-                        <SelectValue placeholder="Select Chemical..." />
+                <CardContent className="p-5 space-y-4">
+                  {/* Add row */}
+                  <div className="flex gap-2 p-3 bg-primary/5 rounded-xl border border-primary/10">
+                    <Select value={tempMaterialId} onValueChange={setTempMaterialId}>
+                      <SelectTrigger className="flex-1 bg-background h-9 text-sm">
+                        <SelectValue placeholder="Select chemical…" />
                       </SelectTrigger>
-                      <SelectContent className="max-h-[300px]">
+                      <SelectContent className="max-h-[280px]">
                         {materials.chemicals
-                          .filter(
-                            (c) =>
-                              !values.ingredients.some(
-                                (i) => i.chemicalId === c.id,
-                              ),
-                          )
+                          .filter((c) => !values.ingredients.some((i) => i.chemicalId === c.id))
                           .map((c) => (
                             <SelectItem key={c.id} value={c.id}>
                               <div className="flex items-center justify-between w-full gap-4">
                                 <span>{c.name}</span>
-                                <span className="text-xs text-muted-foreground font-mono">
+                                <span className="text-[10px] text-muted-foreground font-mono tabular-nums">
                                   PKR {c.costPerUnit}/{c.unit}
                                 </span>
                               </div>
@@ -878,201 +666,127 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                           ))}
                       </SelectContent>
                     </Select>
-                    <Input
-                      placeholder="Qty"
-                      type="number"
-                      className="w-32 bg-background font-bold text-lg text-primary h-10"
-                      value={tempIngQty}
-                      onChange={(e) => setTempIngQty(e.target.value)}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && handleAddIngredient()
-                      }
-                      step="0.01"
-                    />
-                    <Button
-                      onClick={handleAddIngredient}
-                      size="icon"
-                      className="shrink-0 h-10 w-10"
-                    >
-                      <Plus className="size-5" />
+                    <div className="relative w-28">
+                      <Input
+                        type="number"
+                        placeholder="Qty"
+                        className="w-full h-9 font-mono font-bold pr-1 text-primary text-base"
+                        value={tempIngQty}
+                        onChange={(e) => setTempIngQty(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddIngredient()}
+                        step="0.01"
+                      />
+                    </div>
+                    <Button onClick={handleAddIngredient} size="sm" className="h-9 w-9 p-0 shrink-0">
+                      <Plus className="size-4" />
                     </Button>
                   </div>
 
-                  {/* List */}
+                  {/* Ingredient list */}
                   <div className="space-y-2">
-                    {values.ingredients.length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground text-sm italic border-2 border-dashed rounded-lg">
-                        No ingredients added yet.
+                    {values.ingredients.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-10 text-center border-2 border-dashed rounded-xl text-muted-foreground">
+                        <FlaskConical className="size-8 mb-2 opacity-30" />
+                        <p className="text-sm font-medium">No ingredients yet</p>
+                        <p className="text-xs mt-0.5">Select a chemical above to start building your formula</p>
                       </div>
-                    )}
-                    {values.ingredients.map((ing, idx) => {
-                      const material = materials.chemicals.find(
-                        (m) => m.id === ing.chemicalId,
-                      );
-                      const stock = getStockStatus(
-                        ing.chemicalId,
-                        "chemical",
-                        parseFloat(ing.quantityPerBatch),
-                      );
-
-                      return (
-                        <div
-                          key={`${ing.chemicalId}-${idx}`}
-                          className="group flex items-start gap-3 p-3 rounded-lg border hover:border-primary/30 hover:bg-muted/40 transition-all"
-                        >
-                          <div className="flex-1 space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium text-sm">
-                                {material?.name}
-                              </span>
-                              <span className="text-xs text-muted-foreground font-mono">
-                                {material?.costPerUnit}/u
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs">
-                              <Badge
-                                variant={
-                                  stock.available ? "outline" : "destructive"
-                                }
-                                className="text-[10px] h-5 px-1.5"
-                              >
-                                Stock: {stock.current.toLocaleString()}{" "}
-                                {material?.unit}
-                              </Badge>
-                              <ArrowRight className="size-3 text-muted-foreground" />
-                              <span
-                                className={cn(
-                                  "font-mono text-[10px]",
-                                  stock.remaining < 0
-                                    ? "text-destructive font-bold"
-                                    : "text-emerald-600",
-                                )}
-                              >
-                                Left: {stock.remaining.toLocaleString()}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            <div className="relative">
-                              <Input
-                                className="w-24 h-9 text-right pr-8 text-base font-bold text-primary"
-                                value={ing.quantityPerBatch}
-                                type="number"
-                                onChange={(e) =>
-                                  handleUpdateIngredient(idx, e.target.value)
-                                }
-                                step="0.01"
-                              />
-                              <div className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">
-                                {material?.unit}
+                    ) : (
+                      values.ingredients.map((ing, idx) => {
+                        const material = materials.chemicals.find((m) => m.id === ing.chemicalId);
+                        const qty = parseFloat(ing.quantityPerBatch);
+                        const stock = getStockStatus(ing.chemicalId, "chemical", qty);
+                        return (
+                          <div key={`${ing.chemicalId}-${idx}`}
+                            className="group flex items-start gap-3 p-3.5 rounded-xl border border-border/50 bg-background hover:border-primary/30 hover:bg-primary/2 transition-all">
+                            <div className="flex-1 space-y-2 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-medium text-sm truncate">{material?.name}</span>
+                                <span className="text-[11px] text-muted-foreground font-mono whitespace-nowrap">
+                                  PKR {material?.costPerUnit}/{material?.unit}
+                                </span>
                               </div>
+                              <StockIndicator current={stock.current} needed={qty} unit={material?.unit} />
                             </div>
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              onClick={() => handleRemoveIngredient(idx)}
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <div className="relative">
+                                <Input
+                                  className="w-24 h-9 text-right pr-9 text-sm font-mono font-bold text-primary"
+                                  value={ing.quantityPerBatch}
+                                  type="number"
+                                  onChange={(e) => handleUpdateIngredient(idx, e.target.value)}
+                                  step="0.01"
+                                />
+                                <div className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium pointer-events-none">
+                                  {material?.unit}
+                                </div>
+                              </div>
+                              <Button variant="ghost" size="icon" className="size-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => handleRemoveIngredient(idx)}>
+                                <Trash2 className="size-3.5" />
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                    )}
                   </div>
                 </CardContent>
               </Card>
 
-              {/* 3. Packaging */}
-              <Card className=" border-border/60">
-                <CardHeader className="bg-muted/30 pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                      <Package className="size-4" />
-                      Packaging & Distribution
-                    </CardTitle>
-                  </div>
+              {/* ── SECTION 3: Packaging & Distribution ───────────────────── */}
+              <Card className="border-border/50">
+                <CardHeader className="px-5 py-4 border-b border-border/40">
+                  <SectionHeader
+                    step={3}
+                    icon={Package}
+                    title="Packaging & Distribution"
+                    description="Configure primary container, master carton, and additional materials"
+                  />
                 </CardHeader>
-                <CardContent className="pt-6 space-y-6">
-                  {/* Primary Container */}
-                  <div className="p-4 rounded-xl border">
-                    <div className="flex items-center justify-between mb-3">
+                <CardContent className="p-5 space-y-5">
+
+                  {/* ── Primary container ─────────────────────────────────── */}
+                  <div className="rounded-xl border border-border/60 overflow-hidden">
+                    <div className="px-4 py-3 bg-muted/30 border-b border-border/40 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="size-6 rounded-full flex items-center justify-center text-xs font-bold">
-                          1
+                        <div className="size-5 rounded-md bg-primary/15 flex items-center justify-center">
+                          <span className="text-[10px] font-bold text-primary">A</span>
                         </div>
-                        <h4 className="text-sm font-semibold">
-                          Primary Container
-                        </h4>
+                        <span className="text-xs font-semibold">Primary Container</span>
                       </div>
                       {selectedContainer && (
-                        <div className="text-[10px] px-2 py-1 rounded border">
-                          Price: {selectedContainer.costPerUnit} | Stock:{" "}
-                          {getStockStatus(
-                            selectedContainer.id,
-                            "packaging",
-                            0,
-                          ).current.toLocaleString()}
+                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                          <span>PKR {selectedContainer.costPerUnit} / unit</span>
+                          <span className="text-border">·</span>
+                          <span>Stock: {getStockStatus(selectedContainer.id, "packaging", 0).current.toLocaleString()}</span>
                         </div>
                       )}
                     </div>
-                    <div className="space-y-5">
-                      {/* Material Selection */}
+                    <div className="p-4 space-y-4">
                       <form.Field name="containerPackagingId">
                         {(field) => (
-                          <div className="space-y-2">
-                            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-1">
-                              Primary Material
-                            </span>
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-muted-foreground">Container material</label>
                             <div className="flex gap-2">
-                              <Select
-                                value={field.state.value}
-                                onValueChange={field.handleChange}
-                              >
-                                <SelectTrigger
-                                  className={cn(
-                                    "",
-                                    field.state.meta.errors.length &&
-                                    "border-destructive",
-                                  )}
-                                >
-                                  <SelectValue placeholder="Select primary container material..." />
+                              <Select value={field.state.value} onValueChange={field.handleChange}>
+                                <SelectTrigger className={cn("flex-1 h-10 bg-background", field.state.meta.errors.length && "border-destructive")}>
+                                  <SelectValue placeholder="Select container…" />
                                 </SelectTrigger>
-                                <SelectContent className="max-h-[300px]">
+                                <SelectContent className="max-h-[280px]">
                                   {primaryPackagings.map((p) => (
-                                    <SelectItem
-                                      key={p.id}
-                                      value={p.id}
-                                      className="py-2.5"
-                                    >
-                                      <div className="flex flex-col">
-                                        <span className="font-semibold text-sm">
-                                          {p.name}
-                                        </span>
-                                        {p.capacity && (
-                                          <span className="text-muted-foreground text-[10px]">
-                                            Capacity:{" "}
-                                            {parseInt(p.capacity).toFixed(0)}
-                                            {p.capacityUnit}
-                                          </span>
-                                        )}
+                                    <SelectItem key={p.id} value={p.id}>
+                                      <div className="flex flex-col py-0.5">
+                                        <span className="font-medium">{p.name}</span>
+                                        {p.capacity && <span className="text-[10px] text-muted-foreground">{parseInt(p.capacity).toFixed(0)}{p.capacityUnit} capacity</span>}
                                       </div>
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
                               {values.containerPackagingId && (
-                                <Button
-                                  variant="destructive"
-                                  size="icon"
-                                  onClick={() => {
-                                    form.setFieldValue(
-                                      "containerPackagingId",
-                                      "",
-                                    );
-                                  }}
-                                >
-                                  <Trash2 className="size-4" />
+                                <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => form.setFieldValue("containerPackagingId", "")}>
+                                  <X className="size-4" />
                                 </Button>
                               )}
                             </div>
@@ -1080,350 +794,204 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                         )}
                       </form.Field>
 
-                      {/* Fill Configuration */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-2 gap-3">
                         <form.Field name="fillAmount">
                           {(field) => (
-                            <div className="space-y-2">
-                              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-1">
-                                Fill Amount Per Unit
-                              </span>
-                              <div className="relative">
-                                <Input
-                                  {...field.state}
-                                  value={field.state.value}
-                                  onChange={(e) =>
-                                    field.handleChange(e.target.value)
-                                  }
-                                  className={cn(
-                                    selectedContainer?.capacity
-                                      ? "bg-muted/50 text-muted-foreground"
-                                      : "bg-background",
-                                  )}
-                                  placeholder="0.00"
-                                  step="0.01"
-                                  readOnly={!!selectedContainer?.capacity}
-                                  disabled={
-                                    !selectedContainer ||
-                                    !!selectedContainer.capacity
-                                  }
-                                />
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground uppercase pointer-events-none">
-                                  Amount
-                                </div>
-                              </div>
+                            <div className="space-y-1.5">
+                              <label className="text-xs font-medium text-muted-foreground">Fill amount per unit</label>
+                              <Input
+                                value={field.state.value}
+                                onChange={(e) => field.handleChange(e.target.value)}
+                                placeholder="0.00"
+                                step="0.01"
+                                readOnly={!!selectedContainer?.capacity}
+                                disabled={!selectedContainer || !!selectedContainer.capacity}
+                                className={cn("h-10 font-mono", selectedContainer?.capacity && "bg-muted/50 text-muted-foreground")}
+                              />
                             </div>
                           )}
                         </form.Field>
-
                         <form.Field name="fillUnit">
                           {(field) => (
-                            <div className="space-y-2">
-                              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-1">
-                                Measurement Unit
-                              </span>
+                            <div className="space-y-1.5">
+                              <label className="text-xs font-medium text-muted-foreground">Unit</label>
                               <Select
                                 value={field.state.value}
-                                onValueChange={(val) =>
-                                  field.handleChange(
-                                    val as "ml" | "L" | "g" | "kg",
-                                  )
-                                }
-                                disabled={
-                                  !selectedContainer ||
-                                  !!selectedContainer.capacityUnit
-                                }
+                                onValueChange={(v) => field.handleChange(v as "ml" | "L" | "g" | "kg")}
+                                disabled={!selectedContainer || !!selectedContainer.capacityUnit}
                               >
-                                <SelectTrigger
-                                  className={cn(
-                                    selectedContainer?.capacityUnit
-                                      ? "bg-muted/50 text-muted-foreground"
-                                      : "bg-background",
-                                  )}
-                                >
+                                <SelectTrigger className={cn("h-10", selectedContainer?.capacityUnit && "bg-muted/50 text-muted-foreground")}>
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="ml" className="py-2.5">
-                                    ml (Milliliters)
-                                  </SelectItem>
-                                  <SelectItem value="L" className="py-2.5">
-                                    L (Liters)
-                                  </SelectItem>
-                                  <SelectItem value="g" className="py-2.5">
-                                    g (Grams)
-                                  </SelectItem>
-                                  <SelectItem value="kg" className="py-2.5">
-                                    kg (Kilograms)
-                                  </SelectItem>
+                                  <SelectItem value="ml">ml (Milliliters)</SelectItem>
+                                  <SelectItem value="L">L (Liters)</SelectItem>
+                                  <SelectItem value="g">g (Grams)</SelectItem>
+                                  <SelectItem value="kg">kg (Kilograms)</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
                           )}
                         </form.Field>
                       </div>
-                    </div>
 
-                    {/* Primary Container Quantity Edit */}
-                    <div className="mt-2 flex items-center justify-between gap-4 border-t pt-2">
-                      <span className="text-xs text-primary opacity-80">
-                        Container capacity matches fill amount?
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-primary uppercase">
-                          Qty Needed:
-                        </span>
-                        <Input
-                          type="number"
-                          className="w-20 h-7 text-xs font-bold"
-                          value={values.producedUnits || ""}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value);
-                            if (!isNaN(val)) {
-                              form.setFieldValue("producedUnits", val);
-                            } else {
-                              form.setFieldValue("producedUnits", 0);
-                            }
-                          }}
-                          placeholder="0"
-                        />
+                      <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                        <span className="text-xs text-muted-foreground">Quantity needed</span>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            className="w-20 h-8 text-xs font-mono font-bold text-center"
+                            value={values.producedUnits || ""}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              form.setFieldValue("producedUnits", isNaN(val) ? 0 : val);
+                            }}
+                            placeholder="0"
+                          />
+                          <span className="text-xs text-muted-foreground">units</span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Master Carton */}
-                  <div className="p-4 rounded-xl border ">
-                    <div className="flex items-center justify-between mb-3">
+                  {/* ── Master carton ──────────────────────────────────────── */}
+                  <div className="rounded-xl border border-border/60 overflow-hidden">
+                    <div className="px-4 py-3 bg-muted/30 border-b border-border/40 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="size-6 rounded-full flex items-center justify-center text-xs font-bold">
-                          2
+                        <div className="size-5 rounded-md bg-muted flex items-center justify-center">
+                          <span className="text-[10px] font-bold text-muted-foreground">B</span>
                         </div>
-                        <h4 className="text-sm font-semibold">
-                          Master Carton (Optional)
-                        </h4>
+                        <span className="text-xs font-semibold">Master Carton</span>
+                        <span className="text-[10px] text-muted-foreground">(optional)</span>
                       </div>
                       {selectedCarton && (
-                        <div className="text-[10px] px-2 py-1 rounded border">
-                          Price: {selectedCarton.costPerUnit} | Stock:{" "}
-                          {getStockStatus(
-                            selectedCarton.id,
-                            "packaging",
-                            0,
-                          ).current.toLocaleString()}
+                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                          <span>PKR {selectedCarton.costPerUnit} / carton</span>
+                          <span className="text-border">·</span>
+                          <span>Stock: {getStockStatus(selectedCarton.id, "packaging", 0).current.toLocaleString()}</span>
                         </div>
                       )}
                     </div>
-                    <div className="grid grid-cols-[1fr_120px_auto] gap-2 items-end">
-                      <form.Field name="cartonPackagingId">
-                        {(field) => (
-                          <div className="space-y-1.5">
-                            <span className="text-xs font-medium text-muted-foreground uppercase">
-                              Carton Type
-                            </span>
-                            <Select
-                              value={field.state.value}
-                              onValueChange={field.handleChange}
-                            >
-                              <SelectTrigger className="bg-background h-10">
-                                <SelectValue placeholder="No Carton (Loose)" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem
-                                  value="_none"
-                                  className="italic text-muted-foreground"
-                                >
-                                  No Carton (Loose Units)
-                                </SelectItem>
-                                {masterPackagings.map((p) => (
-                                  <SelectItem key={p.id} value={p.id}>
-                                    {p.name}
-                                    {p.capacity
-                                      ? ` -- ${formatNumber(p.capacity)} units/carton`
-                                      : ""}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-                      </form.Field>
-
-                      <div className="space-y-1.5">
-                        <span className="text-xs font-medium text-muted-foreground uppercase">
-                          T. Cartons
-                        </span>
-                        <Input
-                          type="number"
-                          value={cartonsCount}
-                          onChange={(e) =>
-                            setCartonsCount(parseInt(e.target.value) || 0)
-                          }
-                          className="h-10 bg-background font-bold text-center"
-                          disabled={
-                            !values.cartonPackagingId ||
-                            values.cartonPackagingId === "_none"
-                          }
-                          placeholder="QTY"
-                        />
+                    <div className="p-4 space-y-4">
+                      <div className="grid grid-cols-[1fr_120px] gap-3 items-end">
+                        <form.Field name="cartonPackagingId">
+                          {(field) => (
+                            <div className="space-y-1.5">
+                              <label className="text-xs font-medium text-muted-foreground">Carton type</label>
+                              <Select value={field.state.value} onValueChange={field.handleChange}>
+                                <SelectTrigger className="h-10 bg-background">
+                                  <SelectValue placeholder="No carton (loose)" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="_none" className="italic text-muted-foreground">No carton (loose units)</SelectItem>
+                                  {masterPackagings.map((p) => (
+                                    <SelectItem key={p.id} value={p.id}>
+                                      {p.name}{p.capacity ? ` — ${formatNumber(p.capacity)} units` : ""}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                        </form.Field>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-muted-foreground">Total cartons</label>
+                          <Input
+                            type="number"
+                            value={cartonsCount}
+                            onChange={(e) => setCartonsCount(parseInt(e.target.value) || 0)}
+                            className="h-10 font-mono font-bold text-center"
+                            disabled={!values.cartonPackagingId || values.cartonPackagingId === "_none"}
+                            placeholder="—"
+                          />
+                        </div>
                       </div>
 
-                      {values.cartonPackagingId &&
-                        values.cartonPackagingId !== "_none" && (
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => {
-                              form.setFieldValue("cartonPackagingId", "");
-                              setCartonsCount(0);
-                            }}
-                          >
-                            <Trash2 className="size-4" />
+                      {values.cartonPackagingId && values.cartonPackagingId !== "_none" && (
+                        <>
+                          <div className="grid grid-cols-2 gap-3">
+                            <form.Field name="containersPerCarton">
+                              {(field) => (
+                                <div className="space-y-1.5">
+                                  <label className="text-xs font-medium text-muted-foreground">Units per carton</label>
+                                  <Input value={field.state.value || ""} readOnly disabled className="h-9 bg-muted/50 font-mono font-bold" placeholder="Auto" />
+                                </div>
+                              )}
+                            </form.Field>
+                            <div className="space-y-1.5">
+                              <label className="text-xs font-medium text-muted-foreground">Carton label</label>
+                              <Input value={selectedCarton?.capacityUnit || "units"} readOnly disabled className="h-9 bg-muted/50" />
+                            </div>
+                          </div>
+
+                          {selectedCarton?.capacity ? (
+                            <div className="flex items-center gap-1.5 text-xs text-emerald-600">
+                              <CheckCircle2 className="size-3.5" />
+                              <span>Perfect fit — {formatNumber(selectedCarton.capacity)} units per carton</span>
+                            </div>
+                          ) : (cartonsCount > 0 && values.producedUnits > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              ≈ {Math.floor(values.producedUnits / cartonsCount)} units per carton
+                            </p>
+                          ))}
+
+                          {/* Loose units warning */}
+                          {hasLooseUnits && (
+                            <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 p-3.5 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <AlertTriangle className="size-3.5 text-amber-600 shrink-0" />
+                                <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Uneven distribution</span>
+                              </div>
+                              <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+                                {values.producedUnits} units ÷ {values.containersPerCarton} ={" "}
+                                <strong>{Math.floor(values.producedUnits / values.containersPerCarton)} full cartons</strong>
+                                {" + "}
+                                <strong>{values.producedUnits % values.containersPerCarton} loose</strong>.{" "}
+                                The operator will choose how to handle the remainder at packing time.
+                              </p>
+                            </div>
+                          )}
+
+                          <Button variant="ghost" size="sm" className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10 h-8 px-2"
+                            onClick={() => { form.setFieldValue("cartonPackagingId", ""); setCartonsCount(0); }}>
+                            <X className="size-3 mr-1" /> Remove carton
                           </Button>
-                        )}
-                    </div>
-
-                    {/* Auto-populated Carton Details */}
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                      <form.Field name="containersPerCarton">
-                        {(field) => (
-                          <div className="space-y-1.5">
-                            <span className="text-xs font-medium text-muted-foreground uppercase">
-                              Units per Carton
-                            </span>
-                            <Input
-                              type="number"
-                              value={field.state.value || ""}
-                              readOnly
-                              disabled
-                              className="h-9 bg-muted/50 font-bold"
-                              placeholder="Auto"
-                            />
-                          </div>
-                        )}
-                      </form.Field>
-
-                      <div className="space-y-1.5">
-                        <span className="text-xs font-medium text-muted-foreground uppercase">
-                          Inner Item Content
-                        </span>
-                        <Input
-                          value={selectedCarton?.capacityUnit || "units"}
-                          readOnly
-                          disabled
-                          className="h-9 bg-muted/50 font-bold"
-                          placeholder="units"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Helper Text for Capacity */}
-                    {selectedCarton?.capacity ? (
-                      <div className="mt-2 text-xs text-right opacity-80 flex items-center justify-end gap-1 text-primary">
-                        <CheckCircle2 className="size-3" />
-                        <span>
-                          Perfect fit: {formatNumber(selectedCarton.capacity)}{" "}
-                          units per carton
-                        </span>
-                      </div>
-                    ) : (
-                      cartonsCount > 0 &&
-                      values.producedUnits > 0 && (
-                        <div className="mt-2 text-xs text-amber-800 text-right opacity-80">
-                          <span>
-                            Approx{" "}
-                            {Math.floor(values.producedUnits / cartonsCount)}{" "}
-                            units per carton
-                          </span>
-                        </div>
-                      )
-                    )}
-
-                    {/* Loose Units Warning */}
-                    {cartonsCount > 0 &&
-                      values.producedUnits > 0 &&
-                      values.containersPerCarton > 0 &&
-                      values.producedUnits % values.containersPerCarton !== 0 && (
-                        <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 space-y-1.5">
-                          <div className="flex items-center gap-2 text-amber-800">
-                            <AlertTriangle className="size-4 shrink-0" />
-                            <span className="text-xs font-bold uppercase tracking-wider">
-                              Uneven Distribution
-                            </span>
-                          </div>
-                          <p className="text-xs text-amber-700 leading-relaxed">
-                            {values.producedUnits} units ÷ {values.containersPerCarton} per carton ={" "}
-                            <strong>{Math.floor(values.producedUnits / values.containersPerCarton)} full cartons</strong>
-                            {" + "}
-                            <strong className="text-amber-900">{values.producedUnits % values.containersPerCarton} loose units</strong>.
-                          </p>
-                          <p className="text-[11px] text-amber-600 leading-relaxed">
-                            The last carton (#{cartonsCount}) will only contain{" "}
-                            <strong>{values.producedUnits % values.containersPerCarton}</strong> units
-                            instead of {values.containersPerCarton}. During production, the operator
-                            will be given the choice to pack them as a partial carton or leave them
-                            as loose units.
-                          </p>
-                        </div>
+                        </>
                       )}
+                    </div>
                   </div>
 
-                  {/* 4. Additional Materials */}
-                  <div className="space-y-3 pt-6 border-t">
-                    <div className="flex items-center justify-between pb-2">
-                      <h4 className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-2">
-                        <ListPlusIcon className="size-4" />
-                        Additional Materials
-                      </h4>
+                  {/* ── Additional materials ───────────────────────────────── */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <ListPlusIcon className="size-3.5 text-muted-foreground" />
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Additional Materials</span>
+                      </div>
+                      {values.additionalPackaging.length > 0 && (
+                        <Badge variant="secondary" className="font-mono text-xs">{values.additionalPackaging.length}</Badge>
+                      )}
                     </div>
 
-                    {/* Add Row */}
-                    <div className="flex gap-2 p-3 bg-muted/30 rounded-lg border border-border/50">
-                      <Select
-                        value={tempPackagingId}
-                        onValueChange={setTempPackagingId}
-                      >
-                        <SelectTrigger className="flex-1 bg-background h-10">
-                          <SelectValue placeholder="Add Sticker or Extra..." />
+                    {/* Add row */}
+                    <div className="flex gap-2 p-3 bg-muted/20 rounded-xl border border-border/40">
+                      <Select value={tempPackagingId} onValueChange={setTempPackagingId}>
+                        <SelectTrigger className="flex-1 bg-background h-9 text-sm">
+                          <SelectValue placeholder="Add sticker or extra…" />
                         </SelectTrigger>
                         <SelectContent>
                           {materials.packagings
-                            .filter(
-                              (p) =>
-                                !p.type ||
-                                p.type === "sticker" ||
-                                p.type === "extra",
-                            )
-                            .filter(
-                              (p) =>
-                                p.id !== values.containerPackagingId &&
-                                p.id !== values.cartonPackagingId,
-                            )
-                            .filter(
-                              (p) =>
-                                !values.additionalPackaging.some(
-                                  (ap) => ap.packagingMaterialId === p.id,
-                                ),
-                            )
+                            .filter((p) => !p.type || p.type === "sticker" || p.type === "extra")
+                            .filter((p) => p.id !== values.containerPackagingId && p.id !== values.cartonPackagingId)
+                            .filter((p) => !values.additionalPackaging.some((ap) => ap.packagingMaterialId === p.id))
                             .map((p) => {
-                              const stock = getStockStatus(
-                                p.id,
-                                "packaging",
-                                0,
-                              );
+                              const stock = getStockStatus(p.id, "packaging", 0);
                               return (
                                 <SelectItem key={p.id} value={p.id}>
                                   <div className="flex items-center justify-between w-full gap-4">
                                     <span>{p.name}</span>
-                                    <span
-                                      className={cn(
-                                        "text-[10px] tabular-nums",
-                                        stock.current <=
-                                          (p.minimumStockLevel || 0)
-                                          ? "text-destructive font-bold"
-                                          : "text-muted-foreground",
-                                      )}
-                                    >
-                                      Stock: {stock.current}
+                                    <span className={cn("text-[10px] tabular-nums", stock.current <= (p.minimumStockLevel || 0) ? "text-destructive font-bold" : "text-muted-foreground")}>
+                                      {stock.current} in stock
                                     </span>
                                   </div>
                                 </SelectItem>
@@ -1432,124 +1000,72 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
                         </SelectContent>
                       </Select>
 
-                      <div className="relative w-32">
-                        <Input
-                          placeholder="Qty"
-                          type="number"
-                          step="any"
-                          className="w-full h-10 pr-8 bg-background font-bold text-lg"
-                          value={tempPkgQty}
-                          onChange={(e) => setTempPkgQty(e.target.value)}
-                          onKeyDown={(e) =>
-                            e.key === "Enter" && handleAddAdditionalPackaging()
-                          }
-                        />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">
-                          {tempPkgUnit === "per_carton" ? "/c" : "/u"}
-                        </span>
+                      {/* Per-unit / per-carton toggle */}
+                      <div className="flex items-center bg-muted rounded-md p-0.5 shrink-0">
+                        {(["per_unit", "per_carton"] as const).map((u) => (
+                          <button
+                            key={u}
+                            type="button"
+                            onClick={() => setTempPkgUnit(u)}
+                            className={cn(
+                              "px-2 py-1 rounded text-[10px] font-semibold transition-all",
+                              tempPkgUnit === u ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            {u === "per_unit" ? "/unit" : "/carton"}
+                          </button>
+                        ))}
                       </div>
 
-                      <Button
-                        onClick={handleAddAdditionalPackaging}
-                        size="icon"
-                        className="shrink-0 h-10 w-10"
-                        disabled={!tempPackagingId || !tempPkgQty}
-                      >
-                        <Plus className="size-5" />
+                      <Input
+                        type="number"
+                        step="any"
+                        placeholder="Qty"
+                        className="w-20 h-9 font-mono font-bold bg-background text-primary text-sm"
+                        value={tempPkgQty}
+                        onChange={(e) => setTempPkgQty(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddAdditionalPackaging()}
+                      />
+                      <Button onClick={handleAddAdditionalPackaging} size="sm" className="h-9 w-9 p-0 shrink-0" disabled={!tempPackagingId || !tempPkgQty}>
+                        <Plus className="size-4" />
                       </Button>
                     </div>
 
                     {/* List */}
                     <div className="space-y-2">
                       {values.additionalPackaging.map((pkg, idx) => {
-                        const material = materials.packagings.find(
-                          (m) => m.id === pkg.packagingMaterialId,
-                        );
-                        const totalNeeded = Math.round(
-                          pkg.quantityPerContainer *
-                          (values.producedUnits || 0)
-                        );
-                        const stock = getStockStatus(
-                          pkg.packagingMaterialId,
-                          "packaging",
-                          totalNeeded,
-                        );
-
+                        const material = materials.packagings.find((m) => m.id === pkg.packagingMaterialId);
+                        const totalNeeded = Math.round(pkg.quantityPerContainer * (values.producedUnits || 0));
+                        const stock = getStockStatus(pkg.packagingMaterialId, "packaging", totalNeeded);
                         return (
-                          <div
-                            key={idx}
-                            className="group flex items-start gap-3 p-3 rounded-lg border hover:border-primary/30 hover:bg-muted/40 transition-all"
-                          >
-                            <div className="flex-1 space-y-1">
-                              <div className="flex items-center justify-between">
-                                <span className="font-medium text-sm">
-                                  {material?.name}
-                                </span>
-                                <span className="text-xs text-muted-foreground font-mono">
-                                  PKR {material?.costPerUnit}/u
-                                </span>
+                          <div key={idx} className="flex items-start gap-3 p-3.5 rounded-xl border border-border/50 bg-background hover:border-primary/30 hover:bg-primary/2 transition-all">
+                            <div className="flex-1 space-y-2 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-medium text-sm truncate">{material?.name}</span>
+                                <span className="text-[11px] text-muted-foreground font-mono whitespace-nowrap">PKR {material?.costPerUnit}/u</span>
                               </div>
-                              <div className="text-[10px] text-muted-foreground pt-1 flex items-center gap-1">
-                                <span>
-                                  Stock: {stock.current.toLocaleString()}
-                                </span>
-                                <ArrowRight className="size-3 opacity-50" />
-                                <span
-                                  className={cn(
-                                    "font-mono text-[10px]",
-                                    stock.remaining < 0
-                                      ? "text-destructive font-bold"
-                                      : "text-emerald-600",
-                                  )}
-                                >
-                                  Rem: {stock.remaining.toLocaleString()}
-                                </span>
-                              </div>
+                              <StockIndicator current={stock.current} needed={totalNeeded} />
                             </div>
-
-                            <div className="flex items-center gap-2">
-                              <div className="relative">
+                            <div className="flex items-center gap-2 shrink-0">
+                              <div className="space-y-0.5">
                                 <Input
                                   type="number"
                                   step="any"
-                                  className="w-28 h-9 text-right text-base font-bold text-primary"
-                                  value={
-                                    Math.round(
-                                      (pkg.quantityPerContainer || 0) *
-                                      (values.producedUnits || 0)
-                                    ) || ""
-                                  }
+                                  className="w-24 h-9 text-right text-sm font-mono font-bold text-primary"
+                                  value={Math.round((pkg.quantityPerContainer || 0) * (values.producedUnits || 0)) || ""}
                                   onChange={(e) => {
                                     const val = parseFloat(e.target.value) || 0;
-                                    const producedUnits =
-                                      values.producedUnits || 1;
-                                    const perUnit = val / producedUnits;
-                                    const newPkg = [
-                                      ...values.additionalPackaging,
-                                    ];
-                                    newPkg[idx] = {
-                                      ...newPkg[idx],
-                                      quantityPerContainer: perUnit,
-                                    };
-                                    form.setFieldValue(
-                                      "additionalPackaging",
-                                      newPkg,
-                                    );
+                                    const perUnit = val / (values.producedUnits || 1);
+                                    const newPkg = [...values.additionalPackaging];
+                                    newPkg[idx] = { ...newPkg[idx], quantityPerContainer: perUnit };
+                                    form.setFieldValue("additionalPackaging", newPkg);
                                   }}
                                 />
+                                <p className="text-[10px] text-muted-foreground text-right">total</p>
                               </div>
-                              <span className="text-[10px] text-muted-foreground font-bold uppercase whitespace-nowrap">
-                                Total
-                              </span>
-                              <Button
-                                variant="destructive"
-                                size="icon"
-                                className="shrink-0"
-                                onClick={() =>
-                                  handleRemoveAdditionalPackaging(idx)
-                                }
-                              >
-                                <Trash2 className="size-4" />
+                              <Button variant="ghost" size="icon" className="size-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => handleRemoveAdditionalPackaging(idx)}>
+                                <Trash2 className="size-3.5" />
                               </Button>
                             </div>
                           </div>
@@ -1561,168 +1077,110 @@ export const CreateRecipeForm = ({ onOpenChange, initialRecipe }: Props) => {
               </Card>
             </div>
 
-            {/* --- RIGHT COLUMN: LIVE ANALYSIS & METRICS --- */}
-            <div className="space-y-6">
-              {/* Live Analysis Card */}
-              <Card className="border-2 border-primary/10  shadow-primary/5 sticky top-24">
-                <CardHeader className="bg-primary/5 pb-4 border-b border-primary/5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 bg-background rounded-lg border ">
-                        <Calculator className="size-5 text-primary" />
+            {/* ═══════════════════════════════════════════════════════════════
+                RIGHT — LIVE ANALYSIS
+            ══════════════════════════════════════════════════════════════════ */}
+            <div className="space-y-4">
+              <div className="sticky top-16 space-y-4">
+
+                {/* ── Cost summary card ─────────────────────────────────── */}
+                <Card className="border-primary/20 shadow-sm">
+                  <CardHeader className="px-5 py-4 border-b border-border/40">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-1.5 bg-primary/10 rounded-lg">
+                          <Calculator className="size-4 text-primary" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-sm font-semibold">Live Analysis</CardTitle>
+                          <CardDescription className="text-[11px]">Real-time cost estimation</CardDescription>
+                        </div>
                       </div>
-                      <div>
-                        <CardTitle className="text-base font-bold">
-                          Live Analysis
-                        </CardTitle>
-                        <CardDescription className="text-xs">
-                          Real-time production cost estimation
-                        </CardDescription>
+                      <Badge variant="outline" className="font-mono text-xs bg-background">PKR</Badge>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="p-5 space-y-5">
+                    {/* Primary metrics */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
+                        <p className="text-[10px] font-semibold uppercase text-primary/60 mb-1">Total Batch</p>
+                        <p className="text-2xl font-black tracking-tight text-primary font-mono">
+                          {totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-1">estimated</p>
+                      </div>
+                      <div className="p-4 rounded-xl bg-muted/40 border border-border/50">
+                        <p className="text-[10px] font-semibold uppercase text-muted-foreground mb-1">Per Unit</p>
+                        <p className="text-2xl font-black tracking-tight font-mono">
+                          {costPerUnit.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-1">{values.producedUnits} units</p>
                       </div>
                     </div>
-                    <Badge
-                      variant="outline"
-                      className="bg-background font-mono"
-                    >
-                      PKR
-                    </Badge>
+
+                    <Separator />
+
+                    {/* Cost breakdown with bars */}
+                    <div className="space-y-3.5">
+                      <p className="text-[11px] font-semibold uppercase text-muted-foreground tracking-wide">Cost Distribution</p>
+
+                      {[
+                        { label: "Ingredients", value: ingredientsCost, color: "bg-emerald-500", dot: "bg-emerald-500" },
+                        { label: `Primary packaging${selectedContainer ? ` · ${selectedContainer.name}` : ""}`, value: containersCost, color: "bg-blue-500", dot: "bg-blue-500" },
+                        { label: `Master cartons · ${cartonsCalculation.boxesNeeded}`, value: cartonsCalculation.cost, color: "bg-amber-500", dot: "bg-amber-500" },
+                        { label: "Additional materials", value: additionalPackagingCost, color: "bg-purple-500", dot: "bg-purple-500" },
+                      ].map(({ label, value, color, dot }) => (
+                        <div key={label} className="space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className={cn("size-2 rounded-full shrink-0", dot)} />
+                              <span className="text-muted-foreground truncate">{label}</span>
+                            </div>
+                            <span className="font-mono font-semibold tabular-nums shrink-0 ml-2">
+                              {value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <CostBar value={value} total={totalCost} color={color} />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Inline alerts */}
+                    {values.ingredients.length === 0 && (
+                      <div className="flex gap-2.5 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-400">
+                        <AlertTriangle className="size-3.5 shrink-0 mt-0.5" />
+                        <p className="text-xs leading-relaxed">Add ingredients to calculate formulation costs.</p>
+                      </div>
+                    )}
+                    {!selectedContainer && (
+                      <div className="flex gap-2.5 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 text-blue-700 dark:text-blue-400">
+                        <Info className="size-3.5 shrink-0 mt-0.5" />
+                        <p className="text-xs leading-relaxed">Select a primary container to include packaging costs.</p>
+                      </div>
+                    )}
+                  </CardContent>
+
+                  <CardFooter className="px-5 py-3 border-t bg-muted/10">
+                    <div className="flex items-center justify-between w-full text-[11px] text-muted-foreground">
+                      <span>Costs based on moving average</span>
+                      <RefreshCw className="size-3" />
+                    </div>
+                  </CardFooter>
+                </Card>
+
+                {/* ── Production note ─────────────────────────────────────── */}
+                <div className="rounded-xl bg-muted/30 border border-border/40 p-4">
+                  <div className="flex items-start gap-2.5">
+                    <Info className="size-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Verify warehouse stock before initiating a production run. All costs are estimates based on standard moving average pricing.
+                    </p>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-6 pt-6">
-                  {/* Big Metric: Batch Cost */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
-                      <p className="text-xs font-bold uppercase text-primary/70 mb-1">
-                        Total Batch Cost
-                      </p>
-                      <p className="text-2xl font-black tracking-tight text-primary">
-                        {totalCost.toLocaleString(undefined, {
-                          maximumFractionDigits: 0,
-                        })}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        Est. based on current inputs
-                      </p>
-                    </div>
-                    <div className="p-4 rounded-xl bg-muted/50 border border-border/50">
-                      <p className="text-xs font-bold uppercase text-muted-foreground mb-1">
-                        Cost Per Unit
-                      </p>
-                      <p className="text-2xl font-black tracking-tight text-foreground">
-                        {costPerUnit.toLocaleString(undefined, {
-                          maximumFractionDigits: 2,
-                        })}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        For {values.producedUnits} units
-                      </p>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Cost Breakdown */}
-                  <div className="space-y-3">
-                    <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3">
-                      Cost Distribution
-                    </h4>
-
-                    <div className="flex justify-between items-center text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="size-3 rounded-full bg-emerald-500" />
-                        <span>Ingredients</span>
-                      </div>
-                      <span className="font-mono">
-                        {ingredientsCost.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="size-3 rounded-full bg-blue-500" />
-                        <span>
-                          Primary Packaging ({selectedContainer?.name || "None"}
-                          )
-                        </span>
-                      </div>
-                      <span className="font-mono">
-                        {containersCost.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="size-3 rounded-full bg-amber-500" />
-                        <span>
-                          Master Cartons ({cartonsCalculation.boxesNeeded}{" "}
-                          Buckets)
-                        </span>
-                      </div>
-                      <span className="font-mono">
-                        {cartonsCalculation.cost.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="size-3 rounded-full bg-purple-500" />
-                        <span>Additional Materials</span>
-                      </div>
-                      <span className="font-mono">
-                        {additionalPackagingCost.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Warnings / Alerts */}
-                  {values.ingredients.length === 0 && (
-                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex gap-3 text-amber-700">
-                      <AlertTriangle className="size-4 shrink-0 mt-0.5" />
-                      <p className="text-xs">
-                        Add ingredients to calculate formulation costs.
-                      </p>
-                    </div>
-                  )}
-
-                  {!selectedContainer && (
-                    <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 flex gap-3 text-blue-700">
-                      <Info className="size-4 shrink-0 mt-0.5" />
-                      <p className="text-xs">
-                        Select a primary container to include packaging costs.
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-                <CardFooter className="bg-muted/5 border-t py-3">
-                  <div className="flex items-center justify-between w-full text-xs text-muted-foreground">
-                    <span>Last check: Just now</span>
-                    <RefreshCw className="size-3" />
-                  </div>
-                </CardFooter>
-              </Card>
-
-              {/* Info */}
-              <div className="text-xs text-muted-foreground bg-muted/30 p-4 rounded-lg border">
-                <p>
-                  <strong>Production Note:</strong> Ensure stock is available in
-                  the warehouse before initiating a Production Run based on this
-                  recipe. Costs are estimates based on standard moving average
-                  cost.
-                </p>
+                </div>
               </div>
             </div>
+
           </div>
         </div>
       </ScrollArea>

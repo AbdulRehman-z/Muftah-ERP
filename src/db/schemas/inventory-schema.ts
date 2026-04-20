@@ -292,6 +292,8 @@ export const productionRuns = pgTable(
     operatorId: text("operator_id")
       .notNull()
       .references(() => user.id),
+    initiatorId: text("initiator_id")
+      .references(() => user.id),
 
     // Production Output
     batchesProduced: integer("batches_produced").notNull(), // Number of batches
@@ -317,6 +319,10 @@ export const productionRuns = pgTable(
       precision: 10,
       scale: 4,
     }).default("0"),
+
+    // Variance / Shortfall Tracking
+    shortfallUnits: integer("shortfall_units").default(0),
+    shortfallReason: text("shortfall_reason"),
 
     // Status & Scheduling
     status: text("status").notNull().default("scheduled"), // "scheduled", "in_progress", "completed", "cancelled"
@@ -559,6 +565,12 @@ export const productionRunsRelations = relations(
     operator: one(user, {
       fields: [productionRuns.operatorId],
       references: [user.id],
+      relationName: "operator",
+    }),
+    initiator: one(user, {
+      fields: [productionRuns.initiatorId],
+      references: [user.id],
+      relationName: "initiator",
     }),
     materialsUsed: many(productionMaterialsUsed),
   }),
