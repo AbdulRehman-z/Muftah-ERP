@@ -12,11 +12,9 @@ import {
   FlaskConical,
   ChevronRight,
   Clock,
-  CheckCircle2,
   AlertCircle,
   BarChart3,
   Receipt,
-  Calendar1Icon,
   ArrowLeft,
   AlertTriangle,
 } from "lucide-react";
@@ -310,7 +308,7 @@ function ProductionRunDetailsPage() {
 
             {/* Yield Stats */}
             <Card className="bg-background/50 border relative overflow-hidden">
-              {run.shortfallUnits > 0 && (
+              {(run.shortfallUnits ?? 0) > 0 && (
                 <div className="absolute top-0 right-0 py-1.5 px-3 bg-amber-500 text-white text-[9px] font-black uppercase tracking-widest rotate-0 origin-top-right">
                   Shortfall Detected
                 </div>
@@ -339,7 +337,7 @@ function ProductionRunDetailsPage() {
                       value={(run.completedUnits! / run.containersProduced) * 100}
                       className="h-2"
                     />
-                    {run.shortfallUnits > 0 && (
+                    {((run.shortfallUnits ?? 0) > 0) && (
                       <div 
                         className="absolute top-0 h-4 w-0.5 bg-destructive z-10 opacity-60"
                         style={{ left: `${(run.completedUnits! / run.containersProduced) * 100}%` }}
@@ -366,7 +364,7 @@ function ProductionRunDetailsPage() {
                       <p className="font-bold text-base flex items-baseline gap-1.5">
                         {run.completedUnits! %
                           (run.recipe.containersPerCarton || 1)}
-                        {run.shortfallUnits > 0 && (
+                        {((run.shortfallUnits ?? 0) > 0) && (
                           <span className="text-[10px] text-destructive font-black">
                             ({run.shortfallUnits}V)
                           </span>
@@ -488,7 +486,7 @@ function ProductionRunDetailsPage() {
             {/* Sidebar: Details & Failure Notes */}
             <div className="space-y-6">
               {/* Shortfall Reason Section */}
-              {run.shortfallUnits > 0 && (
+              {((run.shortfallUnits ?? 0) > 0) && (
                 <Card className="bg-red-50 border-red-200">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-xs font-black uppercase tracking-widest text-red-600 flex items-center gap-2">

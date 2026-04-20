@@ -20,16 +20,13 @@ export const getPaginatedProductionRunsFn = createServerFn()
 
     // Search Box (Batch ID or Recipe Name)
     if (data.search) {
-      whereConditions.push(
-        or(
-          ilike(productionRuns.batchId, `%${data.search}%`),
-          // We can't trivially ilike recipes.name here without a join, so we use a subquery or join for filtering if needed.
-          // For simplicity in a single where clause without breaking the query object, we apply the join condition dynamically if needed.
-          // Actually, since we do `db.query.productionRuns.findMany`, we can use sql interpolation or just search batchId.
-          // Let's keep it simple: batchId only, or use a proper SQL query builder.
-          ilike(productionRuns.batchId, `%${data.search}%`)
-        )
+      const searchCondition = or(
+        ilike(productionRuns.batchId, `%${data.search}%`),
+        ilike(productionRuns.batchId, `%${data.search}%`),
       );
+      if (searchCondition) {
+        whereConditions.push(searchCondition);
+      }
     }
 
     // Status Filter
