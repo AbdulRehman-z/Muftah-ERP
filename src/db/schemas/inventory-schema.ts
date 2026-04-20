@@ -320,6 +320,10 @@ export const productionRuns = pgTable(
       scale: 4,
     }).default("0"),
 
+    // Variance / Shortfall Tracking
+    shortfallUnits: integer("shortfall_units").default(0),
+    shortfallReason: text("shortfall_reason"),
+
     // Status & Scheduling
     status: text("status").notNull().default("scheduled"), // "scheduled", "in_progress", "completed", "cancelled"
     scheduledStartDate: timestamp("scheduled_start_date"),

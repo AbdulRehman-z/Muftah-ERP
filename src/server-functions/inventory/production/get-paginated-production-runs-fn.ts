@@ -63,7 +63,7 @@ export const getPaginatedProductionRunsFn = createServerFn()
       .select({
         activeRuns: sql<number>`COALESCE(SUM(CASE WHEN ${productionRuns.status} = 'in_progress' THEN 1 ELSE 0 END), 0)::int`,
         totalCost: sql<number>`COALESCE(SUM(CASE WHEN ${productionRuns.status} = 'completed' THEN CAST(${productionRuns.totalProductionCost} AS NUMERIC) ELSE 0 END), 0)::numeric`,
-        packsProduced: sql<number>`COALESCE(SUM(CASE WHEN ${productionRuns.status} = 'completed' THEN ${productionRuns.containersProduced} ELSE 0 END), 0)::int`,
+        packsProduced: sql<number>`COALESCE(SUM(CASE WHEN ${productionRuns.status} = 'completed' THEN ${productionRuns.completedUnits} ELSE 0 END), 0)::int`,
       })
       .from(productionRuns)
       .where(whereClause);

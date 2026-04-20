@@ -29,7 +29,6 @@ import {
   PartyPopper,
   ArrowRight,
   TrendingUp,
-  Calendar,
   Clock,
   AlertCircle,
   XCircle,
@@ -52,6 +51,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { useCompleteProduction } from "@/hooks/production/use-complete-production";
 
 export const Route = createFileRoute("/_protected/operator/$runId")({
   component: ProductionRunManagePage,
@@ -95,6 +95,38 @@ function ProductionRunManagePage() {
 
   const [failureReason, setFailureReason] = useState("");
   const [failDialogOpen, setFailDialogOpen] = useState(false);
+
+  const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
+  const [shortfallReason, setShortfallReason] = useState("");
+  const completeProductionMutation = useCompleteProduction();
+
+  const handleForceComplete = () => {
+    completeProductionMutation.mutate(
+      {
+        data: {
+          productionRunId: run.id,
+          shortfallReason: shortfallReason.trim() || undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Production completed early", {
+            description: "The run was closed with the recorded shortfall.",
+          });
+          setCompleteDialogOpen(false);
+          setShortfallReason("");
+          queryClient.invalidateQueries({ queryKey: ["production-run", runId] });
+          queryClient.invalidateQueries({ queryKey: ["operator-production-runs"] });
+          queryClient.invalidateQueries({ queryKey: ["finished-goods"] });
+        },
+        onError: (err) => {
+          toast.error("Failed to complete production", {
+            description: err.message,
+          });
+        },
+      }
+    );
+  };
 
   const failProductionMutation = useFailProduction();
 
@@ -162,9 +194,6 @@ function ProductionRunManagePage() {
   const remainingCartons = hasCartonPackaging
     ? Math.ceil(remaining / perCarton)
     : 0;
-  const completedCartons = hasCartonPackaging
-    ? Math.floor(completed / perCarton)
-    : 0;
 
   const isCancelled = run.status === "cancelled" || run.status === "failed";
 
@@ -228,7 +257,49 @@ function ProductionRunManagePage() {
         </Button>
 
         {!isCancelled && run.status === "in_progress" && (
-          <AlertDialog open={failDialogOpen} onOpenChange={setFailDialogOpen}>
+          <div className="flex items-center gap-2">
+            <AlertDialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2 border-amber-200 text-amber-700 hover:bg-amber-50">
+                  <CheckCircle className="size-4" />
+                  Force Complete Early
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="size-5 text-amber-600" />
+                    Complete With Shortfall?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will mark the run as completed even though it hasn't reached the target of {target.toLocaleString()} units (currently at {completed.toLocaleString()}).
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-2 py-4">
+                  <label className="text-sm font-medium">Shortfall Reason (Optional)</label>
+                  <Textarea
+                    placeholder="e.g., Material spillage, Machine failure during final batch..."
+                    value={shortfallReason}
+                    onChange={(e) => setShortfallReason(e.target.value)}
+                    className="min-h-[80px]"
+                  />
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setShortfallReason("")}>
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleForceComplete}
+                    className="bg-amber-600 text-white hover:bg-amber-700"
+                    disabled={completeProductionMutation.isPending}
+                  >
+                    {completeProductionMutation.isPending ? "Completing..." : "Complete Run"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={failDialogOpen} onOpenChange={setFailDialogOpen}>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm" className="gap-2">
                 <XCircle className="size-4" />
@@ -269,8 +340,9 @@ function ProductionRunManagePage() {
                     : "Mark as Failed"}
                 </AlertDialogAction>
               </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         )}
       </div>
 
@@ -593,7 +665,6 @@ function CompletedRunSuccessView({
 }) {
   const { recipe } = run;
   const completed = run.completedUnits || 0;
-  const target = run.containersProduced || 0;
   const perCarton = Number(recipe.containersPerCarton) || 0;
   const hasCartonPackaging = !!recipe.cartonPackagingId && perCarton > 0;
   const completedCartons = hasCartonPackaging
@@ -627,7 +698,7 @@ function CompletedRunSuccessView({
         </div>
       </div>
 
-      <Card className="border-emerald-100 bg-gradient-to-br from-white to-emerald-50/20 ">
+      <Card className="border-emerald-100 bg-linear-to-br from-white to-emerald-50/20 ">
         <CardContent className="p-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center space-y-1">

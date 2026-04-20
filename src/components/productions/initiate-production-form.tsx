@@ -15,6 +15,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useCreateProductionRun } from "@/hooks/production/use-create-production-run";
 import { getRecipesFn } from "@/server-functions/inventory/recipes/get-recipe-fn";
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
+import { getOperatorsFn } from "@/server-functions/inventory/production/get-operators-fn";
 import { useMemo } from "react";
 import { Alert, AlertDescription } from "../ui/alert";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,11 @@ export const InitiateProductionForm = ({
     queryFn: getInventoryFn,
   }) as { data: Awaited<ReturnType<typeof getInventoryFn>> };
 
+  const { data: operators } = useSuspenseQuery({
+    queryKey: ["operators-list"],
+    queryFn: getOperatorsFn,
+  });
+
   const factoryFloor = useMemo(
     () => warehouses.find((w) => w.type === "factory_floor"),
     [warehouses],
@@ -52,6 +58,7 @@ export const InitiateProductionForm = ({
     defaultValues: {
       recipeId: preselectedRecipe?.id || "",
       warehouseId: factoryFloor?.id || "",
+      operatorId: "",
       batchesProduced: 1,
       notes: "",
     },
@@ -114,6 +121,30 @@ export const InitiateProductionForm = ({
                           {r.batchSize} {r.batchUnit} batch
                         </span>
                       </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FieldError errors={field.state.meta.errors} />
+            </Field>
+          )}
+        </form.Field>
+
+        <form.Field name="operatorId">
+          {(field) => (
+            <Field>
+              <FieldLabel>Assigned Operator</FieldLabel>
+              <Select
+                value={field.state.value}
+                onValueChange={(value) => field.handleChange(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select operator..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {operators.map((op) => (
+                    <SelectItem key={op.id} value={op.id}>
+                      {op.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

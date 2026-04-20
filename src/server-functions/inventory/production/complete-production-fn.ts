@@ -16,6 +16,7 @@ import { hasPermission } from "@/lib/rbac";
 
 const completeProductionSchema = z.object({
   productionRunId: z.string().min(1, "Production run ID is required"),
+  shortfallReason: z.string().optional(),
 });
 
 export const completeProductionFn = createServerFn()
@@ -66,10 +67,19 @@ export const completeProductionFn = createServerFn()
       }
 
       // 3. Calculate Final Output (Cartons vs Loose) based on ACTUAL production
-      // Check if operator clicked Complete without logging any units. If so, default to target run.
       let totalUnitsProduced = productionRun.completedUnits || 0;
-      if (totalUnitsProduced === 0) {
-        // Operator did not partially log units, assume they completed the target quantity
+      let shortfallUnits = 0;
+
+      if (totalUnitsProduced < productionRun.containersProduced) {
+        if (!data.shortfallReason) {
+          throw new Error(
+            `Production is short by ${productionRun.containersProduced - totalUnitsProduced} units. Please provide a reason for the shortfall to complete this run early.`,
+          );
+        }
+        // Operator explicitly closed it early with a variance
+        shortfallUnits = productionRun.containersProduced - totalUnitsProduced;
+      } else if (totalUnitsProduced === 0 && productionRun.containersProduced > 0) {
+        // Fallback for unexpected zero
         totalUnitsProduced = productionRun.containersProduced;
       }
 
@@ -268,9 +278,11 @@ export const completeProductionFn = createServerFn()
           actualCompletionDate: new Date(),
           cartonsProduced: finalCartons,
           looseUnitsProduced: finalLoose,
-          completedUnits: totalUnitsProduced, // Update completedUnits in case it was auto-filled from 0
+          completedUnits: totalUnitsProduced,
           totalPackagingCost: finalPackagingCost.toFixed(2),
           totalProductionCost: finalProductionCost.toFixed(2),
+          shortfallUnits: shortfallUnits,
+          shortfallReason: data.shortfallReason || null,
         })
         .where(eq(productionRuns.id, productionRun.id));
 
@@ -285,6 +297,8 @@ export const completeProductionFn = createServerFn()
           completedUnits: totalUnitsProduced,
           totalPackagingCost: finalPackagingCost.toFixed(2),
           totalProductionCost: finalProductionCost.toFixed(2),
+          shortfallUnits: shortfallUnits,
+          shortfallReason: data.shortfallReason || null,
         },
       };
     });
