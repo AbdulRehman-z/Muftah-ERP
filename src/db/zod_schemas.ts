@@ -135,6 +135,7 @@ export const createInvoiceSchema = z.object({
       numberOfCartons: z.number().nonnegative().default(0),
       numberOfUnits: z.number().nonnegative().default(0),
       discountCartons: z.number().nonnegative().default(0),
+      packsPerCarton: z.number().int().nonnegative().default(0),
       hsnCode: z.string().min(1, "HSN Code is mandatory"),
       perCartonPrice: z.number().nonnegative(),
       retailPrice: z.number().nonnegative(),

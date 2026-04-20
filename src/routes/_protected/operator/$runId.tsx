@@ -33,6 +33,7 @@ import {
   Clock,
   AlertCircle,
   XCircle,
+  FlaskConical,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -508,46 +509,70 @@ function ProductionRunManagePage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <h4 className="text-xs font-bold uppercase text-muted-foreground mb-3 flex items-center gap-2">
-                  <Box className="size-3" /> Packaging Materials
+                <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                  <FlaskConical className="size-3.5" /> Chemical Formulation
+                </h4>
+                <ul className="space-y-2">
+                  {recipe.ingredients?.map((ing: any) => {
+                    const req = Number(ing.quantityPerBatch) * run.batchesProduced;
+                    return (
+                      <li key={ing.id} className="text-sm border-l-[3px] border-blue-500/70 pl-3 py-1.5 bg-background shadow-xs hover:bg-muted/30 transition-colors">
+                        <span className="font-semibold text-foreground block truncate" title={ing.chemical.name}>
+                          {ing.chemical.name}
+                        </span>
+                        <span className="text-xs font-mono font-medium text-muted-foreground">
+                          {req.toFixed(2)} KG <span className="font-sans text-[10px] uppercase ml-1 opacity-70">Total Reqd</span>
+                        </span>
+                      </li>
+                    );
+                  })}
+                  {(!recipe.ingredients || recipe.ingredients.length === 0) && (
+                    <li className="text-sm text-muted-foreground italic pl-3 py-2">No chemicals configured.</li>
+                  )}
+                </ul>
+              </div>
+
+              <div className="pt-2">
+                <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                  <Box className="size-3.5" /> Packaging Bill of Materials
                 </h4>
                 <ul className="space-y-3">
                   {recipe.containerPackaging && (
-                    <li className="text-sm border-l-2 border-primary pl-3 py-1 bg-background rounded-r-md">
-                      <span className="font-medium text-foreground block">
+                    <li className="text-sm border-l-[3px] border-purple-500/70 pl-3 py-1.5 bg-background shadow-xs hover:bg-muted/30 transition-colors">
+                      <span className="font-semibold text-foreground block truncate">
                         {recipe.containerPackaging.name}
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        Primary Container
+                      <span className="text-xs font-mono font-medium text-muted-foreground">
+                        {target} UNITS <span className="font-sans text-[10px] uppercase ml-1 opacity-70">Primary Container</span>
                       </span>
                     </li>
                   )}
-                  {recipe.cartonPackaging && (
-                    <li className="text-sm border-l-2 border-orange-400 pl-3 py-1 bg-background rounded-r-md">
-                      <span className="font-medium text-foreground block">
+                  {hasCartonPackaging && recipe.cartonPackaging && (
+                    <li className="text-sm border-l-[3px] border-amber-500/70 pl-3 py-1.5 bg-background shadow-xs hover:bg-muted/30 transition-colors">
+                      <span className="font-semibold text-foreground block truncate">
                         {recipe.cartonPackaging.name}
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        Carton ({recipe.containersPerCarton} units/carton)
+                      <span className="text-xs font-mono font-medium text-muted-foreground">
+                        {Math.floor(target / perCarton)} CARTONS <span className="font-sans text-[10px] uppercase ml-1 opacity-70">Capacity: {perCarton}</span>
                       </span>
                     </li>
                   )}
-                  {recipe.packaging?.map((pkg: any) => (
-                    <li
-                      key={pkg.id}
-                      className="text-sm border-l-2 border-blue-400 pl-3 py-1 bg-background rounded-r-md"
-                    >
-                      <span className="font-medium text-foreground block">
-                        {pkg.packagingMaterial?.name}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {pkg.packagingMaterial.type === "sticker" &&
-                          hasCartonPackaging
-                          ? "Per Carton (Sticker)"
-                          : `Additional (${pkg.quantityPerContainer} per unit)`}
-                      </span>
-                    </li>
-                  ))}
+                  {recipe.packaging?.map((pkg: any) => {
+                    const req = Number(pkg.quantityPerContainer) * target;
+                    return (
+                      <li
+                        key={pkg.id}
+                        className="text-sm border-l-[3px] border-violet-500/70 pl-3 py-1.5 bg-background shadow-xs hover:bg-muted/30 transition-colors"
+                      >
+                        <span className="font-semibold text-foreground block">
+                          {pkg.packagingMaterial?.name}
+                        </span>
+                        <span className="text-xs font-mono font-medium text-muted-foreground">
+                          Math.ceil({req}) UNITS <span className="font-sans text-[10px] uppercase ml-1 opacity-70">Total Reqd</span>
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             </CardContent>

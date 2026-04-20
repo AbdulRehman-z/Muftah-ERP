@@ -521,12 +521,24 @@ function ProductionRunDetailsPage() {
                   </div>
                   <Separator />
                   <div className="flex items-center gap-3">
-                    <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    <div className="size-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600">
                       <User className="size-4" />
                     </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground font-bold uppercase">
-                        Operator
+                        Initiated By
+                      </p>
+                      <p className="text-sm font-bold">{run.initiator?.name || "System"}</p>
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center gap-3">
+                    <div className="size-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600">
+                      <User className="size-4" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase">
+                        Assigned Operator
                       </p>
                       <p className="text-sm font-bold">{run.operator.name}</p>
                     </div>

@@ -15,6 +15,7 @@ const createProductionRunSchema = z.object({
   batchesProduced: z.number().int().min(1).default(1),
   scheduledStartDate: z.date().optional(),
   notes: z.string().optional(),
+  operatorId: z.string().min(1, "Operator is required"),
 });
 
 export const createProductionRunFn = createServerFn()
@@ -113,7 +114,8 @@ export const createProductionRunFn = createServerFn()
           batchId,
           recipeId: data.recipeId,
           warehouseId: data.warehouseId,
-          operatorId: context.session.user.id,
+          operatorId: data.operatorId,
+          initiatorId: context.session.user.id,
           batchesProduced: data.batchesProduced,
           cartonsProduced: totalCartons,
           containersProduced: totalContainers,

@@ -3,6 +3,13 @@ import { cn } from "@/lib/utils";
 import { Target, Activity, Orbit } from "lucide-react";
 import { motion } from "framer-motion";
 
+/** Format a number as compact PKR value (e.g. 1500000 → "1.5M", 3000 → "3.0K") */
+function fmtK(value: number): string {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  return value.toFixed(0);
+}
+
 export function CapitalAllocationChart({
   rawStock,
   finishedStock,
@@ -156,9 +163,14 @@ export function CapitalAllocationChart({
                   {item.name}
                 </span>
               </div>
-              <span className="text-[10px] font-black tabular-nums text-foreground/80">
-                {hasData ? `${((item.value / total) * 100).toFixed(0)}%` : "0%"}
-              </span>
+              <div className="flex flex-col items-end gap-0.5">
+                <span className="text-[10px] font-black tabular-nums text-foreground/80">
+                  {hasData ? `${((item.value / total) * 100).toFixed(0)}%` : "0%"}
+                </span>
+                <span className="text-[9px] text-muted-foreground font-mono">
+                  PKR {fmtK(item.value)}
+                </span>
+              </div>
             </div>
           ))}
         </div>

@@ -1,5 +1,5 @@
 {
-  "id": "117c21bf-f9b2-4a5d-a8c2-d45704200760",
+  "id": "b5a7d9b6-7e22-4aa0-81cd-c02af166fb8c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -4663,6 +4663,13 @@
         },
         "quantity": {
           "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "packs_per_carton": {
+          "name": "packs_per_carton",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,

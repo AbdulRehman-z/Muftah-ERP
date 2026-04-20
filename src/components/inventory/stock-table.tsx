@@ -8,7 +8,7 @@ import {
   FlaskConical,
 } from "lucide-react";
 import { format } from "date-fns";
-import { InventoryDetailsDialog } from "./inventory-details-dialog";
+import { useNavigate } from "@tanstack/react-router";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { GenericEmpty } from "../custom/empty";
@@ -104,10 +104,10 @@ export const StockTable = ({
   hideActions = false,
   onAdjustStock,
 }: StockTableProps) => {
+  const navigate = useNavigate();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<StockItem | null>(null);
 
   const deleteMutation = useDeleteMaterial();
@@ -296,8 +296,15 @@ export const StockTable = ({
               size="icon"
               className="size-7 text-indigo-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-md transition-colors"
               onClick={() => {
-                setSelectedItem(row.original);
-                setDetailsOpen(true);
+                const materialId = isChemical
+                  ? row.original.chemical?.id
+                  : row.original.packagingMaterial?.id;
+                if (materialId) {
+                  navigate({
+                    to: "/inventory/item/$itemType/$itemId",
+                    params: { itemType: type, itemId: materialId },
+                  });
+                }
               }}
             >
               <Eye className="size-3.5" />
@@ -352,8 +359,15 @@ export const StockTable = ({
               size="icon"
               className="size-7 text-indigo-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-md transition-colors"
               onClick={() => {
-                setSelectedItem(row.original);
-                setDetailsOpen(true);
+                const materialId = isChemical
+                  ? row.original.chemical?.id
+                  : row.original.packagingMaterial?.id;
+                if (materialId) {
+                  navigate({
+                    to: "/inventory/item/$itemType/$itemId",
+                    params: { itemType: type, itemId: materialId },
+                  });
+                }
               }}
             >
               <Eye className="size-3.5" />
@@ -476,16 +490,6 @@ export const StockTable = ({
         searchKey="name"
         searchPlaceholder={`Filter ${isChemical ? "chemicals" : "packaging"}...`}
       />
-
-      {/* Details Dialog */}
-      {selectedItem && (
-        <InventoryDetailsDialog
-          open={detailsOpen}
-          onOpenChange={setDetailsOpen}
-          type={type}
-          item={selectedItem}
-        />
-      )}
 
       {/* Edit Dialog */}
       {selectedItem && (

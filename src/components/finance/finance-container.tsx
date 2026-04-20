@@ -42,7 +42,7 @@ import {
   SparklesIcon,
   ClockIcon,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -71,15 +71,19 @@ export const FinanceContainer = () => {
     queryFn: getWalletsListFn,
   });
 
+  const today = new Date();
+  const dateFrom = startOfMonth(today).toISOString();
+  const dateTo = endOfMonth(today).toISOString();
+
   const { data: recentTransactions, isFetching: isTransactionsFetching } =
     useSuspenseQuery({
-      queryKey: ["transactions"],
-      queryFn: () => getTransactionsFn({ data: { limit: 20 } }),
+      queryKey: ["transactions-recent", { limit: 20, dateFrom, dateTo }],
+      queryFn: () => getTransactionsFn({ data: { limit: 20, dateFrom, dateTo } }),
     });
 
   const { data: expenses, isFetching: isExpensesFetching } = useSuspenseQuery({
-    queryKey: ["expenses"],
-    queryFn: () => getExpensesFn({ data: {} }),
+    queryKey: ["expenses", { page: 1, limit: 20, dateFrom, dateTo }],
+    queryFn: () => getExpensesFn({ data: { dateFrom, dateTo } }),
   });
 
   const [isCreateWalletOpen, setIsCreateWalletOpen] = useState(false);

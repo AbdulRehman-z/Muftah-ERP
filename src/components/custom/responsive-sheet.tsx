@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 import {
@@ -15,6 +16,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from "../ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
 
@@ -26,6 +37,9 @@ type ResponsiveSheetProps = {
   onOpenChange: (open: boolean) => void;
   className?: string;
   icon?: LucideIcon;
+  isDirty?: boolean;
+  confirmCloseTitle?: string;
+  confirmCloseDescription?: string;
 };
 
 export const ResponsiveSheet = ({
@@ -36,41 +50,78 @@ export const ResponsiveSheet = ({
   onOpenChange,
   className,
   icon,
+  isDirty,
+  confirmCloseTitle,
+  confirmCloseDescription,
 }: ResponsiveSheetProps) => {
   const isMobile = useIsMobile();
   const Icon = icon;
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  if (isMobile) {
-    return (
-      <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle className="flex items-center gap-2 text-primary font-semibold">
-              {Icon && <Icon className="size-6 text-primary" />}
-              {title}
-            </DrawerTitle>
-            <DrawerDescription>{description}</DrawerDescription>
-          </DrawerHeader>
-          <div className="p-4">{children}</div>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && isDirty) {
+      setShowConfirm(true);
+      return;
+    }
+    onOpenChange(nextOpen);
+  };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        className={cn("min-w-[600px] overflow-y-auto pb-5", className)}
-      >
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2 text-primary font-semibold text-lg">
-            {Icon && <Icon className="size-6 text-primary" />}
-            {title}
-          </SheetTitle>
-          <SheetDescription>{description}</SheetDescription>
-        </SheetHeader>
-        <div className="px-5">{children}</div>
-      </SheetContent>
-    </Sheet>
+    <>
+      {isMobile ? (
+        <Drawer open={open} onOpenChange={handleOpenChange}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle className="flex items-center gap-2 text-primary font-semibold">
+                {Icon && <Icon className="size-6 text-primary" />}
+                {title}
+              </DrawerTitle>
+              <DrawerDescription>{description}</DrawerDescription>
+            </DrawerHeader>
+            <div className="p-4">{children}</div>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Sheet open={open} onOpenChange={handleOpenChange}>
+          <SheetContent
+            className={cn("min-w-[600px] overflow-y-auto pb-5", className)}
+          >
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2 text-primary font-semibold text-lg">
+                {Icon && <Icon className="size-6 text-primary" />}
+                {title}
+              </SheetTitle>
+              <SheetDescription>{description}</SheetDescription>
+            </SheetHeader>
+            <div className="px-5">{children}</div>
+          </SheetContent>
+        </Sheet>
+      )}
+
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmCloseTitle ?? "Discard unsaved changes?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmCloseDescription ??
+                "You have unsaved changes. Closing will discard them permanently."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Editing</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowConfirm(false);
+                onOpenChange(false);
+              }}
+            >
+              Discard Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };

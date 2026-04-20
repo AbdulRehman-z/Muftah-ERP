@@ -8,6 +8,9 @@ import {
   Loader2Icon,
   CheckCircle2Icon,
   Settings,
+  BeakerIcon,
+  BoxIcon,
+  FlaskConicalIcon,
 } from "lucide-react";
 import { getProductionRunsFn } from "@/server-functions/inventory/production/get-production-run-fn";
 import { GenericEmpty } from "../custom/empty";
@@ -63,7 +66,7 @@ export const OperatorInterface = () => {
   }
 
   return (
-    <div className="grid gap-6 animate-in fade-in duration-500 max-w-5xl mx-auto">
+    <div className="grid gap-6 animate-in fade-in duration-500 max-w-6xl mx-auto font-sans">
       {activeRuns.map((run) => (
         <Card
           key={run.id}
@@ -130,6 +133,97 @@ export const OperatorInterface = () => {
                       </p>
                     );
                   })()}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Technical Required BOM Grid ───────────────────── */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* Chemicals Block */}
+              <div className="bg-background border-2 border-border rounded-xl shadow-sm overflow-hidden flex flex-col">
+                <div className="flex items-center gap-2.5 px-4 py-3 bg-muted/40 border-b-2 border-border">
+                  <FlaskConicalIcon className="size-4 text-blue-600 dark:text-blue-400" />
+                  <h3 className="text-xs font-bold text-foreground uppercase tracking-widest">
+                    Chemical Formulation
+                  </h3>
+                </div>
+                <div className="flex-1 p-0 bg-background">
+                  <ul className="divide-y-2 divide-border/60 text-[13px] font-mono">
+                    {run.recipe.ingredients.map((ing: any) => {
+                      const req = Number(ing.quantityPerBatch) * run.batchesProduced;
+                      return (
+                        <li
+                          key={ing.id}
+                          className="flex justify-between items-center px-4 py-3 hover:bg-muted/20 transition-colors"
+                        >
+                          <span className="font-semibold text-foreground truncate max-w-[200px]" title={ing.chemical.name}>
+                            {ing.chemical.name}
+                          </span>
+                          <span className="text-muted-foreground whitespace-nowrap">
+                            <span className="text-foreground font-bold">{req.toFixed(2)}</span>{" "}
+                            <span className="text-[10px] tracking-wide">KG</span>
+                          </span>
+                        </li>
+                      );
+                    })}
+                    {(!run.recipe.ingredients || run.recipe.ingredients.length === 0) && (
+                       <li className="px-4 py-5 text-center text-muted-foreground italic font-sans text-xs">No chemicals configured.</li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+
+              {/* Packaging Block */}
+              <div className="bg-background border-2 border-border rounded-xl shadow-sm overflow-hidden flex flex-col">
+                <div className="flex items-center gap-2.5 px-4 py-3 bg-muted/40 border-b-2 border-border">
+                  <Package2 className="size-4 text-purple-600 dark:text-purple-400" />
+                  <h3 className="text-xs font-bold text-foreground uppercase tracking-widest">
+                    Packaging Bill of Materials
+                  </h3>
+                </div>
+                <div className="flex-1 p-0 bg-background">
+                  <ul className="divide-y-2 divide-border/60 text-[13px] font-mono">
+                    {run.recipe.containerPackaging && (
+                      <li className="flex justify-between items-center px-4 py-3 hover:bg-muted/20 transition-colors">
+                        <span className="font-semibold text-foreground truncate max-w-[200px]" title={run.recipe.containerPackaging.name}>
+                          {run.recipe.containerPackaging.name}
+                        </span>
+                        <span className="text-muted-foreground whitespace-nowrap">
+                          <span className="text-foreground font-bold">{run.containersProduced}</span>{" "}
+                          <span className="text-[10px] tracking-wide">UNITS</span>
+                        </span>
+                      </li>
+                    )}
+                    {run.recipe.cartonPackaging &&
+                      run.recipe.containersPerCarton > 0 && (
+                        <li className="flex justify-between items-center px-4 py-3 hover:bg-muted/20 transition-colors">
+                          <span className="font-semibold text-foreground truncate max-w-[200px]" title={run.recipe.cartonPackaging.name}>
+                            {run.recipe.cartonPackaging.name}
+                          </span>
+                          <span className="text-muted-foreground whitespace-nowrap">
+                            <span className="text-foreground font-bold">{Math.floor(run.containersProduced / run.recipe.containersPerCarton)}</span>{" "}
+                            <span className="text-[10px] tracking-wide">CARTONS</span>
+                          </span>
+                        </li>
+                      )}
+                    {run.recipe.packaging?.map((pack: any) => {
+                      const req = Number(pack.quantityPerContainer) * run.containersProduced;
+                      return (
+                        <li
+                          key={pack.id}
+                          className="flex justify-between items-center px-4 py-3 hover:bg-muted/20 transition-colors"
+                        >
+                          <span className="font-semibold text-foreground truncate max-w-[200px]" title={pack.packagingMaterial?.name}>
+                            {pack.packagingMaterial?.name || "Unknown"}
+                          </span>
+                          <span className="text-muted-foreground whitespace-nowrap">
+                            <span className="text-foreground font-bold">{Math.ceil(req)}</span>{" "}
+                            <span className="text-[10px] tracking-wide">UNITS</span>
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
               </div>
             </div>

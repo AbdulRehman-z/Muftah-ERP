@@ -181,25 +181,33 @@ export const completeProductionFn = createServerFn()
       }
 
       // 5. Stock Reconciliation (Cartonization)
-      if (finalCartons > 0) {
-        const unitsToDeductFromLoose = finalCartons * itemsPerCarton;
+      const [existingStock] = await tx
+        .select()
+        .from(finishedGoodsStock)
+        .where(
+          and(
+            eq(finishedGoodsStock.warehouseId, productionRun.warehouseId),
+            eq(finishedGoodsStock.recipeId, productionRun.recipeId),
+          ),
+        );
 
-        const [existingStock] = await tx
-          .select()
-          .from(finishedGoodsStock)
-          .where(
-            and(
-              eq(finishedGoodsStock.warehouseId, productionRun.warehouseId),
-              eq(finishedGoodsStock.recipeId, productionRun.recipeId),
-            ),
-          );
-
+      if (itemsPerCarton > 0 && recipe.cartonPackagingId) {
+        // Recipe has carton packaging — apply carton/loose split
         if (existingStock) {
+          // If units were incrementally logged (completedUnits > 0), the loose units are already
+          // in stock from prior progress logs. We need to convert accumulated loose into cartons.
+          // If no incremental logging (completedUnits === 0), we add the full output directly.
+          const unitsToDeductFromLoose = finalCartons * itemsPerCarton;
+          const looseAdjustment =
+            productionRun.completedUnits === 0
+              ? finalLoose
+              : -unitsToDeductFromLoose;
+
           await tx
             .update(finishedGoodsStock)
             .set({
               quantityCartons: sql`${finishedGoodsStock.quantityCartons} + ${finalCartons}`,
-              quantityContainers: sql`${finishedGoodsStock.quantityContainers} + ${totalUnitsProduced === productionRun.containersProduced && productionRun.completedUnits === 0 ? finalLoose : `- ${unitsToDeductFromLoose}`}`,
+              quantityContainers: sql`${finishedGoodsStock.quantityContainers} + ${looseAdjustment}`,
               updatedAt: new Date(),
             })
             .where(eq(finishedGoodsStock.id, existingStock.id));
@@ -208,36 +216,32 @@ export const completeProductionFn = createServerFn()
             warehouseId: productionRun.warehouseId,
             recipeId: productionRun.recipeId,
             quantityCartons: finalCartons,
-            quantityContainers: finalLoose, 
+            quantityContainers: finalLoose,
           });
         }
-      } else if (totalUnitsProduced > 0 && productionRun.completedUnits === 0) {
-        // They didn't incrementally add loose units, we must ensure they are added to the stock since we auto-assumed target.
-         const [existingStock] = await tx
-          .select()
-          .from(finishedGoodsStock)
-          .where(
-            and(
-               eq(finishedGoodsStock.warehouseId, productionRun.warehouseId),
-               eq(finishedGoodsStock.recipeId, productionRun.recipeId),
-             ),
-           );
-         if (existingStock) {
-           await tx
-             .update(finishedGoodsStock)
-             .set({
-               quantityContainers: sql`${finishedGoodsStock.quantityContainers} + ${finalLoose}`,
-               updatedAt: new Date(),
-             })
-             .where(eq(finishedGoodsStock.id, existingStock.id));
-         } else {
-           await tx.insert(finishedGoodsStock).values({
-             warehouseId: productionRun.warehouseId,
-             recipeId: productionRun.recipeId,
-             quantityCartons: 0,
-             quantityContainers: finalLoose, 
-           });
-         }
+      } else {
+        // Loose-only recipe — NEVER touch quantityCartons; all units go to quantityContainers.
+        // Only add units if they were NOT already incrementally logged via progress updates.
+        if (productionRun.completedUnits === 0 && totalUnitsProduced > 0) {
+          if (existingStock) {
+            await tx
+              .update(finishedGoodsStock)
+              .set({
+                quantityContainers: sql`${finishedGoodsStock.quantityContainers} + ${totalUnitsProduced}`,
+                updatedAt: new Date(),
+              })
+              .where(eq(finishedGoodsStock.id, existingStock.id));
+          } else {
+            await tx.insert(finishedGoodsStock).values({
+              warehouseId: productionRun.warehouseId,
+              recipeId: productionRun.recipeId,
+              quantityCartons: 0,
+              quantityContainers: totalUnitsProduced,
+            });
+          }
+        }
+        // If completedUnits > 0, units were already added to stock via log-production-progress-fn.
+        // No further stock update needed here.
       }
 
 

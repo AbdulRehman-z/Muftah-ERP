@@ -80,22 +80,8 @@ const InvoicePrintContent = ({
     return buildRetailerData(invoice);
   }, [invoice]);
 
-  const handlePrint = () => {
-    const el = printRef.current;
-    if (!el) return;
-
-    const win = window.open("", "_blank");
-    if (!win) return;
-
-    win.document.write(
-      `<!DOCTYPE html><html><head><title>Invoice ${invoiceId.slice(-8)}</title>` +
-      `<style>body{margin:0;padding:20px;font-family:system-ui,sans-serif;}` +
-      `@media print{body{padding:0}}</style></head>` +
-      `<body>${el.innerHTML}</body></html>`,
-    );
-    win.document.close();
-    win.print();
-  };
+  // Printing logic is now handled internally by RetailerInvoiceView / DistributorInvoiceView
+  // which construct exact HTML styling for perfect printing.
 
   if (isLoading) return <PrintLoadingSkeleton />;
 
@@ -158,21 +144,17 @@ const InvoicePrintContent = ({
       <div className="flex-1 overflow-auto border rounded-lg bg-gray-50 dark:bg-zinc-900 p-4 min-h-[400px]">
         <div ref={printRef}>
           {isDistributor && distributorData ? (
-            <DistributorInvoiceView invoice={distributorData} showActions={false} />
+            <DistributorInvoiceView invoice={distributorData} showActions={true} />
           ) : retailerData ? (
-            <RetailerInvoiceView invoice={retailerData} showActions={false} />
+            <RetailerInvoiceView invoice={retailerData} showActions={true} />
           ) : null}
         </div>
       </div>
 
       {/* Footer actions */}
-      <div className="flex items-center justify-end gap-2 pt-2 border-t shrink-0">
-        <Button variant="outline" onClick={onClose}>
-          Close
-        </Button>
-        <Button onClick={handlePrint} className="gap-2">
-          <Printer className="size-4" />
-          Print
+      <div className="flex items-center justify-end pt-2 border-t shrink-0">
+        <Button variant="outline" onClick={onClose} className="rounded-none shadow-none">
+          Close Preview
         </Button>
       </div>
     </div>

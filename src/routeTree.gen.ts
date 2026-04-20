@@ -49,6 +49,7 @@ import { Route as ProtectedHrEmployeesEmployeeIdRouteImport } from './routes/_pr
 import { Route as ProtectedHrAttendanceEmployeeIdRouteImport } from './routes/_protected/hr/attendance/$employeeId'
 import { Route as ProtectedHrPayrollEmployeeIndexRouteImport } from './routes/_protected/hr/payroll/employee/index'
 import { Route as ProtectedHrPayrollEmployeeEmployeeIdRouteImport } from './routes/_protected/hr/payroll/employee/$employeeId'
+import { Route as ProtectedInventoryItemItemTypeItemIdIndexRouteImport } from './routes/_protected/inventory/item/$itemType/$itemId/index'
 
 const ProtectedRouteRoute = ProtectedRouteRouteImport.update({
   id: '/_protected',
@@ -273,6 +274,12 @@ const ProtectedHrPayrollEmployeeEmployeeIdRoute =
     path: '/hr/payroll/employee/$employeeId',
     getParentRoute: () => ProtectedRouteRoute,
   } as any)
+const ProtectedInventoryItemItemTypeItemIdIndexRoute =
+  ProtectedInventoryItemItemTypeItemIdIndexRouteImport.update({
+    id: '/inventory/item/$itemType/$itemId/',
+    path: '/inventory/item/$itemType/$itemId/',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -313,6 +320,7 @@ export interface FileRoutesByFullPath {
   '/sales/new-invoice/': typeof ProtectedSalesNewInvoiceIndexRoute
   '/hr/payroll/employee/$employeeId': typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
   '/hr/payroll/employee/': typeof ProtectedHrPayrollEmployeeIndexRoute
+  '/inventory/item/$itemType/$itemId/': typeof ProtectedInventoryItemItemTypeItemIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -353,6 +361,7 @@ export interface FileRoutesByTo {
   '/sales/new-invoice': typeof ProtectedSalesNewInvoiceIndexRoute
   '/hr/payroll/employee/$employeeId': typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
   '/hr/payroll/employee': typeof ProtectedHrPayrollEmployeeIndexRoute
+  '/inventory/item/$itemType/$itemId': typeof ProtectedInventoryItemItemTypeItemIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -396,6 +405,7 @@ export interface FileRoutesById {
   '/_protected/sales/new-invoice/': typeof ProtectedSalesNewInvoiceIndexRoute
   '/_protected/hr/payroll/employee/$employeeId': typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
   '/_protected/hr/payroll/employee/': typeof ProtectedHrPayrollEmployeeIndexRoute
+  '/_protected/inventory/item/$itemType/$itemId/': typeof ProtectedInventoryItemItemTypeItemIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -438,6 +448,7 @@ export interface FileRouteTypes {
     | '/sales/new-invoice/'
     | '/hr/payroll/employee/$employeeId'
     | '/hr/payroll/employee/'
+    | '/inventory/item/$itemType/$itemId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -478,6 +489,7 @@ export interface FileRouteTypes {
     | '/sales/new-invoice'
     | '/hr/payroll/employee/$employeeId'
     | '/hr/payroll/employee'
+    | '/inventory/item/$itemType/$itemId'
   id:
     | '__root__'
     | '/'
@@ -520,6 +532,7 @@ export interface FileRouteTypes {
     | '/_protected/sales/new-invoice/'
     | '/_protected/hr/payroll/employee/$employeeId'
     | '/_protected/hr/payroll/employee/'
+    | '/_protected/inventory/item/$itemType/$itemId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -814,6 +827,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedHrPayrollEmployeeEmployeeIdRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
+    '/_protected/inventory/item/$itemType/$itemId/': {
+      id: '/_protected/inventory/item/$itemType/$itemId/'
+      path: '/inventory/item/$itemType/$itemId'
+      fullPath: '/inventory/item/$itemType/$itemId/'
+      preLoaderRoute: typeof ProtectedInventoryItemItemTypeItemIdIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
   }
 }
 
@@ -866,6 +886,7 @@ interface ProtectedRouteRouteChildren {
   ProtectedSalesNewInvoiceIndexRoute: typeof ProtectedSalesNewInvoiceIndexRoute
   ProtectedHrPayrollEmployeeEmployeeIdRoute: typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
   ProtectedHrPayrollEmployeeIndexRoute: typeof ProtectedHrPayrollEmployeeIndexRoute
+  ProtectedInventoryItemItemTypeItemIdIndexRoute: typeof ProtectedInventoryItemItemTypeItemIdIndexRoute
 }
 
 const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
@@ -906,6 +927,8 @@ const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
   ProtectedHrPayrollEmployeeEmployeeIdRoute:
     ProtectedHrPayrollEmployeeEmployeeIdRoute,
   ProtectedHrPayrollEmployeeIndexRoute: ProtectedHrPayrollEmployeeIndexRoute,
+  ProtectedInventoryItemItemTypeItemIdIndexRoute:
+    ProtectedInventoryItemItemTypeItemIdIndexRoute,
 }
 
 const ProtectedRouteRouteWithChildren = ProtectedRouteRoute._addFileChildren(

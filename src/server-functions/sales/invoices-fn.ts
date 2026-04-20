@@ -15,6 +15,15 @@ import {
   startOfMonth, endOfMonth, startOfYear, endOfYear, parseISO, isValid,
 } from "date-fns";
 
+/**
+ * Returns the effective containers-per-carton for a line item.
+ * packsPerCarton = 0 means "use recipe default".
+ * Falls back to 1 if both are zero/falsy.
+ */
+export function effectiveCPP(packsPerCarton: number, recipeContainersPerCarton: number): number {
+  return (packsPerCarton > 0 ? packsPerCarton : recipeContainersPerCarton) || 1;
+}
+
 // ── Shared sort config ─────────────────────────────────────────────────────
 const sortFields = {
   date: invoices.date,
@@ -153,7 +162,7 @@ export const createInvoiceFn = createServerFn()
           throw new Error(`Stock record not found for "${item.pack}"`);
         }
 
-        const containersPerCarton = stock.recipe.containersPerCarton || 1;
+        const containersPerCarton = effectiveCPP(item.packsPerCarton ?? 0, stock.recipe.containersPerCarton ?? 0);
         const totalAvailableUnits =
           (stock.quantityCartons ?? 0) * containersPerCarton +
           (stock.quantityContainers ?? 0);
@@ -293,7 +302,7 @@ export const createInvoiceFn = createServerFn()
 
         if (!stock) continue;
 
-        const containersPerCarton = stock.recipe.containersPerCarton || 1;
+        const containersPerCarton = effectiveCPP(item.packsPerCarton ?? 0, stock.recipe.containersPerCarton ?? 0);
         const totalAvailableUnits =
           stock.quantityCartons * containersPerCarton + stock.quantityContainers;
 
@@ -312,11 +321,15 @@ export const createInvoiceFn = createServerFn()
 
         const remainingUnits = totalAvailableUnits - totalDispatchedUnits;
 
+        const hasCartons = stock.recipe.cartonPackagingId != null && stock.recipe.containersPerCarton != null && stock.recipe.containersPerCarton > 0;
+        const finalQuantityCartons = hasCartons ? Math.floor(remainingUnits / containersPerCarton) : 0;
+        const finalQuantityContainers = hasCartons ? (remainingUnits % containersPerCarton) : remainingUnits;
+
         await tx
           .update(finishedGoodsStock)
           .set({
-            quantityCartons: Math.floor(remainingUnits / containersPerCarton),
-            quantityContainers: remainingUnits % containersPerCarton,
+            quantityCartons: finalQuantityCartons,
+            quantityContainers: finalQuantityContainers,
           })
           .where(
             and(
@@ -353,6 +366,7 @@ export const createInvoiceFn = createServerFn()
           numberOfCartons: item.unitType === "carton" ? item.numberOfCartons : 0,
           discountCartons: item.unitType === "carton" ? (item.discountCartons ?? 0) : 0,
           quantity: item.unitType === "units" ? item.numberOfUnits : 0,
+          packsPerCarton: item.packsPerCarton ?? 0,
           perCartonPrice: item.perCartonPrice.toString(),
           amount: lineAmount.toString(),
           hsnCode: item.hsnCode,
@@ -563,18 +577,24 @@ export const deleteInvoiceFn = createServerFn()
 
         if (!stock) continue;
 
-        const containersPerCarton = stock.recipe.containersPerCarton || 1;
+        const containersPerCarton = effectiveCPP(item.packsPerCarton ?? 0, stock.recipe.containersPerCarton ?? 0);
         const totalUnitsToRestore =
-          item.numberOfCartons * containersPerCarton + item.quantity;
+          item.numberOfCartons * containersPerCarton +
+          (item.discountCartons ?? 0) * containersPerCarton +
+          item.quantity;
         const currentUnits =
           stock.quantityCartons * containersPerCarton + stock.quantityContainers;
         const newUnits = currentUnits + totalUnitsToRestore;
 
+        const hasCartons = stock.recipe.cartonPackagingId != null && stock.recipe.containersPerCarton != null && stock.recipe.containersPerCarton > 0;
+        const finalQuantityCartons = hasCartons ? Math.floor(newUnits / containersPerCarton) : 0;
+        const finalQuantityContainers = hasCartons ? (newUnits % containersPerCarton) : newUnits;
+
         await tx
           .update(finishedGoodsStock)
           .set({
-            quantityCartons: Math.floor(newUnits / containersPerCarton),
-            quantityContainers: newUnits % containersPerCarton,
+            quantityCartons: finalQuantityCartons,
+            quantityContainers: finalQuantityContainers,
           })
           .where(
             and(

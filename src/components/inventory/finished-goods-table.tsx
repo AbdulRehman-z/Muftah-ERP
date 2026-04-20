@@ -5,8 +5,8 @@ import {
   ArrowRightLeft,
 } from "lucide-react";
 import { format } from "date-fns";
-import { InventoryDetailsDialog } from "./inventory-details-dialog";
 import { useState, useMemo } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { GenericEmpty } from "../custom/empty";
@@ -53,7 +53,7 @@ export const FinishedGoodsTable = ({
   warehouses,
   preselectedWarehouse,
 }: FinishedGoodsTableProps) => {
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const navigate = useNavigate();
   const [transferOpen, setTransferOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<FinishedGood | null>(null);
 
@@ -138,7 +138,7 @@ export const FinishedGoodsTable = ({
           return (
             <div className="flex flex-col">
               <span className="font-mono font-bold">
-                {fg.quantityCartons * (fg.recipe.containersPerCarton || 1) +
+                {fg.quantityCartons * (fg.recipe.containersPerCarton ?? 0) +
                   fg.quantityContainers}
               </span>
               <span className="text-[10px] uppercase text-muted-foreground">
@@ -154,7 +154,7 @@ export const FinishedGoodsTable = ({
         cell: ({ row }) => {
           const fg = row.original;
           const totalUnits =
-            fg.quantityCartons * (fg.recipe.containersPerCarton || 1) +
+            fg.quantityCartons * (fg.recipe.containersPerCarton ?? 0) +
             fg.quantityContainers;
 
           if (totalUnits <= 0) {
@@ -216,10 +216,7 @@ export const FinishedGoodsTable = ({
               size="icon"
               className="size-8 text-primary hover:bg-primary/5 hover:text-primary"
               title="View Details"
-              onClick={() => {
-                setSelectedItem(row.original);
-                setDetailsOpen(true);
-              }}
+              onClick={() => navigate({ to: "/inventory/item/$itemType/$itemId", params: { itemType: "finished", itemId: row.original.recipe.id } })}
             >
               <Eye className="size-3.5" />
             </Button>
@@ -268,16 +265,6 @@ export const FinishedGoodsTable = ({
         searchKey="product"
         searchPlaceholder="Filter finished goods..."
       />
-
-      {/* Details Dialog */}
-      {selectedItem && (
-        <InventoryDetailsDialog
-          open={detailsOpen}
-          onOpenChange={setDetailsOpen}
-          type="finished"
-          item={selectedItem}
-        />
-      )}
 
       {/* Transfer Dialog */}
       {selectedItem && transferOpen && (
