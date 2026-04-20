@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1776671155443,
-      "tag": "0000_soft_golden_guardian",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1776689337114,
-      "tag": "0001_clever_toxin",
+      "when": 1776690020134,
+      "tag": "0000_steady_shinko_yamashiro",
       "breakpoints": true
     }
   ]

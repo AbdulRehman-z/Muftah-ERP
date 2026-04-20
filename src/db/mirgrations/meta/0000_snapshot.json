@@ -1,5 +1,5 @@
 {
-  "id": "b5a7d9b6-7e22-4aa0-81cd-c02af166fb8c",
+  "id": "511f89d2-1276-44c5-9b30-2f373eca732f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -3205,6 +3205,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "initiator_id": {
+          "name": "initiator_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "batches_produced": {
           "name": "batches_produced",
           "type": "integer",
@@ -3265,6 +3271,19 @@
           "primaryKey": false,
           "notNull": false,
           "default": "'0'"
+        },
+        "shortfall_units": {
+          "name": "shortfall_units",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "shortfall_reason": {
+          "name": "shortfall_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "status": {
           "name": "status",
@@ -3362,6 +3381,19 @@
           "tableTo": "user",
           "columnsFrom": [
             "operator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "production_runs_initiator_id_user_id_fk": {
+          "name": "production_runs_initiator_id_user_id_fk",
+          "tableFrom": "production_runs",
+          "tableTo": "user",
+          "columnsFrom": [
+            "initiator_id"
           ],
           "columnsTo": [
             "id"
