@@ -6,53 +6,20 @@ import { addPaymentFn } from "@/server-functions/suppliers/add-payment-fn";
 import { toast } from "sonner";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, CircleDollarSign } from "lucide-react";
 import { z } from "zod";
 import { useEffect } from "react";
+import { PaymentMethodSelect } from "@/components/suppliers/payment-method-select";
 
-const addPaymentSchema = z
-  .object({
-    supplierId: z.string(),
-    purchaseId: z.string(),
-    amount: z.string().min(1, "Amount is required"),
-    method: z.enum(["cash", "bank_transfer", "cheque"]),
-    reference: z.string(),
-    bankName: z.string(),
-    paidBy: z.string().min(1, "Paid By is required"),
-    notes: z.string(),
-  })
-  .refine(
-    (data) => {
-      if (["bank_transfer", "cheque"].includes(data.method)) {
-        return !!data.bankName && data.bankName.trim().length > 0;
-      }
-      return true;
-    },
-    {
-      message: "Bank Name is required",
-      path: ["bankName"],
-    },
-  )
-  .refine(
-    (data) => {
-      if (["bank_transfer", "cheque"].includes(data.method)) {
-        return !!data.reference && data.reference.trim().length > 0;
-      }
-      return true;
-    },
-    {
-      message: "Reference / Transaction ID is required",
-      path: ["reference"],
-    },
-  );
+const addPaymentSchema = z.object({
+  supplierId: z.string(),
+  purchaseId: z.string(),
+  amount: z.string().min(1, "Amount is required"),
+  walletId: z.string().min(1, "Payment method is required"),
+  reference: z.string(),
+  notes: z.string(),
+});
 
 type Props = {
   open: boolean;
@@ -83,6 +50,8 @@ export const RecordPaymentDialog = ({
       toast.success("Payment recorded successfully");
       queryClient.invalidateQueries({ queryKey: ["supplier"] });
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      queryClient.invalidateQueries({ queryKey: ["wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
       onOpenChange(false);
     },
     onError: (err) => toast.error(err.message || "Failed to record payment"),
@@ -93,10 +62,8 @@ export const RecordPaymentDialog = ({
       supplierId: supplierId,
       purchaseId: purchaseId || "",
       amount: defaultAmount || "",
-      method: "cash" as "cash" | "bank_transfer" | "cheque",
+      walletId: "",
       reference: "",
-      bankName: "",
-      paidBy: "",
       notes: defaultNotes || "",
     },
     validators: {
@@ -115,10 +82,11 @@ export const RecordPaymentDialog = ({
   useEffect(() => {
     if (open) {
       form.setFieldValue("amount", defaultAmount || "");
-      // form.setFieldValue("notes", defaultNotes || "");
-      // form.setFieldValue("purchaseId", purchaseId || "");
+      form.setFieldValue("purchaseId", purchaseId || "");
+      form.setFieldValue("supplierId", supplierId);
+      form.setFieldValue("notes", defaultNotes || "");
     }
-  }, [open, defaultAmount, defaultNotes, purchaseId, form]);
+  }, [open, defaultAmount, defaultNotes, purchaseId, supplierId, form]);
 
   return (
     <ResponsiveDialog
@@ -155,83 +123,15 @@ export const RecordPaymentDialog = ({
           )}
         </form.Field>
 
-        <form.Field name="method">
+        <form.Field name="walletId">
           {(field) => (
             <Field>
               <FieldLabel>Payment Method</FieldLabel>
-              <Select
+              <PaymentMethodSelect
                 value={field.state.value}
-                onValueChange={(val: any) => field.handleChange(val)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="cheque">Cheque</SelectItem>
-                </SelectContent>
-              </Select>
-              <FieldError errors={field.state.meta.errors} />
-            </Field>
-          )}
-        </form.Field>
-
-        <form.Subscribe
-          selector={(state) => state.values.method}
-          children={(method) => (
-            <>
-              {method !== "cash" && (
-                <form.Field name="reference">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>
-                        {method === "cheque"
-                          ? "Cheque Number"
-                          : "Transaction ID"}
-                      </FieldLabel>
-                      <Input
-                        placeholder={
-                          method === "cheque"
-                            ? "e.g. 123456"
-                            : "e.g. Bank Tx ID"
-                        }
-                        value={field.state.value || ""}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                      />
-                      <FieldError errors={field.state.meta.errors} />
-                    </Field>
-                  )}
-                </form.Field>
-              )}
-
-              {["bank_transfer", "cheque"].includes(method) && (
-                <form.Field name="bankName">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>Bank Name</FieldLabel>
-                      <Input
-                        placeholder="e.g. HBL, Meezan, etc."
-                        value={field.state.value || ""}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                      />
-                      <FieldError errors={field.state.meta.errors} />
-                    </Field>
-                  )}
-                </form.Field>
-              )}
-            </>
-          )}
-        />
-
-        <form.Field name="paidBy">
-          {(field) => (
-            <Field>
-              <FieldLabel>Paid By</FieldLabel>
-              <Input
-                placeholder="Person who made the payment"
-                value={field.state.value || ""}
-                onChange={(e) => field.handleChange(e.target.value)}
+                onValueChange={(val) => field.handleChange(val)}
+                hidePayLater
+                showBalance
               />
               <FieldError errors={field.state.meta.errors} />
             </Field>

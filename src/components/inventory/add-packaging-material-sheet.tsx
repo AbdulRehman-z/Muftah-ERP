@@ -1,6 +1,6 @@
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
 import { ResponsiveSheet } from "../custom/responsive-sheet";
-import { AddPackagingMaterialForm } from "./add-packaging-material-form";
+import { AddPackagingMaterialForm, PackagingPurchaseInitialValues } from "./add-packaging-material-form";
 import { PackagePlus } from "lucide-react";
 
 type Props = {
@@ -9,6 +9,7 @@ type Props = {
   warehouses: Awaited<ReturnType<typeof getInventoryFn>>;
   preselectedWarehouse: string | undefined;
   preselectedSupplierId?: string;
+  initialValues?: PackagingPurchaseInitialValues;
 };
 
 export const AddPackagingMaterialSheet = ({
@@ -17,11 +18,13 @@ export const AddPackagingMaterialSheet = ({
   warehouses,
   preselectedWarehouse,
   preselectedSupplierId,
+  initialValues,
 }: Props) => {
+  const isEditMode = !!initialValues?.purchaseId;
   return (
     <ResponsiveSheet
-      title="Add Packaging Material"
-      description="Add packaging materials to warehouse inventory"
+      title={isEditMode ? "Edit Packaging Purchase" : "Add Packaging Material"}
+      description={isEditMode ? "Update purchase record" : "Add packaging materials to warehouse inventory"}
       open={open}
       onOpenChange={onOpenChange}
       icon={PackagePlus}
@@ -31,6 +34,7 @@ export const AddPackagingMaterialSheet = ({
         warehouses={warehouses}
         preselectedWarehouse={preselectedWarehouse}
         preselectedSupplierId={preselectedSupplierId}
+        initialValues={initialValues}
       />
     </ResponsiveSheet>
   );

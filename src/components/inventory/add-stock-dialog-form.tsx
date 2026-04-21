@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Loader2, Info, Factory, Calculator, Scale, Coins } from "lucide-react";
+import { Loader2, Info, Factory, Calculator } from "lucide-react";
 import { useForm } from "@tanstack/react-form";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState, useMemo, useEffect } from "react";
@@ -26,6 +26,7 @@ import { getSuppliersFn } from "@/server-functions/suppliers/get-suppliers-fn";
 import { addStockSchema } from "@/lib/validators/validators";
 import { Textarea } from "../ui/textarea";
 import { PurchaseRecord } from "@/components/suppliers/purchase-history-table";
+import { PaymentMethodSelect } from "@/components/suppliers/payment-method-select";
 
 const CostCalculatorEffect = ({
   form,
@@ -116,17 +117,11 @@ export const AddStockForm = ({
       supplierId: preselectedSupplierId || "", // prioritizing explicit prop, though itemToRestock context usually implies it too
       cost: itemToRestock?.cost || "",
       notes: "",
-      paymentMethod:
-        (itemToRestock?.paymentMethod as
-          | "cash"
-          | "bank_transfer"
-          | "cheque"
-          | "pay_later") || "cash",
-      paymentStatus: "paid_full" as "paid_full" | "credit",
+      paymentMethod: itemToRestock?.paymentMethod || "pay_later",
+      paymentStatus: "unpaid" as "paid" | "partial" | "unpaid",
       amountPaid: "",
       transactionId: "",
       bankName: "",
-      paidBy: "",
     },
     validators: {
       onSubmit: addStockSchema,
@@ -542,26 +537,18 @@ export const AddStockForm = ({
             {(field) => (
               <Field>
                 <FieldLabel>Payment Method</FieldLabel>
-                <Select
-                  value={field.state.value}
-                  onValueChange={(val: any) => {
+                <PaymentMethodSelect
+                  value={field.state.value || "pay_later"}
+                  onValueChange={(val) => {
                     field.handleChange(val);
                     if (val === "pay_later") {
-                      form.setFieldValue("paymentStatus", "credit");
+                      form.setFieldValue("paymentStatus", "unpaid");
                       form.setFieldValue("amountPaid", "");
+                    } else {
+                      form.setFieldValue("paymentStatus", "paid");
                     }
                   }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="cheque">Cheque</SelectItem>
-                    <SelectItem value="pay_later">Pay Later</SelectItem>
-                  </SelectContent>
-                </Select>
+                />
                 <FieldError errors={field.state.meta.errors} />
               </Field>
             )}
@@ -583,8 +570,9 @@ export const AddStockForm = ({
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="paid_full">Paid Full</SelectItem>
-                        <SelectItem value="credit">Credit / Partial</SelectItem>
+                        <SelectItem value="paid">Paid Full</SelectItem>
+                        <SelectItem value="partial">Credit / Partial</SelectItem>
+                        <SelectItem value="unpaid">Unpaid</SelectItem>
                       </SelectContent>
                     </Select>
                     <FieldError errors={field.state.meta.errors} />
@@ -595,30 +583,6 @@ export const AddStockForm = ({
           />
 
           <form.Subscribe
-            selector={(state) => state.values.paymentMethod}
-            children={(method) => {
-              if (method === "pay_later") return null;
-              return (
-                <form.Field name="paidBy">
-                  {(field) => (
-                    <Field className="col-span-1">
-                      <FieldLabel>
-                        Paid By <span className="text-red-500">*</span>
-                      </FieldLabel>
-                      <Input
-                        placeholder="e.g. John Doe"
-                        value={field.state.value || ""}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                      />
-                      <FieldError errors={field.state.meta.errors} />
-                    </Field>
-                  )}
-                </form.Field>
-              );
-            }}
-          />
-
-          <form.Subscribe
             selector={(state) => [
               state.values.paymentStatus,
               state.values.cost,
@@ -626,11 +590,8 @@ export const AddStockForm = ({
               state.values.paymentMethod,
             ]}
             children={([status, cost, paid, method]) => {
-              // If pay_later, no amount input needed (implicitly 0 paid)
               if (method === "pay_later") return null;
-
-              // If not credit (meaning paid full), no amount input needed (implicitly total)
-              if (status !== "credit") return null;
+              if (status !== "partial") return null;
 
               const total = parseFloat(cost || "0") || 0;
               const paidAmount = parseFloat(paid || "0") || 0;
@@ -659,18 +620,9 @@ export const AddStockForm = ({
                   </form.Field>
 
                   <div className="text-sm font-medium border rounded-md p-3 bg-muted/30 flex justify-between items-center">
-                    <span className="text-muted-foreground">
-                      Remaining Balance:
-                    </span>
-                    <span
-                      className={
-                        remaining > 0 ? "text-red-500" : "text-green-600"
-                      }
-                    >
-                      PKR{" "}
-                      {remaining.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                      })}
+                    <span className="text-muted-foreground">Remaining Balance:</span>
+                    <span className={remaining > 0 ? "text-red-500" : "text-green-600"}>
+                      PKR {remaining.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                 </div>
@@ -681,11 +633,7 @@ export const AddStockForm = ({
           <form.Subscribe
             selector={(state) => state.values.paymentMethod}
             children={(paymentMethod) => {
-              if (
-                paymentMethod !== "bank_transfer" &&
-                paymentMethod !== "cheque"
-              )
-                return null;
+              if (paymentMethod !== "bank_transfer" && paymentMethod !== "cheque") return null;
               return (
                 <div className="col-span-2 space-y-4">
                   <form.Field name="bankName">
@@ -706,16 +654,10 @@ export const AddStockForm = ({
                     {(field) => (
                       <Field>
                         <FieldLabel>
-                          {paymentMethod === "cheque"
-                            ? "Cheque Number"
-                            : "Transaction ID"}
+                          {paymentMethod === "cheque" ? "Cheque Number" : "Transaction ID"}
                         </FieldLabel>
                         <Input
-                          placeholder={
-                            paymentMethod === "cheque"
-                              ? "Enter cheque number"
-                              : "Enter transaction ID"
-                          }
+                          placeholder={paymentMethod === "cheque" ? "Enter cheque number" : "Enter transaction ID"}
                           value={field.state.value || ""}
                           onChange={(e) => field.handleChange(e.target.value)}
                         />

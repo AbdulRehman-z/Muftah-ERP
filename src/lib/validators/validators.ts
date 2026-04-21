@@ -122,76 +122,21 @@ export const addBOMItemSchema = z.object({
   quantityPerPack: z.string(),
 });
 
-export const addStockSchema = z
-  .object({
-    warehouseId: z.string().min(1, "Warehouse is required"),
-    materialType: z.enum(["chemical", "packaging"]),
-    materialId: z.string().min(1, "Material is required"),
-    quantity: z.string().min(1, "Quantity is required"),
-    supplierId: z.string().min(1, "Supplier is required"),
-    cost: z.string().min(1, "Cost is required"),
-    notes: z.string(),
-    paymentMethod: z.enum(["cash", "bank_transfer", "cheque", "pay_later"]),
-    paymentStatus: z.enum(["paid_full", "credit"]),
-    amountPaid: z.string(),
-    transactionId: z.string(),
-    bankName: z.string(),
-    paidBy: z.string(),
-  })
-  .refine(
-    (data) => {
-      if (data.paymentMethod !== "pay_later") {
-        return !!data.paidBy && data.paidBy.trim().length > 0;
-      }
-      return true;
-    },
-    {
-      message: "Paid By is required",
-      path: ["paidBy"],
-    },
-  )
-  .refine(
-    (data) => {
-      if (["bank_transfer", "cheque"].includes(data.paymentMethod)) {
-        return !!data.bankName && data.bankName.length > 0;
-      }
-      return true;
-    },
-    {
-      message: "Bank Name is required",
-      path: ["bankName"],
-    },
-  )
-  .refine(
-    (data) => {
-      if (
-        ["bank_transfer", "cheque"].includes(data.paymentMethod) &&
-        !data.transactionId
-      ) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: "Transaction ID / Cheque Number is required",
-      path: ["transactionId"],
-    },
-  )
-  .refine(
-    (data) => {
-      if (
-        data.paymentStatus === "credit" &&
-        data.paymentMethod !== "pay_later"
-      ) {
-        return !!data.amountPaid && parseFloat(data.amountPaid) > 0;
-      }
-      return true;
-    },
-    {
-      message: "Amount Paid is required for partial payments",
-      path: ["amountPaid"],
-    },
-  );
+export const addStockSchema = z.object({
+  warehouseId: z.string().min(1, "Warehouse is required"),
+  materialType: z.enum(["chemical", "packaging"]),
+  materialId: z.string().min(1, "Material is required"),
+  quantity: z.string().min(1, "Quantity is required"),
+  supplierId: z.string().min(1, "Supplier is required"),
+  cost: z.string().min(1, "Cost is required"),
+  notes: z.string(),
+  paymentMethod: z.string(),
+  walletId: z.string().optional().nullable(),
+  paymentStatus: z.enum(["paid", "partial", "unpaid"]).optional(),
+  amountPaid: z.string(),
+  transactionId: z.string(),
+  bankName: z.string(),
+});
 
 export const updateStockSchema = z.object({
   stockId: z.string(),

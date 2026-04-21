@@ -28,6 +28,7 @@ export const supplierPayments = pgTable(
     method: text("method"), // "cash", "bank_transfer", "cheque"
     bankName: text("bank_name"),
     paidBy: text("paid_by"),
+    walletId: text("wallet_id"), // wallet used for payment, or "pay_later"
     notes: text("notes"),
     purchaseId: text("purchase_id").references(() => purchaseRecords.id), // Link payment to a specific purchase
     ...timestamps,

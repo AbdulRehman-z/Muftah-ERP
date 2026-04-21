@@ -4,6 +4,8 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Info } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getWalletsListFn } from "@/server-functions/finance-fn";
 
 type Props = {
   open: boolean;
@@ -13,6 +15,7 @@ type Props = {
     createdAt: string | Date;
     amount: string;
     method: string | null;
+    walletId?: string | null;
     reference: string | null;
     bankName?: string | null;
     paidBy?: string | null;
@@ -21,7 +24,7 @@ type Props = {
       materialType: string;
       chemical: { name: string } | null;
       packagingMaterial: { name: string } | null;
-      id: string; // Purchase ID
+      id: string;
     } | null;
   } | null;
 };
@@ -32,6 +35,19 @@ export const PaymentDetailsDialog = ({
   payment,
 }: Props) => {
   if (!payment) return null;
+
+  const { data: wallets = [] } = useQuery({ queryKey: ["wallets"], queryFn: getWalletsListFn });
+
+  const known: Record<string, string> = {
+    cash: "Cash",
+    bank_transfer: "Bank Transfer",
+    cheque: "Cheque",
+    pay_later: "Pay Later",
+  };
+  const id = payment.walletId || payment.method;
+  const methodLabel = id
+    ? (known[id] ?? wallets.find((w) => w.id === id)?.name ?? "Finance Account")
+    : "N/A";
 
   return (
     <ResponsiveDialog
@@ -67,7 +83,7 @@ export const PaymentDetailsDialog = ({
               Payment Method
             </span>
             <Badge variant="outline" className="capitalize">
-              {payment.method?.replace("_", " ") || "N/A"}
+              {methodLabel}
             </Badge>
           </div>
         </div>
