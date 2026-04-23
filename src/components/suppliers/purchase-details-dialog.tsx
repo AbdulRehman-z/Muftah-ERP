@@ -4,6 +4,21 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Info } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getWalletsListFn } from "@/server-functions/finance-fn";
+
+function resolveMethodLabel(method: string | null | undefined, wallets: { id: string; name: string }[]): string {
+  if (!method) return "N/A";
+  const known: Record<string, string> = {
+    cash: "Cash",
+    bank_transfer: "Bank Transfer",
+    cheque: "Cheque",
+    pay_later: "Pay Later",
+  };
+  if (known[method]) return known[method];
+  const wallet = wallets.find((w) => w.id === method);
+  return wallet ? wallet.name : "Finance Account";
+}
 
 type Props = {
   open: boolean;
@@ -53,6 +68,7 @@ export const PurchaseDetailsDialog = ({
   onOpenChange,
   purchase,
 }: Props) => {
+  const { data: wallets = [] } = useQuery({ queryKey: ["wallets"], queryFn: getWalletsListFn });
   if (!purchase) return null;
 
   const itemName =
@@ -173,9 +189,9 @@ export const PurchaseDetailsDialog = ({
             <span className="text-sm text-muted-foreground">
               Initial Method
             </span>
-            <span className="capitalize font-medium">
-              {purchase.paymentMethod?.replace("_", " ") || "N/A"}
-            </span>
+            <Badge variant="outline" className="capitalize">
+              {resolveMethodLabel(purchase.paymentMethod, wallets)}
+            </Badge>
           </div>
           {purchase.bankName && (
             <div className="flex justify-between items-center">
@@ -230,7 +246,7 @@ export const PurchaseDetailsDialog = ({
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Method</span>
                 <Badge variant="outline" className="capitalize">
-                  {purchase.lastPayment.method?.replace("_", " ") || "N/A"}
+                  {resolveMethodLabel(purchase.lastPayment.method, wallets)}
                 </Badge>
               </div>
               {purchase.lastPayment.paidBy && (

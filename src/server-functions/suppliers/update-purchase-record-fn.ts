@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { db, purchaseRecords, materialStock, wallets, expenses, transactions } from "@/db";
+import { db, purchaseRecords, materialStock } from "@/db";
 import { eq, sql, and } from "drizzle-orm";
 import { requireSuppliersManageMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
@@ -62,16 +62,9 @@ const updatePurchaseSchema = z.object({
   id: z.string(),
   quantity: z.string().optional(),
   cost: z.string().optional(),
-  paidAmount: z.string().optional(),
   notes: z.string().optional(),
   transactionId: z.string().optional().nullable(),
   invoiceNumber: z.string().optional().nullable(),
-  // Payment fields
-  paymentMethod: z.string().optional().nullable(),
-  walletId: z.string().optional().nullable(),
-  paymentStatus: z.enum(["paid", "partial", "unpaid"]).optional(),
-  // Supplier/material info for expense description
-  supplierName: z.string().optional(),
   // Material fields
   materialName: z.string().optional(),
   capacity: z.string().optional(),
@@ -83,7 +76,7 @@ const updatePurchaseSchema = z.object({
 export const updatePurchaseRecordFn = createServerFn()
   .middleware([requireSuppliersManageMiddleware])
   .inputValidator(updatePurchaseSchema)
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data }) => {
     return await db.transaction(async (tx) => {
       // 1. Get existing purchase record
       const existingRecord = await tx.query.purchaseRecords.findFirst({
@@ -162,10 +155,6 @@ export const updatePurchaseRecordFn = createServerFn()
         transactionId: data.transactionId || null,
         updatedAt: new Date(),
       };
-
-      if (data.paymentMethod) {
-        updateData.paymentMethod = data.paymentMethod;
-      }
 
       if (data.quantity && data.cost) {
         updateData.quantity = data.quantity;

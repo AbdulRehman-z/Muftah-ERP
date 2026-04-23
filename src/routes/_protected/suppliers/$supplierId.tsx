@@ -38,11 +38,10 @@ import { PaymentRecordsTable } from "@/components/suppliers/payment-records-tabl
 import { RecordPaymentDialog } from "@/components/suppliers/record-payment-dialog";
 import { PurchaseDetailsDialog } from "@/components/suppliers/purchase-details-dialog";
 import { DeletePurchaseDialog } from "@/components/suppliers/delete-purchase-dialog";
-import { EditPurchaseDialog } from "@/components/suppliers/edit-purchase-dialog";
+import { AddPackagingMaterialSheet } from "@/components/inventory/add-packaging-material-sheet";
 import { DatePickerWithRange } from "@/components/custom/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
-import { AddPackagingMaterialSheet } from "@/components/inventory/add-packaging-material-sheet";
 import { AddStockDialog } from "@/components/inventory/add-stock-dialog";
 import { GenericLoader } from "@/components/custom/generic-loader";
 
@@ -184,6 +183,12 @@ function SupplierDetailsPage() {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  // Open the correct edit sheet based on materialType
+  const handleEditOpen = (item: any) => {
+    setSelectedItem(item);
+    setEditDialogOpen(true);
+  };
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [paymentDefaults, setPaymentDefaults] = useState<{
@@ -524,11 +529,73 @@ function SupplierDetailsPage() {
         onOpenChange={setDeleteDialogOpen}
         purchase={selectedItem}
       />
-      <EditPurchaseDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        purchase={selectedItem}
-      />
+      {/* Edit: open the same add-sheet pre-filled based on materialType */}
+      {selectedItem?.materialType === "chemical" && (
+        <AddRawMaterialDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          warehouses={warehouses}
+          preselectedWarehouse={factoryFloor?.id}
+          preselectedSupplierId={supplier.id}
+          initialValues={selectedItem ? {
+            purchaseId: selectedItem.id,
+            name: selectedItem.chemical?.name || "",
+            quantity: selectedItem.quantity,
+            unitCost: selectedItem.unitCost,
+            paidAmount: selectedItem.paidAmount,
+            minimumStockLevel: selectedItem.chemical?.minimumStockLevel || "0",
+            unit: (selectedItem.chemical?.unit === "liters" ? "liters" : "kg") as "kg" | "liters",
+            packagingType: selectedItem.chemical?.packagingType || "",
+            packagingSize: selectedItem.chemical?.packagingSize || "",
+            notes: selectedItem.notes || "",
+            invoiceNumber: selectedItem.invoiceNumber || "",
+            transactionId: selectedItem.transactionId || "",
+            paymentMethod: selectedItem.paymentMethod || "pay_later",
+            paymentStatus: (() => {
+              const paid = parseFloat(selectedItem.paidAmount || "0");
+              const total = parseFloat(selectedItem.cost || "0");
+              if (total <= 0 || paid <= 0) return "unpaid";
+              if (paid >= total) return "paid";
+              return "partial";
+            })() as "paid" | "partial" | "unpaid",
+            supplierId: supplier.id,
+            warehouseId: factoryFloor?.id,
+          } : undefined}
+        />
+      )}
+      {selectedItem?.materialType === "packaging" && (
+        <AddPackagingMaterialSheet
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          warehouses={warehouses}
+          preselectedWarehouse={factoryFloor?.id}
+          preselectedSupplierId={supplier.id}
+          initialValues={selectedItem ? {
+            purchaseId: selectedItem.id,
+            name: selectedItem.packagingMaterial?.name || "",
+            quantity: selectedItem.quantity,
+            unitCost: selectedItem.unitCost,
+            paidAmount: selectedItem.paidAmount,
+            minimumStockLevel: selectedItem.packagingMaterial?.minimumStockLevel || 0,
+            type: (selectedItem.packagingMaterial?.type || "primary") as "primary" | "master" | "sticker" | "extra",
+            capacity: selectedItem.packagingMaterial?.capacity || "",
+            capacityUnit: selectedItem.packagingMaterial?.capacityUnit || "",
+            notes: selectedItem.notes || "",
+            invoiceNumber: selectedItem.invoiceNumber || "",
+            transactionId: selectedItem.transactionId || "",
+            paymentMethod: selectedItem.paymentMethod || "pay_later",
+            paymentStatus: (() => {
+              const paid = parseFloat(selectedItem.paidAmount || "0");
+              const total = parseFloat(selectedItem.cost || "0");
+              if (total <= 0 || paid <= 0) return "unpaid";
+              if (paid >= total) return "paid";
+              return "partial";
+            })() as "paid" | "partial" | "unpaid",
+            supplierId: supplier.id,
+            warehouseId: factoryFloor?.id,
+          } : undefined}
+        />
+      )}
       <AddStockDialog
         open={isRestockOpen}
         onOpenChange={setRestockOpen}

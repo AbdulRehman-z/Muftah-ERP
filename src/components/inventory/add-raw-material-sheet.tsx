@@ -1,5 +1,5 @@
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
-import { AddRawMaterialForm } from "./add-raw-material-form";
+import { AddRawMaterialForm, ChemicalPurchaseInitialValues } from "./add-raw-material-form";
 import { ResponsiveSheet } from "../custom/responsive-sheet";
 import { FlaskConical } from "lucide-react";
 
@@ -9,6 +9,7 @@ type Props = {
   warehouses: Awaited<ReturnType<typeof getInventoryFn>>;
   preselectedWarehouse: string | undefined;
   preselectedSupplierId?: string;
+  initialValues?: ChemicalPurchaseInitialValues;
 };
 
 export const AddRawMaterialDialog = ({
@@ -17,11 +18,13 @@ export const AddRawMaterialDialog = ({
   warehouses,
   preselectedWarehouse,
   preselectedSupplierId,
+  initialValues,
 }: Props) => {
+  const isEditMode = !!initialValues?.purchaseId;
   return (
     <ResponsiveSheet
-      title="Add Chemical"
-      description="Add Chemicals to factory floor"
+      title={isEditMode ? "Edit Chemical Purchase" : "Add Chemical"}
+      description={isEditMode ? "Update purchase record" : "Add Chemicals to factory floor"}
       open={open}
       onOpenChange={onOpenChange}
       className="sm:max-w-2xl"
@@ -32,6 +35,7 @@ export const AddRawMaterialDialog = ({
         warehouses={warehouses}
         preselectedWarehouse={preselectedWarehouse}
         preselectedSupplierId={preselectedSupplierId}
+        initialValues={initialValues}
       />
     </ResponsiveSheet>
   );

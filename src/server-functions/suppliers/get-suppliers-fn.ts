@@ -18,8 +18,8 @@ export const getSuppliersFn = createServerFn()
         (acc, p) => acc + parseFloat(p.cost),
         0,
       );
-      const totalPayments = supplier.payments.reduce(
-        (acc, p) => acc + parseFloat(p.amount),
+      const totalPayments = supplier.purchases.reduce(
+        (acc, p) => acc + parseFloat(p.paidAmount || "0"),
         0,
       );
       const balance = totalPurchases - totalPayments;

@@ -24,15 +24,15 @@ export const getSupplierDetailsFn = createServerFn()
       .from(purchaseRecords)
       .where(eq(purchaseRecords.supplierId, data.id));
 
-    // 2. Calculate Total Payments using Database SUM
-    const paymentsResult = await db
-      .select({ totalPayments: sql<number>`COALESCE(SUM(amount), 0)` })
-      .from(supplierPayments)
-      .where(eq(supplierPayments.supplierId, data.id));
+    // 2. Calculate Total Paid using paidAmount from purchaseRecords
+    const paidResult = await db
+      .select({ totalPaid: sql<number>`COALESCE(SUM(paid_amount), 0)` })
+      .from(purchaseRecords)
+      .where(eq(purchaseRecords.supplierId, data.id));
 
     const totalPurchasesNum = parseFloat(String(purchasesResult[0].totalPurchases));
-    const totalPaymentsNum = parseFloat(String(paymentsResult[0].totalPayments));
-    const balance = totalPurchasesNum - totalPaymentsNum;
+    const totalPaidNum = parseFloat(String(paidResult[0].totalPaid));
+    const balance = totalPurchasesNum - totalPaidNum;
 
     // Fetch the 5 most recent purchases for the overview
     const recentPurchases = await db.query.purchaseRecords.findMany({
@@ -66,7 +66,7 @@ export const getSupplierDetailsFn = createServerFn()
       ...supplier,
       balance,
       totalPurchases: totalPurchasesNum,
-      totalPayments: totalPaymentsNum,
+      totalPayments: totalPaidNum,
       purchases: recentPurchases,
       payments: recentPayments,
     };
