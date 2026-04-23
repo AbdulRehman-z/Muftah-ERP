@@ -69,7 +69,7 @@ export const EmployeeListContainer = () => {
             </div>
             Employee Directory
           </h1>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+          <p className="text-[10px] font-bold uppercase  text-muted-foreground flex items-center gap-2">
             <span>{employees.length} total</span>
             <span>&middot;</span>
             <span className="text-emerald-600 dark:text-emerald-500">{activeCount} active</span>

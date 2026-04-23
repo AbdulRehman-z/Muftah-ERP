@@ -125,7 +125,7 @@ export function AdvancesContainer() {
                 <span className="font-bold text-[13px] leading-tight text-foreground">
                   {emp.firstName} {emp.lastName}
                 </span>
-                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
+                <span className="text-[9px] font-bold text-muted-foreground uppercase  mt-0.5">
                   {emp.employeeCode}
                 </span>
               </div>
@@ -138,7 +138,7 @@ export function AdvancesContainer() {
         header: "Request Date",
         cell: ({ row }) => (
           <div className="flex flex-col">
-            <span className="font-bold text-[13px] uppercase tracking-widest tabular-nums text-foreground">
+            <span className="font-bold text-[13px] uppercase  tabular-nums text-foreground">
               {format(parseISO(row.original.date), "dd MMM yyyy")}
             </span>
             <span className="text-[10px] font-medium text-muted-foreground line-clamp-1 max-w-[160px] mt-0.5">
@@ -174,7 +174,7 @@ export function AdvancesContainer() {
             <Badge
               variant="outline"
               className={cn(
-                "text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-none",
+                "text-[9px] font-bold uppercase  px-2 py-0.5 rounded-none",
                 cfg.className,
               )}
             >
@@ -200,7 +200,7 @@ export function AdvancesContainer() {
                 }}
               >
                 <Edit className="size-3.5" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">
+                <span className="text-[10px] font-bold uppercase ">
                   Edit
                 </span>
               </Button>
@@ -214,7 +214,7 @@ export function AdvancesContainer() {
                 }}
               >
                 <CheckCircle2 className="size-3.5" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">
+                <span className="text-[10px] font-bold uppercase ">
                   Approve
                 </span>
               </Button>
@@ -228,7 +228,7 @@ export function AdvancesContainer() {
                 }
               >
                 <XCircle className="size-3.5" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">
+                <span className="text-[10px] font-bold uppercase ">
                   Reject
                 </span>
               </Button>
@@ -254,7 +254,7 @@ export function AdvancesContainer() {
             <Receipt className="size-5 text-primary" />
             Salary Advances
           </h1>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase ">
             Manage and approve employee advance requests
           </p>
         </div>

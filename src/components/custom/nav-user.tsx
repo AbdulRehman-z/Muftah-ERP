@@ -118,7 +118,7 @@ export function NavUser() {
             </p>
             <span
               className={cn(
-                "mt-2 inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest",
+                "mt-2 inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase ",
                 ROLE_BADGE_STYLES[role.slug] ??
                   "border-white/10 bg-white/5 text-indigo-100",
               )}
@@ -166,7 +166,7 @@ export function NavUser() {
           ) : (
             <LogOut className="size-4 shrink-0 transition-colors duration-150" />
           )}
-          <span className="text-[12px] font-semibold uppercase tracking-widest group-data-[collapsible=icon]:hidden">
+          <span className="text-[12px] font-semibold uppercase  group-data-[collapsible=icon]:hidden">
             {isLoggingOut ? "Signing out…" : "Log out"}
           </span>
         </button>

@@ -190,7 +190,7 @@ function PremiumSaaSCard({
           )}
         >
           <TrendIcon className="size-3" />
-          <span className="text-[9px] font-bold uppercase tracking-widest">
+          <span className="text-[9px] font-bold uppercase ">
             {trendLabel}
           </span>
         </div>

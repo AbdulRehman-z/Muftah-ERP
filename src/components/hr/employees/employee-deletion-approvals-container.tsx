@@ -76,7 +76,7 @@ export function EmployeeDeletionApprovalsContainer() {
                         <span className="font-bold text-[13px] leading-tight text-foreground">
                             {row.original.firstName} {row.original.lastName}
                         </span>
-                        <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
+                        <span className="text-[9px] font-bold text-muted-foreground uppercase  mt-0.5">
                             {row.original.designation} • {row.original.department}
                         </span>
                     </div>
@@ -95,7 +95,7 @@ export function EmployeeDeletionApprovalsContainer() {
                 accessorKey: "status",
                 header: "Status",
                 cell: () => (
-                    <Badge variant="outline" className="bg-rose-500/10 text-rose-600 border-rose-500/20 font-bold uppercase tracking-widest text-[9px] rounded-none px-2 py-0.5 animate-pulse">
+                    <Badge variant="outline" className="bg-rose-500/10 text-rose-600 border-rose-500/20 font-bold uppercase  text-[9px] rounded-none px-2 py-0.5 animate-pulse">
                         Pending Removal
                     </Badge>
                 )
@@ -196,7 +196,7 @@ export function EmployeeDeletionApprovalsContainer() {
                 <div className="space-y-6 pt-2">
                     <div className="p-4 bg-rose-50 dark:bg-rose-950/20 border-2 border-rose-200 dark:border-rose-900 flex flex-col gap-3">
                         <div className="flex items-center justify-between border-b border-rose-200 dark:border-rose-900 pb-2">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-rose-600">Target Record</span>
+                            <span className="text-[10px] font-black uppercase  text-rose-600">Target Record</span>
                             <span className="font-mono text-[10px] font-bold text-rose-500">{selectedEmployee?.employeeCode}</span>
                         </div>
                         <p className="text-lg font-black text-rose-800 dark:text-rose-100 uppercase tracking-tight leading-tight">
@@ -205,7 +205,7 @@ export function EmployeeDeletionApprovalsContainer() {
                     </div>
 
                     <div className="flex flex-col gap-3 p-4 bg-muted border rounded-none text-xs text-muted-foreground">
-                        <p className="font-bold flex items-center gap-2 text-foreground uppercase tracking-widest text-[10px]">
+                        <p className="font-bold flex items-center gap-2 text-foreground uppercase  text-[10px]">
                             <AlertTriangle className="size-3.5 text-amber-500" /> System Warning
                         </p>
                         <p>Approving this will permanently purge:</p>
@@ -286,7 +286,7 @@ function SharpInteractiveKPICard({
                 style={{ backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`, backgroundSize: "8px 8px" }}
             />
             <div className="relative z-10 flex items-start justify-between mb-8">
-                <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">{title}</p>
+                <p className="text-[10px] font-bold  text-muted-foreground uppercase">{title}</p>
                 <div className="flex items-center gap-2">
                     {active && <Badge variant="outline" className={cn("text-[9px] uppercase font-black rounded-none border-border", styles.iconText)}>Full Registry</Badge>}
                     <div className={cn("p-1.5 rounded-none", styles.iconBg)}>
@@ -296,7 +296,7 @@ function SharpInteractiveKPICard({
             </div>
             <div className="relative z-10 space-y-1">
                 <h3 className="text-3xl font-black tracking-tight text-foreground tabular-nums">{value}</h3>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">{subtext}</p>
+                <p className="text-[10px] font-bold uppercase  text-muted-foreground/70">{subtext}</p>
             </div>
         </motion.div>
     );

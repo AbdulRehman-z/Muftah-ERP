@@ -55,13 +55,13 @@ export const WarehouseDetailsDialog = ({
             <div className="flex items-center gap-2 mb-2">
               <Badge
                 variant="outline"
-                className="bg-primary/10 text-primary border-primary/20 uppercase text-[10px] font-bold tracking-widest"
+                className="bg-primary/10 text-primary border-primary/20 uppercase text-[10px] font-bold "
               >
                 Facility Profile
               </Badge>
               <Badge
                 variant={warehouse.isActive ? "healthy" : "secondary"}
-                className="text-[10px] font-bold uppercase tracking-widest"
+                className="text-[10px] font-bold uppercase "
               >
                 {warehouse.isActive ? "Operational" : "Archived"}
               </Badge>
@@ -87,7 +87,7 @@ export const WarehouseDetailsDialog = ({
             {/* Geographic Matrix */}
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 rounded-2xl border bg-muted/5 flex flex-col gap-3">
-                <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-widest">
+                <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase ">
                   <Activity className="size-3.5" />
                   <span>Global Positioning</span>
                 </div>
@@ -107,7 +107,7 @@ export const WarehouseDetailsDialog = ({
                 </div>
               </div>
               <div className="p-4 rounded-2xl border bg-muted/5 flex flex-col gap-3">
-                <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-widest">
+                <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase ">
                   <ShieldCheck className="size-3.5" />
                   <span>Facility Classification</span>
                 </div>
@@ -124,7 +124,7 @@ export const WarehouseDetailsDialog = ({
 
             {/* Lifecycle Traceability */}
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
+              <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase ">
                 <History className="size-3.5" />
                 <span>Administrative Audit Trail</span>
               </div>
@@ -162,7 +162,7 @@ export const WarehouseDetailsDialog = ({
 
             {/* Physical Address */}
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
+              <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase ">
                 <Navigation2 className="size-3.5" />
                 <span>Logistics Destination</span>
               </div>

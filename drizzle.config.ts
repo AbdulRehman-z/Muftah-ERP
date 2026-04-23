@@ -5,7 +5,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 export default defineConfig({
-  out: "./src/db/mirgrations",
+  out: "./src/db/migrations",
   schema: "./src/db/schemas/*",
   dialect: "postgresql",
   dbCredentials: {

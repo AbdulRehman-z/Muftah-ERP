@@ -554,7 +554,7 @@ export const EmployeeDetailView = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <CardContent className="p-5">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+                <p className="text-[10px] font-bold uppercase  text-muted-foreground mb-1">
                   Total Payslips
                 </p>
                 <p className="text-3xl font-black">{payrollHistory.length}</p>
@@ -563,7 +563,7 @@ export const EmployeeDetailView = () => {
             </Card>
             <Card>
               <CardContent className="p-5">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+                <p className="text-[10px] font-bold uppercase  text-muted-foreground mb-1">
                   Lifetime Net Paid
                 </p>
                 <p className="text-3xl font-black text-emerald-600">
@@ -574,7 +574,7 @@ export const EmployeeDetailView = () => {
             </Card>
             <Card>
               <CardContent className="p-5">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
+                <p className="text-[10px] font-bold uppercase  text-muted-foreground mb-1">
                   Last Payslip
                 </p>
                 <p className="text-3xl font-black">
@@ -727,7 +727,7 @@ function KPIStrip({
       <CardContent className="p-4 flex items-center gap-3">
         <Icon className={cn("size-7 shrink-0", c.icon)} />
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-0.5">
+          <p className="text-[10px] font-bold uppercase  text-muted-foreground mb-0.5">
             {label}
           </p>
           <p className={cn("text-lg font-black leading-tight", c.text)}>{value}</p>
@@ -750,7 +750,7 @@ function InfoRow({
 }) {
   return (
     <div>
-      <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+      <h4 className="text-[10px] font-bold text-muted-foreground uppercase  mb-1">
         {label}
       </h4>
       <div className="flex items-center gap-1.5">

@@ -86,14 +86,14 @@ export const InventoryDetailsDialog = ({
             <div className="flex items-center gap-2 mb-2">
               <Badge
                 variant="outline"
-                className="bg-primary/10 text-primary border-primary/20 uppercase text-[10px] font-bold tracking-widest"
+                className="bg-primary/10 text-primary border-primary/20 uppercase text-[10px] font-bold "
               >
                 {type.replace("_", " ")} Details
               </Badge>
               {isLow && (
                 <Badge
                   variant="destructive"
-                  className="animate-pulse text-[10px] font-bold uppercase tracking-widest"
+                  className="animate-pulse text-[10px] font-bold uppercase "
                 >
                   Low Stock Warning
                 </Badge>
@@ -130,7 +130,7 @@ export const InventoryDetailsDialog = ({
             <div className="grid grid-cols-3 gap-4">
               <Card className="bg-background shadow-xs min-h-[110px] flex flex-col">
                 <CardContent className="p-4 flex flex-col justify-between h-full space-y-3">
-                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                  <p className="text-[10px] font-black uppercase text-muted-foreground ">
                     Current Stock
                   </p>
                   <div className="flex flex-col gap-1">
@@ -150,7 +150,7 @@ export const InventoryDetailsDialog = ({
               </Card>
               <Card className="bg-background shadow-xs min-h-[110px] flex flex-col">
                 <CardContent className="p-4 flex flex-col justify-between h-full space-y-3">
-                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                  <p className="text-[10px] font-black uppercase text-muted-foreground ">
                     Value / Unit
                   </p>
                   <div className="flex flex-col gap-1">
@@ -163,7 +163,7 @@ export const InventoryDetailsDialog = ({
                           : parseFloat(material.costPerUnit).toFixed(2)}
                       </span>
                     </div>
-                    <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-md border border-primary/20 uppercase tracking-widest w-fit">
+                    <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-md border border-primary/20 uppercase  w-fit">
                       PKR
                     </span>
                   </div>
@@ -171,7 +171,7 @@ export const InventoryDetailsDialog = ({
               </Card>
               <Card className="bg-background shadow-xs min-h-[110px] flex flex-col">
                 <CardContent className="p-4 flex flex-col justify-between h-full space-y-3">
-                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                  <p className="text-[10px] font-black uppercase text-muted-foreground ">
                     Threshold
                   </p>
                   <div className="flex flex-col gap-1">
@@ -190,7 +190,7 @@ export const InventoryDetailsDialog = ({
 
             {/* Transfer History Section */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
+              <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase ">
                 <Truck className="size-3.5" />
                 <span>Recent Movements</span>
               </div>
@@ -268,7 +268,7 @@ export const InventoryDetailsDialog = ({
                   <p className="text-sm font-medium text-muted-foreground">
                     No transfer history found
                   </p>
-                  <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest">
+                  <p className="text-[10px] text-muted-foreground/60 uppercase ">
                     Stock has not been moved between warehouses yet.
                   </p>
                 </div>
@@ -278,7 +278,7 @@ export const InventoryDetailsDialog = ({
             {/* Supplier Information */}
             {!isFinished && material.lastSupplier ? (
               <div className="space-y-4">
-                <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
+                <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase ">
                   <Factory className="size-3.5" />
                   <span>Primary Supplier</span>
                 </div>
@@ -289,7 +289,7 @@ export const InventoryDetailsDialog = ({
 
                   <div className="grid grid-cols-2 gap-4 relative z-10">
                     <div className="space-y-1">
-                      <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground ">
                         Supplier Name
                       </p>
                       <p className="font-bold text-base text-foreground flex items-center gap-2">
@@ -300,7 +300,7 @@ export const InventoryDetailsDialog = ({
                         >
                           <Badge
                             variant="outline"
-                            className="ml-2 hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors text-[10px] uppercase tracking-widest h-5"
+                            className="ml-2 hover:bg-primary hover:text-primary-foreground cursor-pointer transition-colors text-[10px] uppercase  h-5"
                           >
                             View Profile
                           </Badge>
@@ -310,7 +310,7 @@ export const InventoryDetailsDialog = ({
 
                     {material.lastSupplier.supplierShopName && (
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground ">
                           Shop Name
                         </p>
                         <p className="font-medium text-sm text-foreground">
@@ -321,7 +321,7 @@ export const InventoryDetailsDialog = ({
 
                     {material.lastSupplier.phone && (
                       <div className="space-y-1">
-                        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground ">
                           Contact
                         </p>
                         <div className="flex items-center gap-2 text-sm font-medium">
@@ -332,7 +332,7 @@ export const InventoryDetailsDialog = ({
                     )}
 
                     <div className="space-y-1">
-                      <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground ">
                         Recent Activity
                       </p>
                       <p className="text-xs text-muted-foreground italic">
@@ -345,7 +345,7 @@ export const InventoryDetailsDialog = ({
             ) : (
               !isFinished && (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-widest">
+                  <div className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase ">
                     <Factory className="size-3.5" />
                     <span>Primary Supplier</span>
                   </div>
@@ -354,7 +354,7 @@ export const InventoryDetailsDialog = ({
                     <p className="text-sm font-medium text-muted-foreground">
                       No supplier information recorded for this material.
                     </p>
-                    <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest">
+                    <p className="text-[10px] text-muted-foreground/60 uppercase ">
                       Supplier history will appear here after the first
                       purchase.
                     </p>
@@ -376,7 +376,7 @@ export const InventoryDetailsDialog = ({
 
             {/* Inventory Timeline */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
+              <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase ">
                 <History className="size-3.5" />
                 <span>Lifecycle Traceability</span>
               </div>
@@ -384,7 +384,7 @@ export const InventoryDetailsDialog = ({
                 <div className="p-5 rounded-2xl border border-dashed bg-muted/20 flex flex-col gap-2">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Clock className="size-3.5" />
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest opacity-70">
+                    <span className="text-[10px] font-extrabold uppercase  opacity-70">
                       Initial Registration
                     </span>
                   </div>
@@ -400,7 +400,7 @@ export const InventoryDetailsDialog = ({
                 <div className="p-5 rounded-2xl border border-dashed bg-muted/20 flex flex-col gap-2">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Clock className="size-3.5" />
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest opacity-70">
+                    <span className="text-[10px] font-extrabold uppercase  opacity-70">
                       Last Modification
                     </span>
                   </div>
@@ -418,7 +418,7 @@ export const InventoryDetailsDialog = ({
 
             {/* Classification Info */}
             <div className="space-y-4 pt-2">
-              <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
+              <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase ">
                 <Info className="size-3.5" />
                 <span>Attribute Profile</span>
               </div>
@@ -426,7 +426,7 @@ export const InventoryDetailsDialog = ({
                 <table className="w-full text-sm">
                   <tbody>
                     <tr className="border-b border-muted/20 last:border-0 hover:bg-muted/5 transition-colors">
-                      <td className="p-5 font-bold text-muted-foreground/80 bg-muted/20 w-1/3 text-xs uppercase tracking-widest">
+                      <td className="p-5 font-bold text-muted-foreground/80 bg-muted/20 w-1/3 text-xs uppercase ">
                         Classification
                       </td>
                       <td className="p-5 font-semibold text-foreground text-sm">
@@ -438,7 +438,7 @@ export const InventoryDetailsDialog = ({
                       </td>
                     </tr>
                     <tr className="border-b border-muted/20 last:border-0 hover:bg-muted/5 transition-colors">
-                      <td className="p-5 font-bold text-muted-foreground/80 bg-muted/20 text-xs uppercase tracking-widest">
+                      <td className="p-5 font-bold text-muted-foreground/80 bg-muted/20 text-xs uppercase ">
                         Health Status
                       </td>
                       <td className="p-5">
@@ -456,7 +456,7 @@ export const InventoryDetailsDialog = ({
                       </td>
                     </tr>
                     <tr className="border-b border-muted/20 last:border-0 hover:bg-muted/5 transition-colors">
-                      <td className="p-5 font-bold text-muted-foreground/80 bg-muted/20 text-xs uppercase tracking-widest">
+                      <td className="p-5 font-bold text-muted-foreground/80 bg-muted/20 text-xs uppercase ">
                         Locality
                       </td>
                       <td className="p-5">
@@ -465,7 +465,7 @@ export const InventoryDetailsDialog = ({
                             {item.warehouse.name}
                           </Badge>
                           {!item.warehouse.isActive && (
-                            <span className="text-[10px] font-black text-destructive uppercase tracking-widest animate-pulse italic">
+                            <span className="text-[10px] font-black text-destructive uppercase  animate-pulse italic">
                               (Inactive)
                             </span>
                           )}

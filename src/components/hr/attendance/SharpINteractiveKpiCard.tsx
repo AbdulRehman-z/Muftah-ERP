@@ -69,7 +69,7 @@ export function SharpKPICard({
         }}
       />
       <div className="relative z-10 flex items-start justify-between mb-8">
-        <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+        <p className="text-[10px] font-bold  text-muted-foreground uppercase">
           {title}
         </p>
         <div className={cn("p-1.5 rounded-none", styles.iconBg)}>
@@ -80,7 +80,7 @@ export function SharpKPICard({
         <h3 className="text-2xl font-black tracking-tight text-foreground tabular-nums">
           {value}
         </h3>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+        <p className="text-[10px] font-bold uppercase  text-muted-foreground/70">
           {subtext}
         </p>
       </div>
@@ -126,7 +126,7 @@ export function SharpInteractiveKPICard({
         }}
       />
       <div className="relative z-10 flex items-start justify-between mb-8">
-        <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+        <p className="text-[10px] font-bold  text-muted-foreground uppercase">
           {title}
         </p>
         <div className="flex items-center gap-2">
@@ -150,7 +150,7 @@ export function SharpInteractiveKPICard({
         <h3 className="text-3xl font-black tracking-tight text-foreground tabular-nums">
           {value}
         </h3>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+        <p className="text-[10px] font-bold uppercase  text-muted-foreground/70">
           {subtext}
         </p>
       </div>

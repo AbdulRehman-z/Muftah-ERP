@@ -61,7 +61,7 @@ export function RevenueExpenseChart({
         {/* KPI strip */}
         <div className="flex items-center gap-6 mt-4 flex-wrap">
           <div>
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase  mb-1">
               Revenue
             </p>
             <p className="text-lg font-black tabular-nums text-emerald-600">
@@ -70,7 +70,7 @@ export function RevenueExpenseChart({
           </div>
           <div className="w-px h-8 bg-border/40" />
           <div>
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase  mb-1">
               Expenses
             </p>
             <p className="text-lg font-black tabular-nums text-rose-500">
@@ -79,7 +79,7 @@ export function RevenueExpenseChart({
           </div>
           <div className="w-px h-8 bg-border/40" />
           <div>
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase  mb-1">
               Net
             </p>
             <p

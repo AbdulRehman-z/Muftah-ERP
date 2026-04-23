@@ -95,7 +95,7 @@ function StatCard({ title, value, sub, icon, variant = "default", linkProps }: S
         )}
       />
       <CardHeader className="pb-2 pt-5 flex flex-row items-center justify-between space-y-0">
-        <CardTitle className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
+        <CardTitle className="text-[12px] font-semibold uppercase  text-muted-foreground">
           {title}
         </CardTitle>
         <div
@@ -323,7 +323,7 @@ function SupplierDetailsPage() {
         {/* ── Contact Card ── */}
         <Card className="h-fit overflow-hidden">
           <CardHeader className="pb-3 pt-5 px-5">
-            <CardTitle className="text-[13px] font-semibold uppercase tracking-widest text-muted-foreground">
+            <CardTitle className="text-[13px] font-semibold uppercase  text-muted-foreground">
               Contact Information
             </CardTitle>
           </CardHeader>

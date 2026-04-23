@@ -77,7 +77,7 @@ const ActionsCell = ({
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end" className="w-52 p-1.5 rounded-xl">
-      <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50">
+      <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-bold uppercase  text-muted-foreground/50">
         Actions
       </DropdownMenuLabel>
       <DropdownMenuSeparator className="my-1" />

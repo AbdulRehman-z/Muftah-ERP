@@ -201,7 +201,7 @@ export const CreateLabReportForm = ({
             <div className="space-y-6 py-4">
                 {/* Product Details */}
                 <div>
-                    <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3">
+                    <h4 className="text-xs font-black uppercase  text-muted-foreground mb-3">
                         Product Details
                     </h4>
                     <div className="grid grid-cols-2 gap-3">
@@ -242,7 +242,7 @@ export const CreateLabReportForm = ({
                 {/* Analysis Items */}
                 <div>
                     <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+                        <h4 className="text-xs font-black uppercase  text-muted-foreground">
                             Analysis Results
                         </h4>
                         <Button
@@ -343,7 +343,7 @@ export const CreateLabReportForm = ({
 
                 {/* Certification */}
                 <div>
-                    <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3">
+                    <h4 className="text-xs font-black uppercase  text-muted-foreground mb-3">
                         Certification
                     </h4>
                     <div className="grid grid-cols-2 gap-3">

@@ -416,6 +416,7 @@ CREATE TABLE "production_runs" (
 	"recipe_id" text NOT NULL,
 	"warehouse_id" text NOT NULL,
 	"operator_id" text NOT NULL,
+	"initiator_id" text,
 	"batches_produced" integer NOT NULL,
 	"cartons_produced" integer DEFAULT 0,
 	"containers_produced" integer NOT NULL,
@@ -425,6 +426,8 @@ CREATE TABLE "production_runs" (
 	"total_packaging_cost" numeric(12, 2) DEFAULT '0',
 	"total_production_cost" numeric(12, 2) DEFAULT '0',
 	"cost_per_container" numeric(10, 4) DEFAULT '0',
+	"shortfall_units" integer DEFAULT 0,
+	"shortfall_reason" text,
 	"status" text DEFAULT 'scheduled' NOT NULL,
 	"scheduled_start_date" timestamp,
 	"actual_start_date" timestamp,
@@ -702,6 +705,7 @@ ALTER TABLE "production_materials_used" ADD CONSTRAINT "production_materials_use
 ALTER TABLE "production_runs" ADD CONSTRAINT "production_runs_recipe_id_recipes_id_fk" FOREIGN KEY ("recipe_id") REFERENCES "public"."recipes"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "production_runs" ADD CONSTRAINT "production_runs_warehouse_id_warehouses_id_fk" FOREIGN KEY ("warehouse_id") REFERENCES "public"."warehouses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "production_runs" ADD CONSTRAINT "production_runs_operator_id_user_id_fk" FOREIGN KEY ("operator_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "production_runs" ADD CONSTRAINT "production_runs_initiator_id_user_id_fk" FOREIGN KEY ("initiator_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "recipe_ingredients" ADD CONSTRAINT "recipe_ingredients_recipe_id_recipes_id_fk" FOREIGN KEY ("recipe_id") REFERENCES "public"."recipes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "recipe_ingredients" ADD CONSTRAINT "recipe_ingredients_chemical_id_chemicals_id_fk" FOREIGN KEY ("chemical_id") REFERENCES "public"."chemicals"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "recipe_packaging" ADD CONSTRAINT "recipe_packaging_recipe_id_recipes_id_fk" FOREIGN KEY ("recipe_id") REFERENCES "public"."recipes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

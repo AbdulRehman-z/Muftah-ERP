@@ -32,18 +32,18 @@ function AdminDashboardPage() {
           </div>
           <div>
             <div className="flex items-center gap-3">
-              <h2 className="text-xl font-black uppercase tracking-widest leading-none text-foreground">
+              <h2 className="text-xl font-black uppercase  leading-none text-foreground">
                 Command Center
               </h2>
               <Badge
                 variant="outline"
-                className="text-[9px] font-bold uppercase tracking-widest bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400 rounded-none px-2 py-0 h-5 gap-1.5"
+                className="text-[9px] font-bold uppercase  bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400 rounded-none px-2 py-0 h-5 gap-1.5"
               >
                 <span className="size-1.5 bg-emerald-500 rounded-none animate-pulse" />
                 Live System
               </Badge>
             </div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-2">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase  mt-2">
               Real-time operations, finances, and production telemetry
             </p>
           </div>

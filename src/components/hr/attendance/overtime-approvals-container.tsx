@@ -80,7 +80,7 @@ export function OvertimeApprovalsContainer() {
             <span className="font-bold text-[13px] leading-tight text-foreground">
               {row.original.firstName} {row.original.lastName}
             </span>
-            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
+            <span className="text-[9px] font-bold text-muted-foreground uppercase  mt-0.5">
               {row.original.designation}
             </span>
           </div>
@@ -90,7 +90,7 @@ export function OvertimeApprovalsContainer() {
         accessorKey: "date",
         header: "Date",
         cell: ({ row }) => (
-          <span className="text-[13px] font-bold tabular-nums uppercase tracking-widest text-foreground">
+          <span className="text-[13px] font-bold tabular-nums uppercase  text-foreground">
             {format(parseISO(row.original.date), "dd MMM yyyy")}
           </span>
         ),
@@ -100,7 +100,7 @@ export function OvertimeApprovalsContainer() {
         header: "Hours",
         cell: ({ row }) => (
           <div className="flex flex-col">
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest tabular-nums">
+            <span className="text-[10px] text-muted-foreground font-bold uppercase  tabular-nums">
               Duty: {row.original.dutyHours}h
             </span>
             <span
@@ -141,7 +141,7 @@ export function OvertimeApprovalsContainer() {
             return (
               <Badge
                 variant="outline"
-                className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-bold uppercase tracking-widest text-[9px] rounded-none px-2 py-0.5"
+                className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-bold uppercase  text-[9px] rounded-none px-2 py-0.5"
               >
                 Approved
               </Badge>
@@ -151,7 +151,7 @@ export function OvertimeApprovalsContainer() {
             return (
               <Badge
                 variant="outline"
-                className="bg-rose-500/10 text-rose-600 border-rose-500/20 font-bold uppercase tracking-widest text-[9px] rounded-none px-2 py-0.5"
+                className="bg-rose-500/10 text-rose-600 border-rose-500/20 font-bold uppercase  text-[9px] rounded-none px-2 py-0.5"
               >
                 Rejected
               </Badge>
@@ -160,7 +160,7 @@ export function OvertimeApprovalsContainer() {
           return (
             <Badge
               variant="outline"
-              className="bg-amber-500/10 text-amber-600 border-amber-500/20 font-bold uppercase tracking-widest text-[9px] rounded-none px-2 py-0.5 animate-pulse"
+              className="bg-amber-500/10 text-amber-600 border-amber-500/20 font-bold uppercase  text-[9px] rounded-none px-2 py-0.5 animate-pulse"
             >
               Pending
             </Badge>
@@ -202,7 +202,7 @@ export function OvertimeApprovalsContainer() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:text-primary rounded-none"
+                  className="h-8 text-[10px] uppercase  font-bold text-muted-foreground hover:text-primary rounded-none"
                   onClick={() => handleProcess(row.original.id, "pending")}
                   disabled={mutateOT.isPending}
                 >
@@ -219,7 +219,7 @@ export function OvertimeApprovalsContainer() {
 
   // Reusable sleek tab trigger classes
   const tabTriggerStyles =
-    "relative h-12 rounded-none border-none bg-transparent px-2 pb-4 pt-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none focus-visible:ring-0 focus-visible:outline-none outline-none after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-transparent data-[state=active]:after:bg-foreground transition-colors";
+    "relative h-12 rounded-none border-none bg-transparent px-2 pb-4 pt-4 text-[11px] font-bold uppercase  text-muted-foreground hover:text-foreground hover:bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none focus-visible:ring-0 focus-visible:outline-none outline-none after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-transparent data-[state=active]:after:bg-foreground transition-colors";
 
   return (
     <motion.div
@@ -338,7 +338,7 @@ export function OvertimeApprovalsContainer() {
               </TabsTrigger>
             </TabsList>
 
-            <div className="hidden sm:flex text-[10px] text-muted-foreground font-bold uppercase tracking-widest items-center gap-2 pb-4">
+            <div className="hidden sm:flex text-[10px] text-muted-foreground font-bold uppercase  items-center gap-2 pb-4">
               <ShieldCheck className="size-3.5 text-primary" />
               Overtime{" "}
               <span className="text-foreground">Management Console</span>
@@ -449,7 +449,7 @@ function SharpInteractiveKPICard({
         }}
       />
       <div className="relative z-10 flex items-start justify-between mb-8">
-        <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+        <p className="text-[10px] font-bold  text-muted-foreground uppercase">
           {title}
         </p>
         <div className="flex items-center gap-2">
@@ -473,7 +473,7 @@ function SharpInteractiveKPICard({
         <h3 className="text-3xl font-black tracking-tight text-foreground tabular-nums">
           {value}
         </h3>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+        <p className="text-[10px] font-bold uppercase  text-muted-foreground/70">
           {subtext}
         </p>
       </div>

@@ -49,7 +49,7 @@ function CustomTooltip({ active, payload, label }: any) {
 
   return (
     <div className="rounded-xl border border-border bg-popover  p-3 min-w-[172px] text-popover-foreground">
-      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2.5">
+      <p className="text-[10px] font-black uppercase  text-muted-foreground mb-2.5">
         {label}
       </p>
 
@@ -120,7 +120,7 @@ export function RevenueExpenseChart({ data }: RevenueExpenseChartProps) {
         <div className="flex items-start justify-between gap-3 flex-wrap">
           {/* Title + summary stats */}
           <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-0.5">
+            <p className="text-[10px] font-black uppercase  text-muted-foreground mb-0.5">
               Financial Overview
             </p>
             <h3 className="text-base font-black tracking-tight">

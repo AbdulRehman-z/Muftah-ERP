@@ -3,8 +3,60 @@ import { db, purchaseRecords, materialStock } from "@/db";
 import { eq, sql, and } from "drizzle-orm";
 import { requireSuppliersManageMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
+import { createId } from "@paralleldrive/cuid2";
 
-import { chemicals, packagingMaterials } from "@/db/schemas/inventory-schema";
+import { packagingMaterials } from "@/db/schemas/inventory-schema";
+import { expenseCategories } from "@/db/schemas/finance-schema";
+
+type FinanceWriter = Pick<typeof db, "query" | "select" | "insert" | "update">;
+
+async function ensureSupplierPurchaseCategory(tx: FinanceWriter) {
+  const existingCategory = await tx.query.expenseCategories.findFirst({
+    where: eq(expenseCategories.slug, "supplier-purchase"),
+    columns: {
+      id: true,
+      name: true,
+      isActive: true,
+      isArchived: true,
+    },
+  });
+
+  if (existingCategory) {
+    if (!existingCategory.isActive || existingCategory.isArchived) {
+      await tx
+        .update(expenseCategories)
+        .set({
+          name: "Supplier Purchase",
+          isActive: true,
+          isArchived: false,
+          updatedAt: new Date(),
+        })
+        .where(eq(expenseCategories.id, existingCategory.id));
+    }
+
+    return {
+      id: existingCategory.id,
+      name: "Supplier Purchase",
+    };
+  }
+
+  const [createdCategory] = await tx
+    .insert(expenseCategories)
+    .values({
+      id: createId(),
+      name: "Supplier Purchase",
+      slug: "supplier-purchase",
+      sortOrder: 500,
+      isActive: true,
+      isArchived: false,
+    })
+    .returning({
+      id: expenseCategories.id,
+      name: expenseCategories.name,
+    });
+
+  return createdCategory;
+}
 
 const updatePurchaseSchema = z.object({
   id: z.string(),
@@ -116,6 +168,61 @@ export const updatePurchaseRecordFn = createServerFn()
         .update(purchaseRecords)
         .set(updateData)
         .where(eq(purchaseRecords.id, data.id));
+
+      // 5. Conditionally create expense and debit wallet
+      if (
+        data.walletId &&
+        data.walletId !== "pay_later" &&
+        (data.paymentStatus === "paid" || data.paymentStatus === "partial")
+      ) {
+        const expenseAmount =
+          data.paymentStatus === "paid"
+            ? parseFloat(data.cost ?? existingRecord.cost)
+            : parseFloat(data.paidAmount ?? "0");
+
+        // Balance check
+        const [wallet] = await tx
+          .select()
+          .from(wallets)
+          .where(eq(wallets.id, data.walletId));
+        if (!wallet) throw new Error("Wallet not found");
+        const currentBalance = parseFloat(wallet.balance || "0");
+        if (currentBalance < expenseAmount) {
+          throw new Error(
+            `Insufficient balance in "${wallet.name}". Available: PKR ${currentBalance.toLocaleString()}, Required: PKR ${expenseAmount.toLocaleString()}`,
+          );
+        }
+
+        // Debit wallet
+        await tx
+          .update(wallets)
+          .set({ balance: sql`${wallets.balance} - ${expenseAmount}` })
+          .where(eq(wallets.id, data.walletId));
+
+        // Insert expense
+        const expenseCategory = await ensureSupplierPurchaseCategory(tx);
+        const expenseId = createId();
+        await tx.insert(expenses).values({
+          id: expenseId,
+          description: `Supplier Purchase: ${data.materialName} from ${data.supplierName}`,
+          category: expenseCategory.name,
+          categoryId: expenseCategory.id,
+          amount: expenseAmount.toString(),
+          walletId: data.walletId,
+          performedById: context.session.user.id,
+        });
+
+        // Insert transaction journal entry
+        await tx.insert(transactions).values({
+          id: createId(),
+          walletId: data.walletId,
+          type: "debit",
+          amount: expenseAmount.toString(),
+          source: "Expense",
+          referenceId: expenseId,
+          performedById: context.session.user.id,
+        });
+      }
 
       return { success: true };
     });

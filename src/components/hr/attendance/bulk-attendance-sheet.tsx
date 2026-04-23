@@ -240,7 +240,7 @@ export const BulkAttendanceSheet = ({
             <SectionLabel icon={CalendarRange} label="Date Range" />
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                <p className="text-[11px] font-bold uppercase  text-muted-foreground">
                   From
                 </p>
                 <DatePicker
@@ -251,7 +251,7 @@ export const BulkAttendanceSheet = ({
                 />
               </div>
               <div className="space-y-1">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                <p className="text-[11px] font-bold uppercase  text-muted-foreground">
                   To
                 </p>
                 <DatePicker
@@ -551,7 +551,7 @@ export const BulkAttendanceSheet = ({
               )}
             >
               <div className="flex items-center justify-between">
-                <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                <p className="text-[11px] font-black uppercase  text-muted-foreground">
                   Preview
                 </p>
                 {previewLoading && (
@@ -727,7 +727,7 @@ function SectionLabel({ icon: Icon, label }: { icon: any; label: string }) {
   return (
     <div className="flex items-center gap-2">
       <Icon className="size-4 text-muted-foreground" />
-      <h3 className="text-[12px] font-black uppercase tracking-widest text-foreground">
+      <h3 className="text-[12px] font-black uppercase  text-foreground">
         {label}
       </h3>
     </div>

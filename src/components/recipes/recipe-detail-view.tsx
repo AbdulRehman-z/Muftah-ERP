@@ -239,7 +239,7 @@ export const RecipeDetailView = ({ recipe }: Props) => {
                 ))}
               </div>
               <div className="p-4 bg-muted/20 flex justify-between items-center font-bold text-sm">
-                <p className="text-muted-foreground uppercase tracking-widest text-[10px]">
+                <p className="text-muted-foreground uppercase  text-[10px]">
                   Ingredients Subtotal
                 </p>
                 <p className="text-lg">
@@ -392,7 +392,7 @@ export const RecipeDetailView = ({ recipe }: Props) => {
                 ))}
               </div>
               <div className="p-4 bg-muted/20 flex justify-between items-center font-bold text-sm">
-                <p className="text-muted-foreground uppercase tracking-widest text-[10px]">
+                <p className="text-muted-foreground uppercase  text-[10px]">
                   Packaging Subtotal
                 </p>
                 <p className="text-lg">
@@ -415,7 +415,7 @@ export const RecipeDetailView = ({ recipe }: Props) => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest flex items-center gap-1.5">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground  flex items-center gap-1.5">
                   <Droplet className="size-3" /> Target Fill
                 </p>
                 <p className="text-sm font-semibold capitalize bg-muted/40 p-2 rounded-md border border-border/50">
@@ -423,7 +423,7 @@ export const RecipeDetailView = ({ recipe }: Props) => {
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest flex items-center gap-1.5">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground  flex items-center gap-1.5">
                   <Package className="size-3" /> Distribution
                 </p>
                 <p className="text-sm font-semibold capitalize bg-muted/40 p-2 rounded-md border border-border/50">

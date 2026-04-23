@@ -105,7 +105,7 @@ function RouteComponent() {
         </div>
 
         {/* Bottom wordmark / brand lock-up */}
-        <p className="absolute bottom-6 text-xs font-medium text-muted-foreground/50 tracking-widest uppercase">
+        <p className="absolute bottom-6 text-xs font-medium text-muted-foreground/50  uppercase">
           Muftah Chemical PVT LTD (S-WASH) &mdash; Secure Access
         </p>
       </div>

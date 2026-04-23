@@ -18,5 +18,9 @@ todos.json
 .tanstack
 .vscode
 scripts
+!scripts/
+scripts/*
+!scripts/nuke-db.sh
+!scripts/super-admin-bootstrap.sh
 .codex
 prompt.txt

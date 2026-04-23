@@ -48,7 +48,7 @@ const StepBadge = ({ n, label }: { n: number; label: string }) => (
         <span className="flex size-6 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
             {n}
         </span>
-        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        <span className="text-xs font-semibold uppercase  text-muted-foreground">
             {label}
         </span>
     </div>

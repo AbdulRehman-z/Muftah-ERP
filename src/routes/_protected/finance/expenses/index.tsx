@@ -1,21 +1,41 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Suspense } from "react";
-import { GenericLoader } from "@/components/custom/generic-loader";
-import { getExpensesFn } from "@/server-functions/finance-fn";
 import { ExpensesContainer } from "@/components/finance/expenses-container";
-
-import { startOfMonth, endOfMonth } from "date-fns";
+import {
+  getExpenseCategoryDefinitionsQueryOptions,
+  getExpenseKpiQueryOptions,
+  getExpenseListQueryOptions,
+} from "@/hooks/finance/use-finance";
+import {
+  getCurrentMonthRange,
+  getExpenseDateRangeFilters,
+} from "@/lib/finance-expenses";
 
 export const Route = createFileRoute("/_protected/finance/expenses/")({
   loader: async ({ context }) => {
-    const today = new Date();
-    const dateFrom = startOfMonth(today).toISOString();
-    const dateTo = endOfMonth(today).toISOString();
+    await context.queryClient.ensureQueryData(
+      getExpenseCategoryDefinitionsQueryOptions(),
+    );
 
-    void context.queryClient.prefetchQuery({
-      queryKey: ["expenses", { page: 1, limit: 20, dateFrom, dateTo }],
-      queryFn: () => getExpensesFn({ data: { dateFrom, dateTo } }),
-    });
+    const { dateFrom, dateTo } = getExpenseDateRangeFilters(
+      getCurrentMonthRange(),
+    );
+
+    void context.queryClient.prefetchQuery(
+      getExpenseListQueryOptions({
+        page: 1,
+        limit: 60,
+        offset: 0,
+        dateFrom,
+        dateTo,
+      }),
+    );
+
+    void context.queryClient.prefetchQuery(
+      getExpenseKpiQueryOptions({
+        dateFrom,
+        dateTo,
+      }),
+    );
   },
   component: RouteComponent,
 });
@@ -33,16 +53,7 @@ function RouteComponent() {
           </p>
         </header>
         <div className="flex-1 py-8 flex flex-col">
-          <Suspense
-            fallback={
-              <GenericLoader
-                title="Loading expenses"
-                description="Please wait..."
-              />
-            }
-          >
-            <ExpensesContainer />
-          </Suspense>
+          <ExpensesContainer />
         </div>
       </div>
     </main>

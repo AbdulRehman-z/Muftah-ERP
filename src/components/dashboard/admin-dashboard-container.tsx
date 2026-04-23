@@ -105,17 +105,17 @@ export function AdminDashboard() {
           <div className="flex items-center gap-3 pr-4 border-r border-border">
             <CalendarDays className="size-4 text-muted-foreground" />
             <div>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground leading-none mb-1">
+              <p className="text-[9px] font-bold uppercase  text-muted-foreground leading-none mb-1">
                 Temporal Window
               </p>
-              <p className="text-xs font-black uppercase tracking-widest leading-none text-foreground">
+              <p className="text-xs font-black uppercase  leading-none text-foreground">
                 {displayRange}
               </p>
             </div>
           </div>
 
           <div
-            className={`flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 border rounded-none ${
+            className={`flex items-center gap-2 text-[10px] font-bold uppercase  px-3 py-1.5 border rounded-none ${
               netProfitPositive
                 ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-600 dark:text-emerald-500"
                 : "bg-rose-500/5 border-rose-500/20 text-rose-600 dark:text-rose-500"
@@ -129,7 +129,7 @@ export function AdminDashboard() {
             {netProfitPositive ? "Profitable Cycle" : "Deficit Cycle"}
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+          <div className="hidden sm:flex items-center gap-2 text-[9px] font-bold uppercase  text-muted-foreground">
             <HardDrive className="size-3" />
             SYS_SYNC: {format(new Date(), "HH:mm:ss")}
           </div>

@@ -28,7 +28,7 @@ COPY --from=builder --chown=nitro:nodejs /app/.output .output
 COPY --from=builder --chown=nitro:nodejs /app/package.json package.json
 COPY --from=builder --chown=nitro:nodejs /app/node_modules node_modules
 COPY --from=builder --chown=nitro:nodejs /app/drizzle.config.ts drizzle.config.ts
-COPY --from=builder --chown=nitro:nodejs /app/src/db/mirgrations src/db/mirgrations
+COPY --from=builder --chown=nitro:nodejs /app/src/db/migrations src/db/migrations
 
 USER nitro
 

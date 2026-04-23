@@ -82,7 +82,7 @@ export function LeaveApprovalsContainer() {
             <span className="font-bold text-[13px] leading-tight text-foreground">
               {row.original.firstName} {row.original.lastName}
             </span>
-            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
+            <span className="text-[9px] font-bold text-muted-foreground uppercase  mt-0.5">
               {row.original.designation}
             </span>
           </div>
@@ -92,7 +92,7 @@ export function LeaveApprovalsContainer() {
         accessorKey: "date",
         header: "Date",
         cell: ({ row }) => (
-          <span className="text-[13px] font-bold tabular-nums uppercase tracking-widest text-foreground">
+          <span className="text-[13px] font-bold tabular-nums uppercase  text-foreground">
             {format(parseISO(row.original.date), "dd MMM yyyy")}
           </span>
         ),
@@ -105,7 +105,7 @@ export function LeaveApprovalsContainer() {
           return (
             <Badge
               variant="outline"
-              className="text-[9px] font-bold uppercase tracking-widest rounded-none border-border"
+              className="text-[9px] font-bold uppercase  rounded-none border-border"
             >
               {lt ? LEAVE_TYPE_LABELS[lt] || lt : "—"}
             </Badge>
@@ -135,7 +135,7 @@ export function LeaveApprovalsContainer() {
             return (
               <Badge
                 variant="outline"
-                className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-bold uppercase tracking-widest text-[9px] rounded-none px-2 py-0.5"
+                className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-bold uppercase  text-[9px] rounded-none px-2 py-0.5"
               >
                 Approved
               </Badge>
@@ -144,7 +144,7 @@ export function LeaveApprovalsContainer() {
             return (
               <Badge
                 variant="outline"
-                className="bg-rose-500/10 text-rose-600 border-rose-500/20 font-bold uppercase tracking-widest text-[9px] rounded-none px-2 py-0.5"
+                className="bg-rose-500/10 text-rose-600 border-rose-500/20 font-bold uppercase  text-[9px] rounded-none px-2 py-0.5"
               >
                 Rejected
               </Badge>
@@ -152,7 +152,7 @@ export function LeaveApprovalsContainer() {
           return (
             <Badge
               variant="outline"
-              className="bg-amber-500/10 text-amber-600 border-amber-500/20 font-bold uppercase tracking-widest text-[9px] rounded-none px-2 py-0.5 animate-pulse"
+              className="bg-amber-500/10 text-amber-600 border-amber-500/20 font-bold uppercase  text-[9px] rounded-none px-2 py-0.5 animate-pulse"
             >
               Pending
             </Badge>
@@ -193,7 +193,7 @@ export function LeaveApprovalsContainer() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:text-primary rounded-none"
+                  className="h-8 text-[10px] uppercase  font-bold text-muted-foreground hover:text-primary rounded-none"
                   onClick={() => handleProcess(row.original.id, "pending")}
                   disabled={mutation.isPending}
                 >
@@ -210,7 +210,7 @@ export function LeaveApprovalsContainer() {
 
   // Reusable sleek tab trigger classes
   const tabTriggerStyles =
-    "relative h-12 rounded-none border-none bg-transparent px-0 pb-4 pt-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none focus-visible:ring-0 focus-visible:outline-none outline-none after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-transparent data-[state=active]:after:bg-foreground transition-colors";
+    "relative h-12 rounded-none border-none bg-transparent px-0 pb-4 pt-4 text-[11px] font-bold uppercase  text-muted-foreground hover:text-foreground hover:bg-transparent data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none focus-visible:ring-0 focus-visible:outline-none outline-none after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-transparent data-[state=active]:after:bg-foreground transition-colors";
 
   return (
     <motion.div
@@ -329,7 +329,7 @@ export function LeaveApprovalsContainer() {
               </TabsTrigger>
             </TabsList>
 
-            <div className="hidden sm:flex text-[10px] text-muted-foreground font-bold uppercase tracking-widest items-center gap-2 pb-4">
+            <div className="hidden sm:flex text-[10px] text-muted-foreground font-bold uppercase  items-center gap-2 pb-4">
               <FileClock className="size-3.5 text-primary" />
               Leave <span className="text-foreground">Management Console</span>
             </div>
