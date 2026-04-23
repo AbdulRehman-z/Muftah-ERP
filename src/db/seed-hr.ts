@@ -1,6 +1,6 @@
 import { db } from "./index";
 import { employees, attendance, payrolls, payslips } from "./schemas/hr-schema";
-import { user } from "./schemas/auth-schema";
+import { user, account } from "./schemas/auth-schema";
 import { eq, and } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
 import {
@@ -225,24 +225,59 @@ const employeeData: EmployeeSeed[] = [
 async function seedHR() {
   console.log("🌱 Seeding HR data...");
 
-  // 1. Ensure an Admin User exists
+  // 1. Ensure a Super Admin User exists with known credentials
+  const SEED_EMAIL = "super@gmail.com";
+  const SEED_PASSWORD = "pass1234";
+
+  // Use the exact same scrypt params as Better Auth (@better-auth/utils/dist/password.node.mjs)
+  const { scrypt, randomBytes } = await import("crypto");
+  const hashPassword = (plain: string): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const salt = randomBytes(16).toString("hex");
+      scrypt(
+        plain.normalize("NFKC"),
+        salt,
+        64,
+        { N: 16384, r: 16, p: 1, maxmem: 128 * 16384 * 16 * 2 },
+        (err, key) => {
+          if (err) reject(err);
+          else resolve(`${salt}:${key.toString("hex")}`);
+        },
+      );
+    });
+
   let adminUser = await db.query.user.findFirst({
-    where: eq(user.role, "admin"),
+    where: eq(user.email, SEED_EMAIL),
   });
 
   if (!adminUser) {
-    console.log("Creating admin user...");
+    console.log(`Creating super admin user (${SEED_EMAIL})...`);
+    const userId = createId();
     const [newUser] = await db
       .insert(user)
       .values({
-        id: createId(),
-        name: "Main Admin",
-        email: "admin@titan.com",
+        id: userId,
+        name: "Super Admin",
+        email: SEED_EMAIL,
         role: "admin",
         emailVerified: true,
       })
       .returning();
     adminUser = newUser;
+
+    const hashedPassword = await hashPassword(SEED_PASSWORD);
+    await db.insert(account).values({
+      id: createId(),
+      accountId: userId,
+      providerId: "credential",
+      userId: userId,
+      password: hashedPassword,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    console.log(`  ✅ Login: ${SEED_EMAIL} / ${SEED_PASSWORD}`);
+  } else {
+    console.log(`Super admin already exists (${SEED_EMAIL}), skipping.`);
   }
 
   // 2. Upsert Employees
@@ -347,13 +382,7 @@ async function seedHR() {
       if (status !== "present") {
         // For leave: 70% are approved paid leave (no deduction)
         const isApproved = status === "leave" ? Math.random() < 0.7 : false;
-        const leaveTypes = [
-          "casual",
-          "sick",
-          "annual",
-          "unpaid",
-          "special",
-        ] as const;
+        const leaveTypes = ["sick", "annual", "special"] as const;
         const randType =
           leaveTypes[Math.floor(Math.random() * leaveTypes.length)];
         await db.insert(attendance).values({

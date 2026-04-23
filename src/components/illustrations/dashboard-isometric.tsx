@@ -70,7 +70,7 @@ const CharInspector = ({ x, y, flip = false }: { x: number; y: number; flip?: bo
         <motion.g style={{ transformOrigin: "6px -2px" }} animate={{ rotate: [0, 10, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}>
             <path d="M 6 -2 L 16 8 L 14 11 L 4 0 Z" fill="#0284c7" />
             <rect x="12" y="7" width="6" height="4" rx="1" fill="#334155" transform="rotate(30 14 9)" />
-            <motion.line x1="16" y1="10" x2="40" y2="25" stroke="#ef4444" strokeWidth="1.5" animate={{ opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }} />
+            <line x1="16" y1="10" x2="40" y2="25" stroke="#ef4444" strokeWidth="1.5" opacity="0.6" />
         </motion.g>
     </g>
 );
@@ -246,7 +246,7 @@ export function IsoYieldPacker({ className }: { className?: string }) {
 
             <path d="M 45 100 L 55 105 L 55 130 L 45 125 Z" fill="#64748b" />
             <rect x="42" y="95" width="16" height="8" fill="#334155" transform="rotate(26 50 100)" />
-            <motion.line x1="50" y1="95" x2="55" y2="85" stroke="#ef4444" strokeWidth="2" animate={{ x2: [55, 60, 55] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} />
+            <line x1="50" y1="95" x2="55" y2="85" stroke="#ef4444" strokeWidth="2" />
 
             <path d="M 10 120 L 150 190 L 170 180 L 30 110 Z" fill="#cbd5e1" />
             <motion.g initial={{ x: -20, y: -10 }} animate={{ x: 0, y: 0 }} transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}>

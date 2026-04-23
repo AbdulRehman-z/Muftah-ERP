@@ -14,12 +14,16 @@ interface PaymentMethodSelectProps {
   value: string; // walletId or "pay_later"
   onValueChange: (value: string) => void;
   disabled?: boolean;
+  hidePayLater?: boolean;
+  showBalance?: boolean;
 }
 
 export const PaymentMethodSelect = ({
   value,
   onValueChange,
   disabled,
+  hidePayLater = false,
+  showBalance = false,
 }: PaymentMethodSelectProps) => {
   const {
     data: wallets = [],
@@ -31,6 +35,9 @@ export const PaymentMethodSelect = ({
   });
 
   const options = isError ? [] : wallets;
+  const selectedWallet = showBalance && value && value !== "pay_later"
+    ? options.find((w) => w.id === value)
+    : null;
 
   return (
     <div className="space-y-1.5">
@@ -50,9 +57,7 @@ export const PaymentMethodSelect = ({
           )}
         </SelectTrigger>
         <SelectContent>
-          {/* Pay Later is always first */}
-          <SelectItem value="pay_later">Pay Later</SelectItem>
-
+          {!hidePayLater && <SelectItem value="pay_later">Pay Later</SelectItem>}
           {options.map((wallet) => (
             <SelectItem key={wallet.id} value={wallet.id}>
               <div className="flex items-center gap-2">
@@ -67,6 +72,15 @@ export const PaymentMethodSelect = ({
           ))}
         </SelectContent>
       </Select>
+
+      {showBalance && selectedWallet && (
+        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+          Available balance:
+          <span className={`font-semibold ${parseFloat(selectedWallet.balance ?? "0") <= 0 ? "text-red-500" : "text-emerald-600"}`}>
+            PKR {parseFloat(selectedWallet.balance ?? "0").toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          </span>
+        </p>
+      )}
 
       {isError && (
         <Badge variant="destructive" className="gap-1 text-xs font-normal">

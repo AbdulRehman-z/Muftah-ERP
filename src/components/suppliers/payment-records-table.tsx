@@ -6,12 +6,31 @@ import { Button } from "../ui/button";
 import { Eye } from "lucide-react";
 import { useState } from "react";
 import { PaymentDetailsDialog } from "./payment-details-dialog";
+import { useQuery } from "@tanstack/react-query";
+import { getWalletsListFn } from "@/server-functions/finance-fn";
+
+// Resolve a walletId or legacy method value to a human-readable label
+function resolveMethodLabel(walletId: string | null | undefined, method: string | null | undefined, wallets: { id: string; name: string }[]): string {
+  // Prefer walletId (new schema)
+  const id = walletId || method;
+  if (!id) return "N/A";
+  const known: Record<string, string> = {
+    cash: "Cash",
+    bank_transfer: "Bank Transfer",
+    cheque: "Cheque",
+    pay_later: "Pay Later",
+  };
+  if (known[id]) return known[id];
+  const wallet = wallets.find((w) => w.id === id);
+  return wallet ? wallet.name : "Finance Account";
+}
 
 type SupplierPayment = {
   id: string;
   createdAt: string | Date;
   amount: string;
   method: string | null;
+  walletId: string | null;
   reference: string | null;
   bankName?: string | null;
   paidBy?: string | null;
@@ -37,8 +56,8 @@ type Props = {
 
 export const PaymentRecordsTable = ({ data, dateRange, ...rest }: Props) => {
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [selectedPayment, setSelectedPayment] =
-    useState<SupplierPayment | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<SupplierPayment | null>(null);
+  const { data: wallets = [] } = useQuery({ queryKey: ["wallets"], queryFn: getWalletsListFn });
 
   // Filter data based on date range
   const filteredData = data.filter((record) => {
@@ -92,7 +111,7 @@ export const PaymentRecordsTable = ({ data, dateRange, ...rest }: Props) => {
       header: "Method",
       cell: ({ row }) => (
         <Badge variant="outline" className="capitalize">
-          {(row.getValue("method") as string)?.replace("_", " ")}
+          {resolveMethodLabel(row.original.walletId, row.original.method, wallets)}
         </Badge>
       ),
     },

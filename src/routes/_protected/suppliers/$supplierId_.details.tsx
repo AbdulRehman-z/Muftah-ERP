@@ -15,11 +15,12 @@ import { DateRange } from "react-day-picker";
 import { useState } from "react";
 import { GenericLoader } from "@/components/custom/generic-loader";
 import { PurchaseDetailsDialog } from "@/components/suppliers/purchase-details-dialog";
-import { EditPurchaseDialog } from "@/components/suppliers/edit-purchase-dialog";
 import { DeletePurchaseDialog } from "@/components/suppliers/delete-purchase-dialog";
 import { RecordPaymentDialog } from "@/components/suppliers/record-payment-dialog";
 import { AddStockDialog } from "@/components/inventory/add-stock-dialog";
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
+import { AddRawMaterialDialog } from "@/components/inventory/add-raw-material-sheet";
+import { AddPackagingMaterialSheet } from "@/components/inventory/add-packaging-material-sheet";
 
 
 const searchSchema = z.object({
@@ -363,11 +364,72 @@ function DetailsPage() {
         onOpenChange={setDeleteDialogOpen}
         purchase={selectedItem}
       />
-      <EditPurchaseDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        purchase={selectedItem}
-      />
+      {selectedItem?.materialType === "chemical" && (
+        <AddRawMaterialDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          warehouses={warehouses}
+          preselectedWarehouse={warehouses.find((w) => w.type === "factory_floor")?.id}
+          preselectedSupplierId={supplier.id}
+          initialValues={selectedItem ? {
+            purchaseId: selectedItem.id,
+            name: selectedItem.chemical?.name || "",
+            quantity: selectedItem.quantity,
+            unitCost: selectedItem.unitCost,
+            paidAmount: selectedItem.paidAmount,
+            minimumStockLevel: selectedItem.chemical?.minimumStockLevel || "0",
+            unit: (selectedItem.chemical?.unit === "liters" ? "liters" : "kg") as "kg" | "liters",
+            packagingType: selectedItem.chemical?.packagingType || "",
+            packagingSize: selectedItem.chemical?.packagingSize || "",
+            notes: selectedItem.notes || "",
+            invoiceNumber: selectedItem.invoiceNumber || "",
+            transactionId: selectedItem.transactionId || "",
+            paymentMethod: selectedItem.paymentMethod || "pay_later",
+            paymentStatus: (() => {
+              const paid = parseFloat(selectedItem.paidAmount || "0");
+              const total = parseFloat(selectedItem.cost || "0");
+              if (total <= 0 || paid <= 0) return "unpaid";
+              if (paid >= total) return "paid";
+              return "partial";
+            })() as "paid" | "partial" | "unpaid",
+            supplierId: supplier.id,
+            warehouseId: warehouses.find((w) => w.type === "factory_floor")?.id,
+          } : undefined}
+        />
+      )}
+      {selectedItem?.materialType === "packaging" && (
+        <AddPackagingMaterialSheet
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          warehouses={warehouses}
+          preselectedWarehouse={warehouses.find((w) => w.type === "factory_floor")?.id}
+          preselectedSupplierId={supplier.id}
+          initialValues={selectedItem ? {
+            purchaseId: selectedItem.id,
+            name: selectedItem.packagingMaterial?.name || "",
+            quantity: selectedItem.quantity,
+            unitCost: selectedItem.unitCost,
+            paidAmount: selectedItem.paidAmount,
+            minimumStockLevel: selectedItem.packagingMaterial?.minimumStockLevel || 0,
+            type: (selectedItem.packagingMaterial?.type || "primary") as "primary" | "master" | "sticker" | "extra",
+            capacity: selectedItem.packagingMaterial?.capacity || "",
+            capacityUnit: selectedItem.packagingMaterial?.capacityUnit || "",
+            notes: selectedItem.notes || "",
+            invoiceNumber: selectedItem.invoiceNumber || "",
+            transactionId: selectedItem.transactionId || "",
+            paymentMethod: selectedItem.paymentMethod || "pay_later",
+            paymentStatus: (() => {
+              const paid = parseFloat(selectedItem.paidAmount || "0");
+              const total = parseFloat(selectedItem.cost || "0");
+              if (total <= 0 || paid <= 0) return "unpaid";
+              if (paid >= total) return "paid";
+              return "partial";
+            })() as "paid" | "partial" | "unpaid",
+            supplierId: supplier.id,
+            warehouseId: warehouses.find((w) => w.type === "factory_floor")?.id,
+          } : undefined}
+        />
+      )}
       <AddStockDialog
         open={isRestockOpen}
         onOpenChange={setRestockOpen}
