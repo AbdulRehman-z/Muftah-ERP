@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format, getYear, getMonth } from "date-fns";
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -13,12 +14,17 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import type { DateRange } from "react-day-picker";
 
 interface DatePickerProps {
   date?: Date;
-  onChange: (date?: Date) => void;
+  onChange?: (date?: Date) => void;
+  range?: DateRange;
+  onRangeChange?: (date: DateRange | undefined) => void;
+  mode?: "single" | "range";
   placeholder?: string;
   className?: string;
+  tourId?: string;
   /**
    * When true, shows a month-grid picker instead of a full calendar.
    * Useful for dashboard filters that operate on a monthly granularity.
@@ -67,7 +73,7 @@ function MonthPicker({
   };
 
   return (
-    <div className="p-3 w-[220px]">
+    <div className="p-3 w-55">
       {/* Year navigation */}
       <div className="flex items-center justify-between mb-3">
         <Button
@@ -124,12 +130,25 @@ function MonthPicker({
 export function DatePicker({
   date,
   onChange,
+  range,
+  onRangeChange,
+  mode = "single",
   placeholder = "Pick a date",
   className,
+  tourId,
   monthOnly = false,
   formatStr = "PPP",
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
+  const [internalRange, setInternalRange] = useState<DateRange | undefined>(
+    range,
+  );
+
+  useEffect(() => {
+    if (!open && mode === "range") {
+      setInternalRange(range);
+    }
+  }, [range, open, mode]);
 
   if (monthOnly) {
     return (
@@ -142,6 +161,7 @@ export function DatePicker({
               !date && "text-muted-foreground",
               className,
             )}
+            data-tour={tourId}
           >
             <CalendarIcon className="size-3.5 shrink-0" />
             <span className="truncate">
@@ -152,9 +172,71 @@ export function DatePicker({
         <PopoverContent className="w-auto p-0" align="start">
           <MonthPicker
             date={date}
-            onChange={(d) => onChange(d)}
+            onChange={(d) => onChange?.(d)}
             onClose={() => setOpen(false)}
           />
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  if (mode === "range") {
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "justify-start text-left font-normal gap-2",
+              !internalRange?.from && "text-muted-foreground",
+              className,
+            )}
+            data-tour={tourId}
+          >
+            <CalendarIcon className="size-3.5 shrink-0" />
+            <span className="truncate">
+              {internalRange?.from
+                ? internalRange.to
+                  ? `${format(internalRange.from, "LLL dd, y")} - ${format(internalRange.to, "LLL dd, y")}`
+                  : format(internalRange.from, "LLL dd, y")
+                : placeholder}
+            </span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-4" align="start">
+          <Calendar
+            initialFocus
+            mode="range"
+            defaultMonth={internalRange?.from}
+            selected={internalRange}
+            onSelect={setInternalRange}
+            numberOfMonths={2}
+          />
+          <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border">
+            <Button
+              onClick={() => {
+                onRangeChange?.(internalRange);
+                setOpen(false);
+              }}
+              className="flex-1"
+              size="sm"
+              disabled={!internalRange?.from}
+            >
+              Apply
+            </Button>
+            <Button
+              onClick={() => {
+                setInternalRange(undefined);
+                onRangeChange?.(undefined);
+              }}
+              variant="outline"
+              size="sm"
+              className="gap-1"
+            >
+              <X className="size-3" />
+              Clear
+            </Button>
+          </div>
         </PopoverContent>
       </Popover>
     );
@@ -172,6 +254,7 @@ export function DatePicker({
             !date && "text-muted-foreground",
             className,
           )}
+          data-tour={tourId}
         >
           <CalendarIcon className="size-3.5 shrink-0" />
           <span className="truncate">
@@ -184,7 +267,7 @@ export function DatePicker({
           mode="single"
           selected={date}
           onSelect={(d: Date | undefined) => {
-            onChange(d);
+            onChange?.(d);
             if (d) setOpen(false);
           }}
           initialFocus

@@ -1,22 +1,19 @@
-import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { motion, Variants } from "framer-motion";
 import {
   getWalletsListFn,
   getTransactionsFn,
-  getExpensesFn,
 } from "@/server-functions/finance-fn";
-import { listExpenseCategoriesFn } from "@/server-functions/finance/expense-categories-fn";
 import {
+  getExpenseListQueryOptions,
   useCreateWallet,
   useDepositToWallet,
-  useCreateExpense,
 } from "@/hooks/finance/use-finance";
 import { GenericEmpty } from "@/components/custom/empty";
 import { Button } from "@/components/ui/button";
 import { FinanceEmptyIllustration } from "@/components/illustrations/FinanceEmptyIllustration";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import {
@@ -39,12 +36,12 @@ import {
   CheckCircle2Icon,
   Loader2,
   Building2,
-  SparklesIcon,
   ClockIcon,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ExpenseRecordSheet } from "./expense-record-sheet";
 
 // ── Animation Variants ─────────────────────────────────────────────────────
 
@@ -82,8 +79,7 @@ export const FinanceContainer = () => {
     });
 
   const { data: expenses, isFetching: isExpensesFetching } = useSuspenseQuery({
-    queryKey: ["expenses", { page: 1, limit: 20, dateFrom, dateTo }],
-    queryFn: () => getExpensesFn({ data: { dateFrom, dateTo } }),
+    ...getExpenseListQueryOptions({ page: 1, limit: 20, dateFrom, dateTo }),
   });
 
   const [isCreateWalletOpen, setIsCreateWalletOpen] = useState(false);
@@ -219,7 +215,7 @@ export const FinanceContainer = () => {
       {/* ── Recent Transactions ───────────────────────────────────────── */}
       <motion.div variants={itemVariants}>
         <div className="flex items-center justify-between mb-4 border-b border-border pb-2">
-          <h2 className="text-sm font-bold tracking-widest uppercase flex items-center gap-2 text-muted-foreground">
+          <h2 className="text-sm font-bold  uppercase flex items-center gap-2 text-muted-foreground">
             <ClockIcon className="size-4" />
             Recent Activity
             {isTransactionsFetching && (
@@ -228,7 +224,7 @@ export const FinanceContainer = () => {
           </h2>
           <Badge
             variant="outline"
-            className="font-bold text-[10px] rounded-none border-border tracking-widest uppercase"
+            className="font-bold text-[10px] rounded-none border-border  uppercase"
           >
             {isTransactionsFetching
               ? "—"
@@ -439,7 +435,7 @@ function WalletCard({
             </h3>
             <Badge
               variant="outline"
-              className="text-[9px] font-bold uppercase tracking-widest mt-1 px-1.5 rounded-none border-border"
+              className="text-[9px] font-bold uppercase  mt-1 px-1.5 rounded-none border-border"
             >
               {isBank ? "Bank Account" : "Cash Box"}
             </Badge>
@@ -453,7 +449,7 @@ function WalletCard({
       </div>
 
       <div className="relative z-10 mb-6">
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase ">
           Current Balance
         </p>
         <p
@@ -525,7 +521,7 @@ function TransactionRow({ txn }: { txn: any }) {
             {txn.source}
           </p>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest flex items-center gap-1">
+            <span className="text-[10px] text-muted-foreground font-bold uppercase  flex items-center gap-1">
               {txn.wallet?.type === "bank" ? (
                 <Building2 className="size-3" />
               ) : (
@@ -534,7 +530,7 @@ function TransactionRow({ txn }: { txn: any }) {
               {txn.wallet?.name}
             </span>
             <span className="text-muted-foreground/30">•</span>
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+            <span className="text-[10px] text-muted-foreground font-bold uppercase ">
               {format(new Date(txn.createdAt), "dd MMM yyyy")}
             </span>
           </div>
@@ -600,7 +596,7 @@ function CreateWalletSheet({
       <div className="space-y-6 py-4">
         {/* Account Type */}
         <div className="space-y-3">
-          <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+          <Label className="text-[11px] font-bold uppercase  text-muted-foreground">
             Account Type
           </Label>
           <div className="grid grid-cols-2 gap-3">
@@ -622,7 +618,7 @@ function CreateWalletSheet({
               />
               <span
                 className={cn(
-                  "text-xs font-bold uppercase tracking-widest",
+                  "text-xs font-bold uppercase ",
                   type === "cash" ? "text-violet-600" : "text-muted-foreground",
                 )}
               >
@@ -647,7 +643,7 @@ function CreateWalletSheet({
               />
               <span
                 className={cn(
-                  "text-xs font-bold uppercase tracking-widest",
+                  "text-xs font-bold uppercase ",
                   type === "bank" ? "text-blue-600" : "text-muted-foreground",
                 )}
               >
@@ -658,7 +654,7 @@ function CreateWalletSheet({
         </div>
 
         <div className="space-y-3">
-          <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+          <Label className="text-[11px] font-bold uppercase  text-muted-foreground">
             Account Name
           </Label>
           <Input
@@ -674,7 +670,7 @@ function CreateWalletSheet({
         </div>
 
         <div className="space-y-3">
-          <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+          <Label className="text-[11px] font-bold uppercase  text-muted-foreground">
             Opening Balance (PKR)
           </Label>
           <Input
@@ -766,7 +762,7 @@ function DepositSheet({
     >
       <div className="space-y-6 py-4">
         <div className="space-y-3">
-          <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+          <Label className="text-[11px] font-bold uppercase  text-muted-foreground">
             Deposit Into
           </Label>
           <Select value={effectiveWalletId} onValueChange={setWalletId}>
@@ -790,7 +786,7 @@ function DepositSheet({
           </Select>
           {selectedWallet && (
             <div className="flex items-center justify-between p-3 bg-muted/20 border border-border">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+              <span className="text-[11px] font-bold uppercase  text-muted-foreground">
                 Current Balance
               </span>
               <span className="text-sm font-black tabular-nums">
@@ -801,7 +797,7 @@ function DepositSheet({
         </div>
 
         <div className="space-y-3">
-          <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+          <Label className="text-[11px] font-bold uppercase  text-muted-foreground">
             Amount (PKR)
           </Label>
           <Input
@@ -813,7 +809,7 @@ function DepositSheet({
             className="h-11 text-lg font-mono rounded-none shadow-none border-border focus-visible:ring-1 focus-visible:ring-primary"
           />
           {selectedWallet && parseFloat(amount) > 0 && (
-            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest flex items-center gap-1">
+            <p className="text-[10px] text-emerald-600 font-bold uppercase  flex items-center gap-1">
               <CheckCircle2Icon className="size-3" />
               New balance: ₨{" "}
               {(
@@ -824,7 +820,7 @@ function DepositSheet({
         </div>
 
         <div className="space-y-3">
-          <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+          <Label className="text-[11px] font-bold uppercase  text-muted-foreground">
             Description (Optional)
           </Label>
           <Input
@@ -867,211 +863,15 @@ function ExpenseSheet({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  wallets: any[];
+  wallets: Awaited<ReturnType<typeof getWalletsListFn>>;
   preselectedWalletId: string | null;
 }) {
-  const [walletId, setWalletId] = useState(preselectedWalletId || "");
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("");
-  const [description, setDescription] = useState("");
-  const mutation = useCreateExpense();
-
-  const effectiveWalletId = walletId || preselectedWalletId || "";
-  const selectedWallet = wallets.find((w) => w.id === effectiveWalletId);
-  const currentBalance = parseFloat(selectedWallet?.balance || "0");
-  const parsedAmount = parseFloat(amount) || 0;
-  const insufficientFunds = parsedAmount > 0 && parsedAmount > currentBalance;
-
-  const { data: categories = [], isLoading: isLoadingCategories } = useQuery({
-    queryKey: ["expense-categories", "active"],
-    queryFn: () => listExpenseCategoriesFn(),
-  });
-
-  const handleSubmit = () => {
-    if (!effectiveWalletId)
-      return toast.error("Please select a payment source");
-    if (!category) return toast.error("Please select a category");
-    if (!parsedAmount || parsedAmount <= 0)
-      return toast.error("Please enter a valid amount");
-    if (!description.trim()) return toast.error("Please provide a description");
-    if (insufficientFunds)
-      return toast.error(
-        `Insufficient balance in "${selectedWallet?.name}". Available: ₨ ${currentBalance.toLocaleString()}`,
-      );
-
-    mutation.mutate(
-      {
-        data: {
-          walletId: effectiveWalletId,
-          amount: parsedAmount,
-          category,
-          description: description.trim(),
-        },
-      },
-      {
-        onSuccess: () => {
-          onOpenChange(false);
-          setAmount("");
-          setCategory("");
-          setDescription("");
-          setWalletId("");
-        },
-      },
-    );
-  };
-
   return (
-    <ResponsiveSheet
+    <ExpenseRecordSheet
       open={open}
       onOpenChange={onOpenChange}
-      title="Record Expense"
-      description="Record an expense and debit from an account."
-      icon={ReceiptIcon}
-    >
-      <div className="space-y-6 py-4">
-        <div className="space-y-3">
-          <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-            Pay From
-          </Label>
-          <Select value={effectiveWalletId} onValueChange={setWalletId}>
-            <SelectTrigger className="h-11 rounded-none shadow-none border-border focus:ring-1 focus:ring-primary">
-              <SelectValue placeholder="Select payment source..." />
-            </SelectTrigger>
-            <SelectContent className="rounded-none shadow-none border-border">
-              {wallets.map((w) => (
-                <SelectItem key={w.id} value={w.id} className="rounded-none">
-                  <div className="flex items-center gap-2">
-                    {w.type === "bank" ? (
-                      <Building2 className="size-3.5 text-blue-500" />
-                    ) : (
-                      <BanknoteIcon className="size-3.5 text-violet-500" />
-                    )}
-                    <span className="font-bold">{w.name}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {selectedWallet && (
-            <div
-              className={cn(
-                "flex items-center justify-between p-3 border",
-                insufficientFunds
-                  ? "bg-rose-500/10 border-rose-500/20"
-                  : "bg-muted/20 border-border",
-              )}
-            >
-              <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                Available Balance
-              </span>
-              <span
-                className={cn(
-                  "text-sm font-black tabular-nums",
-                  insufficientFunds && "text-rose-500",
-                )}
-              >
-                ₨ {currentBalance.toLocaleString()}
-              </span>
-            </div>
-          )}
-          {insufficientFunds && (
-            <div className="flex items-center gap-2 text-rose-500 text-[10px] font-bold uppercase tracking-widest p-2 bg-rose-500/10 border border-rose-500/20">
-              <AlertTriangleIcon className="size-3.5 shrink-0" /> Insufficient
-              funds! You need ₨{" "}
-              {(parsedAmount - currentBalance).toLocaleString()} more.
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-3">
-          <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-            Category
-          </Label>
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="h-11 rounded-none shadow-none border-border focus:ring-1 focus:ring-primary">
-              <SelectValue
-                placeholder={
-                  isLoadingCategories
-                    ? "Loading categories..."
-                    : "Select expense category..."
-                }
-              />
-            </SelectTrigger>
-            <SelectContent className="rounded-none shadow-none border-border">
-              {categories.map((cat: any) => (
-                <SelectItem
-                  key={cat.id}
-                  value={cat.name}
-                  className="rounded-none"
-                >
-                  {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-3">
-          <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-            Amount (PKR)
-          </Label>
-          <Input
-            type="number"
-            min="1"
-            placeholder="Enter amount..."
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="h-11 text-lg font-mono rounded-none shadow-none border-border focus-visible:ring-1 focus-visible:ring-primary"
-          />
-          {selectedWallet && parsedAmount > 0 && !insufficientFunds && (
-            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest flex items-center gap-1">
-              <CheckCircle2Icon className="size-3" />
-              After expense: ₨{" "}
-              {(currentBalance - parsedAmount).toLocaleString()} remaining
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-3">
-          <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-            Description
-            <Badge
-              variant="destructive"
-              className="rounded-none text-[9px] px-1 py-0 shadow-none"
-            >
-              Required
-            </Badge>
-          </Label>
-          <Textarea
-            placeholder="e.g., February 2026 electricity bill from LESCO..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="min-h-[80px] rounded-none shadow-none border-border focus-visible:ring-1 focus-visible:ring-primary"
-          />
-        </div>
-
-        <div className="flex justify-end gap-3 pt-6 border-t border-border">
-          <Button
-            variant="ghost"
-            onClick={() => onOpenChange(false)}
-            className="rounded-none shadow-none border-border"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={mutation.isPending || insufficientFunds}
-            variant="destructive"
-            className="rounded-none shadow-none"
-          >
-            {mutation.isPending && (
-              <Loader2 className="size-4 mr-2 animate-spin" />
-            )}
-            Record Expense
-          </Button>
-        </div>
-      </div>
-    </ResponsiveSheet>
+      wallets={wallets}
+      preselectedWalletId={preselectedWalletId}
+    />
   );
 }

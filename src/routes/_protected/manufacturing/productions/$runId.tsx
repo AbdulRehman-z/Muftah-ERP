@@ -88,7 +88,7 @@ function ProductionRunDetailsPage() {
         return (
           <Badge
             variant="secondary"
-            className="px-3 py-1 font-bold uppercase tracking-widest text-[10px]"
+            className="px-3 py-1 font-bold uppercase  text-[10px]"
           >
             Scheduled
           </Badge>
@@ -97,7 +97,7 @@ function ProductionRunDetailsPage() {
         return (
           <Badge
             variant="default"
-            className="bg-blue-600 px-3 py-1 font-bold uppercase tracking-widest text-[10px]"
+            className="bg-blue-600 px-3 py-1 font-bold uppercase  text-[10px]"
           >
             In Progress
           </Badge>
@@ -106,7 +106,7 @@ function ProductionRunDetailsPage() {
         return (
           <Badge
             variant="default"
-            className="bg-emerald-600 px-3 py-1 font-bold uppercase tracking-widest text-[10px]"
+            className="bg-emerald-600 px-3 py-1 font-bold uppercase  text-[10px]"
           >
             Completed
           </Badge>
@@ -115,7 +115,7 @@ function ProductionRunDetailsPage() {
         return (
           <Badge
             variant="destructive"
-            className="px-3 py-1 font-bold uppercase tracking-widest text-[10px]"
+            className="px-3 py-1 font-bold uppercase  text-[10px]"
           >
             Cancelled
           </Badge>
@@ -124,7 +124,7 @@ function ProductionRunDetailsPage() {
         return (
           <Badge
             variant="outline"
-            className="px-3 py-1 font-bold uppercase tracking-widest text-[10px]"
+            className="px-3 py-1 font-bold uppercase  text-[10px]"
           >
             {status}
           </Badge>
@@ -247,7 +247,7 @@ function ProductionRunDetailsPage() {
                 <Calculator className="size-32 -mr-8 -mt-8" />
               </div>
               <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                <CardTitle className="text-xs font-black uppercase  text-primary flex items-center gap-2">
                   <Receipt className="size-4" />
                   Financials
                 </CardTitle>
@@ -309,12 +309,12 @@ function ProductionRunDetailsPage() {
             {/* Yield Stats */}
             <Card className="bg-background/50 border relative overflow-hidden">
               {(run.shortfallUnits ?? 0) > 0 && (
-                <div className="absolute top-0 right-0 py-1.5 px-3 bg-amber-500 text-white text-[9px] font-black uppercase tracking-widest rotate-0 origin-top-right">
+                <div className="absolute top-0 right-0 py-1.5 px-3 bg-amber-500 text-white text-[9px] font-black uppercase  rotate-0 origin-top-right">
                   Shortfall Detected
                 </div>
               )}
               <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <CardTitle className="text-xs font-black uppercase  text-muted-foreground flex items-center gap-2">
                   <BarChart3 className="size-4" />
                   Production Output
                 </CardTitle>
@@ -379,7 +379,7 @@ function ProductionRunDetailsPage() {
             {/* Timing */}
             <Card className="bg-background/50 border ">
               <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <CardTitle className="text-xs font-black uppercase  text-muted-foreground flex items-center gap-2">
                   <Clock className="size-4" />
                   Timeline
                 </CardTitle>
@@ -489,7 +489,7 @@ function ProductionRunDetailsPage() {
               {((run.shortfallUnits ?? 0) > 0) && (
                 <Card className="bg-red-50 border-red-200">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-xs font-black uppercase tracking-widest text-red-600 flex items-center gap-2">
+                    <CardTitle className="text-xs font-black uppercase  text-red-600 flex items-center gap-2">
                       <AlertTriangle className="size-4" />
                       Shortfall / Variance Reason
                     </CardTitle>
@@ -514,7 +514,7 @@ function ProductionRunDetailsPage() {
                 }
               >
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <CardTitle className="text-xs font-black uppercase  text-muted-foreground flex items-center gap-2">
                     <AlertCircle className="size-4" />
                     Process Notes & Observations
                   </CardTitle>
@@ -539,7 +539,7 @@ function ProductionRunDetailsPage() {
               {/* Logistics */}
               <Card>
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <CardTitle className="text-xs font-black uppercase  text-muted-foreground flex items-center gap-2">
                     <Activity className="size-4" />
                     Logistics
                   </CardTitle>

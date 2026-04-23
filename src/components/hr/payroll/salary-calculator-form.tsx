@@ -492,7 +492,7 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                         </CardContent>
                     </Card>
 
-                    <p className="text-[10px] text-center text-muted-foreground border-t pt-2 uppercase font-medium tracking-widest">
+                    <p className="text-[10px] text-center text-muted-foreground border-t pt-2 uppercase font-medium ">
                         Verified Attendance Records
                     </p>
                 </TabsContent>
@@ -854,7 +854,7 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
                     </CalcSection>
 
                     <div className="p-4 bg-primary/5 border-2 border-primary/30 rounded-xl space-y-2">
-                        <p className="text-xs font-bold uppercase tracking-widest text-primary">{calculation.totalOvertimeHours > 0 ? "Step 7" : "Step 6"}: Net Salary</p>
+                        <p className="text-xs font-bold uppercase  text-primary">{calculation.totalOvertimeHours > 0 ? "Step 7" : "Step 6"}: Net Salary</p>
                         <div className="font-mono text-xs text-muted-foreground space-y-0.5">
                             <p>Net = Gross − Flat Deductions</p>
                             <p className="font-semibold text-foreground">
@@ -870,7 +870,7 @@ export const SalaryCalculatorForm = ({ employeeId, month, onSuccess, isOpen }: S
             <div className="space-y-4 pt-4 border-t sticky bottom-0 bg-background/95 backdrop-blur-sm pb-4">
                 {/* Wallet selector */}
                 <div className="rounded-xl border bg-muted/20 p-4 space-y-3">
-                    <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                    <p className="text-[11px] font-black uppercase  text-muted-foreground">
                         Payment Account <span className="text-destructive">*</span>
                     </p>
 
@@ -1045,7 +1045,7 @@ function CalcSection({ step, title, color, children }: { step: string; title: st
     return (
         <div className="border rounded-xl overflow-hidden">
             <div className={cn("px-4 py-2.5 flex items-center gap-2 border-b", calcColorMap[color])}>
-                <span className="text-[10px] font-extrabold uppercase tracking-widest opacity-70">{step}</span>
+                <span className="text-[10px] font-extrabold uppercase  opacity-70">{step}</span>
                 <span className="text-xs font-bold">{title}</span>
             </div>
             <div className="p-4 space-y-2 bg-card">{children}</div>

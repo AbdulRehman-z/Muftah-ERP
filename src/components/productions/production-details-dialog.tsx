@@ -43,7 +43,7 @@ export const ProductionDetailsDialog = ({ open, onOpenChange, run }: Props) => {
         return (
           <Badge
             variant="secondary"
-            className="px-3 py-1 font-bold uppercase tracking-widest text-[9px]"
+            className="px-3 py-1 font-bold uppercase  text-[9px]"
           >
             Scheduled
           </Badge>
@@ -52,7 +52,7 @@ export const ProductionDetailsDialog = ({ open, onOpenChange, run }: Props) => {
         return (
           <Badge
             variant="default"
-            className="bg-blue-600 px-3 py-1 font-bold uppercase tracking-widest text-[9px]"
+            className="bg-blue-600 px-3 py-1 font-bold uppercase  text-[9px]"
           >
             In Progress
           </Badge>
@@ -61,7 +61,7 @@ export const ProductionDetailsDialog = ({ open, onOpenChange, run }: Props) => {
         return (
           <Badge
             variant="default"
-            className="bg-emerald-600 px-3 py-1 font-bold uppercase tracking-widest text-[9px]"
+            className="bg-emerald-600 px-3 py-1 font-bold uppercase  text-[9px]"
           >
             Completed
           </Badge>
@@ -70,7 +70,7 @@ export const ProductionDetailsDialog = ({ open, onOpenChange, run }: Props) => {
         return (
           <Badge
             variant="destructive"
-            className="px-3 py-1 font-bold uppercase tracking-widest text-[9px]"
+            className="px-3 py-1 font-bold uppercase  text-[9px]"
           >
             Cancelled
           </Badge>
@@ -79,7 +79,7 @@ export const ProductionDetailsDialog = ({ open, onOpenChange, run }: Props) => {
         return (
           <Badge
             variant="outline"
-            className="px-3 py-1 font-bold uppercase tracking-widest text-[9px]"
+            className="px-3 py-1 font-bold uppercase  text-[9px]"
           >
             {status}
           </Badge>
@@ -133,7 +133,7 @@ export const ProductionDetailsDialog = ({ open, onOpenChange, run }: Props) => {
                   <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-2 text-primary">
                       <Receipt className="size-4" />
-                      <span className="text-xs font-black uppercase tracking-widest">
+                      <span className="text-xs font-black uppercase ">
                         Financial Summary
                       </span>
                     </div>
@@ -189,7 +189,7 @@ export const ProductionDetailsDialog = ({ open, onOpenChange, run }: Props) => {
 
               {/* Yield Stats */}
               <div className="bg-muted/20 rounded-2xl border p-6 flex flex-col justify-between">
-                <div className="flex items-center gap-2 text-muted-foreground/60 mb-6 font-black uppercase tracking-widest text-[10px]">
+                <div className="flex items-center gap-2 text-muted-foreground/60 mb-6 font-black uppercase  text-[10px]">
                   <BarChart3 className="size-4" />
                   Output Analytics
                 </div>
@@ -344,14 +344,14 @@ export const ProductionDetailsDialog = ({ open, onOpenChange, run }: Props) => {
 
         {/* Footer Actions */}
         <div className="p-6 bg-muted/10 border-t flex justify-between items-center px-8">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase ">
             System Generated Audit Log • Titan ERP
           </p>
           <Button
             onClick={() => onOpenChange(false)}
             size="lg"
             variant="default"
-            className="px-8 font-bold text-xs uppercase tracking-widest h-11"
+            className="px-8 font-bold text-xs uppercase  h-11"
           >
             Close Audit Record
           </Button>
@@ -375,7 +375,7 @@ const LogCard = ({
       {icon}
     </div>
     <div className="space-y-0.5">
-      <p className="text-[10px] font-black uppercase text-muted-foreground/50 tracking-widest leading-none">
+      <p className="text-[10px] font-black uppercase text-muted-foreground/50  leading-none">
         {label}
       </p>
       <p className="font-bold text-sm tracking-tight text-foreground/80">

@@ -175,7 +175,7 @@ export const AllowanceCard = ({
 
       {/* ── Deduction Occasion Toggles ── */}
       <div className="space-y-1.5 pt-0.5">
-        <span className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-widest px-0.5">
+        <span className="text-[9px] font-black text-muted-foreground/50 uppercase  px-0.5">
           Deduct on
         </span>
         <div className="flex items-center gap-1.5 flex-wrap">

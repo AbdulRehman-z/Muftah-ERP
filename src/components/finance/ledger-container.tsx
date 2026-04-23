@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { motion, Variants } from "framer-motion";
 import { getWalletsListFn } from "@/server-functions/finance-fn";
 import { useTransactions } from "@/hooks/finance/use-finance";
@@ -231,7 +231,7 @@ export const LedgerContainer = () => {
                 </DialogHeader>
                 <div className="grid gap-5 py-4">
                   <div className="space-y-2">
-                    <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Account</Label>
+                    <Label className="text-[11px] font-bold uppercase  text-muted-foreground">Account</Label>
                     <Select value={tempWallet} onValueChange={setTempWallet}>
                       <SelectTrigger className="w-full h-11 text-[13px] border-border rounded-none shadow-none focus:ring-1 focus:ring-primary">
                         <SelectValue placeholder="All accounts" />
@@ -256,7 +256,7 @@ export const LedgerContainer = () => {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">From Date</Label>
+                      <Label className="text-[11px] font-bold uppercase  text-muted-foreground">From Date</Label>
                       <Input
                         type="date"
                         value={tempDateFrom}
@@ -265,7 +265,7 @@ export const LedgerContainer = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">To Date</Label>
+                      <Label className="text-[11px] font-bold uppercase  text-muted-foreground">To Date</Label>
                       <Input
                         type="date"
                         value={tempDateTo}
@@ -276,7 +276,7 @@ export const LedgerContainer = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Source</Label>
+                    <Label className="text-[11px] font-bold uppercase  text-muted-foreground">Source</Label>
                     <Select value={tempSource} onValueChange={setTempSource}>
                       <SelectTrigger className="w-full h-11 text-[13px] border-border rounded-none shadow-none focus:ring-1 focus:ring-primary">
                         <SelectValue placeholder="All sources" />
@@ -293,7 +293,7 @@ export const LedgerContainer = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Type</Label>
+                    <Label className="text-[11px] font-bold uppercase  text-muted-foreground">Type</Label>
                     <Select value={tempType} onValueChange={(v: any) => setTempType(v)}>
                       <SelectTrigger className="w-full h-11 text-[13px] border-border rounded-none shadow-none focus:ring-1 focus:ring-primary">
                         <SelectValue placeholder="All types" />
@@ -327,7 +327,7 @@ export const LedgerContainer = () => {
 
             <Badge
               variant="outline"
-              className="h-10 px-3 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap rounded-none border-border"
+              className="h-10 px-3 text-[11px] font-bold uppercase  whitespace-nowrap rounded-none border-border"
             >
               {total} total
             </Badge>
@@ -372,7 +372,7 @@ export const LedgerContainer = () => {
                       <TableCell className="py-2.5">
                         <div className="flex flex-col">
                           <span className="text-sm font-bold tabular-nums text-foreground">{format(new Date(txn.createdAt), "dd MMM yyyy")}</span>
-                          <span className="text-[10px] text-muted-foreground tabular-nums uppercase tracking-widest font-semibold">{format(new Date(txn.createdAt), "hh:mm a")}</span>
+                          <span className="text-[10px] text-muted-foreground tabular-nums uppercase  font-semibold">{format(new Date(txn.createdAt), "hh:mm a")}</span>
                         </div>
                       </TableCell>
                       <TableCell className="py-2.5">
@@ -406,7 +406,7 @@ export const LedgerContainer = () => {
         variants={itemVariants}
         className="flex flex-col sm:flex-row items-center justify-between px-1 gap-4"
       >
-        <span className="text-xs text-muted-foreground tabular-nums uppercase tracking-widest font-semibold">
+        <span className="text-xs text-muted-foreground tabular-nums uppercase font-semibold">
           Page <span className="text-foreground">{page}</span> of{" "}
           <span className="text-foreground">{pageCount}</span> · {total} total
         </span>

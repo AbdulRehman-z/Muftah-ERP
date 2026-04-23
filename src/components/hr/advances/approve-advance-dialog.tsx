@@ -92,7 +92,7 @@ export const ApproveAdvanceDialog = ({
       <div className="space-y-6 py-4">
         {/* Amount Card */}
         <div className="p-4 bg-muted/30 rounded-xl border flex items-center justify-between">
-          <span className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+          <span className="text-sm font-semibold text-muted-foreground uppercase ">
             Amount to Pay
           </span>
           <span className="text-xl font-black text-primary tabular-nums">

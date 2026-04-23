@@ -15,7 +15,7 @@ export default function NotFound() {
         <div className="mt-10">
           <a
             href="/"
-            className="text-sm font-bold uppercase tracking-widest text-gray-900 border-b-2 border-gray-900 pb-1 hover:text-gray-400 hover:border-gray-400 transition-all duration-300"
+            className="text-sm font-bold uppercase  text-gray-900 border-b-2 border-gray-900 pb-1 hover:text-gray-400 hover:border-gray-400 transition-all duration-300"
           >
             Return Home
           </a>

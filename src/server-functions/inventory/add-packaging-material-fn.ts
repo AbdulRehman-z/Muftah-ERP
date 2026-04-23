@@ -15,6 +15,57 @@ import { eq, sql } from "drizzle-orm";
 import { requireInventoryManageMiddleware } from "@/lib/middlewares";
 import { addPackagingMaterialSchema } from "@/lib/validators/validators";
 import { createId } from "@paralleldrive/cuid2";
+import { expenseCategories } from "@/db/schemas/finance-schema";
+
+type FinanceWriter = Pick<typeof db, "query" | "select" | "insert" | "update">;
+
+async function ensureSupplierPurchaseCategory(tx: FinanceWriter) {
+  const existingCategory = await tx.query.expenseCategories.findFirst({
+    where: eq(expenseCategories.slug, "supplier-purchase"),
+    columns: {
+      id: true,
+      name: true,
+      isActive: true,
+      isArchived: true,
+    },
+  });
+
+  if (existingCategory) {
+    if (!existingCategory.isActive || existingCategory.isArchived) {
+      await tx
+        .update(expenseCategories)
+        .set({
+          name: "Supplier Purchase",
+          isActive: true,
+          isArchived: false,
+          updatedAt: new Date(),
+        })
+        .where(eq(expenseCategories.id, existingCategory.id));
+    }
+
+    return {
+      id: existingCategory.id,
+      name: "Supplier Purchase",
+    };
+  }
+
+  const [createdCategory] = await tx
+    .insert(expenseCategories)
+    .values({
+      id: createId(),
+      name: "Supplier Purchase",
+      slug: "supplier-purchase",
+      sortOrder: 500,
+      isActive: true,
+      isArchived: false,
+    })
+    .returning({
+      id: expenseCategories.id,
+      name: expenseCategories.name,
+    });
+
+  return createdCategory;
+}
 
 export const addPackagingMaterialFn = createServerFn()
   .middleware([requireInventoryManageMiddleware])
@@ -230,11 +281,13 @@ export const addPackagingMaterialFn = createServerFn()
             .where(eq(wallets.id, walletId));
 
           // Insert expense
+          const expenseCategory = await ensureSupplierPurchaseCategory(tx);
           const expenseId = createId();
           await tx.insert(expenses).values({
             id: expenseId,
             description: `Supplier Purchase: ${data.name} from ${supplierName}`,
-            category: "Supplier Purchase",
+            category: expenseCategory.name,
+            categoryId: expenseCategory.id,
             amount: expenseAmount.toString(),
             walletId: walletId,
             performedById: context.session.user.id,

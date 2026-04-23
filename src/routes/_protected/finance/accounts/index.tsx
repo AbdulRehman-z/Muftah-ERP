@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { GenericLoader } from "@/components/custom/generic-loader";
 import { FinanceContainer } from "@/components/finance/finance-container";
-import { getWalletsListFn, getTransactionsFn, getExpensesFn } from "@/server-functions/finance-fn";
+import { getWalletsListFn, getTransactionsFn } from "@/server-functions/finance-fn";
+import { getExpenseListQueryOptions } from "@/hooks/finance/use-finance";
 
 import { startOfMonth, endOfMonth } from "date-fns";
 
@@ -21,10 +22,15 @@ export const Route = createFileRoute("/_protected/finance/accounts/")({
       queryKey: ["transactions-recent", { limit: 20, dateFrom, dateTo }],
       queryFn: () => getTransactionsFn({ data: { limit: 20, dateFrom, dateTo } }),
     });
-    void context.queryClient.prefetchQuery({
-      queryKey: ["expenses", { page: 1, limit: 20, dateFrom, dateTo }],
-      queryFn: () => getExpensesFn({ data: { dateFrom, dateTo } }),
-    });
+    void context.queryClient.prefetchQuery(
+      getExpenseListQueryOptions({
+        page: 1,
+        limit: 60,
+        offset: 0,
+        dateFrom,
+        dateTo,
+      }),
+    );
   },
   component: RouteComponent,
 });

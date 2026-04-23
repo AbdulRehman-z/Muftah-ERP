@@ -362,7 +362,7 @@ function ProductionRunManagePage() {
         </div>
         <Badge
           variant="outline"
-          className={`px-3 py-1 text-sm uppercase tracking-widest font-bold ${isCancelled
+          className={`px-3 py-1 text-sm uppercase  font-bold ${isCancelled
             ? "bg-red-50 text-red-700 border-red-200"
             : "bg-blue-50 text-blue-700 border-blue-200"
             }`}
@@ -581,7 +581,7 @@ function ProductionRunManagePage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                <h4 className="text-[11px] font-bold uppercase  text-muted-foreground mb-3 flex items-center gap-2">
                   <FlaskConical className="size-3.5" /> Chemical Formulation
                 </h4>
                 <ul className="space-y-2">
@@ -605,7 +605,7 @@ function ProductionRunManagePage() {
               </div>
 
               <div className="pt-2">
-                <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                <h4 className="text-[11px] font-bold uppercase  text-muted-foreground mb-3 flex items-center gap-2">
                   <Box className="size-3.5" /> Packaging Bill of Materials
                 </h4>
                 <ul className="space-y-3">
@@ -687,7 +687,7 @@ function CompletedRunSuccessView({
         <div className="flex items-center justify-center gap-2 mt-2">
           <Badge
             variant="outline"
-            className="text-sm uppercase tracking-widest bg-emerald-50 text-emerald-700 border-emerald-200 px-3 py-1"
+            className="text-sm uppercase  bg-emerald-50 text-emerald-700 border-emerald-200 px-3 py-1"
           >
             Batch #{run.batchId}
           </Badge>

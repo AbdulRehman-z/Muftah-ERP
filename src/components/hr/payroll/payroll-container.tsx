@@ -549,7 +549,7 @@ export function PayrollContainer() {
                   {headerGroup.headers.map((header) => (
                     <TableHead
                       key={header.id}
-                      className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 py-4 h-12 first:pl-6 last:pr-6"
+                      className="text-[10px] font-black uppercase  text-muted-foreground/80 py-4 h-12 first:pl-6 last:pr-6"
                     >
                       {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
@@ -594,7 +594,7 @@ export function PayrollContainer() {
               variant="outline" size="sm"
               onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
               disabled={pageIndex === 0}
-              className="h-8 px-4 rounded-lg text-[10px] uppercase font-black tracking-widest"
+              className="h-8 px-4 rounded-lg text-[10px] uppercase font-black "
             >
               Previous
             </Button>
@@ -602,7 +602,7 @@ export function PayrollContainer() {
               variant="outline" size="sm"
               onClick={() => setPageIndex((p) => p + 1)}
               disabled={pageIndex >= totalPages - 1}
-              className="h-8 px-4 rounded-lg text-[10px] uppercase font-black tracking-widest"
+              className="h-8 px-4 rounded-lg text-[10px] uppercase font-black "
             >
               Next
             </Button>
@@ -643,7 +643,7 @@ function KPICard({ title, value, subtext, icon: Icon, color = "blue", progress }
           <Icon className={cn("size-4", c.icon)} />
         </div>
       </div>
-      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{title}</p>
+      <p className="text-[10px] font-bold text-muted-foreground uppercase  mb-1">{title}</p>
       <p className={cn("text-xl font-black tracking-tight leading-tight mb-1", c.value)}>{value}</p>
       <p className="text-[10px] font-medium text-muted-foreground/70">{subtext}</p>
       {progress !== undefined && (
@@ -720,7 +720,7 @@ function PayrollCycleBanner({ cycle, inGrace }: { cycle: any, inGrace: boolean }
         <div className="space-y-4 flex-1 w-full relative z-10">
           <div className="flex items-center gap-3">
             <div className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-black uppercase tracking-widest ",
+              "flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-black uppercase  ",
               inGrace
                 ? "bg-amber-100 border-amber-300 text-amber-800 dark:bg-amber-900/60 dark:border-amber-700 dark:text-amber-300"
                 : "bg-indigo-100 border-indigo-300 text-indigo-800 dark:bg-indigo-900/60 dark:border-indigo-700 dark:text-indigo-300"
@@ -748,13 +748,13 @@ function PayrollCycleBanner({ cycle, inGrace }: { cycle: any, inGrace: boolean }
           <div className="shrink-0 w-full md:w-[280px] bg-background/60 p-4 rounded-xl border  backdrop-blur-md relative z-10">
             <div className="flex justify-between items-end mb-3">
               <div>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Cycle Progress</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase  mb-0.5">Cycle Progress</p>
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl font-black leading-none text-indigo-600 dark:text-indigo-400">{Math.round(percent)}%</span>
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5 block">Time Left</span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase  mb-0.5 block">Time Left</span>
                 <span className="text-sm font-bold">{remaining} day{remaining !== 1 ? 's' : ''}</span>
               </div>
             </div>

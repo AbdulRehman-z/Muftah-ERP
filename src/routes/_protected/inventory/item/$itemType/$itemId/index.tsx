@@ -273,14 +273,14 @@ function ItemDetailPage() {
             <div className="flex items-center gap-2">
               <Badge
                 variant="outline"
-                className="bg-primary/10 text-primary border-primary/20 uppercase text-[10px] font-bold tracking-widest"
+                className="bg-primary/10 text-primary border-primary/20 uppercase text-[10px] font-bold "
               >
                 {itemType.replace("_", " ")} Details
               </Badge>
               {isLow && (
                 <Badge
                   variant="destructive"
-                  className="animate-pulse text-[10px] font-bold uppercase tracking-widest"
+                  className="animate-pulse text-[10px] font-bold uppercase "
                 >
                   Low Stock Warning
                 </Badge>
@@ -315,7 +315,7 @@ function ItemDetailPage() {
           {/* Current Stock */}
           <Card className="bg-background shadow-xs min-h-[110px] flex flex-col">
             <CardContent className="p-4 flex flex-col justify-between h-full space-y-3">
-              <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+              <p className="text-[10px] font-black uppercase text-muted-foreground ">
                 Current Stock
               </p>
               <div className="flex flex-col gap-1">
@@ -336,7 +336,7 @@ function ItemDetailPage() {
           {/* Cost per unit */}
           <Card className="bg-background shadow-xs min-h-[110px] flex flex-col">
             <CardContent className="p-4 flex flex-col justify-between h-full space-y-3">
-              <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+              <p className="text-[10px] font-black uppercase text-muted-foreground ">
                 Value / Unit
               </p>
               <div className="flex flex-col gap-1">
@@ -345,7 +345,7 @@ function ItemDetailPage() {
                     ? parseFloat(String(costPerUnit)).toFixed(2)
                     : "—"}
                 </span>
-                <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-md border border-primary/20 uppercase tracking-widest w-fit">
+                <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-md border border-primary/20 uppercase  w-fit">
                   PKR
                 </span>
               </div>
@@ -355,7 +355,7 @@ function ItemDetailPage() {
           {/* Threshold / Warehouse */}
           <Card className="bg-background shadow-xs min-h-[110px] flex flex-col">
             <CardContent className="p-4 flex flex-col justify-between h-full space-y-3">
-              <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+              <p className="text-[10px] font-black uppercase text-muted-foreground ">
                 {isFinished ? "Loose Units" : "Threshold"}
               </p>
               <div className="flex flex-col gap-1">
@@ -384,7 +384,7 @@ function ItemDetailPage() {
         {/* ── Warehouse breakdown ─────────────────────────────────────── */}
         {warehouses.length > 1 && (
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
+            <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase ">
               <Warehouse className="size-3.5" />
               <span>Stock by Warehouse</span>
             </div>
@@ -394,7 +394,7 @@ function ItemDetailPage() {
                   key={w.warehouseId}
                   className="p-4 rounded-xl border bg-muted/10 space-y-1"
                 >
-                  <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                  <p className="text-[10px] font-black uppercase text-muted-foreground ">
                     {w.warehouseName}
                   </p>
                   {isFinished ? (
@@ -414,7 +414,7 @@ function ItemDetailPage() {
 
         {/* ── Transfer history table ──────────────────────────────────── */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
+          <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase ">
             <Truck className="size-3.5" />
             <span>Transfer History</span>
             {transferHistory && (
@@ -437,7 +437,7 @@ function ItemDetailPage() {
                 <p className="text-sm font-medium text-muted-foreground">
                   No transfer history found
                 </p>
-                <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest">
+                <p className="text-[10px] text-muted-foreground/60 uppercase ">
                   Stock has not been moved between warehouses yet.
                 </p>
               </div>

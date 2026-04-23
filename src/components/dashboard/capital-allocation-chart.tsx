@@ -55,7 +55,7 @@ export function CapitalAllocationChart({
             <h3 className="text-sm font-black uppercase tracking-tighter text-foreground leading-none">
               Capital Vector
             </h3>
-            <p className="text-[10px] font-bold text-muted-foreground mt-1.5 font-mono uppercase tracking-widest">
+            <p className="text-[10px] font-bold text-muted-foreground mt-1.5 font-mono uppercase ">
               Asset_Allocation_Probe
             </p>
           </div>
@@ -123,7 +123,7 @@ export function CapitalAllocationChart({
 
           {/* ── Central Reticle ── */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground font-mono opacity-60">
+            <span className="text-[9px] font-bold uppercase  text-muted-foreground font-mono opacity-60">
               Total_Asset_Value
             </span>
             <span className="text-xl font-black tabular-nums mt-0.5 text-foreground">

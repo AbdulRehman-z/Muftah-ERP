@@ -173,13 +173,13 @@ export const AttendanceContainer = () => {
                 {isTodaySelected && (
                   <Badge
                     variant="outline"
-                    className="text-[9px] font-bold uppercase tracking-widest rounded-none border-border px-1.5 py-0"
+                    className="text-[9px] font-bold uppercase  rounded-none border-border px-1.5 py-0"
                   >
                     Live
                   </Badge>
                 )}
               </div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
+              <p className="text-xs font-bold text-muted-foreground uppercase  mt-0.5">
                 {format(parsedDate, "dd MMM yyyy")}
               </p>
             </div>
@@ -201,7 +201,7 @@ export const AttendanceContainer = () => {
                 <PopoverTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="h-9 px-4 rounded-none text-xs font-bold uppercase tracking-widest gap-2 hover:bg-muted"
+                    className="h-9 px-4 rounded-none text-xs font-bold uppercase  gap-2 hover:bg-muted"
                   >
                     <CalendarDays className="size-3.5 text-muted-foreground" />
                     {format(parsedDate, "dd MMM yyyy")}
@@ -268,12 +268,12 @@ export const AttendanceContainer = () => {
         {/* Sharp Attendance Rate Bar */}
         <div className="relative z-10 p-5 bg-muted/10">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            <span className="text-[10px] font-bold uppercase  text-muted-foreground">
               Fleet Attendance Rate
             </span>
             <div className="flex items-center gap-4">
               {undertimeLabel && stats.undertimeCount > 0 && (
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-500 border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/20 px-2 py-0.5">
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase  text-rose-600 dark:text-rose-500 border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/20 px-2 py-0.5">
                   <TimerOff className="size-3" />−{undertimeLabel} (
                   {stats.undertimeCount} emp)
                 </span>
@@ -419,7 +419,7 @@ function SharpKPICard({
       />
 
       <div className="relative z-10 flex items-start justify-between mb-8">
-        <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+        <p className="text-[10px] font-bold  text-muted-foreground uppercase">
           {title}
         </p>
         <div className={cn("p-1.5 rounded-none", styles.iconBg)}>
@@ -431,7 +431,7 @@ function SharpKPICard({
         <h3 className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
           {value}
         </h3>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+        <p className="text-[10px] font-bold uppercase  text-muted-foreground/70">
           {subtext}
         </p>
       </div>

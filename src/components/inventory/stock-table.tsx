@@ -145,7 +145,7 @@ export const StockTable = ({
               onClick={() =>
                 column.toggleSorting(column.getIsSorted() === "asc")
               }
-              className="-ml-4 h-8 text-[10px] font-bold uppercase tracking-widest hover:bg-transparent"
+              className="-ml-4 h-8 text-[10px] font-bold uppercase  hover:bg-transparent"
             >
               Material Name
               <ArrowUpDown className="ml-2 h-3 w-3" />
@@ -174,7 +174,7 @@ export const StockTable = ({
               onClick={() =>
                 column.toggleSorting(column.getIsSorted() === "asc")
               }
-              className="-ml-4 h-8 text-[10px] font-bold uppercase tracking-widest hover:bg-transparent"
+              className="-ml-4 h-8 text-[10px] font-bold uppercase  hover:bg-transparent"
             >
               Current Stock
               <ArrowUpDown className="ml-2 h-3 w-3" />
@@ -263,7 +263,7 @@ export const StockTable = ({
           ) : (
             <Badge
               variant="outline"
-              className="h-5 text-[10px] uppercase font-bold tracking-widest bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-50"
+              className="h-5 text-[10px] uppercase font-bold  bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-50"
             >
               Healthy
             </Badge>

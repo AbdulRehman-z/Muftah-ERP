@@ -48,6 +48,7 @@ import { Route as ProtectedHrOrderBookerDetailsEmployeeIdRouteImport } from './r
 import { Route as ProtectedHrEmployeesEmployeeIdRouteImport } from './routes/_protected/hr/employees/$employeeId'
 import { Route as ProtectedHrAttendanceEmployeeIdRouteImport } from './routes/_protected/hr/attendance/$employeeId'
 import { Route as ProtectedHrPayrollEmployeeIndexRouteImport } from './routes/_protected/hr/payroll/employee/index'
+import { Route as ProtectedFinanceExpensesSettingsIndexRouteImport } from './routes/_protected/finance/expenses/settings/index'
 import { Route as ProtectedHrPayrollEmployeeEmployeeIdRouteImport } from './routes/_protected/hr/payroll/employee/$employeeId'
 import { Route as ProtectedInventoryItemItemTypeItemIdIndexRouteImport } from './routes/_protected/inventory/item/$itemType/$itemId/index'
 
@@ -268,6 +269,12 @@ const ProtectedHrPayrollEmployeeIndexRoute =
     path: '/hr/payroll/employee/',
     getParentRoute: () => ProtectedRouteRoute,
   } as any)
+const ProtectedFinanceExpensesSettingsIndexRoute =
+  ProtectedFinanceExpensesSettingsIndexRouteImport.update({
+    id: '/finance/expenses/settings/',
+    path: '/finance/expenses/settings/',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
 const ProtectedHrPayrollEmployeeEmployeeIdRoute =
   ProtectedHrPayrollEmployeeEmployeeIdRouteImport.update({
     id: '/hr/payroll/employee/$employeeId',
@@ -319,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/sales/customers/': typeof ProtectedSalesCustomersIndexRoute
   '/sales/new-invoice/': typeof ProtectedSalesNewInvoiceIndexRoute
   '/hr/payroll/employee/$employeeId': typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
+  '/finance/expenses/settings/': typeof ProtectedFinanceExpensesSettingsIndexRoute
   '/hr/payroll/employee/': typeof ProtectedHrPayrollEmployeeIndexRoute
   '/inventory/item/$itemType/$itemId/': typeof ProtectedInventoryItemItemTypeItemIdIndexRoute
 }
@@ -360,6 +368,7 @@ export interface FileRoutesByTo {
   '/sales/customers': typeof ProtectedSalesCustomersIndexRoute
   '/sales/new-invoice': typeof ProtectedSalesNewInvoiceIndexRoute
   '/hr/payroll/employee/$employeeId': typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
+  '/finance/expenses/settings': typeof ProtectedFinanceExpensesSettingsIndexRoute
   '/hr/payroll/employee': typeof ProtectedHrPayrollEmployeeIndexRoute
   '/inventory/item/$itemType/$itemId': typeof ProtectedInventoryItemItemTypeItemIdIndexRoute
 }
@@ -404,6 +413,7 @@ export interface FileRoutesById {
   '/_protected/sales/customers/': typeof ProtectedSalesCustomersIndexRoute
   '/_protected/sales/new-invoice/': typeof ProtectedSalesNewInvoiceIndexRoute
   '/_protected/hr/payroll/employee/$employeeId': typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
+  '/_protected/finance/expenses/settings/': typeof ProtectedFinanceExpensesSettingsIndexRoute
   '/_protected/hr/payroll/employee/': typeof ProtectedHrPayrollEmployeeIndexRoute
   '/_protected/inventory/item/$itemType/$itemId/': typeof ProtectedInventoryItemItemTypeItemIdIndexRoute
 }
@@ -447,6 +457,7 @@ export interface FileRouteTypes {
     | '/sales/customers/'
     | '/sales/new-invoice/'
     | '/hr/payroll/employee/$employeeId'
+    | '/finance/expenses/settings/'
     | '/hr/payroll/employee/'
     | '/inventory/item/$itemType/$itemId/'
   fileRoutesByTo: FileRoutesByTo
@@ -488,6 +499,7 @@ export interface FileRouteTypes {
     | '/sales/customers'
     | '/sales/new-invoice'
     | '/hr/payroll/employee/$employeeId'
+    | '/finance/expenses/settings'
     | '/hr/payroll/employee'
     | '/inventory/item/$itemType/$itemId'
   id:
@@ -531,6 +543,7 @@ export interface FileRouteTypes {
     | '/_protected/sales/customers/'
     | '/_protected/sales/new-invoice/'
     | '/_protected/hr/payroll/employee/$employeeId'
+    | '/_protected/finance/expenses/settings/'
     | '/_protected/hr/payroll/employee/'
     | '/_protected/inventory/item/$itemType/$itemId/'
   fileRoutesById: FileRoutesById
@@ -820,6 +833,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedHrPayrollEmployeeIndexRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
+    '/_protected/finance/expenses/settings/': {
+      id: '/_protected/finance/expenses/settings/'
+      path: '/finance/expenses/settings'
+      fullPath: '/finance/expenses/settings/'
+      preLoaderRoute: typeof ProtectedFinanceExpensesSettingsIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
     '/_protected/hr/payroll/employee/$employeeId': {
       id: '/_protected/hr/payroll/employee/$employeeId'
       path: '/hr/payroll/employee/$employeeId'
@@ -885,6 +905,7 @@ interface ProtectedRouteRouteChildren {
   ProtectedSalesCustomersIndexRoute: typeof ProtectedSalesCustomersIndexRoute
   ProtectedSalesNewInvoiceIndexRoute: typeof ProtectedSalesNewInvoiceIndexRoute
   ProtectedHrPayrollEmployeeEmployeeIdRoute: typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
+  ProtectedFinanceExpensesSettingsIndexRoute: typeof ProtectedFinanceExpensesSettingsIndexRoute
   ProtectedHrPayrollEmployeeIndexRoute: typeof ProtectedHrPayrollEmployeeIndexRoute
   ProtectedInventoryItemItemTypeItemIdIndexRoute: typeof ProtectedInventoryItemItemTypeItemIdIndexRoute
 }
@@ -926,6 +947,8 @@ const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
   ProtectedSalesNewInvoiceIndexRoute: ProtectedSalesNewInvoiceIndexRoute,
   ProtectedHrPayrollEmployeeEmployeeIdRoute:
     ProtectedHrPayrollEmployeeEmployeeIdRoute,
+  ProtectedFinanceExpensesSettingsIndexRoute:
+    ProtectedFinanceExpensesSettingsIndexRoute,
   ProtectedHrPayrollEmployeeIndexRoute: ProtectedHrPayrollEmployeeIndexRoute,
   ProtectedInventoryItemItemTypeItemIdIndexRoute:
     ProtectedInventoryItemItemTypeItemIdIndexRoute,

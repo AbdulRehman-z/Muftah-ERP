@@ -57,7 +57,7 @@ export const ProductsTable = ({ products }: ProductsTableProps) => {
               onClick={() =>
                 column.toggleSorting(column.getIsSorted() === "asc")
               }
-              className="-ml-4 h-8 text-[10px] font-bold uppercase tracking-widest hover:bg-transparent"
+              className="-ml-4 h-8 text-[10px] font-bold uppercase  hover:bg-transparent"
             >
               Product Name
               <ArrowUpDown className="ml-2 h-3 w-3" />

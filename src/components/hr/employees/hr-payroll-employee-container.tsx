@@ -336,7 +336,7 @@ export function EmployeePayrollHistoryContainer({ employeeId }: EmployeePayrollH
                         disabled={history.length === 0}
                     >
                         <Printer className="size-3.5" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">
+                        <span className="text-[10px] font-bold uppercase ">
                             History Report
                         </span>
                     </Button>
@@ -448,7 +448,7 @@ export function EmployeePayrollHistoryContainer({ employeeId }: EmployeePayrollH
                             <Clock className="size-4 text-primary" />
                         </div>
                         <div>
-                            <h3 className="text-sm font-black uppercase tracking-widest">
+                            <h3 className="text-sm font-black uppercase ">
                                 Payroll History
                             </h3>
                             <p className="text-[10px] text-muted-foreground">
@@ -462,25 +462,25 @@ export function EmployeePayrollHistoryContainer({ employeeId }: EmployeePayrollH
                 <Table>
                     <TableHeader className="bg-muted/30">
                         <TableRow>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 h-11 pl-6">
+                            <TableHead className="text-[10px] font-black uppercase  text-muted-foreground/80 h-11 pl-6">
                                 Month
                             </TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 h-11">
+                            <TableHead className="text-[10px] font-black uppercase  text-muted-foreground/80 h-11">
                                 Period
                             </TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 h-11 text-right">
+                            <TableHead className="text-[10px] font-black uppercase  text-muted-foreground/80 h-11 text-right">
                                 Attendance
                             </TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 h-11 text-right">
+                            <TableHead className="text-[10px] font-black uppercase  text-muted-foreground/80 h-11 text-right">
                                 Gross Pay
                             </TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 h-11 text-right">
+                            <TableHead className="text-[10px] font-black uppercase  text-muted-foreground/80 h-11 text-right">
                                 Deductions
                             </TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 h-11 text-right">
+                            <TableHead className="text-[10px] font-black uppercase  text-muted-foreground/80 h-11 text-right">
                                 Net Pay
                             </TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 h-11 text-center pr-6">
+                            <TableHead className="text-[10px] font-black uppercase  text-muted-foreground/80 h-11 text-center pr-6">
                                 Slip
                             </TableHead>
 
@@ -602,7 +602,7 @@ export function EmployeePayrollHistoryContainer({ employeeId }: EmployeePayrollH
                                 <History className="size-4 text-amber-600 dark:text-amber-500" />
                             </div>
                             <div>
-                                <h3 className="text-sm font-black uppercase tracking-widest text-amber-900 dark:text-amber-100">
+                                <h3 className="text-sm font-black uppercase  text-amber-900 dark:text-amber-100">
                                     Bradford Factor Audit Logs
                                 </h3>
                                 <p className="text-[10px] text-muted-foreground">
@@ -614,22 +614,22 @@ export function EmployeePayrollHistoryContainer({ employeeId }: EmployeePayrollH
                     <Table>
                         <TableHeader className="bg-muted/30">
                             <TableRow>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 h-11 pl-6">
+                                <TableHead className="text-[10px] font-black uppercase  text-muted-foreground/80 h-11 pl-6">
                                     Date
                                 </TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 h-11">
+                                <TableHead className="text-[10px] font-black uppercase  text-muted-foreground/80 h-11">
                                     Payroll Month
                                 </TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 h-11">
+                                <TableHead className="text-[10px] font-black uppercase  text-muted-foreground/80 h-11">
                                     Scores (Auto → Override)
                                 </TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 h-11">
+                                <TableHead className="text-[10px] font-black uppercase  text-muted-foreground/80 h-11">
                                     Reason
                                 </TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 h-11 text-right pr-6">
+                                <TableHead className="text-[10px] font-black uppercase  text-muted-foreground/80 h-11 text-right pr-6">
                                     Performed By
                                 </TableHead>
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 h-11 text-right pr-6">
+                                <TableHead className="text-[10px] font-black uppercase  text-muted-foreground/80 h-11 text-right pr-6">
                                     Action
                                 </TableHead>
                             </TableRow>
@@ -757,7 +757,7 @@ function KPICard({
                     </div>
                 </div>
                 <div>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1 opacity-80">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase  mb-1 opacity-80">
                         {title}
                     </p>
                     <h3 className={cn("text-2xl font-black tracking-tight", accentColor)}>

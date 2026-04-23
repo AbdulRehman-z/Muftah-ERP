@@ -489,7 +489,7 @@ function StatCard({ color, icon: Icon, label, value, prefix, suffix }: any) {
       </div>
       <p
         className={cn(
-          "text-[10px] font-bold uppercase tracking-widest mb-1",
+          "text-[10px] font-bold uppercase  mb-1",
           c.text,
         )}
       >

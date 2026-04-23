@@ -145,7 +145,7 @@ export const RecipesContainer = () => {
                 </div>
                 <Button
                   onClick={() => setIsCreating(true)}
-                  // className="h-11 rounded-xl font-black uppercase tracking-widest text-[11px] gap-2  shadow-primary/10 transition-all active:scale-95 shrink-0"
+                  // className="h-11 rounded-xl font-black uppercase  text-[11px] gap-2  shadow-primary/10 transition-all active:scale-95 shrink-0"
                 >
                   <PlusIcon className="size-4" />
                   Create Recipe
