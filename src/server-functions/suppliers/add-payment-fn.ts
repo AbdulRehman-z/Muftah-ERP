@@ -4,6 +4,40 @@ import { requireSuppliersManageMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
 import { eq, sql } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
+import { expenseCategories } from "@/db/schemas/finance-schema";
+
+type FinanceWriter = Pick<typeof db, "query" | "select" | "insert" | "update">;
+
+async function ensureSupplierPurchaseCategory(tx: FinanceWriter) {
+  const existingCategory = await tx.query.expenseCategories.findFirst({
+    where: eq(expenseCategories.slug, "supplier-purchase"),
+    columns: { id: true, name: true, isActive: true, isArchived: true },
+  });
+
+  if (existingCategory) {
+    if (!existingCategory.isActive || existingCategory.isArchived) {
+      await tx
+        .update(expenseCategories)
+        .set({ name: "Supplier Purchase", isActive: true, isArchived: false, updatedAt: new Date() })
+        .where(eq(expenseCategories.id, existingCategory.id));
+    }
+    return { id: existingCategory.id, name: "Supplier Purchase" };
+  }
+
+  const [createdCategory] = await tx
+    .insert(expenseCategories)
+    .values({
+      id: createId(),
+      name: "Supplier Purchase",
+      slug: "supplier-purchase",
+      sortOrder: 500,
+      isActive: true,
+      isArchived: false,
+    })
+    .returning({ id: expenseCategories.id, name: expenseCategories.name });
+
+  return createdCategory;
+}
 
 const addPaymentSchema = z.object({
   supplierId: z.string(),
@@ -35,6 +69,29 @@ export const addPaymentFn = createServerFn()
         .returning();
 
       if (data.purchaseId) {
+        // Overpayment guard — fetch current state inside the transaction
+        const [purchase] = await tx
+          .select({ cost: purchaseRecords.cost, paidAmount: purchaseRecords.paidAmount })
+          .from(purchaseRecords)
+          .where(eq(purchaseRecords.id, data.purchaseId));
+
+        if (!purchase) throw new Error("Purchase record not found");
+
+        const totalCost = parseFloat(purchase.cost ?? "0");
+        const alreadyPaid = parseFloat(purchase.paidAmount ?? "0");
+        const incomingAmount = parseFloat(data.amount);
+        const remaining = totalCost - alreadyPaid;
+
+        if (incomingAmount <= 0) {
+          throw new Error("Payment amount must be greater than zero");
+        }
+
+        if (incomingAmount > remaining) {
+          throw new Error(
+            `Payment of PKR ${incomingAmount.toLocaleString()} exceeds the outstanding balance of PKR ${remaining.toLocaleString()} (Total: PKR ${totalCost.toLocaleString()}, Already paid: PKR ${alreadyPaid.toLocaleString()})`,
+          );
+        }
+
         await tx
           .update(purchaseRecords)
           .set({
@@ -68,12 +125,14 @@ export const addPaymentFn = createServerFn()
           .where(eq(wallets.id, data.walletId));
 
         // Insert expense
+        const expenseCategory = await ensureSupplierPurchaseCategory(tx);
         const expenseId = createId();
         const supplierLabel = data.supplierName ?? data.supplierId;
         await tx.insert(expenses).values({
           id: expenseId,
           description: `Supplier Purchase: payment to ${supplierLabel}`,
-          category: "Supplier Purchase",
+          category: expenseCategory.name,
+          categoryId: expenseCategory.id,
           amount: data.amount,
           walletId: data.walletId,
           performedById: context.session.user.id,

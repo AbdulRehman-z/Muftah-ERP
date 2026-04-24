@@ -10,7 +10,7 @@ await client.connect();
 const db = drizzle(client);
 
 console.log("Running migrations...");
-await migrate(db, { migrationsFolder: "./src/db/mirgrations" });
+await migrate(db, { migrationsFolder: "./src/db/migrations" });
 console.log("✅ Migrations complete");
 
 await client.end();

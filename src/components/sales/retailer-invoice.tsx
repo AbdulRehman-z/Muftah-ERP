@@ -10,7 +10,8 @@ export type RetailerInvoiceItem = {
     hsnCode: string;
     gstRate: number;
     rate: number;
-    qty: number;
+    /** Total packs dispatched (billed + discount). May include "+N" suffix for discount cartons. */
+    qty: number | string;
     grossAmount: number;
     /** Matches official label spelling "Net Ammount" */
     netAmount: number;
@@ -129,7 +130,7 @@ export const RetailerInvoiceView = ({
                 <td class="tc">${it.hsnCode}</td>
                 <td class="tc">${it.gstRate > 0 ? it.gstRate + "%" : ""}</td>
                 <td class="tr">${fmtN(it.rate)}</td>
-                <td class="td-blue tc">${it.qty}</td>
+                <td class="td-blue tc">${it.qty !== 0 && it.qty !== "" ? it.qty : ""}</td>
                 <td class="tr">${fmtN(it.grossAmount)}</td>
                 <td class="tr">${fmtN(it.netAmount)}</td>
             </tr>`
@@ -455,7 +456,7 @@ td{padding:3px 6px;font-size:11px;border:1px solid #ccc;vertical-align:middle;}
                                 <td style={tdC}>{it.gstRate > 0 ? `${it.gstRate}%` : ""}</td>
                                 <td style={tdR}>{it.rate > 0 ? fmtN(it.rate) : ""}</td>
                                 <td style={{ ...tdC, background: BLUE_QTY, WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" as never }}>
-                                    {it.qty > 0 ? it.qty : ""}
+                                    {it.qty !== 0 && it.qty !== "" ? it.qty : ""}
                                 </td>
                                 <td style={tdR}>{it.grossAmount > 0 ? fmtN(it.grossAmount) : ""}</td>
                                 <td style={tdR}>{it.netAmount > 0 ? fmtN(it.netAmount) : ""}</td>

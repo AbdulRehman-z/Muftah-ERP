@@ -210,18 +210,37 @@ const buildRetailerData = (inv: any): RetailerInvoiceData => {
       phoneNumber: inv.customer?.mobileNumber ?? "N/A",
     },
     saleType: isDist ? "Wholesale" : "Retail",
-    items: (inv.items ?? []).map((item: any, i: number) => ({
-      sNo: i + 1,
-      productName: item.pack,
-      hsnCode: item.hsnCode ?? "—",
-      gstRate: 0,
-      rate: Number(item.perCartonPrice) || 0,
-      qty: item.discountCartons > 0
-        ? `${item.numberOfCartons || item.quantity || 0}+${item.discountCartons}`
-        : (item.numberOfCartons || item.quantity || 0),
-      grossAmount: Number(item.amount) || 0,
-      netAmount: Number(item.amount) || 0,
-    })),
+    items: (inv.items ?? []).map((item: any, i: number) => {
+      const packsPerCarton = Number(item.packsPerCarton) || 0;
+      const billedCartons = Number(item.numberOfCartons) || 0;
+      const discCartons = Number(item.discountCartons) || 0;
+      const looseUnits = Number(item.quantity) || 0;
+
+      // Compute total packs dispatched:
+      // - Carton order: (billed + discount cartons) × packsPerCarton, fallback to carton count
+      // - Loose order: looseUnits directly
+      let qty: number | string;
+      if (billedCartons > 0 || discCartons > 0) {
+        // Carton-based order
+        const billedPacks = packsPerCarton > 0 ? billedCartons * packsPerCarton : billedCartons;
+        const discPacks = packsPerCarton > 0 ? discCartons * packsPerCarton : discCartons;
+        qty = discPacks > 0 ? `${billedPacks}+${discPacks}` : billedPacks;
+      } else {
+        // Loose/units order
+        qty = looseUnits;
+      }
+
+      return {
+        sNo: i + 1,
+        productName: item.pack,
+        hsnCode: item.hsnCode ?? "—",
+        gstRate: 0,
+        rate: Number(item.perCartonPrice) || 0,
+        qty,
+        grossAmount: Number(item.amount) || 0,
+        netAmount: Number(item.amount) || 0,
+      };
+    }),
     cgstRate: 0,
     sgstRate: 0,
   };

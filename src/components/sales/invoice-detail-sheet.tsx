@@ -197,32 +197,54 @@ const InvoiceDetailContent = ({
                 <TableHead className="text-[11px] text-right">Cartons</TableHead>
                 <TableHead className="text-[11px] text-right">Disc. Ctns</TableHead>
                 <TableHead className="text-[11px] text-right">Units</TableHead>
+                <TableHead className="text-[11px] text-right">Packs/Ctn</TableHead>
+                <TableHead className="text-[11px] text-right">Total Packs</TableHead>
                 <TableHead className="text-[11px] text-right">Price/Ctn</TableHead>
                 <TableHead className="text-[11px] text-right">Amount</TableHead>
                 <TableHead className="text-[11px] text-right">Weight (kg)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {invoice.items?.map((item, i) => (
+              {invoice.items?.map((item, i) => {
+                const ppc = Number(item.packsPerCarton) || 0;
+                const billedCtns = Number(item.numberOfCartons) || 0;
+                const discCtns = Number(item.discountCartons) || 0;
+                const looseUnits = Number(item.quantity) || 0;
+                const totalPacks = ppc > 0
+                  ? (billedCtns + discCtns) * ppc
+                  : billedCtns > 0 ? billedCtns + discCtns : looseUnits;
+                return (
                 <TableRow key={item.id || i}>
                   <TableCell className="text-sm tabular-nums">{i + 1}</TableCell>
                   <TableCell className="text-sm font-medium">{item.pack}</TableCell>
-                  <TableCell className="text-sm tabular-nums text-right">{item.numberOfCartons}</TableCell>
+                  <TableCell className="text-sm tabular-nums text-right">{billedCtns || "—"}</TableCell>
                   <TableCell className="text-sm tabular-nums text-right">
-                    {Number(item.discountCartons) > 0 ? (
-                      <span className="text-amber-600 font-semibold">+{item.discountCartons}</span>
+                    {discCtns > 0 ? (
+                      <span className="text-amber-600 font-semibold">+{discCtns}</span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-sm tabular-nums text-right">{item.quantity}</TableCell>
+                  <TableCell className="text-sm tabular-nums text-right">{looseUnits || "—"}</TableCell>
+                  <TableCell className="text-sm tabular-nums text-right">
+                    {ppc > 0 ? ppc : <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell className="text-sm tabular-nums text-right font-semibold">
+                    {totalPacks}
+                    {ppc > 0 && discCtns > 0 && (
+                      <span className="text-[10px] text-amber-600 ml-1">
+                        ({billedCtns * ppc}+{discCtns * ppc})
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-sm tabular-nums text-right">{PKR(Number(item.perCartonPrice))}</TableCell>
                   <TableCell className="text-sm tabular-nums text-right font-semibold">{PKR(Number(item.amount))}</TableCell>
                   <TableCell className="text-sm tabular-nums text-right">{Number(item.totalWeight).toFixed(2)}</TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
               <TableRow className="bg-muted/30 font-semibold">
-                <TableCell colSpan={5} className="text-right text-sm">Totals</TableCell>
+                <TableCell colSpan={7} className="text-right text-sm">Totals</TableCell>
                 <TableCell className="text-sm text-right">—</TableCell>
                 <TableCell className="text-sm text-right font-bold">{PKR(total)}</TableCell>
                 <TableCell className="text-sm text-right">

@@ -80,22 +80,75 @@ CREATE TABLE "suppliers" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "category_field_options" (
+	"id" text PRIMARY KEY NOT NULL,
+	"field_id" text NOT NULL,
+	"value" text NOT NULL,
+	"label" text NOT NULL,
+	"sort_order" integer DEFAULT 0 NOT NULL,
+	"is_active" boolean DEFAULT true NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "category_fields" (
+	"id" text PRIMARY KEY NOT NULL,
+	"category_id" text NOT NULL,
+	"key" text NOT NULL,
+	"label" text NOT NULL,
+	"field_type" text NOT NULL,
+	"is_required" boolean DEFAULT false NOT NULL,
+	"is_active" boolean DEFAULT true NOT NULL,
+	"sort_order" integer DEFAULT 0 NOT NULL,
+	"placeholder" text,
+	"helper_text" text,
+	"min_length" integer,
+	"max_length" integer,
+	"min_number" numeric(12, 2),
+	"max_number" numeric(12, 2),
+	"min_date" timestamp,
+	"max_date" timestamp,
+	"regex_pattern" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "expense_categories" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
+	"slug" text NOT NULL,
 	"icon" text,
+	"sort_order" integer DEFAULT 0 NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
+	"is_archived" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "expense_categories_name_unique" UNIQUE("name")
+	CONSTRAINT "expense_categories_name_unique" UNIQUE("name"),
+	CONSTRAINT "expense_categories_slug_unique" UNIQUE("slug")
+);
+--> statement-breakpoint
+CREATE TABLE "expense_field_values" (
+	"id" text PRIMARY KEY NOT NULL,
+	"expense_id" text NOT NULL,
+	"field_id" text NOT NULL,
+	"value_text" text,
+	"value_number" numeric(12, 2),
+	"value_date" timestamp,
+	"value_boolean" boolean,
+	"value_option_id" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "expenses" (
 	"id" text PRIMARY KEY NOT NULL,
 	"description" text NOT NULL,
 	"category" text NOT NULL,
-	"category_id" text,
+	"category_id" text NOT NULL,
+	"expense_date" timestamp DEFAULT now() NOT NULL,
 	"amount" numeric(12, 2) NOT NULL,
+	"slip_number" text,
+	"remarks" text,
 	"wallet_id" text NOT NULL,
 	"performed_by_id" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -657,6 +710,7 @@ CREATE TABLE "supplier_payments" (
 	"method" text,
 	"bank_name" text,
 	"paid_by" text,
+	"wallet_id" text,
 	"notes" text,
 	"purchase_id" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -666,6 +720,11 @@ CREATE TABLE "supplier_payments" (
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "two_factor" ADD CONSTRAINT "two_factor_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "category_field_options" ADD CONSTRAINT "category_field_options_field_id_category_fields_id_fk" FOREIGN KEY ("field_id") REFERENCES "public"."category_fields"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "category_fields" ADD CONSTRAINT "category_fields_category_id_expense_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."expense_categories"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "expense_field_values" ADD CONSTRAINT "expense_field_values_expense_id_expenses_id_fk" FOREIGN KEY ("expense_id") REFERENCES "public"."expenses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "expense_field_values" ADD CONSTRAINT "expense_field_values_field_id_category_fields_id_fk" FOREIGN KEY ("field_id") REFERENCES "public"."category_fields"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "expense_field_values" ADD CONSTRAINT "expense_field_values_value_option_id_category_field_options_id_fk" FOREIGN KEY ("value_option_id") REFERENCES "public"."category_field_options"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "expenses" ADD CONSTRAINT "expenses_category_id_expense_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."expense_categories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "expenses" ADD CONSTRAINT "expenses_wallet_id_wallets_id_fk" FOREIGN KEY ("wallet_id") REFERENCES "public"."wallets"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "expenses" ADD CONSTRAINT "expenses_performed_by_id_user_id_fk" FOREIGN KEY ("performed_by_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -737,6 +796,21 @@ CREATE INDEX "session_userId_idx" ON "session" USING btree ("user_id");--> state
 CREATE INDEX "twoFactor_secret_idx" ON "two_factor" USING btree ("secret");--> statement-breakpoint
 CREATE INDEX "twoFactor_userId_idx" ON "two_factor" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "verification_identifier_idx" ON "verification" USING btree ("identifier");--> statement-breakpoint
+CREATE INDEX "category_field_options_field_sort_idx" ON "category_field_options" USING btree ("field_id","is_active","sort_order");--> statement-breakpoint
+CREATE UNIQUE INDEX "category_field_options_field_value_unique" ON "category_field_options" USING btree ("field_id","value");--> statement-breakpoint
+CREATE INDEX "category_fields_category_sort_idx" ON "category_fields" USING btree ("category_id","is_active","sort_order");--> statement-breakpoint
+CREATE UNIQUE INDEX "category_fields_category_key_unique" ON "category_fields" USING btree ("category_id","key");--> statement-breakpoint
+CREATE INDEX "expense_categories_sort_idx" ON "expense_categories" USING btree ("sort_order","name");--> statement-breakpoint
+CREATE INDEX "expense_categories_active_idx" ON "expense_categories" USING btree ("is_active","is_archived");--> statement-breakpoint
+CREATE UNIQUE INDEX "expense_field_values_expense_field_unique" ON "expense_field_values" USING btree ("expense_id","field_id");--> statement-breakpoint
+CREATE INDEX "expense_field_values_field_text_idx" ON "expense_field_values" USING btree ("field_id","value_text");--> statement-breakpoint
+CREATE INDEX "expense_field_values_field_number_idx" ON "expense_field_values" USING btree ("field_id","value_number");--> statement-breakpoint
+CREATE INDEX "expense_field_values_field_date_idx" ON "expense_field_values" USING btree ("field_id","value_date");--> statement-breakpoint
+CREATE INDEX "expense_field_values_field_boolean_idx" ON "expense_field_values" USING btree ("field_id","value_boolean");--> statement-breakpoint
+CREATE INDEX "expense_field_values_field_option_idx" ON "expense_field_values" USING btree ("field_id","value_option_id");--> statement-breakpoint
+CREATE INDEX "expenses_category_date_idx" ON "expenses" USING btree ("category_id","expense_date","id");--> statement-breakpoint
+CREATE INDEX "expenses_date_idx" ON "expenses" USING btree ("expense_date");--> statement-breakpoint
+CREATE INDEX "expenses_wallet_date_idx" ON "expenses" USING btree ("wallet_id","expense_date");--> statement-breakpoint
 CREATE INDEX "attendance_employee_date_idx" ON "attendance" USING btree ("employee_id","date");--> statement-breakpoint
 CREATE INDEX "lab_report_chemical_idx" ON "chemical_lab_reports" USING btree ("chemical_id");--> statement-breakpoint
 CREATE INDEX "lab_report_date_idx" ON "chemical_lab_reports" USING btree ("report_date");--> statement-breakpoint

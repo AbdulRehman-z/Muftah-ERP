@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { db, purchaseRecords, materialStock } from "@/db";
+import { db, purchaseRecords, materialStock, transactions, wallets, expenses } from "@/db";
 import { eq, sql, and } from "drizzle-orm";
 import { requireSuppliersManageMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
@@ -71,12 +71,17 @@ const updatePurchaseSchema = z.object({
   capacityUnit: z.string().optional(),
   minStock: z.string().optional(),
   unit: z.string().optional(),
+  // Payment fields
+  walletId: z.string().optional(),
+  paymentStatus: z.enum(["paid", "partial", "unpaid"]).optional(),
+  paidAmount: z.string().optional(),
+  supplierName: z.string().optional(),
 });
 
 export const updatePurchaseRecordFn = createServerFn()
   .middleware([requireSuppliersManageMiddleware])
   .inputValidator(updatePurchaseSchema)
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     return await db.transaction(async (tx) => {
       // 1. Get existing purchase record
       const existingRecord = await tx.query.purchaseRecords.findFirst({

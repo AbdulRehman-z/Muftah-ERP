@@ -1,1 +1,0 @@
-ALTER TABLE "supplier_payments" ADD COLUMN "wallet_id" text;
