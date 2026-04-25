@@ -12,11 +12,62 @@ import {
   wallets,
   expenses,
   transactions,
+  suppliers,
 } from "@/db";
+import { expenseCategories } from "@/db/schemas/finance-schema";
 import { requireInventoryManageMiddleware } from "@/lib/middlewares";
 import { addStockSchema } from "@/lib/validators/validators";
 import { createId } from "@paralleldrive/cuid2";
-import { suppliers } from "@/db/schemas/supplier-schema";
+
+type FinanceWriter = Pick<typeof db, "query" | "select" | "insert" | "update">;
+
+async function ensureSupplierPurchaseCategory(tx: FinanceWriter) {
+  const existingCategory = await tx.query.expenseCategories.findFirst({
+    where: eq(expenseCategories.slug, "supplier-purchase"),
+    columns: {
+      id: true,
+      name: true,
+      isActive: true,
+      isArchived: true,
+    },
+  });
+
+  if (existingCategory) {
+    if (!existingCategory.isActive || existingCategory.isArchived) {
+      await tx
+        .update(expenseCategories)
+        .set({
+          name: "Supplier Purchase",
+          isActive: true,
+          isArchived: false,
+          updatedAt: new Date(),
+        })
+        .where(eq(expenseCategories.id, existingCategory.id));
+    }
+
+    return {
+      id: existingCategory.id,
+      name: "Supplier Purchase",
+    };
+  }
+
+  const [createdCategory] = await tx
+    .insert(expenseCategories)
+    .values({
+      id: createId(),
+      name: "Supplier Purchase",
+      slug: "supplier-purchase",
+      sortOrder: 500,
+      isActive: true,
+      isArchived: false,
+    })
+    .returning({
+      id: expenseCategories.id,
+      name: expenseCategories.name,
+    });
+
+  return createdCategory;
+}
 
 export const addStockFn = createServerFn()
   .middleware([requireInventoryManageMiddleware])
@@ -157,11 +208,13 @@ export const addStockFn = createServerFn()
           .where(eq(wallets.id, walletId));
 
         // Insert expense
+        const category = await ensureSupplierPurchaseCategory(tx);
         const expenseId = createId();
         await tx.insert(expenses).values({
           id: expenseId,
           description: `Supplier Purchase: ${materialName} from ${supplierName}`,
           category: "Supplier Purchase",
+          categoryId: category.id,
           amount: expenseAmount.toString(),
           walletId: walletId,
           performedById: context.session.user.id,
