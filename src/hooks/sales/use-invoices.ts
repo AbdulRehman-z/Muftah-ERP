@@ -28,6 +28,7 @@ export const useGetInvoices = (params: {
   dateTo?: string;
   month?: number;
   year?: number;
+  search?: string;
   status?: "paid" | "credit" | "partial";
   customerType?: "distributor" | "retailer";
   warehouseId?: string;

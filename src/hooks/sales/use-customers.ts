@@ -21,8 +21,9 @@ export const customersKeys = {
     sortOrder?: string;
   }) => [...customersKeys.all, "list", params] as const,
   select: () => [...customersKeys.all, "select"] as const,
-  stats: () => [...customersKeys.all, "stats"] as const,
-  ledger: (customerId: string, params: { page: number; limit: number }) =>
+  stats: (params?: { dateFrom?: string; dateTo?: string }) =>
+    [...customersKeys.all, "stats", params ?? {}] as const,
+  ledger: (customerId: string, params: { page: number; limit: number; dateFrom?: string; dateTo?: string }) =>
     [...customersKeys.all, "ledger", customerId, params] as const,
 };
 
@@ -53,16 +54,19 @@ export const useGetAllCustomers = () => {
   });
 };
 
-export const useGetCustomerStats = () => {
+export const useGetCustomerStats = (params?: { dateFrom?: string; dateTo?: string }) => {
   return useSuspenseQuery({
-    queryKey: customersKeys.stats(),
-    queryFn: () => getCustomerStatsFn(),
-    gcTime: 60_000,
-    staleTime: 30_000,
+    queryKey: customersKeys.stats(params),
+    queryFn: () => getCustomerStatsFn({ data: params ?? {} }),
+    gcTime: 30_000,
+    staleTime: 0,
   });
 };
 
-export const useGetCustomerLedger = (customerId: string, params: { page: number; limit: number }) => {
+export const useGetCustomerLedger = (
+  customerId: string,
+  params: { page: number; limit: number; dateFrom?: string; dateTo?: string },
+) => {
   return useQuery({
     queryKey: customersKeys.ledger(customerId, params),
     queryFn: () => getCustomerLedgerFn({ data: { customerId, ...params } }),

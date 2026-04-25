@@ -2,10 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Suspense, useState, useCallback } from "react";
 import { GenericLoader } from "@/components/custom/generic-loader";
 import { invoicesKeys, useGetInvoices, useDeleteInvoice } from "@/hooks/sales/use-invoices";
-import { getInvoicesFn, getInvoiceStatsFn } from "@/server-functions/sales/invoices-fn";
+import { getInvoicesFn } from "@/server-functions/sales/invoices-fn";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableHeader,
@@ -24,11 +26,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, ReceiptText, Trash2, Loader2 } from "lucide-react";
-import { format } from "date-fns";
+import { DatePickerWithRange } from "@/components/custom/date-range-picker";
+import { type DateRange } from "react-day-picker";
+import { Plus, ReceiptText, Trash2, Loader2, Search, X, SlidersHorizontal } from "lucide-react";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { cn } from "@/lib/utils";
 import { InvoiceKpiCards } from "@/components/sales/invoice-kpi-cards";
-import { InvoiceFilters, type InvoiceFilterState } from "@/components/sales/invoice-filters";
 import { InvoicePagination } from "@/components/sales/invoice-pagination";
 import { InvoiceDetailSheet } from "@/components/sales/invoice-detail-sheet";
 import { InvoicePrintDialog } from "@/components/sales/invoice-print-dialog";
@@ -44,14 +47,16 @@ const PKR = (v: number) =>
 
 export const Route = createFileRoute("/_protected/sales/new-invoice/")({
   loader: async ({ context }) => {
-    const defaultParams = { page: 1, limit: 10 };
+    const now = new Date();
+    const defaultParams = {
+      page: 1,
+      limit: 10,
+      dateFrom: format(startOfMonth(now), "yyyy-MM-dd"),
+      dateTo: format(endOfMonth(now), "yyyy-MM-dd"),
+    };
     void context.queryClient.prefetchQuery({
       queryKey: invoicesKeys.list(defaultParams),
       queryFn: () => getInvoicesFn({ data: defaultParams }),
-    });
-    void context.queryClient.prefetchQuery({
-      queryKey: invoicesKeys.stats(),
-      queryFn: () => getInvoiceStatsFn(),
     });
   },
   component: InvoicesPage,
@@ -80,37 +85,38 @@ function InvoicesContent() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [filters, setFilters] = useState<InvoiceFilterState>({
-    status: "all",
-    customerType: "all",
+
+  // Date range — defaults to current month, never undefined
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
   });
+
+  // Invoice number search — raw input vs committed (only committed triggers fetch)
+  const [searchInput, setSearchInput] = useState("");
+  const [committedSearch, setCommittedSearch] = useState("");
+
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [detailInvoiceId, setDetailInvoiceId] = useState<string | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [printInvoiceId, setPrintInvoiceId] = useState<string | null>(null);
   const [printOpen, setPrintOpen] = useState(false);
-
-  // Delete confirmation state
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const deleteInvoice = useDeleteInvoice();
 
-  const dateFrom = filters.dateFrom;
-  const dateTo = filters.dateTo;
+  const dateFrom = dateRange.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
+  const dateTo = dateRange.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
+
+  const hasFilters = !!committedSearch;
 
   const { data } = useGetInvoices({
     page,
     limit,
     dateFrom,
     dateTo,
-    month: undefined,
-    year: undefined,
-    status: filters.status !== "all" ? filters.status : undefined,
-    customerType: filters.customerType !== "all" ? filters.customerType : undefined,
-    warehouseId: filters.warehouseId,
-    amountMin: filters.amountMin,
-    amountMax: filters.amountMax,
+    search: committedSearch || undefined,
     sortBy: "createdAt",
     sortOrder: "desc",
   });
@@ -119,16 +125,24 @@ function InvoicesContent() {
   const pageCount = data?.pageCount || 1;
   const total = data?.total || 0;
 
-  const hasFilters = !!(
-    dateFrom || dateTo ||
-    (filters.status && filters.status !== "all") ||
-    (filters.customerType && filters.customerType !== "all") ||
-    filters.warehouseId ||
-    filters.amountMin !== undefined ||
-    filters.amountMax !== undefined
+  const handleSearch = useCallback(() => {
+    setCommittedSearch(searchInput.trim());
+    setPage(1);
+  }, [searchInput]);
+
+  const handleSearchKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") handleSearch();
+    },
+    [handleSearch],
   );
 
-  // Stable handlers to prevent unnecessary re-renders in child components
+  const handleClearSearch = useCallback(() => {
+    setSearchInput("");
+    setCommittedSearch("");
+    setPage(1);
+  }, []);
+
   const handleView = useCallback((id: string) => {
     setDetailInvoiceId(id);
     setDetailSheetOpen(true);
@@ -148,7 +162,6 @@ function InvoicesContent() {
     setIsDeleting(true);
     try {
       await deleteInvoice.mutateAsync(deleteConfirmId);
-      // Invalidate list so table refreshes
       queryClient.invalidateQueries({ queryKey: invoicesKeys.list({ page, limit }) });
       queryClient.invalidateQueries({ queryKey: invoicesKeys.stats() });
     } finally {
@@ -165,24 +178,66 @@ function InvoicesContent() {
 
   return (
     <div className="space-y-5">
-      {/* KPI Cards */}
+      {/* KPI Cards — scoped to current date range */}
       <InvoiceKpiCards
-        filters={{
-          dateFrom: filters.dateFrom,
-          dateTo: filters.dateTo,
-          status: filters.status !== "all" ? filters.status : undefined,
-          customerType: filters.customerType !== "all" ? filters.customerType : undefined,
-          warehouseId: filters.warehouseId,
-          amountMin: filters.amountMin,
-          amountMax: filters.amountMax,
-        }}
+        filters={{ dateFrom, dateTo }}
       />
 
-      {/* Filters */}
-      <InvoiceFilters
-        value={filters}
-        onChange={setFilters}
-      />
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-end gap-3 bg-muted/20 p-4 rounded-xl border">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground self-end mb-2">
+          <SlidersHorizontal className="size-3.5" />
+          Filters
+        </div>
+
+        {/* Date range */}
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Date Range</Label>
+          <DatePickerWithRange
+            date={dateRange}
+            onDateChange={(d) => {
+              setDateRange(d ?? { from: startOfMonth(new Date()), to: endOfMonth(new Date()) });
+              setPage(1);
+            }}
+            className="w-64"
+          />
+        </div>
+
+        {/* Invoice number search */}
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Invoice No.</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="e.g. INV-42"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              className="w-36 h-9 text-sm font-mono"
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleSearch}
+              className="h-9 gap-1.5 px-3"
+            >
+              <Search className="size-3.5" />
+              Search
+            </Button>
+          </div>
+        </div>
+
+        {hasFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearSearch}
+            className="gap-1.5 text-muted-foreground hover:text-foreground h-9 self-end"
+          >
+            <X className="size-3.5" />
+            Clear
+          </Button>
+        )}
+      </div>
 
       {/* Header + Create button */}
       <div className="flex items-center justify-between">
@@ -204,7 +259,7 @@ function InvoicesContent() {
         <GenericEmpty
           icon={InvoicesEmptyIllustration}
           title="No Invoices Found"
-          description="You haven't generated any invoices yet. Create your first transaction."
+          description="No invoices found for the selected period."
           ctaText="Create Invoice"
           onAddChange={() => setCreateSheetOpen(true)}
         />
@@ -213,9 +268,9 @@ function InvoicesContent() {
           className="py-12"
           icon={SalesEmptyIllustration}
           title="No Results Found"
-          description="Your filters didn't return any invoices. Try adjusting the filters."
-          ctaText="Clear Filters"
-          onAddChange={() => setFilters({ status: "all", customerType: "all" })}
+          description="No invoices matched your search. Try a different invoice number."
+          ctaText="Clear Search"
+          onAddChange={handleClearSearch}
         />
       ) : (
         <>
@@ -224,6 +279,7 @@ function InvoicesContent() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="text-[11px]">Invoice No.</TableHead>
                   <TableHead className="text-[11px]">Date</TableHead>
                   <TableHead className="text-[11px]">Customer</TableHead>
                   <TableHead className="text-[11px]">Type</TableHead>
@@ -320,7 +376,7 @@ function InvoicesContent() {
   );
 }
 
-// ── Memoized row component: prevents full table re-render on any state change ──
+// ── Memoized row component ──
 const InvoiceRow = ({
   invoice,
   onView,
@@ -354,6 +410,9 @@ const InvoiceRow = ({
 
   return (
     <TableRow className="group">
+      <TableCell className="text-sm font-mono font-medium text-primary">
+        {invoice.slipNumber || "—"}
+      </TableCell>
       <TableCell className="text-sm tabular-nums">
         {format(new Date(invoice.date), "dd MMM yyyy")}
       </TableCell>

@@ -72,8 +72,13 @@ const sharpThemeStyles = {
   },
 };
 
-export const CustomerKpiCards = () => {
-  const { data: stats } = useGetCustomerStats();
+interface Props {
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export const CustomerKpiCards = ({ dateFrom, dateTo }: Props) => {
+  const { data: stats } = useGetCustomerStats({ dateFrom, dateTo });
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

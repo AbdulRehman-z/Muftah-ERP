@@ -22,7 +22,7 @@ interface Props {
   total: number;
   limit: number;
   onPageChange: (page: number) => void;
-  onLimitChange: (limit: number) => void;
+  onLimitChange?: (limit: number) => void;
   className?: string;
 }
 
@@ -67,21 +67,23 @@ export const CustomerPagination = ({
         <span className="text-xs text-muted-foreground tabular-nums">
           Showing <span className="font-medium text-foreground">{(page - 1) * limit + 1}</span>–<span className="font-medium text-foreground">{Math.min(page * limit, total)}</span> of <span className="font-medium text-foreground">{total}</span>
         </span>
-        <Select
-          value={limit.toString()}
-          onValueChange={(v) => onLimitChange(Number(v))}
-        >
-          <SelectTrigger className="h-7 w-[80px] text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent side="top">
-            {pageSizeOptions.map((size) => (
-              <SelectItem key={size} value={size.toString()}>
-                {size} / page
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {onLimitChange && (
+          <Select
+            value={limit.toString()}
+            onValueChange={(v) => onLimitChange(Number(v))}
+          >
+            <SelectTrigger className="h-7 w-[80px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent side="top">
+              {pageSizeOptions.map((size) => (
+                <SelectItem key={size} value={size.toString()}>
+                  {size} / page
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <Pagination>

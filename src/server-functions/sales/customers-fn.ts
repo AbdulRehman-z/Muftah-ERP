@@ -3,7 +3,8 @@ import { db } from "@/db";
 import { customers, invoices } from "@/db/schemas/sales-schema";
 import { requireSalesViewMiddleware, requireSalesManageMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
-import { count, like, or, SQL, eq, gt, and, sum as drizzleSum, desc as drizzleDesc, asc as drizzleAsc } from "drizzle-orm";
+import { count, like, or, SQL, eq, gt, lt, and, sum as drizzleSum, desc as drizzleDesc, asc as drizzleAsc, gte, lte, isNotNull } from "drizzle-orm";
+import { parseISO, isValid } from "date-fns";
 
 // ── Shared sort config ─────────────────────────────────────────────────────
 const customerSortFields = {
@@ -96,14 +97,30 @@ export const getAllCustomersFn = createServerFn()
 // ═══════════════════════════════════════════════════════════════════════════
 export const getCustomerStatsFn = createServerFn()
   .middleware([requireSalesViewMiddleware])
-  .handler(async () => {
+  .inputValidator((input: any) =>
+    z.object({
+      dateFrom: z.string().optional(),
+      dateTo: z.string().optional(),
+    }).parse(input),
+  )
+  .handler(async ({ data }) => {
     const [countResult] = await db
       .select({ value: count() })
       .from(customers);
 
+    const revenueConditions: SQL[] = [];
+    if (data.dateFrom) {
+      const from = parseISO(data.dateFrom);
+      if (isValid(from)) revenueConditions.push(gte(invoices.date, from));
+    }
+    if (data.dateTo) {
+      const to = parseISO(data.dateTo);
+      if (isValid(to)) revenueConditions.push(lte(invoices.date, to));
+    }
     const [totalSalesResult] = await db
-      .select({ value: drizzleSum(customers.totalSale) })
-      .from(customers);
+      .select({ value: drizzleSum(invoices.totalPrice) })
+      .from(invoices)
+      .where(revenueConditions.length > 0 ? and(...revenueConditions) : undefined);
 
     const [totalOutstandingResult] = await db
       .select({ value: drizzleSum(customers.credit) })
@@ -133,6 +150,8 @@ export const getCustomerLedgerFn = createServerFn()
       customerId: z.string(),
       page: z.number().int().positive().default(1),
       limit: z.number().int().positive().default(10),
+      dateFrom: z.string().optional(),
+      dateTo: z.string().optional(),
     }).parse(input),
   )
   .handler(async ({ data }) => {
@@ -146,17 +165,60 @@ export const getCustomerLedgerFn = createServerFn()
       throw new Error("Customer not found");
     }
 
+    // Build date-scoped invoice WHERE clause
+    const invoiceConditions: SQL[] = [eq(invoices.customerId, data.customerId)];
+    if (data.dateFrom) {
+      const from = parseISO(data.dateFrom);
+      if (isValid(from)) invoiceConditions.push(gte(invoices.date, from));
+    }
+    if (data.dateTo) {
+      const to = parseISO(data.dateTo);
+      if (isValid(to)) invoiceConditions.push(lte(invoices.date, to));
+    }
+    const invoiceWhereClause = and(...invoiceConditions);
+
     const [totalResult] = await db
       .select({ value: count() })
       .from(invoices)
-      .where(eq(invoices.customerId, data.customerId));
+      .where(invoiceWhereClause);
 
     const customerInvoices = await db.query.invoices.findMany({
-      where: eq(invoices.customerId, data.customerId),
+      where: invoiceWhereClause,
       with: { warehouse: true },
       limit: data.limit,
       offset,
       orderBy: [drizzleDesc(invoices.date)],
+    });
+
+    // Period aggregates (date-scoped)
+    const [aggResult] = await db
+      .select({
+        periodRevenue: drizzleSum(invoices.totalPrice),
+        periodCash:    drizzleSum(invoices.cash),
+        periodCredit:  drizzleSum(invoices.credit),
+      })
+      .from(invoices)
+      .where(invoiceWhereClause);
+
+    // Overdue count — all-time, NOT date-scoped
+    const [overdueResult] = await db
+      .select({ value: count() })
+      .from(invoices)
+      .where(and(
+        eq(invoices.customerId, data.customerId),
+        lt(invoices.creditReturnDate, new Date()),
+        gt(invoices.credit, "0"),
+      ));
+
+    // Next due date — all-time, NOT date-scoped
+    const nextDueRow = await db.query.invoices.findFirst({
+      where: and(
+        eq(invoices.customerId, data.customerId),
+        gt(invoices.credit, "0"),
+        isNotNull(invoices.creditReturnDate),
+      ),
+      orderBy: [drizzleAsc(invoices.creditReturnDate)],
+      columns: { creditReturnDate: true },
     });
 
     return {
@@ -164,6 +226,11 @@ export const getCustomerLedgerFn = createServerFn()
       invoices: customerInvoices,
       total: Number(totalResult.value),
       pageCount: Math.ceil(Number(totalResult.value) / data.limit),
+      periodRevenue: Number(aggResult.periodRevenue) || 0,
+      periodCash:    Number(aggResult.periodCash) || 0,
+      periodCredit:  Number(aggResult.periodCredit) || 0,
+      overdueInvoices: Number(overdueResult.value) || 0,
+      nextDueDate: nextDueRow?.creditReturnDate ?? null,
     };
   });
 

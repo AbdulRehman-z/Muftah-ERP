@@ -1,11 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Suspense, useState, useMemo, useCallback } from "react";
+import { Suspense, useState } from "react";
 import { GenericLoader } from "@/components/custom/generic-loader";
 import { customersKeys, useGetCustomers } from "@/hooks/sales/use-customers";
 import { getCustomersFn, getCustomerStatsFn } from "@/server-functions/sales/customers-fn";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableHeader,
@@ -14,35 +16,35 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Users, MoreVertical, FileText, Eye } from "lucide-react";
+import { Users, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CustomerKpiCards } from "@/components/sales/customer-kpi-cards";
-import { CustomerFilters, type CustomerFilterState } from "@/components/sales/customer-filters";
 import { CustomerPagination } from "@/components/sales/customer-pagination";
-import { CustomerDetailSheet } from "@/components/sales/customer-detail-sheet";
 import { GenericEmpty } from "@/components/custom/empty";
 import { CustomersEmptyIllustration } from "@/components/illustrations/CustomersEmptyIllustration";
 import { SalesEmptyIllustration } from "@/components/illustrations/SalesEmptyIllustration";
+import { DatePickerWithRange } from "@/components/custom/date-range-picker";
+import { type DateRange } from "react-day-picker";
+import { startOfMonth, endOfMonth, format } from "date-fns";
 
 const PKR = (v: number) =>
   `PKR ${v.toLocaleString("en-PK", { minimumFractionDigits: 2 })}`;
 
 export const Route = createFileRoute("/_protected/sales/customers/")({
   loader: async ({ context }) => {
+    const now = new Date();
     const defaultParams = { page: 1, limit: 10 };
+    const statsParams = {
+      dateFrom: format(startOfMonth(now), "yyyy-MM-dd"),
+      dateTo: format(endOfMonth(now), "yyyy-MM-dd"),
+    };
     void context.queryClient.prefetchQuery({
       queryKey: customersKeys.list(defaultParams),
       queryFn: () => getCustomersFn({ data: defaultParams }),
     });
     void context.queryClient.prefetchQuery({
-      queryKey: customersKeys.stats(),
-      queryFn: () => getCustomerStatsFn(),
+      queryKey: customersKeys.stats(statsParams),
+      queryFn: () => getCustomerStatsFn({ data: statsParams }),
     });
   },
   component: CustomersPage,
@@ -71,20 +73,16 @@ function CustomersContent() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [filters, setFilters] = useState<CustomerFilterState>({
-    customerType: "all",
-    outstandingOnly: false,
+  const [nameSearch, setNameSearch] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
   });
-  const [detailCustomerId, setDetailCustomerId] = useState<string | null>(null);
-  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
 
   const { data } = useGetCustomers({
     page,
     limit,
-    search: filters.search,
-    customerType: filters.customerType !== "all" ? filters.customerType : undefined,
-    city: filters.city,
-    outstandingOnly: filters.outstandingOnly,
+    search: nameSearch,
     sortBy: "createdAt",
     sortOrder: "desc",
   });
@@ -93,48 +91,39 @@ function CustomersContent() {
   const pageCount = data?.pageCount || 1;
   const total = data?.total || 0;
 
-  const hasFilters = !!(
-    filters.search ||
-    (filters.customerType && filters.customerType !== "all") ||
-    filters.city ||
-    filters.outstandingOnly
-  );
+  const hasFilters = !!nameSearch;
 
-  // Extract unique cities from current page data for filter dropdown
-  // NOTE: In a production system with many pages, this should be a separate
-  // server-side DISTINCT query. For typical ERP sizes (<500 customers), this
-  // is acceptable as users typically filter first, then see the full list.
-  const cities = useMemo(() => {
-    const citySet = new Set<string>();
-    for (let i = 0; i < customers.length; i++) {
-      const city = customers[i].city;
-      if (city) citySet.add(city);
-    }
-    return Array.from(citySet).sort();
-  }, [customers]);
-
-  // Stable handlers
-  const handleViewLedger = useCallback((id: string) => {
-    setDetailCustomerId(id);
-    setDetailSheetOpen(true);
-  }, []);
-
-  const handleFilterChange = useCallback((v: CustomerFilterState) => {
-    setFilters(v);
-    setPage(1);
-  }, []);
+  const dateFrom = dateRange.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
+  const dateTo = dateRange.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
 
   return (
     <div className="space-y-5">
       {/* KPI Cards */}
-      <CustomerKpiCards />
+      <CustomerKpiCards dateFrom={dateFrom} dateTo={dateTo} />
 
       {/* Filters */}
-      <CustomerFilters
-        value={filters}
-        onChange={handleFilterChange}
-        cities={cities}
-      />
+      <div className="flex flex-wrap items-end gap-3 bg-muted/20 p-4 rounded-xl border">
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Customer Name</Label>
+          <Input
+            placeholder="Search by name..."
+            value={nameSearch}
+            onChange={(e) => { setNameSearch(e.target.value); setPage(1); }}
+            className="w-56 h-9 text-sm"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Date Range (KPI)</Label>
+          <DatePickerWithRange
+            date={dateRange}
+            onDateChange={(d) => {
+              setDateRange(d ?? { from: startOfMonth(new Date()), to: endOfMonth(new Date()) });
+              setPage(1);
+            }}
+            className="w-64"
+          />
+        </div>
+      </div>
 
       {/* Header + count */}
       <div className="flex items-center justify-between">
@@ -164,7 +153,7 @@ function CustomersContent() {
           title="No Match Found"
           description="No customers match your current filters. Try adjusting them."
           ctaText="Clear Filters"
-          onAddChange={() => { setFilters({ customerType: "all", outstandingOnly: false }); setPage(1); }}
+          onAddChange={() => { setNameSearch(""); setPage(1); }}
         />
       ) : (
         <>
@@ -189,8 +178,6 @@ function CustomersContent() {
                   <CustomerRow
                     key={cust.id}
                     customer={cust}
-                    onViewLedger={handleViewLedger}
-                    onCreateInvoice={() => navigate({ to: "/sales/new-invoice" })}
                   />
                 ))}
               </TableBody>
@@ -208,13 +195,6 @@ function CustomersContent() {
           />
         </>
       )}
-
-      {/* Customer Detail Sheet */}
-      <CustomerDetailSheet
-        open={detailSheetOpen}
-        onOpenChange={setDetailSheetOpen}
-        customerId={detailCustomerId}
-      />
     </div>
   );
 }
@@ -222,13 +202,10 @@ function CustomersContent() {
 // ── Memoized row component: prevents full table re-render ──
 const CustomerRow = ({
   customer,
-  onViewLedger,
-  onCreateInvoice,
 }: {
   customer: any;
-  onViewLedger: (id: string) => void;
-  onCreateInvoice: () => void;
 }) => {
+  const navigate = useNavigate();
   const outstanding = Number(customer.credit);
   const avgPerKg = Number(customer.weightSaleKg) > 0
     ? Number(customer.totalSale) / Number(customer.weightSaleKg)
@@ -284,29 +261,14 @@ const CustomerRow = ({
         {avgPerKg > 0 ? PKR(avgPerKg) : "—"}
       </TableCell>
       <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="size-8 p-0 hover:bg-muted/50">
-              <MoreVertical className="size-4 text-muted-foreground" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem
-              onClick={() => onViewLedger(customer.id)}
-              className="gap-2"
-            >
-              <Eye className="size-3.5" />
-              View Ledger
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={onCreateInvoice}
-              className="gap-2"
-            >
-              <FileText className="size-3.5" />
-              Create Invoice
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8 p-0 hover:bg-muted/50"
+          onClick={() => navigate({ to: "/sales/customers/$customerId", params: { customerId: customer.id }, search: { page: 1 } })}
+        >
+          <BookOpen className="size-4 text-muted-foreground" />
+        </Button>
       </TableCell>
     </TableRow>
   );

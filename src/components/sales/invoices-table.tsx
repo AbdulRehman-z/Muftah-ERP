@@ -3,15 +3,12 @@ import { DataTable } from "@/components/custom/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { useGetInvoices } from "@/hooks/sales/use-invoices";
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  ChevronLeft, ChevronRight, ReceiptText, Plus, X, SlidersHorizontal,
+  ChevronLeft, ChevronRight, ReceiptText, Plus, X, SlidersHorizontal, Search,
 } from "lucide-react";
 import { DatePickerWithRange } from "@/components/custom/date-range-picker";
 import { type DateRange } from "react-day-picker";
@@ -31,35 +28,46 @@ export const InvoicesTable = ({ onSheetOpenChange }: Props) => {
   const [page, setPage] = useState(1);
   const limit = 7;
 
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  // BUG FIX: use null to represent "no month selected" — undefined/0 was ambiguous
-  // because month=0 (January) is falsy and was treated as "not set"
-  const [month, setMonth] = useState<number | null>(null);
-  const [year, setYear] = useState<number | undefined>();
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+  });
 
-  const dateFrom = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
-  const dateTo = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
+  // Raw input value — does NOT trigger search on change
+  const [searchInput, setSearchInput] = useState("");
+  // Committed value — only updated when Search button is clicked
+  const [committedSearch, setCommittedSearch] = useState("");
 
-  const hasFilters = !!(dateFrom || dateTo || month !== null || year);
+  const dateFrom = dateRange.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
+  const dateTo = dateRange.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
+
+  const hasFilters = !!committedSearch;
 
   const { data } = useGetInvoices({
     page,
     limit,
     dateFrom,
     dateTo,
-    // Pass null-safe value — server function accepts null now
-    month: month !== null ? month : undefined,
-    year,
+    search: committedSearch || undefined,
   });
 
   const invoices = data?.data || [];
   const pageCount = data?.pageCount || 1;
   const total = data?.total || 0;
 
+  const handleSearch = () => {
+    setCommittedSearch(searchInput.trim());
+    setPage(1);
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") handleSearch();
+  };
+
   const clearFilters = () => {
-    setDateRange(undefined);
-    setMonth(null);
-    setYear(undefined);
+    setSearchInput("");
+    setCommittedSearch("");
+    setDateRange({ from: startOfMonth(new Date()), to: endOfMonth(new Date()) });
     setPage(1);
   };
 
@@ -76,6 +84,15 @@ export const InvoicesTable = ({ onSheetOpenChange }: Props) => {
   }
 
   const columns: ColumnDef<any>[] = [
+    {
+      accessorKey: "slipNumber",
+      header: "Invoice No.",
+      cell: ({ row }) => (
+        <span className="text-sm font-mono font-medium text-primary">
+          {row.original.slipNumber || "—"}
+        </span>
+      ),
+    },
     {
       accessorKey: "date",
       header: "Date",
@@ -166,42 +183,36 @@ export const InvoicesTable = ({ onSheetOpenChange }: Props) => {
 
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Date Range</Label>
-          <DatePickerWithRange date={dateRange} onDateChange={(d) => { setDateRange(d); setPage(1); }} className="w-64" />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Month</Label>
-          <Select
-            // BUG FIX: use "all" sentinel string to distinguish from month=0
-            value={month !== null ? month.toString() : "all"}
-            onValueChange={(val) => {
-              setMonth(val === "all" ? null : Number(val));
+          <DatePickerWithRange
+            date={dateRange}
+            onDateChange={(d) => {
+              setDateRange(d ?? { from: startOfMonth(new Date()), to: endOfMonth(new Date()) });
               setPage(1);
             }}
-          >
-            <SelectTrigger className="w-32 h-9 text-sm">
-              <SelectValue placeholder="All" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All months</SelectItem>
-              {Array.from({ length: 12 }).map((_, i) => (
-                <SelectItem key={i} value={i.toString()}>
-                  {format(new Date(2000, i, 1), "MMMM")}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            className="w-64"
+          />
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Year</Label>
-          <Input
-            type="number"
-            placeholder={new Date().getFullYear().toString()}
-            value={year || ""}
-            onChange={(e) => { setYear(e.target.value ? Number(e.target.value) : undefined); setPage(1); }}
-            className="w-24 h-9 text-sm"
-          />
+          <Label className="text-xs text-muted-foreground">Invoice No.</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="e.g. INV-42"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              className="w-36 h-9 text-sm font-mono"
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleSearch}
+              className="h-9 gap-1.5 px-3"
+            >
+              <Search className="size-3.5" />
+              Search
+            </Button>
+          </div>
         </div>
 
         {hasFilters && (
@@ -218,7 +229,7 @@ export const InvoicesTable = ({ onSheetOpenChange }: Props) => {
           className="py-12"
           icon={SalesEmptyIllustration}
           title="No Results Found"
-          description="Your filters didn't return any invoices. Try adjusting the date range or month."
+          description="No invoices matched your search for the selected period. Try a different invoice number or adjust the date range."
           ctaText="Clear Filters"
           onAddChange={clearFilters}
         />

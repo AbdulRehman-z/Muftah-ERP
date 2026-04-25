@@ -9,7 +9,7 @@ import {
   requireSalesViewMiddleware,
 } from "@/lib/middlewares";
 import { z } from "zod";
-import { count, sql, eq, and, gte, lte, SQL, desc as drizzleDesc, asc as drizzleAsc, sum, gt } from "drizzle-orm";
+import { count, sql, eq, and, gte, lte, like, SQL, desc as drizzleDesc, asc as drizzleAsc, sum, gt } from "drizzle-orm";
 import { createInvoiceSchema } from "@/db/zod_schemas";
 import {
   startOfMonth, endOfMonth, startOfYear, endOfYear, parseISO, isValid,
@@ -58,6 +58,7 @@ export const getInvoicesFn = createServerFn()
       warehouseId: z.string().optional(),
       amountMin: z.number().min(0).optional(),
       amountMax: z.number().min(0).optional(),
+      search: z.string().optional(),
       sortBy: z.enum(["date", "totalPrice", "credit", "createdAt"]).default("createdAt"),
       sortOrder: z.enum(["asc", "desc"]).default("desc"),
     }).parse(input),
@@ -107,6 +108,11 @@ export const getInvoicesFn = createServerFn()
     }
     if (data.amountMax !== undefined) {
       conditions.push(lte(invoices.totalPrice, data.amountMax.toString()));
+    }
+
+    // Slip number search filter
+    if (data.search) {
+      conditions.push(like(invoices.slipNumber, `%${data.search}%`));
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -264,6 +270,12 @@ export const createInvoiceFn = createServerFn()
           date: new Date(),
         })
         .returning();
+
+      // Auto-assign INV-{sNo} as the slip number
+      await tx
+        .update(invoices)
+        .set({ slipNumber: `INV-${invoice.sNo}` })
+        .where(eq(invoices.id, invoice.id));
 
       // ── Wallet credit ────────────────────────────────────────────────────
       if (data.cash > 0 && data.account) {
