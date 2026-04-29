@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
+import { Badge } from "@/components/ui/badge";
 
 type CreateProductionRunDialogProps = {
   open: boolean;
@@ -170,7 +171,14 @@ export const CreateProductionRunDialog = ({
                   <SelectContent>
                     {operators.map((op) => (
                       <SelectItem key={op.id} value={op.id}>
-                        {op.name}
+                        <div className="flex items-center justify-between w-full gap-4">
+                          <span>{op.name}</span>
+                          {op.role && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                              {op.role}
+                            </Badge>
+                          )}
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>

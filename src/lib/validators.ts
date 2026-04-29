@@ -104,7 +104,7 @@ export const supplierSchema = z.object({
     .optional()
     .or(z.literal(""))
     .nullable(),
-  nationalId: z.string().min(1, "National ID is required").optional(),
+  nationalId: z.string().min(1, "National ID is required").optional().or(z.literal("")),
   phone: z.string().min(1, "Phone is required"),
   address: z.string().min(1, "Address is required"),
   city: z.string().optional(),

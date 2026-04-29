@@ -128,7 +128,7 @@ export const EditSupplierForm = ({ supplier, onSuccess }: Props) => {
           <form.Field name="nationalId">
             {(field) => (
               <Field>
-                <FieldLabel>National ID</FieldLabel>
+                <FieldLabel>National ID (Optional)</FieldLabel>
                 <Input
                   type="text"
                   value={field.state.value || ""}

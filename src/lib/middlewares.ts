@@ -161,6 +161,68 @@ export const requireUserManagementUsersManageMiddleware =
 export const requireUserManagementRolesManageMiddleware =
   createPermissionMiddleware("user-management.roles.manage");
 
+// Carton management permissions
+export const requireCartonTopupMiddleware = createPermissionMiddleware(
+  "manufacturing.carton.topup",
+);
+export const requireCartonRemoveMiddleware = createPermissionMiddleware(
+  "manufacturing.carton.remove",
+);
+export const requireCartonOverrideMiddleware = createPermissionMiddleware(
+  "manufacturing.carton.override",
+);
+export const requireCartonBulkMiddleware = createPermissionMiddleware(
+  "manufacturing.carton.bulk",
+);
+export const requireCartonMergeMiddleware = createPermissionMiddleware(
+  "manufacturing.carton.merge",
+);
+export const requireCartonRepackMiddleware = createPermissionMiddleware(
+  "manufacturing.carton.repack",
+);
+export const requireCartonRetireMiddleware = createPermissionMiddleware(
+  "manufacturing.carton.retire",
+);
+export const requireBatchCloseMiddleware = createPermissionMiddleware(
+  "manufacturing.batch.close",
+);
+export const requireBatchReopenMiddleware = createPermissionMiddleware(
+  "manufacturing.batch.reopen",
+);
+export const requireCartonAddMiddleware = createPermissionMiddleware(
+  "manufacturing.carton.add",
+);
+export const requireCartonTransferMiddleware = createPermissionMiddleware(
+  "manufacturing.carton.transfer",
+);
+export const requireDispatchMiddleware = createPermissionMiddleware(
+  "manufacturing.dispatch",
+);
+export const requireReturnsMiddleware = createPermissionMiddleware(
+  "manufacturing.returns",
+);
+export const requireQcHoldMiddleware = createPermissionMiddleware(
+  "manufacturing.qc.hold",
+);
+export const requireQcReleaseMiddleware = createPermissionMiddleware(
+  "manufacturing.qc.release",
+);
+export const requireStockCountMiddleware = createPermissionMiddleware(
+  "manufacturing.stock-count",
+);
+export const requireStockCountApproveMiddleware = createPermissionMiddleware(
+  "manufacturing.stock-count.approve",
+);
+export const requireIntegrityCheckMiddleware = createPermissionMiddleware(
+  "manufacturing.integrity.check",
+);
+export const requireIntegrityAlertsMiddleware = createPermissionMiddleware(
+  "manufacturing.integrity.alerts",
+);
+export const requireAuditExportMiddleware = createPermissionMiddleware(
+  "manufacturing.audit.export",
+);
+
 export const requireNoAuthMiddleware = createMiddleware()
   .middleware([authContextMiddleware])
   .server(async ({ next, context }) => {

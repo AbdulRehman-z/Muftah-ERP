@@ -14,7 +14,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
-    "db:migrate": "tsx --env-file=.env src/db/run-migrate.ts",
+    "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push --config=drizzle.config.ts",
     "db:drop": "drizzle-kit drop --config=drizzle.config.ts",
     "db:seed:hr": "tsx --env-file=.env src/db/seed-hr.ts",
@@ -79,6 +79,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.4.13",
     "@tanstack/devtools-vite": "^0.5.5",
     "@tanstack/eslint-config": "^0.3.4",
     "@testing-library/dom": "^10.4.1",

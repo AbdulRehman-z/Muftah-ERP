@@ -87,6 +87,10 @@ function ProductionRunManagePage() {
       queryClient.invalidateQueries({ queryKey: ["production-runs"] });
       queryClient.invalidateQueries({ queryKey: ["finished-goods"] });
       queryClient.invalidateQueries({ queryKey: ["factory-floor"] });
+      // Invalidate carton queries when auto-completion creates carton records
+      if (result.autoCompleted) {
+        queryClient.invalidateQueries({ queryKey: ["cartons"] });
+      }
     },
     onError: (err) => {
       toast.error(err.message || "Failed to log progress");

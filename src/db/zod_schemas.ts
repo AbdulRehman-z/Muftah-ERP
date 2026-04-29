@@ -1,5 +1,6 @@
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import * as inventory from "./schemas/inventory-schema";
+import * as manufacturing from "./schemas/manufacturing-schema";
 import * as sales from "./schemas/sales-schema";
 import * as finance from "./schemas/finance-schema";
 import { z } from "zod";
@@ -78,6 +79,52 @@ export const insertInventoryAuditLogSchema = createInsertSchema(
 );
 export const selectInventoryAuditLogSchema = createSelectSchema(
   inventory.inventoryAuditLog,
+);
+
+// --- MANUFACTURING (CARTON MANAGEMENT) ---
+export const insertCartonSchema = createInsertSchema(manufacturing.cartons);
+export const selectCartonSchema = createSelectSchema(manufacturing.cartons);
+
+export const insertAdjustmentLogSchema = createInsertSchema(
+  manufacturing.adjustmentLog,
+);
+export const selectAdjustmentLogSchema = createSelectSchema(
+  manufacturing.adjustmentLog,
+);
+
+export const insertStockCountSessionSchema = createInsertSchema(
+  manufacturing.stockCountSessions,
+);
+export const selectStockCountSessionSchema = createSelectSchema(
+  manufacturing.stockCountSessions,
+);
+
+export const insertStockCountLineSchema = createInsertSchema(
+  manufacturing.stockCountLines,
+);
+export const selectStockCountLineSchema = createSelectSchema(
+  manufacturing.stockCountLines,
+);
+
+export const insertReturnRecordSchema = createInsertSchema(
+  manufacturing.returnRecords,
+);
+export const selectReturnRecordSchema = createSelectSchema(
+  manufacturing.returnRecords,
+);
+
+export const insertReturnLineSchema = createInsertSchema(
+  manufacturing.returnLines,
+);
+export const selectReturnLineSchema = createSelectSchema(
+  manufacturing.returnLines,
+);
+
+export const insertIntegrityAlertSchema = createInsertSchema(
+  manufacturing.integrityAlerts,
+);
+export const selectIntegrityAlertSchema = createSelectSchema(
+  manufacturing.integrityAlerts,
 );
 
 // --- SALES ---

@@ -325,10 +325,16 @@ export const productionRuns = pgTable(
     shortfallReason: text("shortfall_reason"),
 
     // Status & Scheduling
-    status: text("status").notNull().default("scheduled"), // "scheduled", "in_progress", "completed", "cancelled"
+    status: text("status").notNull().default("scheduled"), // "scheduled", "in_progress", "completed", "cancelled", "failed"
     scheduledStartDate: timestamp("scheduled_start_date"),
     actualStartDate: timestamp("actual_start_date"),
     actualCompletionDate: timestamp("actual_completion_date"),
+
+    // Batch close / reopen tracking (Scenarios 9 & 10)
+    closedBy: text("closed_by").references(() => user.id),
+    reopenedAt: timestamp("reopened_at"),
+    reopenedBy: text("reopened_by").references(() => user.id),
+    reopenReason: text("reopen_reason"),
 
     notes: text("notes"),
     ...timestamps,
@@ -571,6 +577,16 @@ export const productionRunsRelations = relations(
       fields: [productionRuns.initiatorId],
       references: [user.id],
       relationName: "initiator",
+    }),
+    closedByUser: one(user, {
+      fields: [productionRuns.closedBy],
+      references: [user.id],
+      relationName: "productionClosedBy",
+    }),
+    reopenedByUser: one(user, {
+      fields: [productionRuns.reopenedBy],
+      references: [user.id],
+      relationName: "productionReopenedBy",
     }),
     materialsUsed: many(productionMaterialsUsed),
   }),

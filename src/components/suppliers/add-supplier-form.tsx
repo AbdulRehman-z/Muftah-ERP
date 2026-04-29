@@ -83,12 +83,9 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
 				];
 			});
 
-			// Keep the optimistic list visible immediately; defer network refetch to avoid
-			// first-insert stale overwrite cases in some environments.
-			queryClient.invalidateQueries({
-				queryKey: ["suppliers"],
-				refetchType: "none",
-			});
+			// Invalidate the suppliers query so the active observer refetches in the
+			// background and picks up computed fields (totalPurchases, balance, etc.).
+			queryClient.invalidateQueries({ queryKey: ["suppliers"] });
 			toast.success("Supplier added successfully");
 			onSuccess();
 		},
@@ -225,7 +222,10 @@ export const AddSupplierForm = ({ onSuccess }: Props) => {
 								<FieldLabel className="flex items-center gap-2 mb-1.5">
 									<IdCard className="size-4 text-muted-foreground" />
 									<span className="text-sm font-semibold">
-										National ID / CNIC
+										National ID / CNIC{" "}
+										<span className="text-muted-foreground font-normal ml-1">
+											(Optional)
+										</span>
 									</span>
 								</FieldLabel>
 								<Input

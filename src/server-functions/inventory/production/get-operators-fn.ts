@@ -11,6 +11,7 @@ export const getOperatorsFn = createServerFn()
       .select({
         id: user.id,
         name: user.name,
+        role: user.role,
       })
       .from(user);
     

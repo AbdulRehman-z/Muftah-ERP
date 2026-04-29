@@ -485,6 +485,10 @@ CREATE TABLE "production_runs" (
 	"scheduled_start_date" timestamp,
 	"actual_start_date" timestamp,
 	"actual_completion_date" timestamp,
+	"closed_by" text,
+	"reopened_at" timestamp,
+	"reopened_by" text,
+	"reopen_reason" text,
 	"notes" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
@@ -572,6 +576,104 @@ CREATE TABLE "warehouses" (
 	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "adjustment_log" (
+	"id" text PRIMARY KEY NOT NULL,
+	"carton_id" text NOT NULL,
+	"batch_id" text,
+	"sku" text,
+	"type" text NOT NULL,
+	"packs_before" integer NOT NULL,
+	"delta" integer NOT NULL,
+	"packs_after" integer NOT NULL,
+	"reason" text,
+	"related_carton_id" text,
+	"dispatch_order_id" text,
+	"return_record_id" text,
+	"reconciliation_id" text,
+	"bulk_operation_id" text,
+	"performed_by" text NOT NULL,
+	"performed_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "cartons" (
+	"id" text PRIMARY KEY NOT NULL,
+	"recipe_id" text NOT NULL,
+	"production_run_id" text NOT NULL,
+	"warehouse_id" text NOT NULL,
+	"sku" text,
+	"capacity" integer NOT NULL,
+	"current_packs" integer DEFAULT 0 NOT NULL,
+	"status" text DEFAULT 'PARTIAL' NOT NULL,
+	"zone" text,
+	"hold_reason" text,
+	"hold_started_at" timestamp,
+	"hold_expires_at" timestamp,
+	"hold_started_by" text,
+	"pre_hold_status" text,
+	"retired_at" timestamp,
+	"retired_reason" text,
+	"retired_by" text,
+	"dispatched_at" timestamp,
+	"dispatch_order_id" text,
+	"original_capacity" integer,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "integrity_alerts" (
+	"id" text PRIMARY KEY NOT NULL,
+	"sku" text NOT NULL,
+	"batch_id" text,
+	"carton_sum" integer NOT NULL,
+	"ledger_total" integer NOT NULL,
+	"delta" integer DEFAULT 0 NOT NULL,
+	"status" text DEFAULT 'OPEN' NOT NULL,
+	"detected_at" timestamp DEFAULT now() NOT NULL,
+	"resolved_by" text,
+	"resolved_at" timestamp,
+	"resolution" text
+);
+--> statement-breakpoint
+CREATE TABLE "return_lines" (
+	"id" text PRIMARY KEY NOT NULL,
+	"return_record_id" text NOT NULL,
+	"carton_id" text NOT NULL,
+	"packs_returned" integer NOT NULL,
+	"condition" text NOT NULL,
+	"destination_carton_id" text
+);
+--> statement-breakpoint
+CREATE TABLE "return_records" (
+	"id" text PRIMARY KEY NOT NULL,
+	"dispatch_order_id" text NOT NULL,
+	"returned_by" text NOT NULL,
+	"returned_at" timestamp DEFAULT now() NOT NULL,
+	"notes" text
+);
+--> statement-breakpoint
+CREATE TABLE "stock_count_lines" (
+	"id" text PRIMARY KEY NOT NULL,
+	"session_id" text NOT NULL,
+	"carton_id" text NOT NULL,
+	"system_count" integer NOT NULL,
+	"physical_count" integer DEFAULT 0 NOT NULL,
+	"delta" integer DEFAULT 0 NOT NULL,
+	"status" text DEFAULT 'PENDING' NOT NULL,
+	"approved_by" text
+);
+--> statement-breakpoint
+CREATE TABLE "stock_count_sessions" (
+	"id" text PRIMARY KEY NOT NULL,
+	"batch_id" text,
+	"sku" text,
+	"status" text DEFAULT 'OPEN' NOT NULL,
+	"started_by" text NOT NULL,
+	"approved_by" text,
+	"started_at" timestamp DEFAULT now() NOT NULL,
+	"approved_at" timestamp,
+	"notes" text
 );
 --> statement-breakpoint
 CREATE TABLE "app_permissions" (
@@ -765,6 +867,8 @@ ALTER TABLE "production_runs" ADD CONSTRAINT "production_runs_recipe_id_recipes_
 ALTER TABLE "production_runs" ADD CONSTRAINT "production_runs_warehouse_id_warehouses_id_fk" FOREIGN KEY ("warehouse_id") REFERENCES "public"."warehouses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "production_runs" ADD CONSTRAINT "production_runs_operator_id_user_id_fk" FOREIGN KEY ("operator_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "production_runs" ADD CONSTRAINT "production_runs_initiator_id_user_id_fk" FOREIGN KEY ("initiator_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "production_runs" ADD CONSTRAINT "production_runs_closed_by_user_id_fk" FOREIGN KEY ("closed_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "production_runs" ADD CONSTRAINT "production_runs_reopened_by_user_id_fk" FOREIGN KEY ("reopened_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "recipe_ingredients" ADD CONSTRAINT "recipe_ingredients_recipe_id_recipes_id_fk" FOREIGN KEY ("recipe_id") REFERENCES "public"."recipes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "recipe_ingredients" ADD CONSTRAINT "recipe_ingredients_chemical_id_chemicals_id_fk" FOREIGN KEY ("chemical_id") REFERENCES "public"."chemicals"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "recipe_packaging" ADD CONSTRAINT "recipe_packaging_recipe_id_recipes_id_fk" FOREIGN KEY ("recipe_id") REFERENCES "public"."recipes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -775,6 +879,31 @@ ALTER TABLE "recipes" ADD CONSTRAINT "recipes_carton_packaging_id_packaging_mate
 ALTER TABLE "stock_transfers" ADD CONSTRAINT "stock_transfers_from_warehouse_id_warehouses_id_fk" FOREIGN KEY ("from_warehouse_id") REFERENCES "public"."warehouses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stock_transfers" ADD CONSTRAINT "stock_transfers_to_warehouse_id_warehouses_id_fk" FOREIGN KEY ("to_warehouse_id") REFERENCES "public"."warehouses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stock_transfers" ADD CONSTRAINT "stock_transfers_performed_by_id_user_id_fk" FOREIGN KEY ("performed_by_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "adjustment_log" ADD CONSTRAINT "adjustment_log_carton_id_cartons_id_fk" FOREIGN KEY ("carton_id") REFERENCES "public"."cartons"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "adjustment_log" ADD CONSTRAINT "adjustment_log_batch_id_production_runs_id_fk" FOREIGN KEY ("batch_id") REFERENCES "public"."production_runs"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "adjustment_log" ADD CONSTRAINT "adjustment_log_related_carton_id_cartons_id_fk" FOREIGN KEY ("related_carton_id") REFERENCES "public"."cartons"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "adjustment_log" ADD CONSTRAINT "adjustment_log_dispatch_order_id_invoices_id_fk" FOREIGN KEY ("dispatch_order_id") REFERENCES "public"."invoices"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "adjustment_log" ADD CONSTRAINT "adjustment_log_return_record_id_return_records_id_fk" FOREIGN KEY ("return_record_id") REFERENCES "public"."return_records"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "adjustment_log" ADD CONSTRAINT "adjustment_log_performed_by_user_id_fk" FOREIGN KEY ("performed_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "cartons" ADD CONSTRAINT "cartons_recipe_id_recipes_id_fk" FOREIGN KEY ("recipe_id") REFERENCES "public"."recipes"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "cartons" ADD CONSTRAINT "cartons_production_run_id_production_runs_id_fk" FOREIGN KEY ("production_run_id") REFERENCES "public"."production_runs"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "cartons" ADD CONSTRAINT "cartons_warehouse_id_warehouses_id_fk" FOREIGN KEY ("warehouse_id") REFERENCES "public"."warehouses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "cartons" ADD CONSTRAINT "cartons_hold_started_by_user_id_fk" FOREIGN KEY ("hold_started_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "cartons" ADD CONSTRAINT "cartons_retired_by_user_id_fk" FOREIGN KEY ("retired_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "cartons" ADD CONSTRAINT "cartons_dispatch_order_id_invoices_id_fk" FOREIGN KEY ("dispatch_order_id") REFERENCES "public"."invoices"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "integrity_alerts" ADD CONSTRAINT "integrity_alerts_batch_id_production_runs_id_fk" FOREIGN KEY ("batch_id") REFERENCES "public"."production_runs"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "integrity_alerts" ADD CONSTRAINT "integrity_alerts_resolved_by_user_id_fk" FOREIGN KEY ("resolved_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "return_lines" ADD CONSTRAINT "return_lines_return_record_id_return_records_id_fk" FOREIGN KEY ("return_record_id") REFERENCES "public"."return_records"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "return_lines" ADD CONSTRAINT "return_lines_carton_id_cartons_id_fk" FOREIGN KEY ("carton_id") REFERENCES "public"."cartons"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "return_lines" ADD CONSTRAINT "return_lines_destination_carton_id_cartons_id_fk" FOREIGN KEY ("destination_carton_id") REFERENCES "public"."cartons"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "return_records" ADD CONSTRAINT "return_records_dispatch_order_id_invoices_id_fk" FOREIGN KEY ("dispatch_order_id") REFERENCES "public"."invoices"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "return_records" ADD CONSTRAINT "return_records_returned_by_user_id_fk" FOREIGN KEY ("returned_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "stock_count_lines" ADD CONSTRAINT "stock_count_lines_session_id_stock_count_sessions_id_fk" FOREIGN KEY ("session_id") REFERENCES "public"."stock_count_sessions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "stock_count_lines" ADD CONSTRAINT "stock_count_lines_carton_id_cartons_id_fk" FOREIGN KEY ("carton_id") REFERENCES "public"."cartons"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "stock_count_lines" ADD CONSTRAINT "stock_count_lines_approved_by_user_id_fk" FOREIGN KEY ("approved_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "stock_count_sessions" ADD CONSTRAINT "stock_count_sessions_batch_id_production_runs_id_fk" FOREIGN KEY ("batch_id") REFERENCES "public"."production_runs"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "stock_count_sessions" ADD CONSTRAINT "stock_count_sessions_started_by_user_id_fk" FOREIGN KEY ("started_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "stock_count_sessions" ADD CONSTRAINT "stock_count_sessions_approved_by_user_id_fk" FOREIGN KEY ("approved_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "app_role_permissions" ADD CONSTRAINT "app_role_permissions_role_id_app_roles_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."app_roles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "app_role_permissions" ADD CONSTRAINT "app_role_permissions_permission_id_app_permissions_id_fk" FOREIGN KEY ("permission_id") REFERENCES "public"."app_permissions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_role_assignments" ADD CONSTRAINT "user_role_assignments_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -821,6 +950,24 @@ CREATE INDEX "stock_warehouse_idx" ON "material_stock" USING btree ("warehouse_i
 CREATE INDEX "production_runs_updated_at_idx" ON "production_runs" USING btree ("updated_at");--> statement-breakpoint
 CREATE INDEX "ingredients_recipe_idx" ON "recipe_ingredients" USING btree ("recipe_id");--> statement-breakpoint
 CREATE INDEX "packaging_recipe_idx" ON "recipe_packaging" USING btree ("recipe_id");--> statement-breakpoint
+CREATE INDEX "adj_log_carton_idx" ON "adjustment_log" USING btree ("carton_id");--> statement-breakpoint
+CREATE INDEX "adj_log_batch_idx" ON "adjustment_log" USING btree ("batch_id");--> statement-breakpoint
+CREATE INDEX "adj_log_type_idx" ON "adjustment_log" USING btree ("type");--> statement-breakpoint
+CREATE INDEX "adj_log_bulk_op_idx" ON "adjustment_log" USING btree ("bulk_operation_id");--> statement-breakpoint
+CREATE INDEX "adj_log_performed_idx" ON "adjustment_log" USING btree ("performed_at");--> statement-breakpoint
+CREATE INDEX "cartons_recipe_idx" ON "cartons" USING btree ("recipe_id");--> statement-breakpoint
+CREATE INDEX "cartons_production_run_idx" ON "cartons" USING btree ("production_run_id");--> statement-breakpoint
+CREATE INDEX "cartons_warehouse_idx" ON "cartons" USING btree ("warehouse_id");--> statement-breakpoint
+CREATE INDEX "cartons_status_idx" ON "cartons" USING btree ("status");--> statement-breakpoint
+CREATE INDEX "cartons_sku_idx" ON "cartons" USING btree ("sku");--> statement-breakpoint
+CREATE INDEX "integrity_alerts_status_idx" ON "integrity_alerts" USING btree ("status");--> statement-breakpoint
+CREATE INDEX "integrity_alerts_sku_idx" ON "integrity_alerts" USING btree ("sku");--> statement-breakpoint
+CREATE INDEX "integrity_alerts_batch_idx" ON "integrity_alerts" USING btree ("batch_id");--> statement-breakpoint
+CREATE INDEX "return_lines_record_idx" ON "return_lines" USING btree ("return_record_id");--> statement-breakpoint
+CREATE INDEX "return_lines_carton_idx" ON "return_lines" USING btree ("carton_id");--> statement-breakpoint
+CREATE INDEX "stock_count_session_idx" ON "stock_count_lines" USING btree ("session_id");--> statement-breakpoint
+CREATE INDEX "stock_count_carton_idx" ON "stock_count_lines" USING btree ("carton_id");--> statement-breakpoint
+CREATE INDEX "stock_count_session_status_idx" ON "stock_count_sessions" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "app_permissions_key_idx" ON "app_permissions" USING btree ("key");--> statement-breakpoint
 CREATE INDEX "app_permissions_module_idx" ON "app_permissions" USING btree ("module_key");--> statement-breakpoint
 CREATE INDEX "app_role_permissions_role_idx" ON "app_role_permissions" USING btree ("role_id");--> statement-breakpoint

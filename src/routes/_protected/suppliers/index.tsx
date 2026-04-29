@@ -7,11 +7,14 @@ import { GenericLoader } from "@/components/custom/generic-loader";
 
 export const Route = createFileRoute("/_protected/suppliers/")({
   loader: async ({ context }) => {
-    void context.queryClient.prefetchQuery({
+    await context.queryClient.ensureQueryData({
       queryKey: ["suppliers"],
       queryFn: getSuppliersFn,
     });
   },
+  pendingComponent: () => (
+    <GenericLoader title="Loading Suppliers" description="Please wait..." />
+  ),
   component: SuppliersPage,
 });
 

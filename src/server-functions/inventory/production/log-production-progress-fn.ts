@@ -11,10 +11,12 @@ import {
   warehouses,
   finishedGoodsStock,
 } from "@/db/schemas/inventory-schema";
+import { cartons } from "@/db/schemas/manufacturing-schema";
 import { requireAuthMiddleware } from "@/lib/middlewares";
 import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
 import { hasPermission } from "@/lib/rbac";
+import { createId } from "@paralleldrive/cuid2";
 
 const logProgressSchema = z.object({
   productionRunId: z.string().min(1),
@@ -308,6 +310,43 @@ export const logProductionProgressFn = createServerFn()
           performedById: context.session.user.id,
           referenceId: run.id,
         });
+
+        // 9b. Create individual carton records on auto-completion
+        if (finalCartons > 0 && itemsPerCarton > 0 && recipe.cartonPackagingId) {
+          const cartonInserts: (typeof cartons.$inferInsert)[] = [];
+
+          // Create full cartons with COMPLETE status
+          for (let i = 0; i < finalCartons; i++) {
+            cartonInserts.push({
+              id: createId(),
+              recipeId: run.recipeId,
+              productionRunId: run.id,
+              warehouseId: factoryFloor.id,
+              sku: recipe.name,
+              capacity: itemsPerCarton,
+              currentPacks: itemsPerCarton,
+              status: "COMPLETE",
+            });
+          }
+
+          // Create one partial carton for remaining loose units
+          if (finalLoose > 0) {
+            cartonInserts.push({
+              id: createId(),
+              recipeId: run.recipeId,
+              productionRunId: run.id,
+              warehouseId: factoryFloor.id,
+              sku: recipe.name,
+              capacity: itemsPerCarton,
+              currentPacks: finalLoose,
+              status: "PARTIAL",
+            });
+          }
+
+          if (cartonInserts.length > 0) {
+            await tx.insert(cartons).values(cartonInserts);
+          }
+        }
       }
 
       return { success: true, autoCompleted: isNowComplete };

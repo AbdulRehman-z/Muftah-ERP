@@ -17,6 +17,7 @@ import {
   Receipt,
   ArrowLeft,
   AlertTriangle,
+  Package,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -46,7 +47,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 export const Route = createFileRoute(
-  "/_protected/manufacturing/productions/$runId",
+  "/_protected/manufacturing/productions/$runId/",
 )({
   component: ProductionRunDetailsPage,
 });
@@ -159,6 +160,13 @@ function ProductionRunDetailsPage() {
         </div>
         <div className="flex items-center gap-3">
           {getStatusBadge(run.status)}
+
+          <Button variant="outline" size="sm" asChild className="h-8 text-xs font-bold uppercase tracking-wide">
+            <Link to="/manufacturing/productions/$runId/cartons" params={{ runId: run.id }}>
+              <Package className="size-3.5 mr-1.5" />
+              Cartons
+            </Link>
+          </Button>
 
           {/* Action Buttons */}
           {run.status === "scheduled" && (

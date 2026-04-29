@@ -9,10 +9,12 @@ import {
   productionMaterialsUsed,
   packagingMaterials,
 } from "@/db/schemas/inventory-schema";
+import { cartons } from "@/db/schemas/manufacturing-schema";
 import { requireAuthMiddleware } from "@/lib/middlewares";
 import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
 import { hasPermission } from "@/lib/rbac";
+import { createId } from "@paralleldrive/cuid2";
 
 const completeProductionSchema = z.object({
   productionRunId: z.string().min(1, "Production run ID is required"),
@@ -254,6 +256,43 @@ export const completeProductionFn = createServerFn()
         // No further stock update needed here.
       }
 
+
+      // 5b. Create individual carton records in the cartons table
+      if (finalCartons > 0 && itemsPerCarton > 0 && recipe.cartonPackagingId) {
+        const cartonInserts: (typeof cartons.$inferInsert)[] = [];
+
+        // Create full cartons with COMPLETE status
+        for (let i = 0; i < finalCartons; i++) {
+          cartonInserts.push({
+            id: createId(),
+            recipeId: productionRun.recipeId,
+            productionRunId: productionRun.id,
+            warehouseId: productionRun.warehouseId,
+            sku: recipe.name,
+            capacity: itemsPerCarton,
+            currentPacks: itemsPerCarton,
+            status: "COMPLETE",
+          });
+        }
+
+        // Create one partial carton for remaining loose units
+        if (finalLoose > 0) {
+          cartonInserts.push({
+            id: createId(),
+            recipeId: productionRun.recipeId,
+            productionRunId: productionRun.id,
+            warehouseId: productionRun.warehouseId,
+            sku: recipe.name,
+            capacity: itemsPerCarton,
+            currentPacks: finalLoose,
+            status: "PARTIAL",
+          });
+        }
+
+        if (cartonInserts.length > 0) {
+          await tx.insert(cartons).values(cartonInserts);
+        }
+      }
 
       // 6. Create audit log for completion (status change only, materials already logged)
       await tx.insert(inventoryAuditLog).values({

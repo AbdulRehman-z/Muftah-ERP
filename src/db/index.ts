@@ -3,6 +3,7 @@ import { Pool } from "pg";
 import * as authSchema from "./schemas/auth-schema";
 import * as financeSchema from "./schemas/finance-schema";
 import * as inventorySchema from "./schemas/inventory-schema";
+import * as manufacturingSchema from "./schemas/manufacturing-schema";
 import * as salesSchema from "./schemas/sales-schema";
 import * as coreSuppliers from "./schemas/core-suppliers";
 import * as supplierSchema from "./schemas/supplier-schema";
@@ -12,6 +13,7 @@ import * as rbacSchema from "./schemas/rbac-schema";
 const schema = {
   ...authSchema,
   ...inventorySchema,
+  ...manufacturingSchema,
   ...salesSchema,
   ...financeSchema,
   ...supplierSchema,
@@ -61,6 +63,15 @@ export const {
   inventoryAuditLog,
   productionMaterialsUsed,
 } = inventorySchema;
+export const {
+  cartons,
+  adjustmentLog,
+  stockCountSessions,
+  stockCountLines,
+  returnRecords,
+  returnLines,
+  integrityAlerts,
+} = manufacturingSchema;
 export const { customers, invoices, invoiceItems } = salesSchema;
 export const { wallets, expenses, transactions } = financeSchema;
 export const { supplierPayments, purchaseRecords } = supplierSchema;
