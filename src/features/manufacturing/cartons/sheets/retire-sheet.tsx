@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Loader2 } from "lucide-react";
 import { ResponsiveSheet } from "@/components/custom/responsive-sheet";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -61,20 +61,22 @@ export function RetireSheet({ open, onOpenChange, cartonId, batchId, currentPack
       confirmCloseTitle="Cancel retirement?"
       confirmCloseDescription="This carton will not be retired."
     >
-      <div className="space-y-6 py-4">
-        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4 space-y-2">
-          <p className="text-sm font-bold text-red-800 dark:text-red-200">
-            This action cannot be undone.
+      <div className="flex flex-col gap-6 py-4">
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3.5 flex flex-col gap-1">
+          <p className="text-xs font-medium text-destructive">
+            This action cannot be reversed.
           </p>
-          <p className="text-xs text-red-700 dark:text-red-300">
-            Carton{sku ? ` ${sku}` : ""} with {currentPacks} packs will be permanently retired and removed from active inventory.
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Carton{sku ? ` ${sku}` : ""} with {currentPacks} packs will be flagged retired and omitted from stock reporting.
           </p>
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-xs font-bold uppercase tracking-wider">Reason</Label>
+        <div className="flex flex-col gap-2">
+          <Label className="text-sm font-medium text-foreground">Reason</Label>
           <Select value={reasonCategory} onValueChange={(v) => setReasonCategory(v as typeof reasonCategory)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-10">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               {RETIRE_REASONS.map((r) => (
                 <SelectItem key={r} value={r}>{reasonLabels[r]}</SelectItem>
@@ -83,13 +85,13 @@ export function RetireSheet({ open, onOpenChange, cartonId, batchId, currentPack
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="note" className="text-xs font-bold uppercase tracking-wider">
-            Additional Details
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="note" className="text-sm font-medium text-foreground">
+            Additional details
           </Label>
           <Textarea
             id="note"
-            placeholder="Explain why this carton is being retired..."
+            placeholder="Provide audit justification..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
@@ -98,11 +100,18 @@ export function RetireSheet({ open, onOpenChange, cartonId, batchId, currentPack
 
         <Button
           variant="destructive"
-          className="w-full font-bold uppercase tracking-wide"
+          className="w-full h-10"
           onClick={handleSubmit}
           disabled={mutation.isPending}
         >
-          {mutation.isPending ? "Retiring…" : "Retire Carton"}
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Retiring…
+            </>
+          ) : (
+            "Retire Carton"
+          )}
         </Button>
       </div>
     </ResponsiveSheet>

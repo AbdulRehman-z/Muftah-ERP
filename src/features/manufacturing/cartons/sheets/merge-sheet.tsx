@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Merge } from "lucide-react";
+import { Merge, Loader2 } from "lucide-react";
 import { ResponsiveSheet } from "@/components/custom/responsive-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,8 +30,8 @@ export function MergeSheet({ open, onOpenChange, batchId, sourceCartonId, source
           onOpenChange(false);
           setDestinationCartonId("");
         },
-        },
-);
+      },
+    );
   };
 
   return (
@@ -43,42 +43,52 @@ export function MergeSheet({ open, onOpenChange, batchId, sourceCartonId, source
       onOpenChange={onOpenChange}
       isDirty={destinationCartonId !== ""}
     >
-      <div className="space-y-6 py-4">
-        <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+      <div className="flex flex-col gap-6 py-4">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3.5 flex flex-col gap-1.5">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Source Carton</span>
-            <span className="font-mono font-bold">{sourceSku || sourceCartonId.slice(0, 8)}</span>
+            <span className="text-muted-foreground">Source SKU</span>
+            <span className="font-semibold text-foreground">{sourceSku ?? "Unknown SKU"}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Packs to Merge</span>
-            <span className="font-mono font-bold text-amber-600">{sourcePacks}</span>
+            <span className="text-muted-foreground">Packs to transfer</span>
+            <span className="font-semibold tabular-nums text-foreground">{sourcePacks}</span>
           </div>
         </div>
 
-        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
-          <p className="text-xs font-medium text-red-800 dark:text-red-200">
-            The source carton will be retired after merge.
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3">
+          <p className="text-xs text-destructive leading-relaxed">
+            The source container will be retired upon successful inventory allocation.
           </p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="targetCartonId" className="text-xs font-bold uppercase tracking-wider">
-            Target Carton ID
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="destinationCartonId" className="text-sm font-medium text-foreground">
+            Destination carton ID
           </Label>
           <Input
             id="destinationCartonId"
-            placeholder="Enter target carton ID"
+            placeholder="Paste or scan carton ID"
             value={destinationCartonId}
             onChange={(e) => setDestinationCartonId(e.target.value)}
+            className="h-10 font-mono"
+            autoComplete="off"
+            spellCheck={false}
           />
         </div>
 
         <Button
-          className="w-full font-bold uppercase tracking-wide bg-amber-600 hover:bg-amber-700"
+          className="w-full h-10"
           onClick={handleSubmit}
           disabled={mutation.isPending || !destinationCartonId.trim()}
         >
-          {mutation.isPending ? "Merging…" : "Merge Cartons"}
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Merging…
+            </>
+          ) : (
+            "Merge Cartons"
+          )}
         </Button>
       </div>
     </ResponsiveSheet>

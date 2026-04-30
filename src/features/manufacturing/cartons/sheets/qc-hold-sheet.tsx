@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ShieldAlert, ShieldCheck } from "lucide-react";
+import { ShieldAlert, ShieldCheck, Loader2 } from "lucide-react";
 import { ResponsiveSheet } from "@/components/custom/responsive-sheet";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -67,20 +67,20 @@ function ApplyHoldSheet({ open, onOpenChange, cartonId, batchId, sku }: ApplyHol
       onOpenChange={onOpenChange}
       isDirty={reason !== ""}
     >
-      <div className="space-y-6 py-4">
-        <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
-          <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
-            This carton will be locked. No pack changes can be made until the hold is released.
+      <div className="flex flex-col gap-6 py-4">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3.5">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            This carton will be restricted from operational updates until a technician releases the hold.
           </p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="reason" className="text-xs font-bold uppercase tracking-wider">
-            Hold Reason
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="reason" className="text-sm font-medium text-foreground">
+            Hold reason
           </Label>
           <Textarea
             id="reason"
-            placeholder="e.g. QC sample failed visual inspection"
+            placeholder="Provide explicit reason for quarantine"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
@@ -88,11 +88,19 @@ function ApplyHoldSheet({ open, onOpenChange, cartonId, batchId, sku }: ApplyHol
         </div>
 
         <Button
-          className="w-full font-bold uppercase tracking-wide bg-orange-600 hover:bg-orange-700"
+          className="w-full h-10"
+          variant="destructive"
           onClick={handleSubmit}
           disabled={mutation.isPending || !reason.trim()}
         >
-          {mutation.isPending ? "Applying…" : "Apply QC Hold"}
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Applying…
+            </>
+          ) : (
+            "Apply QC Hold"
+          )}
         </Button>
       </div>
     </ResponsiveSheet>
@@ -123,17 +131,25 @@ function ReleaseHoldSheet({ open, onOpenChange, cartonId, batchId, sku, preHoldS
   return (
     <ResponsiveSheet
       title="Release QC Hold"
-      description={`Release hold on carton${sku ? ` ${sku}` : ""} (will return to ${preHoldStatus})`}
+      description={`Release hold on carton${sku ? ` ${sku}` : ""}`}
       icon={ShieldCheck}
       open={open}
       onOpenChange={onOpenChange}
       isDirty={notes !== ""}
     >
-      <div className="space-y-6 py-4">
-        <div className="space-y-2">
-          <Label className="text-xs font-bold uppercase tracking-wider">Outcome</Label>
+      <div className="flex flex-col gap-6 py-4">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3.5">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Release action will restore previous state or discard carton entirely.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label className="text-sm font-medium text-foreground">Action</Label>
           <Select value={outcome} onValueChange={setOutcome}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-10">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               {HOLD_OUTCOMES.map((o) => (
                 <SelectItem key={o} value={o}>
@@ -144,13 +160,13 @@ function ReleaseHoldSheet({ open, onOpenChange, cartonId, batchId, sku, preHoldS
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="notes" className="text-xs font-bold uppercase tracking-wider">
-            Notes (optional)
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="notes" className="text-sm font-medium text-foreground">
+            Notes <span className="text-muted-foreground text-xs font-normal">(optional)</span>
           </Label>
           <Textarea
             id="notes"
-            placeholder="e.g. QC passed, carton cleared for dispatch"
+            placeholder="Record inspection findings..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
@@ -158,11 +174,21 @@ function ReleaseHoldSheet({ open, onOpenChange, cartonId, batchId, sku, preHoldS
         </div>
 
         <Button
-          className={`w-full font-bold uppercase tracking-wide ${outcome === "CONDEMNED" ? "bg-destructive hover:bg-destructive/90" : "bg-emerald-600 hover:bg-emerald-700"}`}
+          className="w-full h-10"
+          variant={outcome === "CONDEMNED" ? "destructive" : "default"}
           onClick={handleSubmit}
           disabled={mutation.isPending}
         >
-          {mutation.isPending ? "Releasing…" : outcome === "CONDEMNED" ? "Condemn & Retire" : "Clear & Release"}
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Releasing…
+            </>
+          ) : outcome === "CONDEMNED" ? (
+            "Condemn & Retire"
+          ) : (
+            "Clear & Release"
+          )}
         </Button>
       </div>
     </ResponsiveSheet>

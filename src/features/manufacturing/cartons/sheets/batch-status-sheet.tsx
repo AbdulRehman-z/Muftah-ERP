@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Lock, Unlock } from "lucide-react";
+import { Lock, Unlock, Loader2, AlertCircle } from "lucide-react";
 import { ResponsiveSheet } from "@/components/custom/responsive-sheet";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCloseBatch, useReopenBatch } from "../hooks/use-carton-mutations";
+import { cn } from "@/lib/utils";
 
 type CloseProps = {
   mode: "close";
@@ -56,50 +57,58 @@ function CloseBatchSheet({ open, onOpenChange, batchId }: CloseProps) {
       onOpenChange={onOpenChange}
       isDirty={reason !== ""}
     >
-      <div className="space-y-6 py-4">
-        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4 space-y-2">
-          <p className="text-sm font-bold text-red-800 dark:text-red-200">
-            This will close the batch.
+      <div className="flex flex-col gap-6 py-4">
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3.5 flex flex-col gap-1">
+          <p className="text-xs font-medium text-destructive">
+            Operational lock will be applied.
           </p>
-          <p className="text-xs text-red-700 dark:text-red-300">
-            No further carton modifications (top-ups, transfers, etc.) will be allowed after closing.
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Closing prevents any further modifications (top-ups, transfers, or repacking) to cartons in this run.
           </p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="reason" className="text-xs font-bold uppercase tracking-wider">
-            Closing Reason
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="reason" className="text-sm font-medium text-foreground">
+            Closing reason
           </Label>
           <Textarea
             id="reason"
-            placeholder="e.g. Production run completed, all cartons accounted for"
+            placeholder="e.g. Production run completed, all inventory accounted for"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
           />
         </div>
 
-        <label className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/30 cursor-pointer">
+        <label className="flex items-start gap-3 px-4 py-3.5 rounded-xl border border-border hover:bg-muted/40 cursor-pointer transition-colors">
           <input
             type="checkbox"
             checked={acknowledgeShortfall}
             onChange={(e) => setAcknowledgeShortfall(e.target.checked)}
-            className="mt-0.5 accent-primary"
+            className="mt-0.5 accent-primary shrink-0"
           />
-          <div>
-            <p className="text-sm font-medium">Acknowledge yield shortfall</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Check this if fill rate is below the 80% minimum threshold and you want to proceed anyway.
-            </p>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-medium text-foreground">Acknowledge yield shortfall</span>
+            <span className="text-xs text-muted-foreground leading-snug">
+              Confirm processing despite fill rate being below the 80% minimum threshold.
+            </span>
           </div>
         </label>
 
         <Button
-          className="w-full font-bold uppercase tracking-wide"
+          className="w-full h-10"
+          variant="destructive"
           onClick={handleSubmit}
           disabled={mutation.isPending || !reason.trim()}
         >
-          {mutation.isPending ? "Closing…" : "Close Batch"}
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Closing…
+            </>
+          ) : (
+            "Close Batch"
+          )}
         </Button>
       </div>
     </ResponsiveSheet>
@@ -125,26 +134,27 @@ function ReopenBatchSheet({ open, onOpenChange, batchId }: ReopenProps) {
   return (
     <ResponsiveSheet
       title="Reopen Batch"
-      description="Allow carton modifications again"
+      description="Restore batch to active state"
       icon={Unlock}
       open={open}
       onOpenChange={onOpenChange}
       isDirty={reason !== ""}
     >
-      <div className="space-y-6 py-4">
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-            Reopening will allow further carton modifications.
+      <div className="flex flex-col gap-6 py-4">
+        <div className="rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50/60 dark:bg-amber-950/20 px-4 py-3.5 flex items-center gap-2">
+          <AlertCircle className="size-3.5 text-amber-600 shrink-0" />
+          <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+            Reopening will allow further inventory modifications.
           </p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="reason" className="text-xs font-bold uppercase tracking-wider">
-            Reopen Reason
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="reason" className="text-sm font-medium text-foreground">
+            Reopen reason
           </Label>
           <Textarea
             id="reason"
-            placeholder="e.g. Additional cartons found after closing"
+            placeholder="Why is this batch being unlocked?"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
@@ -152,11 +162,18 @@ function ReopenBatchSheet({ open, onOpenChange, batchId }: ReopenProps) {
         </div>
 
         <Button
-          className="w-full font-bold uppercase tracking-wide"
+          className="w-full h-10"
           onClick={handleSubmit}
           disabled={mutation.isPending || !reason.trim()}
         >
-          {mutation.isPending ? "Reopening…" : "Reopen Batch"}
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Reopening…
+            </>
+          ) : (
+            "Reopen Batch"
+          )}
         </Button>
       </div>
     </ResponsiveSheet>

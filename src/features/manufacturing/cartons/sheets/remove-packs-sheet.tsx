@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PackageMinus } from "lucide-react";
+import { PackageMinus, Loader2, AlertCircle } from "lucide-react";
 import { ResponsiveSheet } from "@/components/custom/responsive-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { useRemovePacks } from "../hooks/use-carton-mutations";
 import { REMOVAL_REASONS } from "@/lib/cartons/carton.types";
+import { cn } from "@/lib/utils";
 
 type Props = {
   open: boolean;
@@ -39,6 +40,7 @@ export function RemovePacksSheet({ open, onOpenChange, cartonId, batchId, curren
   const mutation = useRemovePacks(cartonId, batchId);
 
   const isDirty = packsToRemove !== 1 || notes !== "";
+  const overLimit = packsToRemove > currentPacks;
 
   const handleSubmit = () => {
     mutation.mutate(
@@ -63,21 +65,19 @@ export function RemovePacksSheet({ open, onOpenChange, cartonId, batchId, curren
       onOpenChange={onOpenChange}
       isDirty={isDirty}
     >
-      <div className="space-y-6 py-4">
-        <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+      <div className="flex flex-col gap-6 py-4">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3.5 flex flex-col gap-1.5">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Current Packs</span>
-            <span className="font-mono font-bold">{currentPacks} / {capacity}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Min After Removal</span>
-            <span className="font-mono font-bold text-amber-600">0 packs</span>
+            <span className="text-muted-foreground">Current quantity</span>
+            <span className="font-semibold tabular-nums text-foreground">
+              {currentPacks} / {capacity}
+            </span>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="packsToRemove" className="text-xs font-bold uppercase tracking-wider">
-            Packs to Remove
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="packsToRemove" className="text-sm font-medium text-foreground">
+            Packs to remove
           </Label>
           <Input
             id="packsToRemove"
@@ -86,52 +86,69 @@ export function RemovePacksSheet({ open, onOpenChange, cartonId, batchId, curren
             max={currentPacks}
             value={packsToRemove}
             onChange={(e) => setPacksToRemove(Math.max(1, parseInt(e.target.value) || 1))}
+            className={cn(
+              "h-10 font-semibold",
+              overLimit && "border-destructive focus-visible:ring-destructive/20"
+            )}
           />
-          {packsToRemove > currentPacks && (
-            <p className="text-xs text-destructive">Cannot remove more than {currentPacks} packs</p>
+          {overLimit && (
+            <p className="text-xs text-destructive flex items-center gap-1.5">
+              <AlertCircle className="size-3.5 shrink-0" />
+              Exceeds available packs.
+            </p>
           )}
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-xs font-bold uppercase tracking-wider">Reason</Label>
+        <div className="flex flex-col gap-2">
+          <Label className="text-sm font-medium text-foreground">Reason</Label>
           <Select value={reason} onValueChange={(v) => setReason(v as typeof reason)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-10">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               {REMOVAL_REASONS.map((r) => (
-                <SelectItem key={r} value={r}>{reasonLabels[r]}</SelectItem>
+                <SelectItem key={r} value={r}>
+                  {reasonLabels[r]}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="notes" className="text-xs font-bold uppercase tracking-wider">
-            Notes (optional)
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="notes" className="text-sm font-medium text-foreground">
+            Notes <span className="text-muted-foreground text-xs font-normal">(optional)</span>
           </Label>
           <Textarea
             id="notes"
-            placeholder="Additional details..."
+            placeholder="Record adjustment justification..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
           />
         </div>
 
-        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <div className="flex justify-between text-sm">
-            <span className="text-destructive">Remaining After</span>
-            <span className="font-mono font-bold text-destructive">
-              {currentPacks - packsToRemove} / {capacity}
-            </span>
-          </div>
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3.5 flex justify-between text-sm">
+          <span className="text-destructive">Remaining quantity</span>
+          <span className="font-semibold tabular-nums text-destructive">
+            {currentPacks - (overLimit ? 0 : packsToRemove)} / {capacity}
+          </span>
         </div>
 
         <Button
-          className="w-full font-bold uppercase tracking-wide bg-destructive hover:bg-destructive/90"
+          className="w-full h-10"
+          variant="destructive"
           onClick={handleSubmit}
-          disabled={mutation.isPending || packsToRemove > currentPacks || packsToRemove < 1}
+          disabled={mutation.isPending || overLimit || packsToRemove < 1}
         >
-          {mutation.isPending ? "Removing…" : `Remove ${packsToRemove} Pack${packsToRemove > 1 ? "s" : ""}`}
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Removing…
+            </>
+          ) : (
+            `Remove ${packsToRemove} pack${packsToRemove !== 1 ? "s" : ""}`
+          )}
         </Button>
       </div>
     </ResponsiveSheet>

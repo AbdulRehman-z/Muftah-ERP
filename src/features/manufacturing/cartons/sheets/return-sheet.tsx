@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Loader2 } from "lucide-react";
 import { ResponsiveSheet } from "@/components/custom/responsive-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,35 +67,41 @@ export function ReturnSheet({ open, onOpenChange }: Props) {
       onOpenChange={onOpenChange}
       isDirty={isDirty}
     >
-      <div className="space-y-6 py-4">
-        <div className="space-y-2">
-          <Label htmlFor="dispatchOrderId" className="text-xs font-bold uppercase tracking-wider">
-            Dispatch Order ID *
+      <div className="flex flex-col gap-6 py-4">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="dispatchOrderId" className="text-sm font-medium text-foreground">
+            Dispatch order ID <span className="text-destructive">*</span>
           </Label>
           <Input
             id="dispatchOrderId"
-            placeholder="e.g. INV-2024-0123"
+            placeholder="e.g. INV-2026-0123"
             value={dispatchOrderId}
             onChange={(e) => setDispatchOrderId(e.target.value)}
+            className="h-10 font-mono"
+            autoComplete="off"
+            spellCheck={false}
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="cartonId" className="text-xs font-bold uppercase tracking-wider">
-            Carton ID *
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="cartonId" className="text-sm font-medium text-foreground">
+            Carton ID <span className="text-destructive">*</span>
           </Label>
           <Input
             id="cartonId"
-            placeholder="Enter carton ID being returned"
+            placeholder="Scan or enter carton ID"
             value={cartonId}
             onChange={(e) => setCartonId(e.target.value)}
+            className="h-10 font-mono"
+            autoComplete="off"
+            spellCheck={false}
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="packsReturned" className="text-xs font-bold uppercase tracking-wider">
-              Packs Returned
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="packsReturned" className="text-sm font-medium text-foreground">
+              Packs returned
             </Label>
             <Input
               id="packsReturned"
@@ -103,41 +109,47 @@ export function ReturnSheet({ open, onOpenChange }: Props) {
               min={1}
               value={packsReturned}
               onChange={(e) => setPacksReturned(Math.max(1, parseInt(e.target.value) || 1))}
+              className="h-10 font-semibold"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs font-bold uppercase tracking-wider">Condition</Label>
+          <div className="flex flex-col gap-2">
+            <Label className="text-sm font-medium text-foreground">Condition</Label>
             <Select value={condition} onValueChange={(v) => setCondition(v as "GOOD" | "DAMAGED")}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="GOOD">Good — Restock</SelectItem>
-                <SelectItem value="DAMAGED">Damaged — Separate</SelectItem>
+                <SelectItem value="DAMAGED">Damaged — Quarantine</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="destinationCartonId" className="text-xs font-bold uppercase tracking-wider">
-            Destination Carton (optional)
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="destinationCartonId" className="text-sm font-medium text-foreground">
+            Destination carton <span className="text-muted-foreground text-xs font-normal">(optional)</span>
           </Label>
           <Input
             id="destinationCartonId"
-            placeholder="Carton ID to receive returned packs"
+            placeholder="Leave blank to use source"
             value={destinationCartonId}
             onChange={(e) => setDestinationCartonId(e.target.value)}
+            className="h-10 font-mono"
+            autoComplete="off"
+            spellCheck={false}
           />
-          <p className="text-xs text-muted-foreground">Leave blank to add packs back to the original carton.</p>
+          <p className="text-[11px] text-muted-foreground">Default drops items into original container.</p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="notes" className="text-xs font-bold uppercase tracking-wider">
-            Notes
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="notes" className="text-sm font-medium text-foreground">
+            Notes <span className="text-muted-foreground text-xs font-normal">(optional)</span>
           </Label>
           <Textarea
             id="notes"
-            placeholder="Return reason, delivery person, etc."
+            placeholder="Record logistics discrepancies..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
@@ -145,11 +157,18 @@ export function ReturnSheet({ open, onOpenChange }: Props) {
         </div>
 
         <Button
-          className="w-full font-bold uppercase tracking-wide"
+          className="w-full h-10"
           onClick={handleSubmit}
           disabled={mutation.isPending || !dispatchOrderId.trim() || !cartonId.trim()}
         >
-          {mutation.isPending ? "Processing…" : "Process Return"}
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Processing…
+            </>
+          ) : (
+            "Process Return"
+          )}
         </Button>
       </div>
     </ResponsiveSheet>

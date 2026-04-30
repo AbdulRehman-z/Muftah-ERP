@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Truck } from "lucide-react";
+import { Truck, Loader2 } from "lucide-react";
 import { ResponsiveSheet } from "@/components/custom/responsive-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,40 +36,50 @@ export function DispatchSheet({ open, onOpenChange, cartonIds, userId }: Props) 
   return (
     <ResponsiveSheet
       title="Dispatch Cartons"
-      description={`Mark ${cartonIds.length} carton${cartonIds.length > 1 ? "s" : ""} as dispatched`}
+      description={`Mark ${cartonIds.length} carton${cartonIds.length !== 1 ? "s" : ""} as dispatched`}
       icon={Truck}
       open={open}
       onOpenChange={onOpenChange}
       isDirty={orderId !== ""}
     >
-      <div className="space-y-6 py-4">
-        <div className="bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
-          <p className="text-sm font-medium text-purple-800 dark:text-purple-200">
-            {cartonIds.length} carton{cartonIds.length > 1 ? "s" : ""} will be dispatched.
+      <div className="flex flex-col gap-6 py-4">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3.5">
+          <p className="text-xs font-medium text-foreground">
+            {cartonIds.length} carton${cartonIds.length !== 1 ? "s" : ""} selected for dispatch.
           </p>
-          <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">
-            Only COMPLETE or SEALED cartons can be dispatched.
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Only complete or sealed containers are authorized for operational release.
           </p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="orderId" className="text-xs font-bold uppercase tracking-wider">
-            Dispatch Order / Invoice ID (optional)
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="orderId" className="text-sm font-medium text-foreground">
+            Sales order / invoice ID <span className="text-muted-foreground text-xs font-normal">(optional)</span>
           </Label>
           <Input
             id="orderId"
-            placeholder="e.g. INV-2024-0123"
+            placeholder="e.g. INV-2026-0123"
             value={orderId}
             onChange={(e) => setOrderId(e.target.value)}
+            className="h-10 font-mono"
+            autoComplete="off"
+            spellCheck={false}
           />
         </div>
 
         <Button
-          className="w-full font-bold uppercase tracking-wide bg-purple-600 hover:bg-purple-700"
+          className="w-full h-10"
           onClick={handleSubmit}
           disabled={mutation.isPending || cartonIds.length === 0}
         >
-          {mutation.isPending ? "Dispatching…" : `Dispatch ${cartonIds.length} Carton${cartonIds.length > 1 ? "s" : ""}`}
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Dispatching…
+            </>
+          ) : (
+            `Dispatch ${cartonIds.length} carton${cartonIds.length !== 1 ? "s" : ""}`
+          )}
         </Button>
       </div>
     </ResponsiveSheet>

@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { ArrowRightLeft } from "lucide-react";
+import { ArrowRightLeft, Loader2 } from "lucide-react";
 import { ResponsiveSheet } from "@/components/custom/responsive-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useBulkAdjust } from "../hooks/use-carton-mutations";
 import { BULK_ADJUST_STRATEGIES } from "@/lib/cartons/carton.types";
+import { cn } from "@/lib/utils";
 
 type Props = {
   open: boolean;
@@ -39,43 +40,49 @@ export function BulkAdjustSheet({ open, onOpenChange, cartonIds }: Props) {
   return (
     <ResponsiveSheet
       title="Bulk Adjust"
-      description={`Adjust ${cartonIds.length} carton${cartonIds.length > 1 ? "s" : ""}`}
+      description={`Adjust ${cartonIds.length} carton${cartonIds.length !== 1 ? "s" : ""}`}
       icon={ArrowRightLeft}
       open={open}
       onOpenChange={onOpenChange}
       isDirty={delta !== 0}
     >
-      <div className="space-y-6 py-4">
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-            {cartonIds.length} carton{cartonIds.length > 1 ? "s" : ""} selected.
+      <div className="flex flex-col gap-6 py-4">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3.5">
+          <p className="text-xs font-medium text-foreground">
+            {cartonIds.length} carton{cartonIds.length !== 1 ? "s" : ""} selected.
           </p>
-          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-            Use positive delta to add packs, negative to remove.
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Positive values add packs; negative values remove packs.
           </p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="delta" className="text-xs font-bold uppercase tracking-wider">
-            Delta (packs per carton)
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="delta" className="text-sm font-medium text-foreground">
+            Packs per carton
           </Label>
           <Input
             id="delta"
             type="number"
             value={delta}
             onChange={(e) => setDelta(parseInt(e.target.value) || 0)}
+            className="h-10 font-semibold"
           />
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-xs font-bold uppercase tracking-wider">
-            Overflow Strategy
-          </Label>
-          <div className="space-y-2">
+        <div className="flex flex-col gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Overflow strategy
+          </span>
+          <div className="flex flex-col gap-2">
             {BULK_ADJUST_STRATEGIES.map((s) => (
               <label
                 key={s}
-                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${strategy === s ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}
+                className={cn(
+                  "flex items-start gap-3 px-4 py-3.5 rounded-xl border cursor-pointer transition-colors",
+                  strategy === s 
+                    ? "border-primary bg-primary/5" 
+                    : "border-border hover:bg-muted/40"
+                )}
               >
                 <input
                   type="radio"
@@ -83,15 +90,17 @@ export function BulkAdjustSheet({ open, onOpenChange, cartonIds }: Props) {
                   value={s}
                   checked={strategy === s}
                   onChange={() => setStrategy(s)}
-                  className="accent-primary"
+                  className="accent-primary mt-0.5 shrink-0"
                 />
-                <div>
-                  <p className="text-sm font-bold">{s === "SKIP" ? "Skip Overflow" : "Cap at Capacity"}</p>
-                  <p className="text-xs text-muted-foreground">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm font-medium text-foreground">
+                    {s === "SKIP" ? "Skip overflow" : "Cap at capacity"}
+                  </span>
+                  <span className="text-xs text-muted-foreground leading-snug">
                     {s === "SKIP"
-                      ? "Skip cartons where delta would exceed capacity"
-                      : "Adjust to max capacity if delta would exceed it"}
-                  </p>
+                      ? "Omit cartons where the update exceeds full capacity"
+                      : "Fill completely if the increment goes over capacity"}
+                  </span>
                 </div>
               </label>
             ))}
@@ -99,11 +108,18 @@ export function BulkAdjustSheet({ open, onOpenChange, cartonIds }: Props) {
         </div>
 
         <Button
-          className="w-full font-bold uppercase tracking-wide"
+          className="w-full h-10"
           onClick={handleSubmit}
           disabled={mutation.isPending || delta === 0}
         >
-          {mutation.isPending ? "Adjusting…" : `Apply ${delta > 0 ? "+" : ""}${delta} to ${cartonIds.length} Carton${cartonIds.length > 1 ? "s" : ""}`}
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Adjusting…
+            </>
+          ) : (
+            `Apply ${delta > 0 ? "+" : ""}${delta} packs`
+          )}
         </Button>
       </div>
     </ResponsiveSheet>

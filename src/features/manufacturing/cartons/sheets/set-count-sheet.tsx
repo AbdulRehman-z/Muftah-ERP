@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { PenLine } from "lucide-react";
+import { PenLine, Loader2, AlertCircle } from "lucide-react";
 import { ResponsiveSheet } from "@/components/custom/responsive-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useSetCartonCount } from "../hooks/use-carton-mutations";
+import { cn } from "@/lib/utils";
 
 type Props = {
   open: boolean;
@@ -24,6 +25,7 @@ export function SetCountSheet({ open, onOpenChange, cartonId, batchId, currentPa
 
   const isDirty = newCount !== currentPacks;
   const delta = newCount - currentPacks;
+  const overLimit = newCount > capacity;
 
   const handleSubmit = () => {
     mutation.mutate(
@@ -49,21 +51,21 @@ export function SetCountSheet({ open, onOpenChange, cartonId, batchId, currentPa
       confirmCloseTitle="Discard count override?"
       confirmCloseDescription="The new count will not be saved."
     >
-      <div className="space-y-6 py-4">
-        <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+      <div className="flex flex-col gap-6 py-4">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3.5 flex flex-col gap-1.5">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Current Packs</span>
-            <span className="font-mono font-bold">{currentPacks}</span>
+            <span className="text-muted-foreground">Current quantity</span>
+            <span className="font-semibold tabular-nums text-foreground">{currentPacks}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Capacity</span>
-            <span className="font-mono font-bold">{capacity}</span>
+            <span className="font-semibold tabular-nums text-foreground">{capacity}</span>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="newCount" className="text-xs font-bold uppercase tracking-wider">
-            New Count
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="newCount" className="text-sm font-medium text-foreground">
+            New count
           </Label>
           <Input
             id="newCount"
@@ -72,19 +74,26 @@ export function SetCountSheet({ open, onOpenChange, cartonId, batchId, currentPa
             max={capacity}
             value={newCount}
             onChange={(e) => setNewCount(Math.max(0, parseInt(e.target.value) || 0))}
+            className={cn(
+              "h-10 font-semibold",
+              overLimit && "border-destructive focus-visible:ring-destructive/20"
+            )}
           />
-          {newCount > capacity && (
-            <p className="text-xs text-destructive">Exceeds carton capacity ({capacity})</p>
+          {overLimit && (
+            <p className="text-xs text-destructive flex items-center gap-1.5">
+              <AlertCircle className="size-3.5 shrink-0" />
+              Exceeds carton capacity.
+            </p>
           )}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="reason" className="text-xs font-bold uppercase tracking-wider">
-            Reason for Override
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="reason" className="text-sm font-medium text-foreground">
+            Reason for override
           </Label>
           <Textarea
             id="reason"
-            placeholder="e.g. Physical count showed 47 instead of 50"
+            placeholder="e.g. Physical inventory correction"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
@@ -92,22 +101,36 @@ export function SetCountSheet({ open, onOpenChange, cartonId, batchId, currentPa
         </div>
 
         {isDirty && (
-          <div className={`border rounded-lg p-4 ${delta > 0 ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800" : delta < 0 ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800" : "bg-muted/50 border-border"}`}>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Change</span>
-              <span className={`font-mono font-bold ${delta > 0 ? "text-emerald-600" : delta < 0 ? "text-red-600" : ""}`}>
-                {delta > 0 ? "+" : ""}{delta} packs
-              </span>
-            </div>
+          <div 
+            className={cn(
+              "rounded-xl border px-4 py-3.5 flex justify-between text-sm",
+              delta > 0 
+                ? "border-green-200 dark:border-green-900 bg-green-50/60 dark:bg-green-950/20" 
+                : "border-destructive/20 bg-destructive/5"
+            )}
+          >
+            <span className={cn(delta > 0 ? "text-green-700 dark:text-green-400" : "text-destructive")}>
+              Variance
+            </span>
+            <span className={cn("font-semibold tabular-nums", delta > 0 ? "text-green-700 dark:text-green-400" : "text-destructive")}>
+              {delta > 0 ? "+" : ""}{delta} packs
+            </span>
           </div>
         )}
 
         <Button
-          className="w-full font-bold uppercase tracking-wide"
+          className="w-full h-10"
           onClick={handleSubmit}
-          disabled={mutation.isPending || !isDirty || newCount > capacity}
+          disabled={mutation.isPending || !isDirty || overLimit}
         >
-          {mutation.isPending ? "Overriding…" : `Set Count to ${newCount}`}
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Overriding…
+            </>
+          ) : (
+            `Set count to ${newCount}`
+          )}
         </Button>
       </div>
     </ResponsiveSheet>

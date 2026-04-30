@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Loader2 } from "lucide-react";
 import { ResponsiveSheet } from "@/components/custom/responsive-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,45 +46,45 @@ export function StockCountSheet({ open, onOpenChange, batchId }: Props) {
       onOpenChange={onOpenChange}
       isDirty={isDirty}
     >
-      <div className="space-y-6 py-4">
-        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-            A stock count session will create count lines for all cartons matching the filters below.
+      <div className="flex flex-col gap-6 py-4">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3.5 flex flex-col gap-1.5">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            A stock count session populates ledger lines automatically for targeted inventory.
           </p>
-          <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-            Each carton will need a physical count entered before the session can be submitted for approval.
+          <p className="text-[11px] text-muted-foreground">
+            Operators will perform manual counts before finalizing the report.
           </p>
         </div>
 
         {batchId && (
-          <div className="space-y-1">
-            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Batch ID
-            </Label>
-            <p className="text-sm font-mono">{batchId}</p>
+          <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 flex justify-between items-center">
+            <span className="text-sm text-muted-foreground font-medium">Batch filter</span>
+            <span className="text-xs font-mono font-semibold text-foreground">{batchId}</span>
           </div>
         )}
 
-        <div className="space-y-2">
-          <Label htmlFor="sku" className="text-xs font-bold uppercase tracking-wider">
-            SKU Filter (optional)
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="sku" className="text-sm font-medium text-foreground">
+            SKU filter <span className="text-muted-foreground text-xs font-normal">(optional)</span>
           </Label>
           <Input
             id="sku"
-            placeholder="Leave blank to count all SKUs"
+            placeholder="Leave blank to include all inventory"
             value={sku}
             onChange={(e) => setSku(e.target.value)}
+            className="h-10 font-mono"
+            autoComplete="off"
+            spellCheck={false}
           />
-          <p className="text-xs text-muted-foreground">Only count cartons matching this SKU.</p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="notes" className="text-xs font-bold uppercase tracking-wider">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="notes" className="text-sm font-medium text-foreground">
             Notes
           </Label>
           <Textarea
             id="notes"
-            placeholder="e.g. Monthly inventory check — March 2024"
+            placeholder="Provide audit session context..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
@@ -92,11 +92,18 @@ export function StockCountSheet({ open, onOpenChange, batchId }: Props) {
         </div>
 
         <Button
-          className="w-full font-bold uppercase tracking-wide"
+          className="w-full h-10"
           onClick={handleSubmit}
           disabled={mutation.isPending}
         >
-          {mutation.isPending ? "Creating…" : "Start Stock Count"}
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Creating…
+            </>
+          ) : (
+            "Start Stock Count"
+          )}
         </Button>
       </div>
     </ResponsiveSheet>

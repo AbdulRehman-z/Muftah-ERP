@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { ResponsiveSheet } from "@/components/custom/responsive-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,16 +45,16 @@ export function AddCartonsSheet({ open, onOpenChange, batchId }: Props) {
       onOpenChange={onOpenChange}
       isDirty={isDirty}
     >
-      <div className="space-y-6 py-4">
-        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <p className="text-sm text-blue-800 dark:text-blue-200">
-            Cartons will be created with the capacity defined in the batch recipe.
+      <div className="flex flex-col gap-6 py-4">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3.5">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Cartons will be created with the standard capacity defined in the batch recipe.
           </p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="count" className="text-xs font-bold uppercase tracking-wider">
-            Number of Cartons
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="count" className="text-sm font-medium text-foreground">
+            Number of cartons
           </Label>
           <Input
             id="count"
@@ -63,37 +63,48 @@ export function AddCartonsSheet({ open, onOpenChange, batchId }: Props) {
             max={500}
             value={count}
             onChange={(e) => setCount(Math.max(1, parseInt(e.target.value) || 1))}
+            className="h-10"
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="zone" className="text-xs font-bold uppercase tracking-wider">
-            Zone (optional)
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="zone" className="text-sm font-medium text-foreground">
+            Zone <span className="text-muted-foreground text-xs font-normal">(optional)</span>
           </Label>
           <Input
             id="zone"
             placeholder="e.g. A-12"
             value={zone}
             onChange={(e) => setZone(e.target.value)}
+            className="h-10 font-mono"
+            autoComplete="off"
+            spellCheck={false}
           />
-          <p className="text-xs text-muted-foreground">Warehouse zone for new cartons.</p>
+          <p className="text-[11px] text-muted-foreground">Initial warehouse storage area.</p>
         </div>
 
-        <div className="bg-primary/5 border border-primary/10 rounded-lg p-4">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3.5">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Creating</span>
-            <span className="font-mono font-bold text-primary">
+            <span className="font-semibold tabular-nums text-foreground">
               {count} carton{count > 1 ? "s" : ""}
             </span>
           </div>
         </div>
 
         <Button
-          className="w-full font-bold uppercase tracking-wide"
+          className="w-full h-10"
           onClick={handleSubmit}
           disabled={mutation.isPending || count < 1}
         >
-          {mutation.isPending ? "Creating…" : `Add ${count} Carton${count > 1 ? "s" : ""}`}
+          {mutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Creating…
+            </>
+          ) : (
+            `Add ${count} carton${count > 1 ? "s" : ""}`
+          )}
         </Button>
       </div>
     </ResponsiveSheet>
