@@ -22,6 +22,7 @@ export {
   getIntegrityAlertsFn,
   runIntegrityCheckFn,
   updateIntegrityAlertFn,
+  getCartonsByRecipeFn,
 } from "./get-cartons-fn";
 export {
   createStockCountFn,

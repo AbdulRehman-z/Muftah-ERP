@@ -23,11 +23,15 @@ import {
   Trash2,
   AlertCircle,
   Loader2,
+  Edit,
+  X,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { CreateInvoiceForm } from "./create-invoice-form";
+import { useState } from "react";
 
 const PKR = (v: number) =>
   `PKR ${v.toLocaleString("en-PK", { minimumFractionDigits: 2 })}`;
@@ -75,6 +79,7 @@ const InvoiceDetailContent = ({
   onPrint: () => void;
   onOpenChange: (open: boolean) => void;
 }) => {
+  const [isEditing, setIsEditing] = useState(false);
   const { data: invoice, isLoading, isError, error } = useGetInvoiceDetail(invoiceId);
 
   if (isLoading) {
@@ -109,6 +114,31 @@ const InvoiceDetailContent = ({
   }
 
   if (!invoice) return null;
+
+  if (isEditing) {
+    return (
+      <div className="py-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-bold">Edit Invoice</h2>
+            <p className="text-xs text-muted-foreground">Modify items, prices, or payment details</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setIsEditing(false)} className="gap-1">
+            <X className="size-3.5" />
+            Cancel Edit
+          </Button>
+        </div>
+        <CreateInvoiceForm
+          initialData={invoice}
+          onSuccess={() => {
+            setIsEditing(false);
+            // onSuccess handled by hook invalidation
+          }}
+          onCancel={() => setIsEditing(false)}
+        />
+      </div>
+    );
+  }
 
   const cash = Number(invoice.cash);
   const credit = Number(invoice.credit);
@@ -262,6 +292,15 @@ const InvoiceDetailContent = ({
           invoiceId={invoiceId}
           onSuccess={() => onOpenChange(false)}
         />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsEditing(true)}
+          className="gap-1"
+        >
+          <Edit className="size-3.5" />
+          Edit
+        </Button>
         <Button size="sm" onClick={onPrint} className="gap-1">
           <FileText className="size-3.5" />
           Print

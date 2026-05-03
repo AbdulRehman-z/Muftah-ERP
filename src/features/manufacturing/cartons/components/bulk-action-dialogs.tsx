@@ -230,31 +230,3 @@ export function BulkReleaseHoldDialog({ open, onOpenChange, cartonIds, onConfirm
   );
 }
 
-export function BulkTransferZoneDialog({ open, onOpenChange, cartonIds, onConfirm, isPending }: BulkDialogProps) {
-  const [zone, setZone] = useState("");
-
-  const handleConfirm = () => {
-    onConfirm({ zone });
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Transfer Cartons to Zone</DialogTitle>
-          <DialogDescription>Update the physical location zone for {cartonIds.length} selected cartons.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label>Target Zone</Label>
-            <Input placeholder="e.g. ZONE-A" value={zone} onChange={(e) => setZone(e.target.value)} />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleConfirm} disabled={isPending || !zone.trim()}>Transfer</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}

@@ -162,7 +162,7 @@ export const getAuditLogSchema = z.object({
 
 export const bulkCartonOperationSchema = z.object({
   cartonIds: z.array(z.string().min(1)).min(1),
-  operationType: z.enum(["SEAL", "TRANSFER", "RETIRE", "TOP_UP", "REMOVE", "OVERRIDE", "REPACK", "QC_HOLD", "RELEASE_HOLD"]),
+  operationType: z.enum(["RETIRE", "TOP_UP", "REMOVE", "OVERRIDE", "REPACK", "QC_HOLD", "RELEASE_HOLD"]),
   payload: z.object({
     delta: z.number().int().positive().optional(),
     reason: z.string().max(500).optional(),
@@ -170,12 +170,9 @@ export const bulkCartonOperationSchema = z.object({
     newCount: z.number().int().min(0).optional(),
     newCapacity: z.number().int().positive().optional(),
     justification: z.string().max(500).optional(),
-    destinationCartonId: z.string().optional(),
-    packCount: z.number().int().positive().optional(),
     orderId: z.string().optional(),
     expiresAt: z.string().datetime().optional(),
     outcome: z.enum(["CLEARED", "CONDEMNED"]).optional(),
-    zone: z.string().max(100).optional(),
   }).optional(),
 });
 

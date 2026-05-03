@@ -102,6 +102,11 @@ export const navigations: NavigationItem[] = [
         url: "/sales/customers",
         icon: CustomersIcon,
       },
+      {
+        title: "Reconciliation",
+        url: "/sales/reconciliation",
+        icon: LedgerIcon,
+      },
     ],
   },
   {

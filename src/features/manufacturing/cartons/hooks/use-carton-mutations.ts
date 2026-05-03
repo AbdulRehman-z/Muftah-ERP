@@ -24,6 +24,7 @@ import {
   getBatchKpisFn,
   getCartonAuditLogFn,
   getBatchAuditLogFn,
+  getCartonsByRecipeFn,
   getIntegrityAlertsFn,
   runIntegrityCheckFn,
   updateIntegrityAlertFn,
@@ -472,18 +473,31 @@ export function useBatchCartons(productionRunId: string) {
   });
 }
 
-export function useBulkCartonOperation(productionRunId: string) {
+export function useRecipeCartons(recipeId: string, page = 1, limit = 100, warehouseId?: string) {
+  return useQuery({
+    queryKey: ["cartons", "recipe", recipeId, warehouseId, { page, limit }],
+    queryFn: () => getCartonsByRecipeFn({ data: { recipeId, warehouseId, page, limit } }),
+    enabled: !!recipeId,
+  });
+}
+
+export function useBulkCartonOperation(productionRunId?: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: {
-      operationType: "SEAL" | "TRANSFER" | "RETIRE" | "TOP_UP" | "REMOVE" | "OVERRIDE" | "REPACK" | "QC_HOLD" | "RELEASE_HOLD";
+      operationType: "RETIRE" | "TOP_UP" | "REMOVE" | "OVERRIDE" | "REPACK" | "QC_HOLD" | "RELEASE_HOLD";
       cartonIds: string[];
       payload?: any;
     }) => executeBulkCartonOperationFn({ data }),
     onSuccess: () => {
       toast.success("Bulk operation executed successfully.");
-      queryClient.invalidateQueries({ queryKey: cartonKeys.byBatch(productionRunId) });
-      queryClient.invalidateQueries({ queryKey: cartonKeys.batchKpis(productionRunId) });
+      if (productionRunId) {
+        queryClient.invalidateQueries({ queryKey: cartonKeys.byBatch(productionRunId) });
+        queryClient.invalidateQueries({ queryKey: cartonKeys.batchKpis(productionRunId) });
+      } else {
+        queryClient.invalidateQueries({ queryKey: cartonKeys.all() });
+      }
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to execute bulk operation.");

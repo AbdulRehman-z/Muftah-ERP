@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db, warehouses } from "@/db";
 import { requireInventoryViewMiddleware } from "@/lib/middlewares";
 
@@ -40,5 +40,46 @@ export const getFactoryFloorStockFn = createServerFn()
       return null;
     }
 
-    return factoryFloor;
+    const { cartons } = await import("@/db/schemas/manufacturing-schema");
+    const { inArray, sql } = await import("drizzle-orm");
+
+    // Fetch accurate carton counts for all recipes in this specific factory floor warehouse
+    const cartonCounts = await db
+      .select({
+        recipeId: cartons.recipeId,
+        total: sql<number>`count(*)::int`,
+        complete: sql<number>`count(*) filter (where status in ('COMPLETE', 'SEALED'))::int`,
+        partial: sql<number>`count(*) filter (where status = 'PARTIAL')::int`,
+        totalPacks: sql<number>`sum(current_packs)::int`,
+      })
+      .from(cartons)
+      .where(
+        and(
+          eq(cartons.warehouseId, factoryFloor.id),
+          inArray(cartons.status, ["PARTIAL", "COMPLETE", "SEALED", "ON_HOLD"]),
+        ),
+      )
+      .groupBy(cartons.recipeId);
+
+    const statsMap = new Map();
+    cartonCounts.forEach((stat) => {
+      statsMap.set(stat.recipeId, stat);
+    });
+
+    return {
+      ...factoryFloor,
+      finishedGoodsStock: factoryFloor.finishedGoodsStock.map((fg) => {
+        const stats = statsMap.get(fg.recipeId) || {
+          total: 0,
+          complete: 0,
+          partial: 0,
+          totalPacks: 0,
+        };
+        return {
+          ...fg,
+          quantityCartons: stats.total,
+          cartonStats: stats,
+        };
+      }),
+    };
   });

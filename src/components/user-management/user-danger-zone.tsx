@@ -3,6 +3,18 @@ import { useUsers } from "@/hooks/use-users";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Ban, Trash2, ShieldCheck, AlertTriangle, Loader2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useState } from "react";
 
 type Props = {
   user: {
@@ -17,6 +29,7 @@ type Props = {
 
 export const UserDangerZone = ({ user, onSuccess, onlyBan, onlyDelete }: Props) => {
   const { banUser, unbanUser, removeUser } = useUsers();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const form = useForm({
     defaultValues: { banReason: "" },
@@ -118,11 +131,7 @@ export const UserDangerZone = ({ user, onSuccess, onlyBan, onlyDelete }: Props) 
           <Button
             variant="destructive"
             className="w-full h-9 text-[12.5px] font-semibold"
-            onClick={() => {
-              if (confirm(`Delete user "${user.name}"? This is irreversible.`)) {
-                removeUser.mutate({ userId: user.id }, { onSuccess });
-              }
-            }}
+            onClick={() => setIsDeleteDialogOpen(true)}
             disabled={removeUser.isPending}
           >
             {removeUser.isPending ? (
@@ -131,6 +140,26 @@ export const UserDangerZone = ({ user, onSuccess, onlyBan, onlyDelete }: Props) 
           </Button>
         </div>
       )}
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the user <strong>{user.name}</strong> and remove their data from our servers. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => removeUser.mutate({ userId: user.id }, { onSuccess })}
+            >
+              Delete User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

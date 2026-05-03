@@ -28,6 +28,7 @@ import { Route as ApiInternalBootstrapAdminRouteImport } from './routes/api/inte
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ProtectedSuppliersSupplierIdRouteImport } from './routes/_protected/suppliers/$supplierId'
 import { Route as ProtectedOperatorRunIdRouteImport } from './routes/_protected/operator/$runId'
+import { Route as ProtectedSalesReconciliationIndexRouteImport } from './routes/_protected/sales/reconciliation/index'
 import { Route as ProtectedSalesNewInvoiceIndexRouteImport } from './routes/_protected/sales/new-invoice/index'
 import { Route as ProtectedSalesCustomersIndexRouteImport } from './routes/_protected/sales/customers/index'
 import { Route as ProtectedManufacturingRecipesIndexRouteImport } from './routes/_protected/manufacturing/recipes/index'
@@ -51,6 +52,7 @@ import { Route as ProtectedSalesCustomersCustomerIdIndexRouteImport } from './ro
 import { Route as ProtectedManufacturingProductionsRunIdIndexRouteImport } from './routes/_protected/manufacturing/productions/$runId/index'
 import { Route as ProtectedHrPayrollEmployeeIndexRouteImport } from './routes/_protected/hr/payroll/employee/index'
 import { Route as ProtectedFinanceExpensesSettingsIndexRouteImport } from './routes/_protected/finance/expenses/settings/index'
+import { Route as ProtectedInventoryFactoryFloorCartonsRecipeIdRouteImport } from './routes/_protected/inventory/factory-floor/cartons/$recipeId'
 import { Route as ProtectedHrPayrollEmployeeEmployeeIdRouteImport } from './routes/_protected/hr/payroll/employee/$employeeId'
 import { Route as ProtectedManufacturingProductionsRunIdCartonsIndexRouteImport } from './routes/_protected/manufacturing/productions/$runId/cartons/index'
 import { Route as ProtectedInventoryItemItemTypeItemIdIndexRouteImport } from './routes/_protected/inventory/item/$itemType/$itemId/index'
@@ -153,6 +155,12 @@ const ProtectedOperatorRunIdRoute = ProtectedOperatorRunIdRouteImport.update({
   path: '/operator/$runId',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
+const ProtectedSalesReconciliationIndexRoute =
+  ProtectedSalesReconciliationIndexRouteImport.update({
+    id: '/sales/reconciliation/',
+    path: '/sales/reconciliation/',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
 const ProtectedSalesNewInvoiceIndexRoute =
   ProtectedSalesNewInvoiceIndexRouteImport.update({
     id: '/sales/new-invoice/',
@@ -290,6 +298,12 @@ const ProtectedFinanceExpensesSettingsIndexRoute =
     path: '/finance/expenses/settings/',
     getParentRoute: () => ProtectedRouteRoute,
   } as any)
+const ProtectedInventoryFactoryFloorCartonsRecipeIdRoute =
+  ProtectedInventoryFactoryFloorCartonsRecipeIdRouteImport.update({
+    id: '/inventory/factory-floor/cartons/$recipeId',
+    path: '/inventory/factory-floor/cartons/$recipeId',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
 const ProtectedHrPayrollEmployeeEmployeeIdRoute =
   ProtectedHrPayrollEmployeeEmployeeIdRouteImport.update({
     id: '/hr/payroll/employee/$employeeId',
@@ -346,7 +360,9 @@ export interface FileRoutesByFullPath {
   '/manufacturing/recipes/': typeof ProtectedManufacturingRecipesIndexRoute
   '/sales/customers/': typeof ProtectedSalesCustomersIndexRoute
   '/sales/new-invoice/': typeof ProtectedSalesNewInvoiceIndexRoute
+  '/sales/reconciliation/': typeof ProtectedSalesReconciliationIndexRoute
   '/hr/payroll/employee/$employeeId': typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
+  '/inventory/factory-floor/cartons/$recipeId': typeof ProtectedInventoryFactoryFloorCartonsRecipeIdRoute
   '/finance/expenses/settings/': typeof ProtectedFinanceExpensesSettingsIndexRoute
   '/hr/payroll/employee/': typeof ProtectedHrPayrollEmployeeIndexRoute
   '/manufacturing/productions/$runId/': typeof ProtectedManufacturingProductionsRunIdIndexRoute
@@ -390,7 +406,9 @@ export interface FileRoutesByTo {
   '/manufacturing/recipes': typeof ProtectedManufacturingRecipesIndexRoute
   '/sales/customers': typeof ProtectedSalesCustomersIndexRoute
   '/sales/new-invoice': typeof ProtectedSalesNewInvoiceIndexRoute
+  '/sales/reconciliation': typeof ProtectedSalesReconciliationIndexRoute
   '/hr/payroll/employee/$employeeId': typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
+  '/inventory/factory-floor/cartons/$recipeId': typeof ProtectedInventoryFactoryFloorCartonsRecipeIdRoute
   '/finance/expenses/settings': typeof ProtectedFinanceExpensesSettingsIndexRoute
   '/hr/payroll/employee': typeof ProtectedHrPayrollEmployeeIndexRoute
   '/manufacturing/productions/$runId': typeof ProtectedManufacturingProductionsRunIdIndexRoute
@@ -438,7 +456,9 @@ export interface FileRoutesById {
   '/_protected/manufacturing/recipes/': typeof ProtectedManufacturingRecipesIndexRoute
   '/_protected/sales/customers/': typeof ProtectedSalesCustomersIndexRoute
   '/_protected/sales/new-invoice/': typeof ProtectedSalesNewInvoiceIndexRoute
+  '/_protected/sales/reconciliation/': typeof ProtectedSalesReconciliationIndexRoute
   '/_protected/hr/payroll/employee/$employeeId': typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
+  '/_protected/inventory/factory-floor/cartons/$recipeId': typeof ProtectedInventoryFactoryFloorCartonsRecipeIdRoute
   '/_protected/finance/expenses/settings/': typeof ProtectedFinanceExpensesSettingsIndexRoute
   '/_protected/hr/payroll/employee/': typeof ProtectedHrPayrollEmployeeIndexRoute
   '/_protected/manufacturing/productions/$runId/': typeof ProtectedManufacturingProductionsRunIdIndexRoute
@@ -485,7 +505,9 @@ export interface FileRouteTypes {
     | '/manufacturing/recipes/'
     | '/sales/customers/'
     | '/sales/new-invoice/'
+    | '/sales/reconciliation/'
     | '/hr/payroll/employee/$employeeId'
+    | '/inventory/factory-floor/cartons/$recipeId'
     | '/finance/expenses/settings/'
     | '/hr/payroll/employee/'
     | '/manufacturing/productions/$runId/'
@@ -529,7 +551,9 @@ export interface FileRouteTypes {
     | '/manufacturing/recipes'
     | '/sales/customers'
     | '/sales/new-invoice'
+    | '/sales/reconciliation'
     | '/hr/payroll/employee/$employeeId'
+    | '/inventory/factory-floor/cartons/$recipeId'
     | '/finance/expenses/settings'
     | '/hr/payroll/employee'
     | '/manufacturing/productions/$runId'
@@ -576,7 +600,9 @@ export interface FileRouteTypes {
     | '/_protected/manufacturing/recipes/'
     | '/_protected/sales/customers/'
     | '/_protected/sales/new-invoice/'
+    | '/_protected/sales/reconciliation/'
     | '/_protected/hr/payroll/employee/$employeeId'
+    | '/_protected/inventory/factory-floor/cartons/$recipeId'
     | '/_protected/finance/expenses/settings/'
     | '/_protected/hr/payroll/employee/'
     | '/_protected/manufacturing/productions/$runId/'
@@ -728,6 +754,13 @@ declare module '@tanstack/react-router' {
       path: '/operator/$runId'
       fullPath: '/operator/$runId'
       preLoaderRoute: typeof ProtectedOperatorRunIdRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/sales/reconciliation/': {
+      id: '/_protected/sales/reconciliation/'
+      path: '/sales/reconciliation'
+      fullPath: '/sales/reconciliation/'
+      preLoaderRoute: typeof ProtectedSalesReconciliationIndexRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
     '/_protected/sales/new-invoice/': {
@@ -891,6 +924,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedFinanceExpensesSettingsIndexRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
+    '/_protected/inventory/factory-floor/cartons/$recipeId': {
+      id: '/_protected/inventory/factory-floor/cartons/$recipeId'
+      path: '/inventory/factory-floor/cartons/$recipeId'
+      fullPath: '/inventory/factory-floor/cartons/$recipeId'
+      preLoaderRoute: typeof ProtectedInventoryFactoryFloorCartonsRecipeIdRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
     '/_protected/hr/payroll/employee/$employeeId': {
       id: '/_protected/hr/payroll/employee/$employeeId'
       path: '/hr/payroll/employee/$employeeId'
@@ -980,7 +1020,9 @@ interface ProtectedRouteRouteChildren {
   ProtectedManufacturingRecipesIndexRoute: typeof ProtectedManufacturingRecipesIndexRoute
   ProtectedSalesCustomersIndexRoute: typeof ProtectedSalesCustomersIndexRoute
   ProtectedSalesNewInvoiceIndexRoute: typeof ProtectedSalesNewInvoiceIndexRoute
+  ProtectedSalesReconciliationIndexRoute: typeof ProtectedSalesReconciliationIndexRoute
   ProtectedHrPayrollEmployeeEmployeeIdRoute: typeof ProtectedHrPayrollEmployeeEmployeeIdRoute
+  ProtectedInventoryFactoryFloorCartonsRecipeIdRoute: typeof ProtectedInventoryFactoryFloorCartonsRecipeIdRoute
   ProtectedFinanceExpensesSettingsIndexRoute: typeof ProtectedFinanceExpensesSettingsIndexRoute
   ProtectedHrPayrollEmployeeIndexRoute: typeof ProtectedHrPayrollEmployeeIndexRoute
   ProtectedSalesCustomersCustomerIdIndexRoute: typeof ProtectedSalesCustomersCustomerIdIndexRoute
@@ -1022,8 +1064,12 @@ const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
     ProtectedManufacturingRecipesIndexRoute,
   ProtectedSalesCustomersIndexRoute: ProtectedSalesCustomersIndexRoute,
   ProtectedSalesNewInvoiceIndexRoute: ProtectedSalesNewInvoiceIndexRoute,
+  ProtectedSalesReconciliationIndexRoute:
+    ProtectedSalesReconciliationIndexRoute,
   ProtectedHrPayrollEmployeeEmployeeIdRoute:
     ProtectedHrPayrollEmployeeEmployeeIdRoute,
+  ProtectedInventoryFactoryFloorCartonsRecipeIdRoute:
+    ProtectedInventoryFactoryFloorCartonsRecipeIdRoute,
   ProtectedFinanceExpensesSettingsIndexRoute:
     ProtectedFinanceExpensesSettingsIndexRoute,
   ProtectedHrPayrollEmployeeIndexRoute: ProtectedHrPayrollEmployeeIndexRoute,

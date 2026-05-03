@@ -7,10 +7,13 @@ import { CustomerPagination } from "@/components/sales/customer-pagination";
 import { InvoiceDetailSheet } from "@/components/sales/invoice-detail-sheet";
 import { customersKeys, useGetCustomerLedger } from "@/hooks/sales/use-customers";
 import { getCustomerLedgerFn } from "@/server-functions/sales/customers-fn";
+import { useGetPayments } from "@/hooks/sales/use-payments";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RecordPaymentDialog } from "@/components/sales/record-payment-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableHeader,
@@ -68,6 +71,8 @@ function CustomerLedgerPage() {
   const dateFrom = dateRange.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
   const dateTo = dateRange.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
 
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+
   const handleDateChange = (d: DateRange | undefined) => {
     setDateRange(d ?? { from: startOfMonth(new Date()), to: endOfMonth(new Date()) });
     setPage(1);
@@ -76,6 +81,14 @@ function CustomerLedgerPage() {
   const { data, isLoading, isError, error } = useGetCustomerLedger(customerId, {
     page,
     limit: 10,
+    dateFrom,
+    dateTo,
+  });
+
+  const { data: paymentsData, isLoading: paymentsLoading } = useGetPayments({
+    customerId,
+    page: 1, // Keep pagination simple for payments
+    limit: 50,
     dateFrom,
     dateTo,
   });
@@ -173,6 +186,9 @@ function CustomerLedgerPage() {
             )}
           </div>
         </div>
+        <Button onClick={() => setPaymentDialogOpen(true)} size="sm">
+          Record Payment
+        </Button>
       </div>
 
       {/* ── Balance + next due date row ── */}
@@ -290,16 +306,23 @@ function CustomerLedgerPage() {
         </div>
       </div>
 
-      {/* ── Invoice history table ── */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <FileText className="size-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold">
-            Invoice History ({total})
-          </h3>
-        </div>
-        <div className="rounded-xl border border-border/60 overflow-hidden">
-          <Table>
+      {/* ── Tabs for Invoices & Payments ── */}
+      <Tabs defaultValue="invoices" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="invoices">Invoices</TabsTrigger>
+          <TabsTrigger value="payments">Payments History</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="invoices">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="size-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold">
+                Invoice History ({total})
+              </h3>
+            </div>
+            <div className="rounded-xl border border-border/60 overflow-hidden">
+              <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="text-[11px]">Date</TableHead>
@@ -387,6 +410,70 @@ function CustomerLedgerPage() {
         limit={10}
         onPageChange={setPage}
       />
+      </TabsContent>
+
+      <TabsContent value="payments">
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <CreditCard className="size-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold">
+              Payments History ({paymentsData?.total || 0})
+            </h3>
+          </div>
+          <div className="rounded-xl border border-border/60 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-[11px]">Date</TableHead>
+                  <TableHead className="text-[11px]">Method</TableHead>
+                  <TableHead className="text-[11px]">Reference</TableHead>
+                  <TableHead className="text-[11px]">Notes</TableHead>
+                  <TableHead className="text-[11px] text-right">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paymentsLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-10">
+                      <Skeleton className="h-4 w-32 mx-auto" />
+                    </TableCell>
+                  </TableRow>
+                ) : !paymentsData?.data?.length ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="text-center text-muted-foreground py-10 text-sm"
+                    >
+                      No payments found for the selected period.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paymentsData.data.map((payment: any) => (
+                    <TableRow key={payment.id}>
+                      <TableCell className="text-sm tabular-nums">
+                        {format(new Date(payment.paymentDate), "dd MMM yyyy")}
+                      </TableCell>
+                      <TableCell className="text-sm capitalize">
+                        {payment.method.replace("_", " ")}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {payment.reference || "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                        {payment.notes || "—"}
+                      </TableCell>
+                      <TableCell className="text-sm tabular-nums text-right font-semibold text-green-600">
+                        {PKR(Number(payment.amount))}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </TabsContent>
+      </Tabs>
 
       {/* ── Invoice detail sheet ── */}
       <InvoiceDetailSheet
@@ -394,6 +481,13 @@ function CustomerLedgerPage() {
         onOpenChange={setInvoiceSheetOpen}
         invoiceId={selectedInvoiceId}
         onPrint={() => {}}
+      />
+
+      {/* ── Record Payment Dialog ── */}
+      <RecordPaymentDialog
+        open={paymentDialogOpen}
+        onOpenChange={setPaymentDialogOpen}
+        customerId={customerId}
       />
     </div>
   );

@@ -135,3 +135,76 @@ export const updateIntegrityAlertFn = createServerFn()
       resolution: data.resolution ?? null,
     });
   });
+
+export const getCartonsByRecipeFn = createServerFn()
+  .middleware([requireAuthMiddleware])
+  .inputValidator(
+    z.object({
+      recipeId: z.string().min(1),
+      warehouseId: z.string().optional(),
+      page: z.coerce.number().int().min(1).default(1),
+      limit: z.coerce.number().int().min(1).max(100).default(100),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const { db } = await import("@/db");
+    const { cartons } = await import("@/db/schemas/manufacturing-schema");
+    const { recipes } = await import("@/db/schemas/inventory-schema");
+    const { eq, and, sql } = await import("drizzle-orm");
+
+    const conditions = [eq(cartons.recipeId, data.recipeId)];
+    if (data.warehouseId) {
+      conditions.push(eq(cartons.warehouseId, data.warehouseId));
+    }
+
+    // Get total count for pagination
+    const [totalRes] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(cartons)
+      .where(and(...conditions));
+
+    const total = totalRes?.count || 0;
+
+    // Fetch paginated data
+    const cartonsData = await db.query.cartons.findMany({
+      where: and(...conditions),
+      orderBy: (c, { desc }) => [desc(c.createdAt)],
+      limit: data.limit,
+      offset: (data.page - 1) * data.limit,
+    });
+
+    if (cartonsData.length === 0) {
+      return {
+        data: [],
+        meta: {
+          total,
+          page: data.page,
+          limit: data.limit,
+          totalPages: Math.ceil(total / data.limit),
+        },
+      };
+    }
+
+    const [recipe] = await db
+      .select({ fillAmount: recipes.fillAmount, fillUnit: recipes.fillUnit })
+      .from(recipes)
+      .where(eq(recipes.id, data.recipeId));
+
+    const formattedData = cartonsData.map((c) => ({
+      ...c,
+      weightAmount: recipe?.fillAmount
+        ? Number(recipe.fillAmount) * c.currentPacks
+        : 0,
+      weightUnit: recipe?.fillUnit || "g",
+    }));
+
+    return {
+      data: formattedData,
+      meta: {
+        total,
+        page: data.page,
+        limit: data.limit,
+        totalPages: Math.ceil(total / data.limit),
+      },
+    };
+  });

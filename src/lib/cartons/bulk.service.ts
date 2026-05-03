@@ -13,7 +13,7 @@ import {
 } from "./carton.guards";
 
 export async function executeBulkOperation(
-  operationType: "SEAL" | "TRANSFER" | "RETIRE" | "TOP_UP" | "REMOVE" | "OVERRIDE" | "REPACK" | "QC_HOLD" | "RELEASE_HOLD",
+  operationType: "RETIRE" | "TOP_UP" | "REMOVE" | "OVERRIDE" | "REPACK" | "QC_HOLD" | "RELEASE_HOLD",
   cartonIds: string[],
   payload: any,
   userId: string
@@ -38,13 +38,7 @@ export async function executeBulkOperation(
       let delta = 0;
       let reason = payload?.reason || payload?.notes || payload?.justification || `Bulk ${operationType}`;
 
-      if (operationType === "SEAL") {
-        if (carton.status !== "COMPLETE") {
-          throw new Error(`Carton ${carton.id} is not COMPLETE. Only complete cartons can be sealed.`);
-        }
-        statusAfter = "SEALED";
-        adjType = "MANUAL_OVERRIDE";
-      } else if (operationType === "RETIRE") {
+      if (operationType === "RETIRE") {
         assertNotDispatched(carton);
         statusAfter = "RETIRED";
         adjType = "REMOVAL";
@@ -120,20 +114,9 @@ export async function executeBulkOperation(
             updatedAt: new Date(),
           })
           .where(eq(cartons.id, carton.id));
-      } else if (operationType === "TRANSFER") {
-        if (payload.zone) {
-          assertCartonIsEditable(carton);
-          await tx
-            .update(cartons)
-            .set({
-              zone: payload.zone,
-              updatedAt: new Date(),
-            })
-            .where(eq(cartons.id, carton.id));
-        }
       }
 
-      if (["SEAL", "RETIRE", "TOP_UP", "REMOVE", "OVERRIDE"].includes(operationType)) {
+      if (["RETIRE", "TOP_UP", "REMOVE", "OVERRIDE"].includes(operationType)) {
         await tx
           .update(cartons)
           .set({

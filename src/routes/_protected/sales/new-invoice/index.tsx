@@ -29,7 +29,7 @@ import {
 import { DatePickerWithRange } from "@/components/custom/date-range-picker";
 import { type DateRange } from "react-day-picker";
 import { Plus, ReceiptText, Trash2, Loader2, Search, X, SlidersHorizontal } from "lucide-react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { InvoiceKpiCards } from "@/components/sales/invoice-kpi-cards";
 import { InvoicePagination } from "@/components/sales/invoice-pagination";
@@ -51,8 +51,8 @@ export const Route = createFileRoute("/_protected/sales/new-invoice/")({
     const defaultParams = {
       page: 1,
       limit: 10,
-      dateFrom: format(startOfMonth(now), "yyyy-MM-dd"),
-      dateTo: format(endOfMonth(now), "yyyy-MM-dd"),
+      dateFrom: format(subDays(now, 7), "yyyy-MM-dd"),
+      dateTo: format(now, "yyyy-MM-dd"),
     };
     void context.queryClient.prefetchQuery({
       queryKey: invoicesKeys.list(defaultParams),
@@ -86,10 +86,10 @@ function InvoicesContent() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
-  // Date range — defaults to current month, never undefined
+  // Date range — defaults to last 7 days
   const [dateRange, setDateRange] = useState<DateRange>({
-    from: startOfMonth(new Date()),
-    to: endOfMonth(new Date()),
+    from: subDays(new Date(), 7),
+    to: new Date(),
   });
 
   // Invoice number search — raw input vs committed (only committed triggers fetch)
@@ -196,7 +196,7 @@ function InvoicesContent() {
           <DatePickerWithRange
             date={dateRange}
             onDateChange={(d) => {
-              setDateRange(d ?? { from: startOfMonth(new Date()), to: endOfMonth(new Date()) });
+              setDateRange(d ?? { from: subDays(new Date(), 7), to: new Date() });
               setPage(1);
             }}
             className="w-64"

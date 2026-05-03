@@ -104,7 +104,7 @@ export const InventoryContainer = () => {
       : []
     ).map((fg) => ({
       ...fg,
-      warehouse: { name: w.name, isActive: w.isActive },
+      warehouse: { id: w.id, name: w.name, isActive: w.isActive },
     })),
   );
 

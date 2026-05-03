@@ -122,10 +122,19 @@ export const DistributorInvoiceView = ({
     const totalGross = invoice.items.reduce((s, it) => s + it.grossAmount, 0);
     const totalDisc = invoice.items.reduce((s, it) => s + it.discount, 0);
     const totalNet = invoice.items.reduce((s, it) => s + it.netAmount, 0);
-    const cartonTotals = sumQtyPart(invoice.items, "cartonQty");
     const schemeTotals = sumQtyPart(invoice.items, "schemeCarton");
-    const orderCartons = invoice.items.reduce((a, it) => a + (parseInt(it.cartonQty.split("-")[0], 10) || 0), 0);
-    const schemeCartons = invoice.items.reduce((a, it) => a + (parseInt(it.schemeCarton.split("-")[0], 10) || 0), 0);
+
+    // Extract carton count from labels like "20 Cartons (480 Packs)" or legacy "20 - 0"
+    const parseCartonCount = (label: string): number => {
+        // New format: "N Cartons (...)"
+        const newFmt = label.match(/^(\d+)\s+Cartons/);
+        if (newFmt) return parseInt(newFmt[1], 10) || 0;
+        // Legacy format: "N - M"
+        return parseInt(label.split("-")[0], 10) || 0;
+    };
+
+    const orderCartons = invoice.items.reduce((a, it) => a + parseCartonCount(it.cartonQty), 0);
+    const schemeCartons = invoice.items.reduce((a, it) => a + parseCartonCount(it.schemeCarton), 0);
     const netCartons = orderCartons + schemeCartons;
     const invoiceAmt = invoice.invoiceAmount ?? totalNet;
     const grandTotal = invoiceAmt + invoice.previousBalance;
@@ -138,7 +147,6 @@ export const DistributorInvoiceView = ({
         const rows = invoice.items.map((it) => `
             <tr>
                 <td class="tc">${it.serialNo}</td>
-                <td class="tc">${it.itemCode}</td>
                 <td>${it.itemDescription}</td>
                 <td class="tc">${it.cartonQty}</td>
                 <td class="tc">${it.schemeCarton}</td>
@@ -211,9 +219,8 @@ td{padding:3px 6px;font-size:11px;border:1px solid #ccc;vertical-align:middle;}
     <thead>
       <tr>
         <th style="width:4%">Serial No.</th>
-        <th style="width:6%">Item Code</th>
-        <th style="width:30%">Item Description</th>
-        <th style="width:8%">Carton Qty</th>
+        <th style="width:36%">Item Description</th>
+        <th style="width:10%">Carton Qty</th>
         <th style="width:8%">Scheme Carton</th>
         <th style="width:8%">Carton Rate</th>
         <th style="width:12%">Gross Amount</th>
@@ -225,7 +232,6 @@ td{padding:3px 6px;font-size:11px;border:1px solid #ccc;vertical-align:middle;}
       ${rows}
       <tr>
         <td class="tot-td" colspan="3"></td>
-        <td class="tot-td">${cartonTotals}</td>
         <td class="tot-td">${schemeTotals}</td>
         <td class="tot-td"></td>
         <td class="tot-td">${fmtN(totalGross)}</td>
@@ -320,9 +326,8 @@ td{padding:3px 6px;font-size:11px;border:1px solid #ccc;vertical-align:middle;}
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <colgroup>
                         <col style={{ width: "4%" }} />
-                        <col style={{ width: "6%" }} />
-                        <col style={{ width: "30%" }} />
-                        <col style={{ width: "8%" }} />
+                        <col style={{ width: "36%" }} />
+                        <col style={{ width: "10%" }} />
                         <col style={{ width: "8%" }} />
                         <col style={{ width: "8%" }} />
                         <col style={{ width: "12%" }} />
@@ -332,7 +337,6 @@ td{padding:3px 6px;font-size:11px;border:1px solid #ccc;vertical-align:middle;}
                     <thead>
                         <tr style={{ background: "#f5f5f5" }}>
                             <th style={th}>Serial<br />No.</th>
-                            <th style={th}>Item<br />Code</th>
                             <th style={th}>Item<br />Description</th>
                             <th style={th}>Carton<br />Qty</th>
                             <th style={th}>Scheme<br />Carton</th>
@@ -346,7 +350,6 @@ td{padding:3px 6px;font-size:11px;border:1px solid #ccc;vertical-align:middle;}
                         {invoice.items.map((it) => (
                             <tr key={it.serialNo}>
                                 <td style={tdC}>{it.serialNo}</td>
-                                <td style={tdC}>{it.itemCode}</td>
                                 <td style={td}>{it.itemDescription}</td>
                                 <td style={tdC}>{it.cartonQty}</td>
                                 <td style={tdC}>{it.schemeCarton}</td>
@@ -359,8 +362,8 @@ td{padding:3px 6px;font-size:11px;border:1px solid #ccc;vertical-align:middle;}
 
                         {/* Totals row */}
                         <tr>
-                            <td style={totTd} colSpan={3}></td>
-                            <td style={totTd}>{cartonTotals}</td>
+                            <td style={totTd} colSpan={2}></td>
+                            <td style={totTd}>{fmtN(orderCartons)}</td>
                             <td style={totTd}>{schemeTotals}</td>
                             <td style={totTd}></td>
                             <td style={totTd}>{fmtN(totalGross)}</td>

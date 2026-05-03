@@ -8,6 +8,27 @@
       "when": 1777453842387,
       "tag": "0000_charming_colleen_wing",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777538208313,
+      "tag": "0001_jittery_the_liberteens",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777629075723,
+      "tag": "0002_quick_eternals",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1777635042799,
+      "tag": "0003_square_zaran",
+      "breakpoints": true
     }
   ]
 }

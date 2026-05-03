@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { DatePicker } from "@/components/custom/date-picker";
 import { z } from "zod";
 import { toast } from "sonner";
 import { useForm } from "@tanstack/react-form";
@@ -12,16 +13,17 @@ import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useGetAllCustomers } from "@/hooks/sales/use-customers";
-import { useCreateInvoice } from "@/hooks/sales/use-invoices";
+import { useCreateInvoice, useUpdateInvoice } from "@/hooks/sales/use-invoices";
 import { useWallets } from "@/hooks/finance/use-finance";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
+import { getCartonAvailabilityFn } from "@/server-functions/inventory/get-carton-availability-fn";
 import {
     Loader2, Plus, Trash2, Users, UserPlus, Package,
     AlertCircle, Warehouse, DollarSign, ChevronRight, CheckCircle2,
     CreditCard, Calendar, Building2Icon, BanknoteIcon,
-    Hash, MapPin, Phone, BadgeCheck, Layers,
-    ArrowRight, Info,
+    MapPin, Phone, BadgeCheck, Layers,
+    ArrowRight,
 } from "lucide-react";
 import { Field, FieldError, FieldGroup, FieldLabel, FieldDescription } from "../ui/field";
 import { cn } from "@/lib/utils";
@@ -35,6 +37,20 @@ type Props = {
     onSuccess: () => void;
     onCancel: () => void;
     onDirtyChange?: (isDirty: boolean) => void;
+    initialData?: any;
+};
+
+type ItemFormValue = {
+    pack: string;
+    recipeId: string;
+    unitType: "carton" | "units";
+    numberOfCartons: number;
+    numberOfUnits: number;
+    discountCartons: number;
+    packsPerCarton: number;
+    hsnCode: string;
+    perCartonPrice: number;
+    retailPrice: number;
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -42,19 +58,35 @@ type Props = {
 const PKR = (v: number) =>
     `PKR ${v.toLocaleString("en-PK", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
-/** Step header pill */
-const StepBadge = ({ n, label }: { n: number; label: string }) => (
-    <div className="flex items-center gap-2 mb-4">
-        <span className="flex size-6 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
-            {n}
-        </span>
-        <span className="text-xs font-semibold uppercase  text-muted-foreground">
-            {label}
-        </span>
-    </div>
-);
+/**
+ * Safe effectiveCPP — always returns at least 1 to prevent division by zero.
+ * Wraps the imported effectiveCPP to guard against edge cases.
+ */
+const safeEffectiveCPP = (packsPerCarton: number, recipeDefault: number): number =>
+    Math.max(1, effectiveCPP(packsPerCarton ?? 0, recipeDefault || 1));
 
-/** Consistent section card */
+/**
+ * Compute line amount for a single item.
+ * Uses safeEffectiveCPP to prevent NaN/Infinity for units-mode lines.
+ */
+function lineAmount(item: ItemFormValue, recipeContainersPerCarton: number): number {
+    const eCPP = safeEffectiveCPP(item.packsPerCarton, recipeContainersPerCarton);
+    if (item.unitType === "carton") {
+        return (item.numberOfCartons || 0) * (item.perCartonPrice || 0);
+    }
+    return (item.numberOfUnits || 0) * ((item.perCartonPrice || 0) / eCPP);
+}
+
+/**
+ * Resolve a stock entry for a given recipeId.
+ * Uses s.recipeId consistently — the direct FK property, not s.recipe?.id.
+ */
+function findStock(availableStock: any[], recipeId: string) {
+    return availableStock.find((s) => s.recipeId === recipeId) ?? null;
+}
+
+// ── Consistent Section card ──────────────────────────────────────────────────
+
 const Section = ({
     icon: Icon,
     title,
@@ -96,7 +128,8 @@ const Section = ({
     </div>
 );
 
-/** Mode toggle pill */
+// ── Mode toggle ──────────────────────────────────────────────────────────────
+
 const ModeToggle = ({
     value,
     onChange,
@@ -127,7 +160,8 @@ const ModeToggle = ({
     </div>
 );
 
-/** CartonCompositionBadge — shows effective packs/carton with recipe default context */
+// ── CartonCompositionBadge ───────────────────────────────────────────────────
+
 const CartonCompositionBadge = ({
     recipeDefault,
     effectiveValue,
@@ -154,30 +188,49 @@ const CartonCompositionBadge = ({
 );
 
 // ── DirtyStateNotifier ───────────────────────────────────────────────────────
-// Subscribes to form dirty state and notifies the parent via callback.
-// Extracted as a component so useEffect can be called at the top level.
+// Extracted inner effect into a real component to satisfy rules-of-hooks.
+
+const DirtyEffect = ({
+    dirty,
+    onDirtyChange,
+}: {
+    dirty: boolean;
+    onDirtyChange: (isDirty: boolean) => void;
+}) => {
+    useEffect(() => { onDirtyChange(dirty); }, [dirty, onDirtyChange]);
+    return null;
+};
+
 const DirtyStateNotifier = ({
     form,
     onDirtyChange,
 }: {
     form: any;
     onDirtyChange: (isDirty: boolean) => void;
-}) => {
-    return (
-        <form.Subscribe
-            selector={(s: any) => s.isDirty}
-            children={(dirty: boolean) => {
-                // eslint-disable-next-line react-hooks/rules-of-hooks
-                useEffect(() => { onDirtyChange(dirty); }, [dirty]);
-                return null;
-            }}
-        />
-    );
-};
+}) => (
+    <form.Subscribe selector={(s: any) => s.isDirty}>
+        {(dirty: boolean) => <DirtyEffect dirty={dirty} onDirtyChange={onDirtyChange} />}
+    </form.Subscribe>
+);
+
+// ── Blank item factory ───────────────────────────────────────────────────────
+
+const blankItem = (): ItemFormValue => ({
+    pack: "",
+    recipeId: "",
+    unitType: "carton",
+    numberOfCartons: 1,
+    numberOfUnits: 0,
+    discountCartons: 0,
+    packsPerCarton: 0,
+    hsnCode: "",
+    perCartonPrice: 0,
+    retailPrice: 0,
+});
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props) => {
+export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange, initialData }: Props) => {
     const { data: customers } = useGetAllCustomers();
     const { data: inventoryData } = useSuspenseQuery({
         queryKey: ["inventory"],
@@ -192,12 +245,24 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
     const wallets = walletsData || [];
     const warehouses = inventoryData ?? [];
 
+    // ── Carton availability ──────────────────────────────────────────────────
+    const { data: cartonAvailability } = useQuery({
+        queryKey: ["carton-availability", activeWarehouse],
+        queryFn: () => getCartonAvailabilityFn({ data: { warehouseId: activeWarehouse } }),
+        enabled: !!activeWarehouse,
+    });
+
+    const getCartonInfo = useCallback((recipeId: string) => {
+        const info = cartonAvailability?.find((c) => c.recipeId === recipeId);
+        return info ?? { completeCartons: 0, partialCartons: 0, totalPacks: 0 };
+    }, [cartonAvailability]);
+
     // ── Warehouse init ───────────────────────────────────────────────────────
     useEffect(() => {
         if (warehouses.length > 0 && !activeWarehouse) {
             setActiveWarehouse(warehouses[0].id);
         }
-    }, [warehouses]); // intentionally omit activeWarehouse to avoid re-triggering
+    }, [warehouses, activeWarehouse]);
 
     useEffect(() => {
         if (activeWarehouse) {
@@ -206,10 +271,51 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
         }
     }, [activeWarehouse, warehouses]);
 
-    const { mutateAsync: createInvoice, isPending } = useCreateInvoice();
+    const { mutateAsync: createInvoice, isPending: isCreating } = useCreateInvoice();
+    const { mutateAsync: updateInvoice, isPending: isUpdating } = useUpdateInvoice();
+    const isPending = isCreating || isUpdating;
 
+    // ── Form ─────────────────────────────────────────────────────────────────
     const form = useForm({
-        defaultValues: {
+        defaultValues: initialData ? {
+            customerId: initialData.customerId || "",
+            customerName: "",
+            customerMobile: "",
+            customerCnic: "",
+            customerCity: "",
+            customerState: "",
+            customerBankAccount: "",
+            customerType: (initialData.customer?.customerType || "retailer") as "distributor" | "retailer" | "wholesaler",
+            warehouseId: initialData.warehouseId || "",
+            account: initialData.account || (wallets[0]?.id || ""),
+            cash: Number(initialData.cash) || 0,
+            credit: Number(initialData.credit) || 0,
+            creditReturnDate: initialData.creditReturnDate
+                ? new Date(initialData.creditReturnDate).toISOString().split("T")[0]
+                : "",
+            expenses: Number(initialData.expenses) || 0,
+            expensesDescription: initialData.expensesDescription || "",
+            remarks: initialData.remarks || "",
+            items: (initialData.items as any[]).map((it): ItemFormValue => {
+                // FIX: determine unitType from the data, not just numberOfCartons > 0.
+                // If numberOfCartons is present and > 0 → carton. Otherwise check numberOfUnits.
+                const cartons = Number(it.numberOfCartons) || 0;
+                const units = Number(it.numberOfUnits) || 0; // FIX: was it.quantity — wrong field name
+                const unitType: "carton" | "units" = cartons > 0 ? "carton" : "units";
+                return {
+                    pack: it.pack || "",
+                    recipeId: it.recipeId || "",
+                    unitType,
+                    numberOfCartons: cartons,
+                    numberOfUnits: units,
+                    discountCartons: Number(it.discountCartons) || 0,
+                    packsPerCarton: Number(it.packsPerCarton) || 0,
+                    hsnCode: it.hsnCode || "",
+                    perCartonPrice: Number(it.perCartonPrice) || 0,
+                    retailPrice: Number(it.retailPrice) || 0,
+                };
+            }),
+        } : {
             customerId: "",
             customerName: "",
             customerMobile: "",
@@ -217,7 +323,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
             customerCity: "",
             customerState: "",
             customerBankAccount: "",
-            customerType: "retailer" as "distributor" | "retailer",
+            customerType: "retailer" as "distributor" | "retailer" | "wholesaler",
             warehouseId: "",
             account: wallets[0]?.id || "",
             cash: 0,
@@ -226,39 +332,31 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
             expenses: 0,
             expensesDescription: "",
             remarks: "",
-            items: [{
-                pack: "",
-                recipeId: "",
-                unitType: "carton" as "carton" | "units",
-                numberOfCartons: 1,
-                numberOfUnits: 0,
-                discountCartons: 0,
-                packsPerCarton: 0,
-                hsnCode: "",
-                perCartonPrice: 0,
-                retailPrice: 0,
-            }],
+            items: [blankItem()],
         },
+
         onSubmit: async ({ value }) => {
-            // ── Guard: items must have a product selected ────────────────────
+            // Guard: all items need a product
             const unfilledItems = value.items.filter((it) => !it.recipeId);
             if (unfilledItems.length > 0) {
                 toast.error("All invoice lines must have a product selected.");
                 return;
             }
 
-            // ── Guard: cash cannot exceed total payable ──────────────────────
             const totalAmount = computeTotal(value.items, availableStock);
             const expenses = Number(value.expenses) || 0;
             const totalPayable = totalAmount + expenses;
-            if ((Number(value.cash) || 0) > totalPayable && totalPayable > 0) {
-                toast.error(`Cash received (${PKR(Number(value.cash))}) cannot exceed total payable (${PKR(totalPayable)}).`);
+            const cashPaid = Number(value.cash) || 0;
+
+            // Guard: cash cannot exceed total
+            if (cashPaid > totalPayable && totalPayable > 0) {
+                toast.error(`Cash received (${PKR(cashPaid)}) cannot exceed total payable (${PKR(totalPayable)}).`);
                 return;
             }
 
-            const credit = Math.max(0, totalPayable - (Number(value.cash) || 0));
+            const credit = Math.max(0, totalPayable - cashPaid);
 
-            // ── Guard: credit due date required when credit > 0 ───────────────
+            // Guard: credit due date required
             if (credit > 0 && !value.creditReturnDate) {
                 toast.error("Please set a credit due date when credit remains.");
                 return;
@@ -267,8 +365,6 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
             try {
                 const payload = {
                     ...value,
-                    // ── Existing customer: clear "new customer" fields so Zod
-                    //    .optional() skips them (empty string ≠ undefined) ─────
                     customerName: customerMode === "existing" ? undefined : (value.customerName || undefined),
                     customerMobile: customerMode === "existing" ? undefined : (value.customerMobile || undefined),
                     customerCnic: customerMode === "existing" ? undefined : (value.customerCnic || undefined),
@@ -281,25 +377,21 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                     expenses: Number(value.expenses) || 0,
                     expensesDescription: value.expensesDescription || undefined,
                     remarks: value.remarks || undefined,
-                    creditReturnDate: value.creditReturnDate
-                        ? new Date(value.creditReturnDate)
-                        : undefined,
+                    creditReturnDate: value.creditReturnDate ? new Date(value.creditReturnDate) : undefined,
                 };
 
-                const validatedData = createInvoiceSchema.parse(payload);
-                await createInvoice(validatedData as any, {
-                    onSuccess: () => {
-                        toast.success("Invoice generated successfully!");
-                        form.reset();
-                        onSuccess();
-                    },
-                });
+                if (initialData) {
+                    await updateInvoice({ ...payload, id: initialData.id } as any);
+                } else {
+                    const validatedData = createInvoiceSchema.parse(payload);
+                    await createInvoice(validatedData as any);
+                }
+                form.reset();
+                onSuccess();
             } catch (error: any) {
                 if (error instanceof z.ZodError) {
                     const friendlyMessages = error.issues.map((issue) => {
                         const path = issue.path.join(".");
-
-                        // Map internal paths to human-readable labels
                         const fieldLabels: Record<string, string> = {
                             customerId: "Customer",
                             customerName: "Customer name",
@@ -307,8 +399,6 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                             account: "Payment account",
                             creditReturnDate: "Credit return date",
                         };
-
-                        // Handle nested item fields: items.0.recipeId, items.0.hsnCode, etc.
                         const itemMatch = path.match(/^items\[(\d+)\]\.(\w+)$/);
                         if (itemMatch) {
                             const itemNum = Number(itemMatch[1]) + 1;
@@ -322,10 +412,8 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                             };
                             return `Item #${itemNum}: ${labelMap[field] ?? field} — ${issue.message}`;
                         }
-
                         return `${fieldLabels[path] ?? path} — ${issue.message}`;
                     });
-
                     toast.error("Please fix the following:\n" + friendlyMessages.join("\n"));
                 } else {
                     toast.error(error.message || "Something went wrong. Please try again.");
@@ -334,19 +422,18 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
         },
     });
 
-    // ── Sync warehouse into form ─────────────────────────────────────────────
+    // ── Sync derived state into form ─────────────────────────────────────────
     useEffect(() => {
         form.setFieldValue("warehouseId", activeWarehouse);
-    }, [activeWarehouse]);
+    }, [activeWarehouse, form]);
 
-    // ── Sync first wallet ────────────────────────────────────────────────────
     useEffect(() => {
         if (wallets.length > 0 && !form.getFieldValue("account")) {
             form.setFieldValue("account", wallets[0].id);
         }
-    }, [wallets]);
+    }, [wallets, form]);
 
-    // ── Customer mode switch: clear relevant fields ───────────────────────────
+    // Clear fields on mode switch
     useEffect(() => {
         if (customerMode === "new") {
             form.setFieldValue("customerId", "");
@@ -359,52 +446,41 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
             form.setFieldValue("customerBankAccount", "");
             form.setFieldValue("customerType", "retailer");
         }
-    }, [customerMode]);
+    }, [customerMode, form]);
 
     const handleFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
         e.target.select();
     }, []);
 
-    // ── Derived total helper (reusable) ──────────────────────────────────────
+    // ── Render ───────────────────────────────────────────────────────────────
     return (
         <form
             onSubmit={(e) => { e.preventDefault(); e.stopPropagation(); form.handleSubmit(); }}
             className="space-y-5 pb-12 mt-2"
         >
-            {/* Notify parent of dirty state changes */}
             {onDirtyChange && (
                 <DirtyStateNotifier form={form} onDirtyChange={onDirtyChange} />
             )}
+
             <FieldGroup>
 
-                {/* ═══════════════════════════════════════════════════════════
-                    STEP 1 · CUSTOMER
-                ═══════════════════════════════════════════════════════════ */}
-                <Section
-                    icon={Users}
-                    title="Customer"
-                    subtitle="Who is this invoice for?"
-                    step={1}
-                >
+                {/* ══ STEP 1 · CUSTOMER ══════════════════════════════════════ */}
+                <Section icon={Users} title="Customer" subtitle="Who is this invoice for?" step={1}>
                     <ModeToggle value={customerMode} onChange={setCustomerMode} />
 
                     {customerMode === "existing" ? (
                         <form.Field
                             name="customerId"
-                            validators={{ onChange: z.string().min(1, "Please select a customer") }}
+                            validators={{
+                                onChange: z.string().min(1, "Please select a customer"),
+                                onSubmit: z.string().min(1, "Please select a customer"),
+                            }}
                         >
                             {(field) => (
                                 <Field>
-                                    <FieldLabel>
-                                        Select Customer <span className="text-destructive">*</span>
-                                    </FieldLabel>
+                                    <FieldLabel>Select Customer <span className="text-destructive">*</span></FieldLabel>
                                     <Select value={field.state.value} onValueChange={field.handleChange}>
-                                        <SelectTrigger
-                                            className={cn(
-                                                "h-10",
-                                                !field.state.value && field.state.meta.isTouched && "border-destructive",
-                                            )}
-                                        >
+                                        <SelectTrigger className={cn("h-10", !field.state.value && field.state.meta.isTouched && "border-destructive")}>
                                             <SelectValue placeholder="Choose a customer…" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -412,10 +488,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                 <SelectItem key={c.id} value={c.id}>
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-medium">{c.name}</span>
-                                                        <Badge
-                                                            variant="secondary"
-                                                            className="text-[9px] capitalize px-1.5 py-0 h-4"
-                                                        >
+                                                        <Badge variant="secondary" className="text-[9px] capitalize px-1.5 py-0 h-4">
                                                             {c.customerType}
                                                         </Badge>
                                                     </div>
@@ -432,7 +505,10 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <form.Field
                                     name="customerName"
-                                    validators={{ onChange: z.string().min(1, "Customer name is required") }}
+                                    validators={{
+                                        onChange: z.string().min(1, "Customer name is required"),
+                                        onSubmit: z.string().min(1, "Customer name is required"),
+                                    }}
                                 >
                                     {(field) => (
                                         <Field>
@@ -490,10 +566,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                 <form.Field name="customerCity">
                                     {(field) => (
                                         <Field>
-                                            <FieldLabel>
-                                                <MapPin className="size-3 mr-1 inline" />
-                                                City
-                                            </FieldLabel>
+                                            <FieldLabel><MapPin className="size-3 mr-1 inline" />City</FieldLabel>
                                             <Input
                                                 value={field.state.value}
                                                 onChange={(e) => field.handleChange(e.target.value)}
@@ -538,15 +611,11 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                     {(field) => (
                                         <Field>
                                             <FieldLabel>Customer Type</FieldLabel>
-                                            <Select
-                                                value={field.state.value}
-                                                onValueChange={(v: any) => field.handleChange(v)}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
+                                            <Select value={field.state.value} onValueChange={(v: any) => field.handleChange(v)}>
+                                                <SelectTrigger><SelectValue /></SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="retailer">Retailer</SelectItem>
+                                                    <SelectItem value="wholesaler">Wholesaler</SelectItem>
                                                     <SelectItem value="distributor">Distributor</SelectItem>
                                                 </SelectContent>
                                             </Select>
@@ -558,25 +627,19 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                     )}
                 </Section>
 
-                {/* ═══════════════════════════════════════════════════════════
-                    STEP 2 · DISPATCH SETTINGS
-                ═══════════════════════════════════════════════════════════ */}
-                <Section
-                    icon={Warehouse}
-                    title="Dispatch Settings"
-                    subtitle="Source warehouse and deposit account"
-                    step={2}
-                >
+                {/* ══ STEP 2 · DISPATCH SETTINGS ═════════════════════════════ */}
+                <Section icon={Warehouse} title="Dispatch Settings" subtitle="Source warehouse and deposit account" step={2}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <form.Field
                             name="warehouseId"
-                            validators={{ onChange: z.string().min(1, "Warehouse is required") }}
+                            validators={{
+                                onChange: z.string().min(1, "Warehouse is required"),
+                                onSubmit: z.string().min(1, "Warehouse is required"),
+                            }}
                         >
                             {(field) => (
                                 <Field>
-                                    <FieldLabel>
-                                        Source Warehouse <span className="text-destructive">*</span>
-                                    </FieldLabel>
+                                    <FieldLabel>Source Warehouse <span className="text-destructive">*</span></FieldLabel>
                                     <Select
                                         value={activeWarehouse}
                                         onValueChange={(val) => {
@@ -584,9 +647,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                             field.handleChange(val);
                                         }}
                                     >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select warehouse" />
-                                        </SelectTrigger>
+                                        <SelectTrigger><SelectValue placeholder="Select warehouse" /></SelectTrigger>
                                         <SelectContent>
                                             {warehouses.map((w: any) => (
                                                 <SelectItem key={w.id} value={w.id}>
@@ -611,26 +672,23 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
 
                         <form.Field
                             name="account"
-                            validators={{ onChange: z.string().min(1, "Account is required") }}
+                            validators={{
+                                onChange: z.string().min(1, "Account is required"),
+                                onSubmit: z.string().min(1, "Account is required"),
+                            }}
                         >
                             {(field) => (
                                 <Field>
-                                    <FieldLabel>
-                                        Deposit Account <span className="text-destructive">*</span>
-                                    </FieldLabel>
+                                    <FieldLabel>Deposit Account <span className="text-destructive">*</span></FieldLabel>
                                     <Select value={field.state.value} onValueChange={field.handleChange}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select account" />
-                                        </SelectTrigger>
+                                        <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
                                         <SelectContent>
                                             {wallets.map((w: any) => (
                                                 <SelectItem key={w.id} value={w.id}>
                                                     <span className="flex items-center gap-2">
-                                                        {w.type === "bank" ? (
-                                                            <Building2Icon className="size-3.5 text-blue-500" />
-                                                        ) : (
-                                                            <BanknoteIcon className="size-3.5 text-emerald-500" />
-                                                        )}
+                                                        {w.type === "bank"
+                                                            ? <Building2Icon className="size-3.5 text-blue-500" />
+                                                            : <BanknoteIcon className="size-3.5 text-emerald-500" />}
                                                         {w.name}
                                                     </span>
                                                 </SelectItem>
@@ -645,15 +703,19 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                     </div>
                 </Section>
 
-                {/* ═══════════════════════════════════════════════════════════
-                    STEP 3 · ITEMS + SETTLEMENT (live-computed)
-                ═══════════════════════════════════════════════════════════ */}
+                {/* ══ STEP 3 · ITEMS + SETTLEMENT ════════════════════════════
+                    Single Subscribe that drives ALL live calculations.
+                    Using values.items as the single source of truth for
+                    derived quantities — no dual-source drift.
+                ══════════════════════════════════════════════════════════ */}
                 <form.Subscribe selector={(s) => s.values}>
                     {(values) => {
-                        const watchedItems = values.items || [];
+                        const items: ItemFormValue[] = values.items || [];
                         const expenses = Number(values.expenses) || 0;
                         const cashPaid = Number(values.cash) || 0;
-                        const totalAmount = computeTotal(watchedItems, availableStock);
+
+                        // computeTotal uses values.items directly — always in sync with Subscribe
+                        const totalAmount = computeTotal(items, availableStock);
                         const totalPayable = totalAmount + expenses;
                         const totalCredit = Math.max(0, totalPayable - cashPaid);
                         const cashExceedsTotal = cashPaid > totalPayable && totalPayable > 0;
@@ -662,7 +724,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                         return (
                             <div className="space-y-5">
 
-                                {/* ── 3a. Items ── */}
+                                {/* ── Items ── */}
                                 <Section
                                     icon={Package}
                                     title="Invoice Items"
@@ -676,12 +738,20 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                         )
                                     }
                                 >
+                                    {/*
+                                        form.Field name="items" is used ONLY for:
+                                          - field.removeValue(index)
+                                          - field.pushValue(...)
+                                        All item data for rendering/math comes from `items` (values.items above).
+                                        This eliminates the dual-source drift the original had.
+                                    */}
                                     <form.Field name="items">
                                         {(field) => (
                                             <div className="space-y-3">
 
                                                 {/* Desktop column headers */}
-                                                <div className="hidden md:grid items-center gap-2 px-3 pb-1 border-b"
+                                                <div
+                                                    className="hidden md:grid items-center gap-2 px-3 pb-1 border-b"
                                                     style={{ gridTemplateColumns: "2.2fr 1fr 0.7fr 0.7fr 1.2fr 1fr 1fr 0.8fr 32px" }}
                                                 >
                                                     {["Product", "Unit Type", "HSN", "Packs/Ctn", "Qty", "Unit Cost", "Retail MRP", "Amount", ""].map((h) => (
@@ -692,30 +762,32 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                 </div>
 
                                                 <div className="divide-y divide-border/40 rounded-xl border bg-muted/10 overflow-hidden">
-                                                    {field.state.value.map((_, index) => {
-                                                        const item = watchedItems[index] || {};
-                                                        const stock = availableStock.find((s) => s.recipe?.id === item.recipeId);
-                                                        const cpp = stock?.recipe?.containersPerCarton || 1;
-                                                        const eCPP = effectiveCPP(item.packsPerCarton ?? 0, cpp);
+                                                    {items.map((item, index) => {
+                                                        // ── Per-item derived values ──────────────────────────
+                                                        const stock = findStock(availableStock, item.recipeId);
+                                                        const recipeDefault = stock?.recipe?.containersPerCarton || 1;
+                                                        const eCPP = safeEffectiveCPP(item.packsPerCarton, recipeDefault);
+
                                                         const stockC = stock?.quantityCartons ?? 0;
                                                         const stockU = stock?.quantityContainers ?? 0;
-                                                        const totalStockU = stockC * cpp + stockU;
+                                                        const totalStockU = stockC * recipeDefault + stockU;
 
+                                                        // Requested units including free cartons (for stock check)
                                                         const requestedU = item.unitType === "carton"
                                                             ? ((item.numberOfCartons || 0) + (item.discountCartons || 0)) * eCPP
                                                             : (item.numberOfUnits || 0);
 
-                                                        const lineAmount = item.unitType === "carton"
-                                                            ? (item.numberOfCartons || 0) * (item.perCartonPrice || 0)
-                                                            : (item.numberOfUnits || 0) * ((item.perCartonPrice || 0) / eCPP);
+                                                        // Line amount — billed qty only (discount cartons excluded from billing)
+                                                        const amount = lineAmount(item, recipeDefault);
 
-                                                        // Per-unit comparison for margin
-                                                        const perUnitCost = (item.perCartonPrice || 0) / Math.max(1, eCPP);
+                                                        // Per-unit margin
+                                                        const perUnitCost = (item.perCartonPrice || 0) / eCPP;
                                                         const perUnitRetail = item.retailPrice || 0;
-                                                        const unitMargin = perUnitRetail - perUnitCost;
+                                                        const unitMargin = perUnitRetail > 0 && perUnitCost > 0
+                                                            ? perUnitRetail - perUnitCost
+                                                            : null;
 
-                                                        const stockExceeded = requestedU > totalStockU && totalStockU > 0;
-                                                        const isFirstItem = index === 0;
+                                                        const stockExceeded = stock !== null && requestedU > totalStockU && totalStockU > 0;
 
                                                         return (
                                                             <div
@@ -726,7 +798,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                     !stockExceeded && index % 2 === 1 && "bg-muted/20",
                                                                 )}
                                                             >
-                                                                {/* ─ Desktop ─ */}
+                                                                {/* ── Desktop layout ── */}
                                                                 <div
                                                                     className="hidden md:grid items-start gap-2"
                                                                     style={{ gridTemplateColumns: "2.2fr 1fr 0.7fr 0.7fr 1.2fr 1fr 1fr 0.8fr 32px" }}
@@ -734,21 +806,24 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                     {/* Product */}
                                                                     <form.Field
                                                                         name={`items[${index}].recipeId`}
-                                                                        validators={{ onChange: z.string().min(1, "Select product") }}
+                                                                        validators={{
+                                                                            onChange: z.string().min(1, "Select product"),
+                                                                            onSubmit: z.string().min(1, "Select product"),
+                                                                        }}
                                                                     >
                                                                         {(sf) => (
                                                                             <div className="space-y-1">
                                                                                 <Select
                                                                                     value={sf.state.value}
                                                                                     onValueChange={(val) => {
-                                                                                        const s = availableStock.find((s) => s.recipeId === val);
+                                                                                        const s = findStock(availableStock, val);
                                                                                         sf.handleChange(val);
                                                                                         form.setFieldValue(`items[${index}].pack`, s?.recipe?.name || "");
                                                                                         if (s?.recipe?.hsnCode) {
                                                                                             form.setFieldValue(`items[${index}].hsnCode`, s.recipe.hsnCode);
                                                                                         }
                                                                                         form.setFieldValue(`items[${index}].packsPerCarton`, s?.recipe?.containersPerCarton ?? 0);
-                                                                                        // Auto-populate Unit Cost from recipe's estimated cost
+                                                                                        // Auto-populate unit cost from recipe estimate
                                                                                         if (s?.recipe?.estimatedCostPerContainer) {
                                                                                             const cpp = s.recipe.containersPerCarton || 1;
                                                                                             const perCartonCost = Number(s.recipe.estimatedCostPerContainer) * cpp;
@@ -768,57 +843,76 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                                         <SelectValue placeholder="Select product…" />
                                                                                     </SelectTrigger>
                                                                                     <SelectContent>
-                                                                                        {availableStock.map((s) => (
-                                                                                            <SelectItem key={s.id} value={s.recipeId}>
-                                                                                                <div className="flex flex-col gap-0.5">
-                                                                                                    <span className="font-medium text-xs">{s.recipe?.name}</span>
-                                                                                                    <span className="text-[10px] text-muted-foreground">
-                                                                                                        {s.quantityCartons}C / {s.quantityContainers}U in stock
-                                                                                                    </span>
-                                                                                                </div>
-                                                                                            </SelectItem>
-                                                                                        ))}
+                                                                                        {availableStock.map((s) => {
+                                                                                            const cInfo = getCartonInfo(s.recipeId);
+                                                                                            return (
+                                                                                                <SelectItem key={s.id} value={s.recipeId}>
+                                                                                                    <div className="flex flex-col gap-0.5">
+                                                                                                        <span className="font-medium text-xs">{s.recipe?.name}</span>
+                                                                                                        <span className="text-[10px] text-muted-foreground">
+                                                                                                            {cInfo.completeCartons > 0 ? (
+                                                                                                                <>
+                                                                                                                    <span className="text-emerald-600 font-semibold">{cInfo.completeCartons} complete</span>
+                                                                                                                    {cInfo.partialCartons > 0 && <span className="text-amber-600 ml-1">· {cInfo.partialCartons} partial</span>}
+                                                                                                                </>
+                                                                                                            ) : (
+                                                                                                                <>{s.quantityCartons}C / {s.quantityContainers}U in stock</>
+                                                                                                            )}
+                                                                                                        </span>
+                                                                                                    </div>
+                                                                                                </SelectItem>
+                                                                                            );
+                                                                                        })}
                                                                                     </SelectContent>
                                                                                 </Select>
 
-                                                                                {/* Stock indicator */}
+                                                                                {/* Stock status indicator */}
                                                                                 <div className="flex items-center gap-1 text-[10px]">
                                                                                     {stockExceeded ? (
                                                                                         <span className="text-destructive font-semibold flex items-center gap-0.5">
                                                                                             <AlertCircle className="size-3" /> Exceeds stock
                                                                                         </span>
-                                                                                    ) : stock ? (
-                                                                                        <span className="text-emerald-600 flex items-center gap-0.5">
-                                                                                            <CheckCircle2 className="size-3" />
-                                                                                            {stockC}C / {stockU}U available
-                                                                                            {(item.discountCartons || 0) > 0 && (
-                                                                                                <span className="ml-1 text-amber-600 font-semibold">
-                                                                                                    (+{item.discountCartons} free)
-                                                                                                </span>
-                                                                                            )}
-                                                                                        </span>
-                                                                                    ) : (
+                                                                                    ) : stock ? (() => {
+                                                                                        const cInfo = getCartonInfo(item.recipeId);
+                                                                                        return (
+                                                                                            <span className="text-emerald-600 flex items-center gap-0.5">
+                                                                                                <CheckCircle2 className="size-3" />
+                                                                                                {cInfo.completeCartons > 0
+                                                                                                    ? (
+                                                                                                        <>
+                                                                                                            {cInfo.completeCartons}C complete
+                                                                                                            {cInfo.partialCartons > 0 && <span className="text-amber-600 ml-1">({cInfo.partialCartons} partial)</span>}
+                                                                                                        </>
+                                                                                                    ) : (
+                                                                                                        <>{stockC}C / {stockU}U available</>
+                                                                                                    )}
+                                                                                                {(item.discountCartons || 0) > 0 && (
+                                                                                                    <span className="ml-1 text-amber-600 font-semibold">
+                                                                                                        (+{item.discountCartons} free)
+                                                                                                    </span>
+                                                                                                )}
+                                                                                            </span>
+                                                                                        );
+                                                                                    })() : (
                                                                                         <span className="text-muted-foreground">No stock info</span>
                                                                                     )}
                                                                                 </div>
 
-                                                                                {/* Discount cartons — inline sub-field, carton mode only */}
+                                                                                {/* Free cartons — carton mode only */}
                                                                                 {item.unitType === "carton" && (
                                                                                     <form.Field name={`items[${index}].discountCartons`}>
                                                                                         {(sf) => (
                                                                                             <div className="flex items-center gap-1 mt-1">
                                                                                                 <span className="text-[9px] text-muted-foreground font-medium whitespace-nowrap">Free ctns</span>
-                                                                                                <div className="relative w-14">
-                                                                                                    <Input
-                                                                                                        type="number"
-                                                                                                        min="0"
-                                                                                                        className="h-6 text-[10px] pr-1 pl-1.5"
-                                                                                                        value={sf.state.value}
-                                                                                                        onFocus={handleFocus}
-                                                                                                        onChange={(e) => sf.handleChange(Number(e.target.value))}
-                                                                                                        title="Free cartons given to customer (deducted from stock, not billed)"
-                                                                                                    />
-                                                                                                </div>
+                                                                                                <Input
+                                                                                                    type="number"
+                                                                                                    min="0"
+                                                                                                    className="h-6 w-14 text-[10px] pr-1 pl-1.5"
+                                                                                                    value={sf.state.value}
+                                                                                                    onFocus={handleFocus}
+                                                                                                    onChange={(e) => sf.handleChange(Number(e.target.value))}
+                                                                                                    title="Free cartons — deducted from stock, not billed"
+                                                                                                />
                                                                                             </div>
                                                                                         )}
                                                                                     </form.Field>
@@ -826,12 +920,8 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
 
                                                                                 <FieldError errors={sf.state.meta.errors} />
 
-                                                                                {/* CartonCompositionBadge — carton mode + product selected */}
                                                                                 {item.unitType === "carton" && stock && (
-                                                                                    <CartonCompositionBadge
-                                                                                        recipeDefault={cpp}
-                                                                                        effectiveValue={eCPP}
-                                                                                    />
+                                                                                    <CartonCompositionBadge recipeDefault={recipeDefault} effectiveValue={eCPP} />
                                                                                 )}
                                                                             </div>
                                                                         )}
@@ -844,17 +934,15 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                                 value={sf.state.value}
                                                                                 onValueChange={(v: any) => {
                                                                                     sf.handleChange(v);
-                                                                                    // Reset qty on type switch to avoid stale values
                                                                                     if (v === "carton") {
                                                                                         form.setFieldValue(`items[${index}].numberOfUnits`, 0);
                                                                                     } else {
                                                                                         form.setFieldValue(`items[${index}].numberOfCartons`, 0);
+                                                                                        form.setFieldValue(`items[${index}].discountCartons`, 0);
                                                                                     }
                                                                                 }}
                                                                             >
-                                                                                <SelectTrigger className="h-9 text-xs">
-                                                                                    <SelectValue />
-                                                                                </SelectTrigger>
+                                                                                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                                                                                 <SelectContent>
                                                                                     <SelectItem value="carton">
                                                                                         <span className="flex items-center gap-1.5 text-xs">
@@ -872,27 +960,18 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                     </form.Field>
 
                                                                     {/* HSN */}
-                                                                    <form.Field
-                                                                        name={`items[${index}].hsnCode`}
-                                                                        validators={{ onChange: z.string().min(1, "Required") }}
-                                                                    >
+                                                                    <form.Field name={`items[${index}].hsnCode`}>
                                                                         {(sf) => (
-                                                                            <div>
-                                                                                <Input
-                                                                                    className={cn(
-                                                                                        "h-9 text-xs",
-                                                                                        sf.state.meta.errors.length > 0 && "border-destructive",
-                                                                                    )}
-                                                                                    placeholder="HSN"
-                                                                                    value={sf.state.value}
-                                                                                    onChange={(e) => sf.handleChange(e.target.value)}
-                                                                                />
-                                                                                <FieldError errors={sf.state.meta.errors} />
-                                                                            </div>
+                                                                            <Input
+                                                                                className={cn("h-9 text-xs", sf.state.meta.errors.length > 0 && "border-destructive")}
+                                                                                placeholder="HSN"
+                                                                                value={sf.state.value}
+                                                                                onChange={(e) => sf.handleChange(e.target.value)}
+                                                                            />
                                                                         )}
                                                                     </form.Field>
 
-                                                                    {/* Packs/Ctn — only active for carton unit type */}
+                                                                    {/* Packs/Ctn — active for carton mode only */}
                                                                     <form.Field name={`items[${index}].packsPerCarton`}>
                                                                         {(sf) => (
                                                                             <div className="relative">
@@ -907,7 +986,9 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                                     onFocus={handleFocus}
                                                                                     onChange={(e) => sf.handleChange(Number(e.target.value))}
                                                                                     disabled={item.unitType !== "carton"}
-                                                                                    title={item.unitType !== "carton" ? "Packs per carton only applies to carton orders" : "Override packs per carton (0 = use recipe default)"}
+                                                                                    title={item.unitType !== "carton"
+                                                                                        ? "Packs per carton only applies to carton orders"
+                                                                                        : "Override packs per carton (0 = use recipe default)"}
                                                                                 />
                                                                                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-muted-foreground font-medium pointer-events-none">
                                                                                     pks
@@ -957,7 +1038,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                         )}
                                                                     </div>
 
-                                                                    {/* Per carton price */}
+                                                                    {/* Unit cost (per carton) */}
                                                                     <form.Field name={`items[${index}].perCartonPrice`}>
                                                                         {(sf) => (
                                                                             <div className="relative">
@@ -982,7 +1063,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                         )}
                                                                     </form.Field>
 
-                                                                    {/* Retail / MRP */}
+                                                                    {/* Retail MRP */}
                                                                     <form.Field name={`items[${index}].retailPrice`}>
                                                                         {(sf) => (
                                                                             <div className="relative">
@@ -1006,15 +1087,14 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                     {/* Amount + margin */}
                                                                     <div className="pt-0.5 space-y-1">
                                                                         <div className="font-bold text-sm text-right tabular-nums text-foreground">
-                                                                            {PKR(lineAmount)}
+                                                                            {PKR(amount)}
                                                                         </div>
-                                                                        {perUnitCost > 0 && perUnitRetail > 0 && (
+                                                                        {unitMargin !== null && (
                                                                             <div className={cn(
                                                                                 "text-[10px] font-semibold text-right tabular-nums",
                                                                                 unitMargin < 0 ? "text-destructive" : "text-emerald-600",
                                                                             )}>
-                                                                                {unitMargin >= 0 ? "+" : ""}
-                                                                                {PKR(unitMargin)}/u
+                                                                                {unitMargin >= 0 ? "+" : ""}{PKR(unitMargin)}/u
                                                                             </div>
                                                                         )}
                                                                     </div>
@@ -1032,7 +1112,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                     </Button>
                                                                 </div>
 
-                                                                {/* ─ Mobile card ─ */}
+                                                                {/* ── Mobile card ── */}
                                                                 <div className="md:hidden space-y-3">
                                                                     <div className="flex items-center justify-between">
                                                                         <Badge variant="outline" className="text-[10px] font-mono">
@@ -1064,7 +1144,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                                 <Select
                                                                                     value={sf.state.value}
                                                                                     onValueChange={(val) => {
-                                                                                        const s = availableStock.find((s) => s.recipeId === val);
+                                                                                        const s = findStock(availableStock, val);
                                                                                         sf.handleChange(val);
                                                                                         form.setFieldValue(`items[${index}].pack`, s?.recipe?.name || "");
                                                                                         if (s?.recipe?.hsnCode) {
@@ -1080,9 +1160,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                                         }
                                                                                     }}
                                                                                 >
-                                                                                    <SelectTrigger className="text-xs">
-                                                                                        <SelectValue placeholder="Select…" />
-                                                                                    </SelectTrigger>
+                                                                                    <SelectTrigger className="text-xs"><SelectValue placeholder="Select…" /></SelectTrigger>
                                                                                     <SelectContent>
                                                                                         {availableStock.map((s) => (
                                                                                             <SelectItem key={s.id} value={s.recipeId}>
@@ -1095,12 +1173,8 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                         )}
                                                                     </form.Field>
 
-                                                                    {/* CartonCompositionBadge — mobile, carton mode + product selected */}
                                                                     {item.unitType === "carton" && stock && (
-                                                                        <CartonCompositionBadge
-                                                                            recipeDefault={cpp}
-                                                                            effectiveValue={eCPP}
-                                                                        />
+                                                                        <CartonCompositionBadge recipeDefault={recipeDefault} effectiveValue={eCPP} />
                                                                     )}
 
                                                                     <div className="grid grid-cols-2 gap-3">
@@ -1108,7 +1182,18 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                             {(sf) => (
                                                                                 <Field>
                                                                                     <FieldLabel className="text-xs">Type</FieldLabel>
-                                                                                    <Select value={sf.state.value} onValueChange={(v: any) => sf.handleChange(v)}>
+                                                                                    <Select
+                                                                                        value={sf.state.value}
+                                                                                        onValueChange={(v: any) => {
+                                                                                            sf.handleChange(v);
+                                                                                            if (v === "carton") {
+                                                                                                form.setFieldValue(`items[${index}].numberOfUnits`, 0);
+                                                                                            } else {
+                                                                                                form.setFieldValue(`items[${index}].numberOfCartons`, 0);
+                                                                                                form.setFieldValue(`items[${index}].discountCartons`, 0);
+                                                                                            }
+                                                                                        }}
+                                                                                    >
                                                                                         <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
                                                                                         <SelectContent>
                                                                                             <SelectItem value="carton">Carton</SelectItem>
@@ -1134,7 +1219,6 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                         </form.Field>
                                                                     </div>
 
-                                                                    {/* Packs/Carton (mobile) — only shown for carton type */}
                                                                     {item.unitType === "carton" && (
                                                                         <form.Field name={`items[${index}].packsPerCarton`}>
                                                                             {(sf) => (
@@ -1149,15 +1233,12 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                                         onChange={(e) => sf.handleChange(Number(e.target.value))}
                                                                                         placeholder="0"
                                                                                     />
-                                                                                    <FieldDescription className="text-[10px]">
-                                                                                        0 = use recipe default
-                                                                                    </FieldDescription>
+                                                                                    <FieldDescription className="text-[10px]">0 = use recipe default</FieldDescription>
                                                                                 </Field>
                                                                             )}
                                                                         </form.Field>
                                                                     )}
 
-                                                                    {/* Discount cartons (mobile) — only shown for carton type */}
                                                                     {item.unitType === "carton" && (
                                                                         <form.Field name={`items[${index}].discountCartons`}>
                                                                             {(sf) => (
@@ -1175,9 +1256,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                                         onChange={(e) => sf.handleChange(Number(e.target.value))}
                                                                                         placeholder="0"
                                                                                     />
-                                                                                    <FieldDescription className="text-[10px]">
-                                                                                        Deducted from stock, not billed
-                                                                                    </FieldDescription>
+                                                                                    <FieldDescription className="text-[10px]">Deducted from stock, not billed</FieldDescription>
                                                                                 </Field>
                                                                             )}
                                                                         </form.Field>
@@ -1250,7 +1329,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
 
                                                                     <div className="flex items-center justify-between border-t pt-2">
                                                                         <span className="text-xs text-muted-foreground">Line Total</span>
-                                                                        <span className="font-bold text-sm">{PKR(lineAmount)}</span>
+                                                                        <span className="font-bold text-sm">{PKR(amount)}</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -1258,36 +1337,23 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                     })}
                                                 </div>
 
-                                                {/* Add line button */}
+                                                {/* Add line */}
                                                 <Button
                                                     type="button"
                                                     variant="outline"
                                                     size="sm"
-                                                    onClick={() =>
-                                                        field.pushValue({
-                                                            pack: "",
-                                                            recipeId: "",
-                                                            unitType: "carton",
-                                                            numberOfCartons: 1,
-                                                            numberOfUnits: 0,
-                                                            discountCartons: 0,
-                                                            packsPerCarton: 0,
-                                                            hsnCode: "",
-                                                            perCartonPrice: 0,
-                                                            retailPrice: 0,
-                                                        })
-                                                    }
+                                                    onClick={() => field.pushValue(blankItem())}
                                                     disabled={!activeWarehouse}
                                                     className="w-full gap-2 border-dashed text-muted-foreground hover:text-foreground hover:border-primary mt-1 h-9"
                                                 >
                                                     <Plus className="size-4" /> Add Product Line
                                                 </Button>
 
-                                                {/* Running subtotal bar */}
+                                                {/* Running subtotal */}
                                                 {totalAmount > 0 && (
                                                     <div className="flex items-center justify-between px-3 py-2 bg-primary/5 rounded-lg border border-primary/20 mt-2">
                                                         <span className="text-xs font-semibold text-muted-foreground">
-                                                            {field.state.value.length} item{field.state.value.length !== 1 ? "s" : ""}
+                                                            {items.length} item{items.length !== 1 ? "s" : ""}
                                                         </span>
                                                         <span className="text-sm font-extrabold text-primary tabular-nums">
                                                             {PKR(totalAmount)}
@@ -1299,7 +1365,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                     </form.Field>
                                 </Section>
 
-                                {/* ── 3b. Expenses + Settlement ── */}
+                                {/* ── Expenses + Settlement ── */}
                                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
 
                                     {/* Expenses & Notes */}
@@ -1318,16 +1384,10 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                     className="pl-7"
                                                                     onFocus={handleFocus}
                                                                     value={field.state.value === 0 ? "" : field.state.value}
-                                                                    onChange={(e) =>
-                                                                        field.handleChange(
-                                                                            e.target.value === "" ? 0 : Number(e.target.value)
-                                                                        )
-                                                                    }
+                                                                    onChange={(e) => field.handleChange(e.target.value === "" ? 0 : Number(e.target.value))}
                                                                     placeholder="0"
                                                                 />
-                                                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold pointer-events-none">
-                                                                    ₨
-                                                                </span>
+                                                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold pointer-events-none">₨</span>
                                                             </div>
                                                             <FieldDescription>Shipping, loading charges, etc.</FieldDescription>
                                                         </Field>
@@ -1375,12 +1435,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
 
                                     {/* Settlement */}
                                     <div className="lg:col-span-3">
-                                        <Section
-                                            icon={CreditCard}
-                                            title="Settlement"
-                                            subtitle="How is this invoice being paid?"
-                                            step={5}
-                                        >
+                                        <Section icon={CreditCard} title="Settlement" subtitle="How is this invoice being paid?" step={5}>
                                             <div className="space-y-4">
 
                                                 {/* Breakdown */}
@@ -1394,32 +1449,28 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                             <span className="text-muted-foreground flex items-center gap-1">
                                                                 <ArrowRight className="size-3" /> + Expenses
                                                             </span>
-                                                            <span className="font-semibold tabular-nums text-amber-600">
-                                                                {PKR(expenses)}
-                                                            </span>
+                                                            <span className="font-semibold tabular-nums text-amber-600">{PKR(expenses)}</span>
                                                         </div>
                                                     )}
-
                                                     <Separator />
-
                                                     <div className="flex justify-between items-center">
                                                         <span className="font-bold text-base">Total Payable</span>
-                                                        <span className="font-extrabold text-lg text-primary tabular-nums">
-                                                            {PKR(totalPayable)}
-                                                        </span>
+                                                        <span className="font-extrabold text-lg text-primary tabular-nums">{PKR(totalPayable)}</span>
                                                     </div>
                                                 </div>
 
                                                 {/* Cash received */}
                                                 <form.Field
                                                     name="cash"
-                                                    validators={{ onChange: z.number().min(0, "Invalid amount") }}
+                                                    validators={{
+                                                        onChange: z.number().min(0, "Invalid amount"),
+                                                        onSubmit: z.number().min(0, "Invalid amount"),
+                                                    }}
                                                 >
                                                     {(field) => (
                                                         <div className="space-y-2">
                                                             <Label className="text-sm font-bold flex items-center gap-1.5">
-                                                                Cash Received
-                                                                <span className="text-destructive">*</span>
+                                                                Cash Received <span className="text-destructive">*</span>
                                                             </Label>
                                                             <div className="relative">
                                                                 <Input
@@ -1434,9 +1485,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                                     value={field.state.value}
                                                                     onChange={(e) => field.handleChange(Number(e.target.value))}
                                                                 />
-                                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-bold pointer-events-none">
-                                                                    ₨
-                                                                </span>
+                                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-bold pointer-events-none">₨</span>
                                                             </div>
                                                             {cashExceedsTotal && (
                                                                 <p className="text-xs text-destructive flex items-center gap-1.5 bg-destructive/10 px-3 py-2 rounded-md">
@@ -1449,7 +1498,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                     )}
                                                 </form.Field>
 
-                                                {/* Quick-fill buttons */}
+                                                {/* Quick-fill */}
                                                 {totalPayable > 0 && (
                                                     <div className="grid grid-cols-2 gap-2">
                                                         <Button
@@ -1459,8 +1508,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                             className="h-8 text-xs gap-1.5 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400"
                                                             onClick={() => form.setFieldValue("cash", totalPayable)}
                                                         >
-                                                            <CheckCircle2 className="size-3.5" />
-                                                            Paid in Full
+                                                            <CheckCircle2 className="size-3.5" /> Paid in Full
                                                         </Button>
                                                         <Button
                                                             type="button"
@@ -1469,13 +1517,12 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                             className="h-8 text-xs gap-1.5 border-amber-200 text-amber-700 hover:bg-amber-50 hover:border-amber-400"
                                                             onClick={() => form.setFieldValue("cash", 0)}
                                                         >
-                                                            <CreditCard className="size-3.5" />
-                                                            Full Credit
+                                                            <CreditCard className="size-3.5" /> Full Credit
                                                         </Button>
                                                     </div>
                                                 )}
 
-                                                {/* Credit / Fully Paid indicator */}
+                                                {/* Credit indicator */}
                                                 <div className={cn(
                                                     "flex justify-between items-center p-3.5 rounded-xl text-sm font-bold border",
                                                     totalCredit > 0
@@ -1489,34 +1536,33 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                                                             <><AlertCircle className="size-4" /> Credit Remaining</>
                                                         ) : isFullyPaid ? (
                                                             <><CheckCircle2 className="size-4" /> Fully Paid</>
-                                                        ) : (
-                                                            "—"
-                                                        )}
+                                                        ) : "—"}
                                                     </span>
-                                                    <span className="tabular-nums text-base">
-                                                        {PKR(totalCredit)}
-                                                    </span>
+                                                    <span className="tabular-nums text-base">{PKR(totalCredit)}</span>
                                                 </div>
 
-                                                {/* Credit due date — only when credit > 0 */}
+                                                {/* Credit due date */}
                                                 {totalCredit > 0 && (
                                                     <form.Field name="creditReturnDate">
                                                         {(field) => (
                                                             <Field>
                                                                 <FieldLabel className="flex items-center gap-1.5 text-destructive">
                                                                     <Calendar className="size-3.5" />
-                                                                    Credit Due Date
-                                                                    <span className="text-destructive">*</span>
+                                                                    Credit Due Date <span className="text-destructive">*</span>
                                                                 </FieldLabel>
-                                                                <Input
-                                                                    type="date"
-                                                                    min={new Date().toISOString().split("T")[0]}
-                                                                    value={field.state.value}
-                                                                    onChange={(e) => field.handleChange(e.target.value)}
+                                                                <DatePicker
+                                                                    date={field.state.value ? new Date(field.state.value) : undefined}
+                                                                    onChange={(d) => {
+                                                                        if (!d) { field.handleChange(""); return; }
+                                                                        const year = d.getFullYear();
+                                                                        const month = String(d.getMonth() + 1).padStart(2, "0");
+                                                                        const day = String(d.getDate()).padStart(2, "0");
+                                                                        field.handleChange(`${year}-${month}-${day}`);
+                                                                    }}
+                                                                    placeholder="Select due date"
                                                                     className={cn(
-                                                                        !field.state.value && field.state.meta.isTouched
-                                                                            ? "border-destructive"
-                                                                            : "",
+                                                                        "w-full",
+                                                                        !field.state.value && field.state.meta.isTouched ? "border-destructive" : "",
                                                                     )}
                                                                 />
                                                                 <FieldDescription>
@@ -1535,55 +1581,63 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange }: Props)
                     }}
                 </form.Subscribe>
 
-                {/* ═══════════════════════════════════════════════════════════
-                    FOOTER ACTIONS
-                ═══════════════════════════════════════════════════════════ */}
-                <div className="sticky bottom-0 bg-background/90 backdrop-blur-md border-t px-4 py-3 -mx-1 rounded-b-xl">
-                    <div className="flex items-center justify-between gap-3 max-w-full">
-                        <p className="text-xs text-muted-foreground hidden sm:block">
-                            Please verify all entries before generating the invoice.
-                        </p>
-                        <div className="flex gap-2.5 ml-auto">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="lg"
-                                onClick={onCancel}
-                                disabled={isPending}
-                                className="min-w-24"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="submit"
-                                size="lg"
-                                disabled={isPending}
-                                className="min-w-40 gap-2 font-bold"
-                            >
-                                {isPending ? (
-                                    <><Loader2 className="size-4 animate-spin" /> Processing…</>
-                                ) : (
-                                    <><ChevronRight className="size-4" /> Generate Invoice</>
-                                )}
-                            </Button>
+                {/* ══ FOOTER ACTIONS ════════════════════════════════════════ */}
+                <form.Subscribe selector={(s: any) => [s.canSubmit, s.isSubmitting]}>
+                    {([canSubmit, isSubmitting]: any) => (
+                        <div className="sticky bottom-0 bg-background/90 backdrop-blur-md border-t px-4 py-3 -mx-1 rounded-b-xl">
+                            {!canSubmit && !isSubmitting && (
+                                <div className="mb-2 px-3 py-2 bg-destructive/10 border border-destructive/20 rounded-lg">
+                                    <p className="text-xs text-destructive font-medium flex items-center gap-1.5">
+                                        <AlertCircle className="size-3.5 shrink-0" />
+                                        Please fix validation errors above before generating the invoice.
+                                    </p>
+                                </div>
+                            )}
+                            <div className="flex items-center justify-between gap-3 max-w-full">
+                                <p className="text-xs text-muted-foreground hidden sm:block">
+                                    Please verify all entries before generating the invoice.
+                                </p>
+                                <div className="flex gap-2.5 ml-auto">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="lg"
+                                        onClick={onCancel}
+                                        disabled={isPending}
+                                        className="min-w-24"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        size="lg"
+                                        disabled={isPending}
+                                        className="min-w-40 gap-2 font-bold"
+                                    >
+                                        {isPending ? (
+                                            <><Loader2 className="size-4 animate-spin" /> Processing…</>
+                                        ) : (
+                                            <><ChevronRight className="size-4" /> Generate Invoice</>
+                                        )}
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-
+                    )}
+                </form.Subscribe>
             </FieldGroup>
         </form>
     );
 };
 
-// ── Utility: compute line-item total ────────────────────────────────────────
-function computeTotal(items: any[], availableStock: any[]): number {
-    return items.reduce((acc: number, item: any) => {
-        const stock = availableStock.find((s) => s.recipe?.id === item.recipeId);
-        const cpp = stock?.recipe?.containersPerCarton || 1;
-        const eCPP = effectiveCPP(item.packsPerCarton ?? 0, cpp);
-        const line = item.unitType === "carton"
-            ? (item.numberOfCartons || 0) * (item.perCartonPrice || 0)
-            : (item.numberOfUnits || 0) * ((item.perCartonPrice || 0) / eCPP);
-        return acc + line;
+// ── computeTotal ─────────────────────────────────────────────────────────────
+// Uses findStock (s.recipeId) consistently. Uses safeEffectiveCPP to prevent
+// NaN/Infinity. Single source of truth for all total calculations.
+
+function computeTotal(items: ItemFormValue[], availableStock: any[]): number {
+    return items.reduce((acc, item) => {
+        const stock = findStock(availableStock, item.recipeId);
+        const recipeDefault = stock?.recipe?.containersPerCarton || 1;
+        return acc + lineAmount(item, recipeDefault);
     }, 0);
 }

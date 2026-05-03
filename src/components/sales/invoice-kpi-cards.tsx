@@ -15,8 +15,8 @@ interface Props {
   filters?: {
     dateFrom?: string;
     dateTo?: string;
-    status?: string;
-    customerType?: string;
+    status?: "paid" | "credit" | "partial";
+    customerType?: "distributor" | "retailer";
     warehouseId?: string;
     amountMin?: number;
     amountMax?: number;

@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { useParams } from "@tanstack/react-router";
-import { MoreHorizontal, Box, Package, Archive, ShieldAlert, Scale, Plus, Lock, ArrowRight, Trash2, Copy, Check, Layers } from "lucide-react";
+import { MoreHorizontal, Box, Package, Archive, ShieldAlert, Scale, Plus, Layers, Trash2, Copy, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,7 +21,6 @@ import {
   BulkRepackDialog,
   BulkHoldDialog,
   BulkReleaseHoldDialog,
-  BulkTransferZoneDialog,
 } from "./bulk-action-dialogs";
 import {
   Pagination,
@@ -32,6 +31,16 @@ import {
   PaginationLink,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { GenericEmpty } from "@/components/custom/empty";
 import { GenericLoader } from "@/components/custom/generic-loader";
 
@@ -51,6 +60,12 @@ export type CartonRow = {
 type Props = {
   data: CartonRow[];
   isLoading?: boolean;
+  page?: number;
+  totalPages?: number;
+  totalItems?: number;
+  onPageChange?: (page: number) => void;
+  error?: Error | null;
+  onRetry?: () => void;
   onTopUp?: (carton: CartonRow) => void;
   onRemovePacks?: (carton: CartonRow) => void;
   onSetCount?: (carton: CartonRow) => void;
@@ -65,6 +80,12 @@ type Props = {
 export function CartonGrid({
   data,
   isLoading,
+  page = 1,
+  totalPages = 1,
+  totalItems = 0,
+  onPageChange,
+  error,
+  onRetry,
   onTopUp,
   onRemovePacks,
   onSetCount,
@@ -85,7 +106,7 @@ export function CartonGrid({
     | "REPACK"
     | "QC_HOLD"
     | "RELEASE_HOLD"
-    | "TRANSFER_ZONE"
+    | "RETIRE"
     | null
   >(null);
 
@@ -93,7 +114,6 @@ export function CartonGrid({
     if (!activeBulkDialog) return;
     
     let opType = activeBulkDialog as any;
-    if (activeBulkDialog === "TRANSFER_ZONE") opType = "TRANSFER";
 
     bulkMutation.mutate(
       {
@@ -110,7 +130,6 @@ export function CartonGrid({
     );
   };
 
-  const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const pageSize = 100;
@@ -132,28 +151,51 @@ export function CartonGrid({
     });
   };
 
-  const totalPages = Math.ceil(data.length / pageSize) || 1;
-  const currentData = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return data.slice(start, start + pageSize);
-  }, [data, currentPage, pageSize]);
-
   const toggleAll = () => {
-    if (selectedIds.size === currentData.length) {
+    if (selectedIds.size === data.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(currentData.map((c) => c.id)));
+      setSelectedIds(new Set(data.map((c) => c.id)));
     }
   };
 
   const selectCount = (count: number) => {
-    setSelectedIds(new Set(currentData.slice(0, count).map(c => c.id)));
+    setSelectedIds(new Set(data.slice(0, count).map(c => c.id)));
   };
+
+  if (error) {
+    return (
+      <div className="py-20 flex flex-col items-center justify-center gap-4 text-center">
+        <div className="size-16 rounded-full bg-destructive/10 flex items-center justify-center">
+          <ShieldAlert className="size-8 text-destructive" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="font-bold text-xl">Failed to load cartons</h3>
+          <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+            {error.message || "An unexpected error occurred while fetching carton data."}
+          </p>
+        </div>
+        {onRetry && (
+          <Button onClick={onRetry} variant="outline" size="sm" className="mt-2">
+            Try Again
+          </Button>
+        )}
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
-      <div className="py-20">
-        <GenericLoader title="Loading cartons..." />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between px-1">
+          <div className="h-7 w-48 bg-muted animate-pulse rounded" />
+          <div className="h-7 w-32 bg-muted animate-pulse rounded" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="h-[260px] rounded-xl border border-border/60 bg-muted/20 animate-pulse" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -194,30 +236,8 @@ export function CartonGrid({
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-9 rounded-full text-xs font-bold hover:bg-white/20 hover:text-white px-4"
-                onClick={() => bulkMutation.mutate({ operationType: "SEAL", cartonIds: Array.from(selectedIds) })}
-                disabled={bulkMutation.isPending}
-              >
-                <Lock className="size-3.5 mr-2" /> Seal All
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-9 rounded-full text-xs font-bold hover:bg-white/20 hover:text-white px-4"
-                onClick={() => setActiveBulkDialog("TRANSFER_ZONE")}
-                disabled={bulkMutation.isPending}
-              >
-                <ArrowRight className="size-3.5 mr-2" /> Transfer All
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
                 className="h-9 rounded-full text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-950/50 px-4"
-                onClick={() => {
-                  if (confirm(`Are you sure you want to retire ${selectedIds.size} cartons?`)) {
-                    bulkMutation.mutate({ operationType: "RETIRE", cartonIds: Array.from(selectedIds) });
-                  }
-                }}
+                onClick={() => setActiveBulkDialog("RETIRE")}
                 disabled={bulkMutation.isPending}
               >
                 <Trash2 className="size-3.5 mr-2" /> Retire All
@@ -260,7 +280,7 @@ export function CartonGrid({
           <div className="flex items-center gap-2">
             <Checkbox
               id="select-all"
-              checked={currentData.length > 0 && selectedIds.size === currentData.length}
+              checked={data.length > 0 && selectedIds.size === data.length}
               onCheckedChange={toggleAll}
             />
             <label htmlFor="select-all" className="text-sm font-medium text-muted-foreground cursor-pointer">
@@ -277,18 +297,18 @@ export function CartonGrid({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-40">
-              <DropdownMenuItem onClick={() => selectCount(10)} disabled={currentData.length < 10}>
+              <DropdownMenuItem onClick={() => selectCount(10)} disabled={data.length < 10}>
                 First 10
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => selectCount(25)} disabled={currentData.length < 25}>
+              <DropdownMenuItem onClick={() => selectCount(25)} disabled={data.length < 25}>
                 First 25
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => selectCount(50)} disabled={currentData.length < 50}>
+              <DropdownMenuItem onClick={() => selectCount(50)} disabled={data.length < 50}>
                 First 50
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={toggleAll}>
-                All on Page ({currentData.length})
+                All on Page ({data.length})
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -296,7 +316,7 @@ export function CartonGrid({
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-        {currentData.map((c) => {
+        {data.map((c) => {
           const isMutable = !["DISPATCHED", "RETIRED", "ARCHIVED"].includes(c.status);
           const isOnHold = c.status === "ON_HOLD";
           const shortId = c.id.slice(-6).toUpperCase();
@@ -441,8 +461,8 @@ export function CartonGrid({
       {totalPages > 1 && (
         <div className="pt-4 flex items-center justify-between border-t border-dashed">
           <p className="text-sm text-muted-foreground font-medium">
-            Showing {(currentPage - 1) * pageSize + 1} to{" "}
-            {Math.min(currentPage * pageSize, data.length)} of {data.length} cartons
+            Showing {(page - 1) * pageSize + 1} to{" "}
+            {Math.min(page * pageSize, totalItems)} of {totalItems} cartons
           </p>
           <Pagination className="justify-end mx-0 w-auto">
             <PaginationContent>
@@ -451,32 +471,31 @@ export function CartonGrid({
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    setCurrentPage((p) => Math.max(1, p - 1));
+                    if (!isLoading && onPageChange) onPageChange(Math.max(1, page - 1));
                   }}
-                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                  className={page === 1 || isLoading ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
 
-              {/* Simple pagination logic for demonstration */}
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 let pageNum = i + 1;
-                // Adjust if we are near the end
-                if (totalPages > 5 && currentPage > 3) {
-                  pageNum = currentPage - 2 + i;
+                if (totalPages > 5 && page > 3) {
+                  pageNum = page - 2 + i;
                   if (pageNum > totalPages) pageNum = totalPages - (4 - i);
                 }
 
-                if (pageNum > totalPages) return null;
+                if (pageNum > totalPages || pageNum <= 0) return null;
 
                 return (
                   <PaginationItem key={pageNum}>
                     <PaginationLink
                       href="#"
-                      isActive={currentPage === pageNum}
+                      isActive={page === pageNum}
                       onClick={(e) => {
                         e.preventDefault();
-                        setCurrentPage(pageNum);
+                        if (!isLoading && onPageChange) onPageChange(pageNum);
                       }}
+                      className={isLoading ? "pointer-events-none opacity-50" : ""}
                     >
                       {pageNum}
                     </PaginationLink>
@@ -484,7 +503,7 @@ export function CartonGrid({
                 );
               })}
 
-              {totalPages > 5 && currentPage < totalPages - 2 && (
+              {totalPages > 5 && page < totalPages - 2 && (
                 <PaginationItem>
                   <PaginationEllipsis />
                 </PaginationItem>
@@ -495,9 +514,9 @@ export function CartonGrid({
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    setCurrentPage((p) => Math.min(totalPages, p + 1));
+                    if (!isLoading && onPageChange) onPageChange(Math.min(totalPages, page + 1));
                   }}
-                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                  className={page === totalPages || isLoading ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
             </PaginationContent>
@@ -545,21 +564,32 @@ export function CartonGrid({
         isPending={bulkMutation.isPending}
       />
 
-      <BulkReleaseHoldDialog
-        open={activeBulkDialog === "RELEASE_HOLD"}
+      <AlertDialog
+        open={activeBulkDialog === "RETIRE"}
         onOpenChange={(open) => !open && setActiveBulkDialog(null)}
-        cartonIds={Array.from(selectedIds)}
-        onConfirm={handleBulkConfirm}
-        isPending={bulkMutation.isPending}
-      />
-
-      <BulkTransferZoneDialog
-        open={activeBulkDialog === "TRANSFER_ZONE"}
-        onOpenChange={(open) => !open && setActiveBulkDialog(null)}
-        cartonIds={Array.from(selectedIds)}
-        onConfirm={handleBulkConfirm}
-        isPending={bulkMutation.isPending}
-      />
+      >
+        <AlertDialogContent className="dark bg-[#09090b] border-white/10 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Retire Cartons</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              Are you sure you want to retire {selectedIds.size} cartons? This action is irreversible and will remove them from active inventory.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-white/10 hover:bg-white/5">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white border-0"
+              onClick={() => {
+                bulkMutation.mutate({ operationType: "RETIRE", cartonIds: Array.from(selectedIds) });
+                setActiveBulkDialog(null);
+                setSelectedIds(new Set());
+              }}
+            >
+              Confirm Retirement
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

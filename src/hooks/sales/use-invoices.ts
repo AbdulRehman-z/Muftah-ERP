@@ -10,8 +10,9 @@ import {
   getInvoiceDetailFn,
   getInvoiceStatsFn,
   deleteInvoiceFn,
+  updateInvoiceFn,
 } from "@/server-functions/sales/invoices-fn";
-import { CreateInvoiceInput } from "@/db/zod_schemas";
+import { CreateInvoiceInput, UpdateInvoiceInput } from "@/db/zod_schemas";
 import { toast } from "sonner";
 
 export const invoicesKeys = {
@@ -100,6 +101,24 @@ export const useDeleteInvoice = () => {
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to delete invoice");
+    },
+  });
+};
+
+export const useUpdateInvoice = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: UpdateInvoiceInput) => updateInvoiceFn({ data }),
+    onSuccess: (_, variables) => {
+      toast.success("Invoice updated successfully");
+      queryClient.invalidateQueries({ queryKey: invoicesKeys.all });
+      queryClient.invalidateQueries({ queryKey: invoicesKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to update invoice");
     },
   });
 };

@@ -46,6 +46,15 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { OverrideBradfordDialog } from "../payroll/override-bradford-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // ── Print helpers ─────────────────────────────────────────────────────────
 
@@ -176,6 +185,7 @@ export function EmployeePayrollHistoryContainer({ employeeId }: EmployeePayrollH
         payslipId: string | null;
         currentScore: string;
     } | null>(null);
+    const [isPopupBlockedOpen, setIsPopupBlockedOpen] = useState(false);
     const currentYear = new Date().getFullYear();
     const [pendingMode, setPendingMode] = useState<FilterMode>("last12");
     const [pendingYear, setPendingYear] = useState<number>(currentYear);
@@ -272,7 +282,7 @@ export function EmployeePayrollHistoryContainer({ employeeId }: EmployeePayrollH
         const html = buildHistoryReportHTML(history, employee, stats, filterLabel);
         const win = window.open("", "_blank");
         if (!win) {
-            window.alert("Popup blocked. Please allow popups for this site.");
+            setIsPopupBlockedOpen(true);
             return;
         }
         win.document.open();
@@ -722,6 +732,22 @@ export function EmployeePayrollHistoryContainer({ employeeId }: EmployeePayrollH
                 onOpenChange={setIsPayslipOpen}
                 payslip={selectedPayslip}
             />
+
+            <AlertDialog open={isPopupBlockedOpen} onOpenChange={setIsPopupBlockedOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Popup Blocked</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Your browser has blocked the print popup. Please allow popups for this site to view and print the payroll history report.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => setIsPopupBlockedOpen(false)}>
+                            Understood
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

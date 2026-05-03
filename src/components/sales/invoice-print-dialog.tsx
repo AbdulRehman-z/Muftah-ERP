@@ -176,33 +176,51 @@ const buildDistributorData = (inv: any): DistributorInvoiceData => ({
     mob: "",
   },
   date: format(new Date(inv.date), "dd-MMM-yyyy"),
-  estNo: inv.id.slice(-8).toUpperCase(),
-  docNo: inv.id.slice(-8).toUpperCase(),
+  estNo: inv.slipNumber ?? inv.id.slice(-8).toUpperCase(),
+  docNo: inv.slipNumber ?? inv.id.slice(-8).toUpperCase(),
   pvNo: "—",
   mBillNo: inv.slipNumber ?? "—",
   transporter: inv.warehouse?.name ?? "—",
   biltyNo: "—",
   dispDate: "—",
-  items: (inv.items ?? []).map((item: any, i: number) => ({
-    serialNo: i + 1,
-    itemCode: item.recipeId?.slice(-6).toUpperCase() ?? "—",
-    itemDescription: item.pack,
-    cartonQty: fmtCartonQty(item.numberOfCartons ?? 0),
-    schemeCarton: item.discountCartons > 0 ? fmtCartonQty(item.discountCartons) : "0 - 0",
-    cartonRate: Number(item.perCartonPrice) || 0,
-    grossAmount: Number(item.amount) || 0,
-    discount: 0,
-    netAmount: Number(item.amount) || 0,
-  })),
+  items: (inv.items ?? []).map((item: any, i: number) => {
+    const billedCartons = Number(item.numberOfCartons) || 0;
+    const discCartons = Number(item.discountCartons) || 0;
+    const packsPerCarton = Number(item.packsPerCarton) || 0;
+
+    // Carton qty label: "N Cartons (M Packs)" when packsPerCarton is known
+    const totalPacks = packsPerCarton > 0 ? billedCartons * packsPerCarton : 0;
+    const cartonQtyLabel = totalPacks > 0
+      ? `${billedCartons} Cartons (${totalPacks} Packs)`
+      : fmtCartonQty(billedCartons);
+
+    const schemeTotal = packsPerCarton > 0 ? discCartons * packsPerCarton : 0;
+    const schemeLabel = discCartons > 0
+      ? (schemeTotal > 0 ? `${discCartons} Cartons (${schemeTotal} Packs)` : fmtCartonQty(discCartons))
+      : "0 - 0";
+
+    return {
+      serialNo: i + 1,
+      itemCode: "", // removed per spec — leave blank
+      itemDescription: item.pack,
+      cartonQty: cartonQtyLabel,
+      schemeCarton: schemeLabel,
+      cartonRate: Number(item.perCartonPrice) || 0,
+      grossAmount: Number(item.amount) || 0,
+      discount: 0,
+      netAmount: Number(item.amount) || 0,
+    };
+  }),
   freight: Number(inv.expenses) || 0,
-  previousBalance: Number(inv.credit) || 0,
+  // previousBalance is the customer's outstanding BEFORE this invoice — not this invoice's credit
+  previousBalance: 0,
   invoiceAmount: Number(inv.totalPrice) || 0,
 });
 
 const buildRetailerData = (inv: any): RetailerInvoiceData => {
   const isDist = inv.customer?.customerType === "distributor";
   return {
-    invoiceNo: inv.id.slice(-8).toUpperCase(),
+    invoiceNo: inv.slipNumber ?? inv.id.slice(-8).toUpperCase(),
     date: format(new Date(inv.date), "dd-MMM-yyyy"),
     customer: {
       name: inv.customer?.name ?? "N/A",
@@ -216,15 +234,20 @@ const buildRetailerData = (inv: any): RetailerInvoiceData => {
       const discCartons = Number(item.discountCartons) || 0;
       const looseUnits = Number(item.quantity) || 0;
 
-      // Compute total packs dispatched:
-      // - Carton order: (billed + discount cartons) × packsPerCarton, fallback to carton count
+      // Compute qty display:
+      // - Carton order: "N Cartons (M Packs)" — shows carton count and total packs
       // - Loose order: looseUnits directly
       let qty: number | string;
       if (billedCartons > 0 || discCartons > 0) {
         // Carton-based order
         const billedPacks = packsPerCarton > 0 ? billedCartons * packsPerCarton : billedCartons;
         const discPacks = packsPerCarton > 0 ? discCartons * packsPerCarton : discCartons;
-        qty = discPacks > 0 ? `${billedPacks}+${discPacks}` : billedPacks;
+        const cartonLabel = discCartons > 0
+          ? `${billedCartons}+${discCartons} Cartons (${billedPacks + discPacks} Packs)`
+          : (packsPerCarton > 0
+            ? `${billedCartons} Cartons (${billedPacks} Packs)`
+            : `${billedCartons} Cartons`);
+        qty = cartonLabel;
       } else {
         // Loose/units order
         qty = looseUnits;

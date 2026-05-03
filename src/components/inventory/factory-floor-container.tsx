@@ -114,7 +114,7 @@ export const FactoryFloorContainer = () => {
 
   const finishedGoods = factoryFloor.finishedGoodsStock.map((fg) => ({
     ...fg,
-    warehouse: { name: factoryFloor.name, isActive: factoryFloor.isActive },
+    warehouse: { id: factoryFloor.id, name: factoryFloor.name, isActive: factoryFloor.isActive },
   }));
 
   const handleAdjustStock = (item: any, type: "chemical" | "packaging") => {

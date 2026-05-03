@@ -5,6 +5,7 @@ import * as financeSchema from "./schemas/finance-schema";
 import * as inventorySchema from "./schemas/inventory-schema";
 import * as manufacturingSchema from "./schemas/manufacturing-schema";
 import * as salesSchema from "./schemas/sales-schema";
+import * as salesErpSchema from "./schemas/sales-erp-schema";
 import * as coreSuppliers from "./schemas/core-suppliers";
 import * as supplierSchema from "./schemas/supplier-schema";
 import * as hrSchema from "./schemas/hr-schema";
@@ -15,6 +16,7 @@ const schema = {
   ...inventorySchema,
   ...manufacturingSchema,
   ...salesSchema,
+  ...salesErpSchema,
   ...financeSchema,
   ...supplierSchema,
   ...coreSuppliers,
@@ -73,6 +75,15 @@ export const {
   integrityAlerts,
 } = manufacturingSchema;
 export const { customers, invoices, invoiceItems } = salesSchema;
+export const {
+  salesmen,
+  customerPriceAgreements,
+  promotionalRules,
+  payments,
+  slipRecords,
+  priceChangeLog,
+  customerDiscountRules,
+} = salesErpSchema;
 export const { wallets, expenses, transactions } = financeSchema;
 export const { supplierPayments, purchaseRecords } = supplierSchema;
 export const { suppliers } = coreSuppliers;

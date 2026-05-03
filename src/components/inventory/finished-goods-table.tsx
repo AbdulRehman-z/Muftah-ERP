@@ -3,6 +3,7 @@ import {
   Warehouse,
   ArrowUpDown,
   ArrowRightLeft,
+  Box,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState, useMemo } from "react";
@@ -20,6 +21,12 @@ type FinishedGood = {
   id: string;
   quantityCartons: number;
   quantityContainers: number;
+  cartonStats: {
+    total: number;
+    complete: number;
+    partial: number;
+    totalPacks: number;
+  };
   createdAt: string | Date;
   updatedAt: string | Date;
   warehouse: {
@@ -109,6 +116,7 @@ export const FinishedGoodsTable = ({
         ),
       },
       {
+        id: "cartons",
         accessorKey: "quantityCartons",
         header: ({ column }) => {
           return (
@@ -119,34 +127,70 @@ export const FinishedGoodsTable = ({
               }
               className="-ml-4"
             >
-              Cartons
+              Carton Inventory
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
-        cell: ({ row }) => (
-          <span className="font-mono font-bold">
-            {row.getValue("quantityCartons")}
-          </span>
-        ),
-      },
-      {
-        id: "totalUnits",
-        header: "Total Units",
         cell: ({ row }) => {
-          const fg = row.original;
+          const stats = row.original.cartonStats || {
+            total: 0,
+            complete: 0,
+            partial: 0,
+            totalPacks: 0,
+          };
           return (
-            <div className="flex flex-col">
-              <span className="font-mono font-bold">
-                {fg.quantityCartons * (fg.recipe.containersPerCarton ?? 0) +
-                  fg.quantityContainers}
-              </span>
-              <span className="text-[10px] uppercase text-muted-foreground">
-                Loose: {fg.quantityContainers}
-              </span>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-black text-base leading-none">
+                  {stats.total}
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                  Total
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <span className="text-[11px] font-bold text-emerald-600 tabular-nums">
+                    {stats.complete}
+                  </span>
+                  <span className="text-[9px] uppercase tracking-tighter text-muted-foreground/50">
+                    Full
+                  </span>
+                </div>
+                <div className="w-px h-2 bg-border" />
+                <div className="flex items-center gap-1">
+                  <span className="text-[11px] font-bold text-amber-600 tabular-nums">
+                    {stats.partial}
+                  </span>
+                  <span className="text-[9px] uppercase tracking-tighter text-muted-foreground/50">
+                    Partial
+                  </span>
+                </div>
+              </div>
             </div>
           );
         },
+      },
+      {
+        id: "totalUnits",
+        header: "Total & Loose Units",
+          cell: ({ row }) => {
+            const fg = row.original;
+            return (
+              <div className="flex flex-col">
+                <span className="font-mono font-bold text-foreground">
+                  {fg.cartonStats.totalPacks + fg.quantityContainers}
+                </span>
+                <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-muted-foreground">
+                  <span>Loose:</span>
+                  <span className={fg.quantityContainers > 0 ? "text-primary" : ""}>
+                    {fg.quantityContainers}
+                  </span>
+                </div>
+              </div>
+            );
+          },
       },
       {
         id: "status",
@@ -210,6 +254,15 @@ export const FinishedGoodsTable = ({
               }}
             >
               <ArrowRightLeft className="size-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
+              title="Manage Cartons"
+              onClick={() => navigate({ to: "/inventory/factory-floor/cartons/$recipeId", params: { recipeId: row.original.recipe.id } })}
+            >
+              <Box className="size-3.5" />
             </Button>
             <Button
               variant="ghost"

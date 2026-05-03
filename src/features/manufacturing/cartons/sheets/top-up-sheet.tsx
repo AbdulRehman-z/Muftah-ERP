@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useTopUpCarton } from "../hooks/use-carton-mutations";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 type Props = {
   open: boolean;
@@ -26,6 +27,8 @@ export function TopUpSheet({ open, onOpenChange, cartonId, batchId, currentPacks
   const maxAdd = capacity - currentPacks;
   const isDirty = delta !== 1 || reason !== "";
   const overLimit = delta > maxAdd;
+  const newTotal = currentPacks + (overLimit ? 0 : delta);
+  const progressPercent = (newTotal / capacity) * 100;
 
   const handleSubmit = () => {
     mutation.mutate(
@@ -43,82 +46,98 @@ export function TopUpSheet({ open, onOpenChange, cartonId, batchId, currentPacks
   return (
     <ResponsiveSheet
       title="Top-Up Packs"
-      description={`Add packs to carton${sku ? ` ${sku}` : ""}`}
+      description={sku || "Add packs to carton"}
       icon={PackagePlus}
       open={open}
       onOpenChange={onOpenChange}
       isDirty={isDirty}
     >
-      <div className="flex flex-col gap-6 py-4">
-        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3.5 flex flex-col gap-1.5">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Current quantity</span>
-            <span className="font-semibold tabular-nums text-foreground">{currentPacks} / {capacity}</span>
+      <div className="flex flex-col gap-8 py-6">
+        {/* Status Card */}
+        <div className="relative overflow-hidden rounded-lg border border-border bg-muted/30 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Current Fill</p>
+              <h3 className="text-2xl font-bold tracking-tighter tabular-nums">
+                {currentPacks} <span className="text-muted-foreground/40 font-medium text-lg">/ {capacity}</span>
+              </h3>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Available</p>
+              <p className="text-lg font-bold text-emerald-600 tracking-tight tabular-nums">+{maxAdd}</p>
+            </div>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Available space</span>
-            <span className="font-semibold tabular-nums text-green-600">{maxAdd} packs</span>
+
+          <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: `${(currentPacks / capacity) * 100}%` }}
+              animate={{ width: `${progressPercent}%` }}
+              className="h-full bg-emerald-500"
+            />
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="delta" className="text-sm font-medium text-foreground">
-            Packs to add
-          </Label>
-          <Input
-            id="delta"
-            type="number"
-            min={1}
-            max={maxAdd}
-            value={delta}
-            onChange={(e) => setDelta(Math.max(1, parseInt(e.target.value) || 1))}
-            className={cn(
-              "h-10 font-semibold",
-              overLimit && "border-destructive focus-visible:ring-destructive/20"
+        <div className="grid gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="delta" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Quantity to Add
+            </Label>
+            <div className="relative">
+              <Input
+                id="delta"
+                type="number"
+                min={1}
+                max={maxAdd}
+                value={delta}
+                onChange={(e) => setDelta(Math.max(1, parseInt(e.target.value) || 0))}
+                className={cn(
+                  "h-12 text-lg font-bold tabular-nums pl-4",
+                  overLimit && "border-destructive focus-visible:ring-destructive/20"
+                )}
+              />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground uppercase">
+                Packs
+              </div>
+            </div>
+            {overLimit && (
+              <p className="text-[11px] font-medium text-destructive flex items-center gap-1.5 mt-1">
+                <AlertCircle className="size-3.5" />
+                Exceeds carton capacity by {delta - maxAdd} units
+              </p>
             )}
-          />
-          {overLimit && (
-            <p className="text-xs text-destructive flex items-center gap-1.5">
-              <AlertCircle className="size-3.5 shrink-0" />
-              Exceeds available packs.
-            </p>
-          )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="reason" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Reason / Notes
+            </Label>
+            <Textarea
+              id="reason"
+              placeholder="e.g. Completing partial carton from previous run"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="resize-none min-h-[100px] bg-muted/20 focus:bg-background transition-colors"
+            />
+          </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="reason" className="text-sm font-medium text-foreground">
-            Reason <span className="text-muted-foreground text-xs font-normal">(optional)</span>
-          </Label>
-          <Textarea
-            id="reason"
-            placeholder="Explain transaction context..."
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            rows={3}
-          />
+        <div className="pt-4 mt-auto">
+          <Button
+            size="lg"
+            className="w-full h-12 font-bold uppercase tracking-widest text-xs"
+            onClick={handleSubmit}
+            disabled={mutation.isPending || overLimit || delta < 1}
+          >
+            {mutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                Updating Carton…
+              </>
+            ) : (
+              `Confirm Top-Up (+${delta})`
+            )}
+          </Button>
         </div>
-
-        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3.5 flex justify-between text-sm">
-          <span className="text-muted-foreground">New total</span>
-          <span className="font-semibold tabular-nums text-foreground">
-            {currentPacks + (overLimit ? 0 : delta)} / {capacity}
-          </span>
-        </div>
-
-        <Button
-          className="w-full h-10"
-          onClick={handleSubmit}
-          disabled={mutation.isPending || overLimit || delta < 1}
-        >
-          {mutation.isPending ? (
-            <>
-              <Loader2 className="mr-2 size-4 animate-spin" />
-              Adding…
-            </>
-          ) : (
-            `Top-Up ${delta} pack${delta !== 1 ? "s" : ""}`
-          )}
-        </Button>
       </div>
     </ResponsiveSheet>
   );
