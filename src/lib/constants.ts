@@ -103,8 +103,28 @@ export const navigations: NavigationItem[] = [
         icon: CustomersIcon,
       },
       {
+        title: "Sales People",
+        url: "/sales/people",
+        icon: UserMgmtIcon,
+      },
+      {
+        title: "Overview",
+        url: "/sales/overview",
+        icon: DashboardIcon,
+      },
+      {
+        title: "Configurations",
+        url: "/sales/configurations",
+        icon: SettingsIcon,
+      },
+      {
         title: "Reconciliation",
         url: "/sales/reconciliation",
+        icon: LedgerIcon,
+      },
+      {
+        title: "Credit Recovery",
+        url: "/sales/recovery",
         icon: LedgerIcon,
       },
     ],

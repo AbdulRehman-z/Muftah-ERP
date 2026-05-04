@@ -130,6 +130,33 @@ export const requireSalesViewMiddleware = createPermissionMiddleware("sales.view
 export const requireSalesManageMiddleware = createPermissionMiddleware(
   "sales.manage",
 );
+export const requireSalesPeopleViewMiddleware = createPermissionMiddleware(
+  "sales.people.view",
+);
+export const requireSalesPeopleManageMiddleware = createPermissionMiddleware(
+  "sales.people.manage",
+);
+export const requireSalesConfigViewMiddleware = createPermissionMiddleware(
+  "sales.config.view",
+);
+export const requireSalesConfigManageMiddleware = createPermissionMiddleware(
+  "sales.config.manage",
+);
+export const requireSalesOverviewMiddleware = createPermissionMiddleware(
+  "sales.overview",
+);
+export const requireSalesOrdersViewMiddleware = createPermissionMiddleware(
+  "sales.orders.view",
+);
+export const requireSalesOrdersManageMiddleware = createPermissionMiddleware(
+  "sales.orders.manage",
+);
+export const requireSalesRecoveryViewMiddleware = createPermissionMiddleware(
+  "sales.recovery.view",
+);
+export const requireSalesRecoveryManageMiddleware = createPermissionMiddleware(
+  "sales.recovery.manage",
+);
 export const requireFinanceViewMiddleware = createPermissionMiddleware(
   "finance.view",
 );

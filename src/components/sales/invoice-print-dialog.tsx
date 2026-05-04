@@ -1,7 +1,6 @@
-import { useState, useRef, useMemo } from "react";
+import { useRef, useMemo } from "react";
 import { ResponsiveDialog } from "@/components/custom/responsive-dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { getInvoiceDetailFn } from "@/server-functions/sales/invoices-fn";
@@ -13,6 +12,7 @@ import {
   RetailerInvoiceView,
   type RetailerInvoiceData,
 } from "./retailer-invoice";
+import { InvoiceTypeBadge } from "./invoice-type-badge";
 import { Printer, FileText, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 
@@ -108,36 +108,29 @@ const InvoicePrintContent = ({
         </span>
         {/* Show only the relevant template button; hide the other */}
         {isDistributor ? (
-          <>
-            <Button
-              variant="default"
-              size="sm"
-              className="text-xs h-7"
-              disabled
-            >
-              <FileText className="size-3 mr-1" />
-              Distributor
-            </Button>
-            <Badge variant="outline" className="ml-auto text-xs capitalize">
-              {invoice.customer?.customerType ?? "distributor"}
-            </Badge>
-          </>
+          <Button
+            variant="default"
+            size="sm"
+            className="text-xs h-7"
+            disabled
+          >
+            <FileText className="size-3 mr-1" />
+            Distributor
+          </Button>
         ) : (
-          <>
-            <Button
-              variant="default"
-              size="sm"
-              className="text-xs h-7"
-              disabled
-            >
-              <FileText className="size-3 mr-1" />
-              Retailer
-            </Button>
-            <Badge variant="outline" className="ml-auto text-xs capitalize">
-              {invoice.customer?.customerType ?? "retailer"}
-            </Badge>
-          </>
+          <Button
+            variant="default"
+            size="sm"
+            className="text-xs h-7"
+            disabled
+          >
+            <FileText className="size-3 mr-1" />
+            Retailer
+          </Button>
         )}
+        <div className="ml-auto">
+          <InvoiceTypeBadge customerType={invoice.customer?.customerType || "retailer"} />
+        </div>
       </div>
 
       {/* Preview pane */}

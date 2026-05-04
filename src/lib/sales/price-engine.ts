@@ -29,7 +29,9 @@ export function resolvePrice(
   requestedPackSize: number,
   basePackSize: number,
   defaultUnitPrice: number,
-  agreements: PriceAgreement[]
+  agreements: PriceAgreement[],
+  customerDefaultMargin?: number | null,
+  tpBaseline?: number | null,
 ): PriceResolution {
   const now = new Date();
 
@@ -46,7 +48,7 @@ export function resolvePrice(
 
   if (activeAgreement) {
     const agreedValue = Number(activeAgreement.agreedValue);
-    
+
     if (activeAgreement.pricingType === "fixed") {
       // Fixed price for the base pack size, scaled
       const scaledPrice = packRatio * agreedValue;
@@ -59,8 +61,8 @@ export function resolvePrice(
         tpBaseline: null,
         marginPercent: null,
       };
-    } 
-    
+    }
+
     if (activeAgreement.pricingType === "margin_off_tp") {
       // TP Baseline scaled, then margin deducted
       const baseTp = Number(activeAgreement.tpBaseline || 0);
@@ -77,13 +79,13 @@ export function resolvePrice(
         tpBaseline: scaledTp,
         marginPercent: marginPercent,
       };
-    } 
-    
+    }
+
     if (activeAgreement.pricingType === "flat_discount") {
       // Default price scaled, minus flat discount
       const baseCartonPrice = defaultUnitPrice * requestedPackSize;
       const cartonPrice = Math.max(0, baseCartonPrice - agreedValue);
-      
+
       return {
         cartonPrice: cartonPrice,
         perUnitPrice: cartonPrice / (requestedPackSize || 1),
@@ -94,6 +96,21 @@ export function resolvePrice(
         marginPercent: null,
       };
     }
+  }
+
+  // Fallback to customer default margin if available
+  if (customerDefaultMargin && customerDefaultMargin > 0 && tpBaseline) {
+    const scaledTp = packRatio * tpBaseline;
+    const cartonPrice = scaledTp * (1 - customerDefaultMargin / 100);
+    return {
+      cartonPrice: cartonPrice,
+      perUnitPrice: cartonPrice / (requestedPackSize || 1),
+      source: "default",
+      agreementId: null,
+      agreementType: null,
+      tpBaseline: scaledTp,
+      marginPercent: customerDefaultMargin,
+    };
   }
 
   // Fallback to default

@@ -132,6 +132,12 @@ export const reconcileSlipFn = createServerFn()
           amountRecovered: newRecovered.toString(),
           status: isClosed ? "closed" : "partially_recovered",
           reconciledAt: isClosed ? new Date() : null,
+          recoveryStatus: isClosed ? null : (slip.recoveryStatus ?? "partially_paid"),
+          recoveryAssignedToId: isClosed ? null : undefined,
+          nextFollowUpDate: isClosed ? null : undefined,
+          lastFollowUpDate: isClosed ? null : undefined,
+          escalationLevel: isClosed ? 0 : undefined,
+          updatedAt: new Date(),
         })
         .where(eq(slipRecords.id, data.slipId));
 
@@ -269,6 +275,12 @@ export const bulkReconcileFn = createServerFn()
             amountRecovered: newRecovered.toString(),
             status: isClosed ? "closed" : "partially_recovered",
             reconciledAt: isClosed ? new Date() : null,
+            recoveryStatus: isClosed ? null : (slip.recoveryStatus ?? "partially_paid"),
+            recoveryAssignedToId: isClosed ? null : undefined,
+            nextFollowUpDate: isClosed ? null : undefined,
+            lastFollowUpDate: isClosed ? null : undefined,
+            escalationLevel: isClosed ? 0 : undefined,
+            updatedAt: new Date(),
           })
           .where(eq(slipRecords.id, entry.slipId));
 
@@ -380,6 +392,7 @@ export const getOverdueSlipsFn = createServerFn()
           },
         },
         salesman: { columns: { id: true, name: true } },
+        recoveryAssignedTo: { columns: { id: true, name: true } },
         invoice: {
           columns: {
             date: true,

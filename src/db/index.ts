@@ -83,6 +83,10 @@ export const {
   slipRecords,
   priceChangeLog,
   customerDiscountRules,
+  orderBookers,
+  orders,
+  orderItems,
+  creditRecoveryAttempts,
 } = salesErpSchema;
 export const { wallets, expenses, transactions } = financeSchema;
 export const { supplierPayments, purchaseRecords } = supplierSchema;

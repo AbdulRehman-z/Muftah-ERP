@@ -12,10 +12,10 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { GenericEmpty } from "../custom/empty";
 import { InventoryEmptyIllustration } from "@/components/illustrations/InventoryEmptyIllustration";
-import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
 import { DataTable } from "../custom/data-table";
-import { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import { TransferStockDialog } from "./transfer-stock-dialog";
+import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
 
 type FinishedGood = {
   id: string;
@@ -260,7 +260,7 @@ export const FinishedGoodsTable = ({
               size="icon"
               className="size-8 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
               title="Manage Cartons"
-              onClick={() => navigate({ to: "/inventory/factory-floor/cartons/$recipeId", params: { recipeId: row.original.recipe.id } })}
+              onClick={() => navigate({ to: "/inventory/factory-floor/cartons/$recipeId", params: { recipeId: row.original.recipe.id }, search: { page: 1 } })}
             >
               <Box className="size-3.5" />
             </Button>
@@ -269,7 +269,7 @@ export const FinishedGoodsTable = ({
               size="icon"
               className="size-8 text-primary hover:bg-primary/5 hover:text-primary"
               title="View Details"
-              onClick={() => navigate({ to: "/inventory/item/$itemType/$itemId", params: { itemType: "finished", itemId: row.original.recipe.id } })}
+              onClick={() => navigate({ to: "/inventory/item/$itemType/$itemId", params: { itemType: "finished", itemId: row.original.recipe.id }, search: { page: 1 } })}
             >
               <Eye className="size-3.5" />
             </Button>
@@ -277,7 +277,7 @@ export const FinishedGoodsTable = ({
         ),
       },
     ],
-    [],
+    [navigate],
   );
 
   if (data.length === 0) {

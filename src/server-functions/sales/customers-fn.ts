@@ -250,6 +250,7 @@ export const updateCustomerFn = createServerFn()
       state: z.string().optional(),
       bankAccount: z.string().optional(),
       customerType: z.enum(["distributor", "retailer"]).optional(),
+      defaultMargin: z.string().optional(),
     }).parse(input),
   )
   .handler(async ({ data }) => {

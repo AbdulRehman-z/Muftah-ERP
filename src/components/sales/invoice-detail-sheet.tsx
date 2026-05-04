@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CreateInvoiceForm } from "./create-invoice-form";
+import { InvoiceTypeBadge } from "./invoice-type-badge";
 import { useState } from "react";
 
 const PKR = (v: number) =>
@@ -181,6 +182,14 @@ const InvoiceDetailContent = ({
         </div>
       </div>
 
+      {/* Invoice Type */}
+      <div className="flex items-center gap-2">
+        <InvoiceTypeBadge customerType={invoice.customer?.customerType || "retailer"} />
+        <Badge variant={statusVariant as any} className="capitalize text-xs">
+          {statusLabel}
+        </Badge>
+      </div>
+
       {/* Payment breakdown */}
       <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
         <div className="flex-1 text-center">
@@ -197,12 +206,6 @@ const InvoiceDetailContent = ({
           </p>
         </div>
         <Separator orientation="vertical" className="h-10" />
-        <div className="flex-1 text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">Status</p>
-          <Badge variant={statusVariant as any} className="mt-1 capitalize">
-            {statusLabel}
-          </Badge>
-        </div>
       </div>
 
       {invoice.remarks && (

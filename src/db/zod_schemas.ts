@@ -154,6 +154,53 @@ export const updateCustomerDiscountRuleSchema = z.object({
   }
 );
 
+export const createOrderBookerSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  vehicleType: z.enum(["own_vehicle", "company_vehicle"]).default("own_vehicle"),
+  isCompanyVehicle: z.boolean().default(false),
+  fuelCostPerTrip: z.number().nonnegative().default(0),
+  commissionRate: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 0 && Number(val) <= 100, { message: "Commission rate must be 0-100" }).default("0"),
+  employeeId: z.string().optional(),
+  status: z.enum(["active", "inactive"]).default("active"),
+});
+
+export const updateOrderBookerSchema = z.object({
+  id: z.string().min(1, "ID is required"),
+  name: z.string().min(1, "Name is required").optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  vehicleType: z.enum(["own_vehicle", "company_vehicle"]).optional(),
+  isCompanyVehicle: z.boolean().optional(),
+  fuelCostPerTrip: z.number().nonnegative().optional(),
+  commissionRate: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 0 && Number(val) <= 100, { message: "Commission rate must be 0-100" }).optional(),
+  employeeId: z.string().optional(),
+  status: z.enum(["active", "inactive"]).optional(),
+});
+
+export const createOrderSchema = z.object({
+  orderBookerId: z.string().min(1, "Order booker is required"),
+  shopkeeperName: z.string().min(1, "Shopkeeper name is required"),
+  shopkeeperMobile: z.string().optional(),
+  shopkeeperAddress: z.string().optional(),
+  items: z.array(
+    z.object({
+      productId: z.string().min(1, "Product is required"),
+      unitType: z.enum(["full_carton", "half_carton", "pack", "shopper"]).default("full_carton"),
+      quantity: z.number().int().positive("Quantity must be greater than 0"),
+      rate: z.number().nonnegative("Rate must be non-negative"),
+    }),
+  ).min(1, "At least one item is required"),
+  notes: z.string().optional(),
+});
+
+export const updateOrderSchema = z.object({
+  id: z.string().min(1, "Order ID is required"),
+  status: z.enum(["pending", "confirmed", "delivered", "returned"]).optional(),
+  notes: z.string().optional(),
+});
+
 export type StockTransferInput = z.infer<typeof stockTransferInputSchema>;
 export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>;
 export type UpdateInvoiceInput = z.infer<typeof updateInvoiceSchema>;
@@ -161,3 +208,36 @@ export type AddExpenseInput = z.infer<typeof addExpenseSchema>;
 export type CreatePaymentInput = z.infer<typeof createPaymentSchema>;
 export type CreateCustomerDiscountRuleInput = z.infer<typeof createCustomerDiscountRuleSchema>;
 export type UpdateCustomerDiscountRuleInput = z.infer<typeof updateCustomerDiscountRuleSchema>;
+export type CreateOrderBookerInput = z.infer<typeof createOrderBookerSchema>;
+export type UpdateOrderBookerInput = z.infer<typeof updateOrderBookerSchema>;
+export type CreateOrderInput = z.infer<typeof createOrderSchema>;
+export type UpdateOrderInput = z.infer<typeof updateOrderSchema>;
+
+export const createRecoveryAttemptSchema = z.object({
+  slipId: z.string().min(1),
+  assignedToId: z.string().optional(),
+  attemptMethod: z.enum(["call", "visit", "whatsapp", "letter", "other"]).default("call"),
+  attemptOutcome: z.enum(["no_answer", "promised", "partial_payment", "refused", "unreachable", "resolved"]).default("no_answer"),
+  amountPromised: z.number().nonnegative().optional(),
+  promisedDate: z.date().optional(),
+  notes: z.string().optional(),
+});
+
+export const updateRecoveryStatusSchema = z.object({
+  slipId: z.string().min(1),
+  recoveryStatus: z.enum(["pending", "in_progress", "partially_paid", "overdue", "defaulted"]),
+});
+
+export const assignRecoveryPersonSchema = z.object({
+  slipId: z.string().min(1),
+  recoveryAssignedToId: z.string().optional(),
+});
+
+export const escalateRecoverySchema = z.object({
+  slipId: z.string().min(1),
+});
+
+export type CreateRecoveryAttemptInput = z.infer<typeof createRecoveryAttemptSchema>;
+export type UpdateRecoveryStatusInput = z.infer<typeof updateRecoveryStatusSchema>;
+export type AssignRecoveryPersonInput = z.infer<typeof assignRecoveryPersonSchema>;
+export type EscalateRecoveryInput = z.infer<typeof escalateRecoverySchema>;

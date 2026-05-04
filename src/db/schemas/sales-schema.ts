@@ -55,6 +55,7 @@ export const customers = pgTable("customers", {
   }).default("0"),
   customerType: text("customer_type").notNull().default("retailer"), // "distributor" | "retailer" | "shopkeeper" | "wholesaler"
   salesmanId: text("salesman_id").references(() => salesmen.id),
+  defaultMargin: decimal("default_margin", { precision: 5, scale: 2 }).default("0"), // distributor default margin %
   ...timestamps,
 });
 

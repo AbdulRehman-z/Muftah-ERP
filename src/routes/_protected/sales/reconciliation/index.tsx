@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import {
   getOverdueSlipsFn,
   getDailyClosingSummaryFn,
 } from "@/server-functions/sales/reconciliation-fn";
+import { useGetRecoverySummary } from "@/hooks/sales/use-credit-recovery";
 import { useWallets } from "@/hooks/finance/use-finance";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +47,7 @@ import {
   Building2,
   ClipboardList,
   RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -64,6 +66,7 @@ function ReconciliationPage() {
   const [submittedSlip, setSubmittedSlip] = useState("");
   const { data: walletsData } = useWallets();
   const wallets = walletsData ?? [];
+  const { data: recoverySummary } = useGetRecoverySummary();
 
   // ── Slip lookup ──────────────────────────────────────────────────────────
   const {
@@ -155,6 +158,21 @@ function ReconciliationPage() {
           confirm amount, and close.
         </p>
       </div>
+
+      {/* Recovery Alert Banner */}
+      {recoverySummary?.dueToday ? (
+        <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 p-3">
+          <AlertCircle className="size-5 text-amber-600 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+              {recoverySummary.dueToday} slip{recoverySummary.dueToday > 1 ? "s" : ""} due today
+            </p>
+          </div>
+          <Button size="sm" variant="outline" className="h-7 text-xs border-amber-300" asChild>
+            <Link to="/sales/recovery">Go to Credit Recovery</Link>
+          </Button>
+        </div>
+      ) : null}
 
       <Tabs defaultValue="reconcile" className="w-full">
         <TabsList>
@@ -461,6 +479,8 @@ function ReconciliationPage() {
                     Recovered
                   </TableHead>
                   <TableHead className="text-[11px]">Status</TableHead>
+                  <TableHead className="text-[11px]">Recovery</TableHead>
+                  <TableHead className="text-[11px]">Assigned</TableHead>
                   <TableHead className="text-[11px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -468,7 +488,7 @@ function ReconciliationPage() {
                 {overdueLoading ? (
                   [...Array(5)].map((_, i) => (
                     <TableRow key={i}>
-                      {[...Array(8)].map((_, j) => (
+                      {[...Array(10)].map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-4 w-full" />
                         </TableCell>
@@ -478,7 +498,7 @@ function ReconciliationPage() {
                 ) : !overdueData?.slips?.length ? (
                   <TableRow>
                     <TableCell
-                      colSpan={8}
+                      colSpan={10}
                       className="text-center py-10 text-sm text-muted-foreground"
                     >
                       No overdue slips. All caught up!
@@ -516,6 +536,27 @@ function ReconciliationPage() {
                         >
                           {s.status.replace("_", " ")}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {s.recoveryStatus ? (
+                          <Badge
+                            variant={
+                              s.recoveryStatus === "overdue" || s.recoveryStatus === "defaulted"
+                                ? "destructive"
+                                : s.recoveryStatus === "in_progress"
+                                  ? "secondary"
+                                  : "outline"
+                            }
+                            className="text-[10px] capitalize"
+                          >
+                            {s.recoveryStatus.replace("_", " ")}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {s.recoveryAssignedTo?.name ?? "—"}
                       </TableCell>
                       <TableCell>
                         <Button

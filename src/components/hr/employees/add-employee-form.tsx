@@ -329,24 +329,6 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
                 </Field>
               )}
             </form.Field>
-            <form.Field name="isOrderBooker">
-              {(field: AnyFieldApi) => (
-                <label className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer">
-                  <Checkbox
-                    checked={field.state.value as boolean}
-                    onCheckedChange={(c) => field.handleChange(!!c)}
-                  />
-                  <div>
-                    <p className="text-[13px] font-medium">
-                      Order Booker / Field Sales
-                    </p>
-                    <p className="text-[12px] text-muted-foreground">
-                      Enables sales & recovery tracking in attendance
-                    </p>
-                  </div>
-                </label>
-              )}
-            </form.Field>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -510,59 +492,11 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
                 </Field>
               )}
             </form.Field>
-
-            <form.Subscribe selector={(s: any) => s.values.isOrderBooker}>
-              {(isOrderBooker) =>
-                isOrderBooker ? (
-                  <form.Field name="commissionRate">
-                    {(field: AnyFieldApi) => (
-                      <Field>
-                        <FieldLabel className="text-muted-foreground font-medium">
-                          Commission Rate (%)
-                        </FieldLabel>
-                        <div className="relative group max-w-xs">
-                          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                            <span className="text-xs font-bold text-muted-foreground/70 group-focus-within:text-blue-600 transition-colors">
-                              %
-                            </span>
-                          </div>
-                          <Input
-                            type="number"
-                            step="0.1"
-                            min="0"
-                            max="100"
-                            placeholder="0.0"
-                            value={field.state.value as string}
-                            onBlur={field.handleBlur}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                            className="pr-10 bg-blue-50/30 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/30 focus-visible:ring-blue-500 font-mono text-lg h-12 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
-                        </div>
-                        <FieldError errors={field.state.meta.errors} />
-                      </Field>
-                    )}
-                  </form.Field>
-                ) : null
-              }
-            </form.Subscribe>
           </div>
 
-          <form.Subscribe selector={(s: any) => s.values.isOrderBooker}>
-            {(isOrderBooker) => (
-              <p className="text-[11px] text-muted-foreground/60 mt-2">
-                <strong>Basic Salary:</strong> On absent days, a full day's
-                worth is cut.
-                {isOrderBooker && (
-                  <>
-                    {" "}
-                    <br />
-                    <strong>Commission:</strong> Order bookers receive this % on
-                    their total collected Recovery.
-                  </>
-                )}
-              </p>
-            )}
-          </form.Subscribe>
+          <p className="text-[11px] text-muted-foreground/60 mt-2">
+            <strong>Basic Salary:</strong> On absent days, a full day's worth is cut.
+          </p>
 
           {/* ── Allowances ─────────────────────────────────────────────── */}
           <div className="pt-2">
