@@ -1,0 +1,12 @@
+{
+  "question": "Why does format() connect HR Attendance & Dashboard to Finance Expense Tracking and other domains?",
+  "answer": "format() in advances-container.tsx (line 142) is called by 16 functions across 5 domains:\n- Finance: formatExpenseFieldDisplayValue()\n- Payroll Cycle: getCycleForPayoutMonth(), computeProRataRange(), formatCycleRange()\n- Payroll Calculator: calculatePayslip()\n- HR Components: handleDateChange(), EditAttendanceSheet(), handleSave(), PayslipDialog(), buildHistoryReportHTML(), getEmployeeReadiness()\n- HR Server: computeEmployeeReadiness()\n- Dashboard: fmtDate()\n- DB Seed: seedHR()\n- Email Templates: generatePayslipEmailHtml()\n\nAll 16 edges are INFERRED (confidence 0.8) \u2014 the AST detected references but cannot confirm actual calls.\n\nThe real formatting engine is lib/currency-format.ts (formatPKR, formatPakistaniNumber).\nIf format() is truly shared, it should be extracted to lib/ instead of living in a component file.",
+  "type": "query",
+  "nodes": [
+    "advances_advances_container_format",
+    "lib_finance_expenses_formatexpensefielddisplayvalue",
+    "lib_payroll_cycle_formatcyclerange",
+    "lib_payroll_calculator_calculatepayslip"
+  ],
+  "date": "2025-01-27"
+}

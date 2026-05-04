@@ -1,5 +1,6 @@
 import { TrendingUp, TrendingDown, Minus, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatPKR } from "@/lib/currency-format";
 import {
   Tooltip,
   TooltipContent,
@@ -16,14 +17,6 @@ import {
   IsoStockDrums,
   IsoWarehouseRack,
 } from "@/components/illustrations/dashboard-isometric";
-
-function formatPKR(value: number): string {
-  const sign = value < 0 ? "-" : "";
-  const abs = Math.abs(value);
-  if (abs >= 1_000_000) return `${sign}₨ ${(abs / 1_000_000).toFixed(2)}M`;
-  if (abs >= 1_000) return `${sign}₨ ${(abs / 1_000).toFixed(1)}K`;
-  return `${sign}₨ ${abs.toLocaleString()}`;
-}
 
 export interface KpiData {
   totalRevenue: number;

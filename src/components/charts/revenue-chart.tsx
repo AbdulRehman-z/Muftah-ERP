@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { formatPKR } from "@/lib/currency-format";
 import {
   Area,
   AreaChart,
@@ -30,12 +31,6 @@ const ranges: { value: TimeRange; label: string }[] = [
   { value: "6m", label: "6M" },
   { value: "all", label: "All" },
 ];
-
-function formatPKR(value: number): string {
-  if (value >= 1_000_000) return `PKR ${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `PKR ${(value / 1_000).toFixed(0)}K`;
-  return `PKR ${value}`;
-}
 
 // ── Custom Tooltip ──────────────────────────────────────────────────────────
 function CustomTooltip({ active, payload, label }: any) {
@@ -223,7 +218,7 @@ export function RevenueExpenseChart({ data }: RevenueExpenseChartProps) {
               axisLine={false}
               tickMargin={6}
               width={68}
-              tickFormatter={formatPKR}
+              tickFormatter={(v) => formatPKR(v)}
               tick={{
                 fill: "hsl(var(--muted-foreground))",
                 fontSize: 10,
