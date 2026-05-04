@@ -1,4 +1,16 @@
 {
+  "/home/abdul-rehman/Projects/titan-new/drizzle.config.ts": {
+    "mtime": 1776933247.6435716,
+    "hash": "43b43db878dbed617bfddb2f8f335aa5"
+  },
+  "/home/abdul-rehman/Projects/titan-new/vitest.config.ts": {
+    "mtime": 1776933274.9041011,
+    "hash": "33a6dfe564719491399e6a86bf91a347"
+  },
+  "/home/abdul-rehman/Projects/titan-new/vite.config.ts": {
+    "mtime": 1776933223.6121025,
+    "hash": "ec3a7c0143d6b2b2b4e8b763dd4dc125"
+  },
   "/home/abdul-rehman/Projects/titan-new/src/routeTree.gen.ts": {
     "mtime": 1777809064.1568644,
     "hash": "8e61e6f9425799de261074d51d4889c9"
@@ -1272,8 +1284,8 @@
     "hash": "4ece365c2988611b1028ba5a9c0c23d9"
   },
   "/home/abdul-rehman/Projects/titan-new/src/components/charts/revenue-chart.tsx": {
-    "mtime": 1776933247.6468186,
-    "hash": "2fe6606b99ee2da9c0c7eb642cf9d296"
+    "mtime": 1777888068.4424393,
+    "hash": "8cac77e49a2486e0f8025f19f58e6b7c"
   },
   "/home/abdul-rehman/Projects/titan-new/src/components/charts/inventory-chart.tsx": {
     "mtime": 1771923523.76679,
@@ -2076,8 +2088,8 @@
     "hash": "6e36138cd4099fc6939b26453e9be160"
   },
   "/home/abdul-rehman/Projects/titan-new/src/components/dashboard/dashboard-kpi-cards.tsx": {
-    "mtime": 1776933247.6485717,
-    "hash": "eaf51d0d4a0fdaecf6d0dd383bdcdfb1"
+    "mtime": 1777888035.506647,
+    "hash": "969739216059fb4dabc47dce28adf1a5"
   },
   "/home/abdul-rehman/Projects/titan-new/src/components/dashboard/capital-allocation-chart.tsx": {
     "mtime": 1776933247.6475718,
@@ -2178,5 +2190,65 @@
   "/home/abdul-rehman/Projects/titan-new/src/components/sales/create-invoice-form/invoice-items-section.tsx": {
     "mtime": 1777796907.477943,
     "hash": "7bcbc7c2f8f4539c5a773528b16ff216"
+  },
+  "/home/abdul-rehman/Projects/titan-new/scripts/backfill-cartons.ts": {
+    "mtime": 1777462641.8667214,
+    "hash": "e429b5e915dec484c879bcdeb7ba1172"
+  },
+  "/home/abdul-rehman/Projects/titan-new/prompt.txt": {
+    "mtime": 1775476033.8492432,
+    "hash": "5b52a5e6fd6d84570bb0132b39bfd051"
+  },
+  "/home/abdul-rehman/Projects/titan-new/docker-compose.yml": {
+    "mtime": 1775721669.36963,
+    "hash": "1d9e6788ef31a9f7991520146021da9e"
+  },
+  "/home/abdul-rehman/Projects/titan-new/README.md": {
+    "mtime": 1776772122.2382271,
+    "hash": "4add408bb15e36812f841bc8e4df2138"
+  },
+  "/home/abdul-rehman/Projects/titan-new/AGENTS.md": {
+    "mtime": 1777279165.9505088,
+    "hash": "d3fe147e461f579ae29c25b81219e54d"
+  },
+  "/home/abdul-rehman/Projects/titan-new/TANSTACK_DEPLOY.md": {
+    "mtime": 1776271301.6179643,
+    "hash": "f75fa4a7aa553561aeffab26db36cb01"
+  },
+  "/home/abdul-rehman/Projects/titan-new/docs/order-booker-salesman-shopkeeper.md": {
+    "mtime": 1777795077.954192,
+    "hash": "712232fe6417c3ec46a9b643f785892e"
+  },
+  "/home/abdul-rehman/Projects/titan-new/docs/super-admin-curl-requests.md": {
+    "mtime": 1776772122.2382271,
+    "hash": "83d6519a18e902645338044936cfa938"
+  },
+  "/home/abdul-rehman/Projects/titan-new/public/robots.txt": {
+    "mtime": 1769187589.0,
+    "hash": "fa1ded1ed7c11438a9b0385b1e112850"
+  },
+  "/home/abdul-rehman/Projects/titan-new/public/logo192.png": {
+    "mtime": 1769187589.0,
+    "hash": "33dbdd0177549353eeeb785d02c294af"
+  },
+  "/home/abdul-rehman/Projects/titan-new/public/logo512.png": {
+    "mtime": 1769187589.0,
+    "hash": "917515db74ea8d1aee6a246cfbcc0b45"
+  },
+  "/home/abdul-rehman/Projects/titan-new/public/tanstack-word-logo-white.svg": {
+    "mtime": 1769187589.0,
+    "hash": "946c021317999d0cddb014c232ddd777"
+  },
+  "/home/abdul-rehman/Projects/titan-new/public/tanstack-circle-logo.png": {
+    "mtime": 1769187589.0,
+    "hash": "d48f48f33316e3702702a669f22c76e9"
+  },
+  "/home/abdul-rehman/Projects/titan-new/public/company-logo-transparent.png": {
+    "mtime": 1775476299.528594,
+    "hash": "b5b8622f820caceff7331c111e943d37"
+  },
+  "/home/abdul-rehman/Projects/titan-new/public/company-logo.jpeg": {
+    "mtime": 1775476158.8825436,
+    "hash": "f1351feb5045230f37d8366b7ec656a5"
   }
 }

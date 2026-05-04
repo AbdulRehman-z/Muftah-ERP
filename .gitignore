@@ -24,3 +24,4 @@ scripts/*
 !scripts/super-admin-bootstrap.sh
 .codex
 prompt.txt
+graphify-out
