@@ -32,6 +32,7 @@ import { Route as ProtectedSalesRecoveryIndexRouteImport } from './routes/_prote
 import { Route as ProtectedSalesReconciliationIndexRouteImport } from './routes/_protected/sales/reconciliation/index'
 import { Route as ProtectedSalesPeopleIndexRouteImport } from './routes/_protected/sales/people/index'
 import { Route as ProtectedSalesOverviewIndexRouteImport } from './routes/_protected/sales/overview/index'
+import { Route as ProtectedSalesOrdersIndexRouteImport } from './routes/_protected/sales/orders/index'
 import { Route as ProtectedSalesNewInvoiceIndexRouteImport } from './routes/_protected/sales/new-invoice/index'
 import { Route as ProtectedSalesCustomersIndexRouteImport } from './routes/_protected/sales/customers/index'
 import { Route as ProtectedSalesConfigurationsIndexRouteImport } from './routes/_protected/sales/configurations/index'
@@ -186,6 +187,12 @@ const ProtectedSalesOverviewIndexRoute =
   ProtectedSalesOverviewIndexRouteImport.update({
     id: '/sales/overview/',
     path: '/sales/overview/',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
+const ProtectedSalesOrdersIndexRoute =
+  ProtectedSalesOrdersIndexRouteImport.update({
+    id: '/sales/orders/',
+    path: '/sales/orders/',
     getParentRoute: () => ProtectedRouteRoute,
   } as any)
 const ProtectedSalesNewInvoiceIndexRoute =
@@ -424,6 +431,7 @@ export interface FileRoutesByFullPath {
   '/sales/configurations/': typeof ProtectedSalesConfigurationsIndexRoute
   '/sales/customers/': typeof ProtectedSalesCustomersIndexRoute
   '/sales/new-invoice/': typeof ProtectedSalesNewInvoiceIndexRoute
+  '/sales/orders/': typeof ProtectedSalesOrdersIndexRoute
   '/sales/overview/': typeof ProtectedSalesOverviewIndexRoute
   '/sales/people/': typeof ProtectedSalesPeopleIndexRoute
   '/sales/reconciliation/': typeof ProtectedSalesReconciliationIndexRoute
@@ -479,6 +487,7 @@ export interface FileRoutesByTo {
   '/sales/configurations': typeof ProtectedSalesConfigurationsIndexRoute
   '/sales/customers': typeof ProtectedSalesCustomersIndexRoute
   '/sales/new-invoice': typeof ProtectedSalesNewInvoiceIndexRoute
+  '/sales/orders': typeof ProtectedSalesOrdersIndexRoute
   '/sales/overview': typeof ProtectedSalesOverviewIndexRoute
   '/sales/people': typeof ProtectedSalesPeopleIndexRoute
   '/sales/reconciliation': typeof ProtectedSalesReconciliationIndexRoute
@@ -538,6 +547,7 @@ export interface FileRoutesById {
   '/_protected/sales/configurations/': typeof ProtectedSalesConfigurationsIndexRoute
   '/_protected/sales/customers/': typeof ProtectedSalesCustomersIndexRoute
   '/_protected/sales/new-invoice/': typeof ProtectedSalesNewInvoiceIndexRoute
+  '/_protected/sales/orders/': typeof ProtectedSalesOrdersIndexRoute
   '/_protected/sales/overview/': typeof ProtectedSalesOverviewIndexRoute
   '/_protected/sales/people/': typeof ProtectedSalesPeopleIndexRoute
   '/_protected/sales/reconciliation/': typeof ProtectedSalesReconciliationIndexRoute
@@ -596,6 +606,7 @@ export interface FileRouteTypes {
     | '/sales/configurations/'
     | '/sales/customers/'
     | '/sales/new-invoice/'
+    | '/sales/orders/'
     | '/sales/overview/'
     | '/sales/people/'
     | '/sales/reconciliation/'
@@ -651,6 +662,7 @@ export interface FileRouteTypes {
     | '/sales/configurations'
     | '/sales/customers'
     | '/sales/new-invoice'
+    | '/sales/orders'
     | '/sales/overview'
     | '/sales/people'
     | '/sales/reconciliation'
@@ -709,6 +721,7 @@ export interface FileRouteTypes {
     | '/_protected/sales/configurations/'
     | '/_protected/sales/customers/'
     | '/_protected/sales/new-invoice/'
+    | '/_protected/sales/orders/'
     | '/_protected/sales/overview/'
     | '/_protected/sales/people/'
     | '/_protected/sales/reconciliation/'
@@ -899,6 +912,13 @@ declare module '@tanstack/react-router' {
       path: '/sales/overview'
       fullPath: '/sales/overview/'
       preLoaderRoute: typeof ProtectedSalesOverviewIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/sales/orders/': {
+      id: '/_protected/sales/orders/'
+      path: '/sales/orders'
+      fullPath: '/sales/orders/'
+      preLoaderRoute: typeof ProtectedSalesOrdersIndexRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
     '/_protected/sales/new-invoice/': {
@@ -1201,6 +1221,7 @@ interface ProtectedRouteRouteChildren {
   ProtectedSalesConfigurationsIndexRoute: typeof ProtectedSalesConfigurationsIndexRoute
   ProtectedSalesCustomersIndexRoute: typeof ProtectedSalesCustomersIndexRoute
   ProtectedSalesNewInvoiceIndexRoute: typeof ProtectedSalesNewInvoiceIndexRoute
+  ProtectedSalesOrdersIndexRoute: typeof ProtectedSalesOrdersIndexRoute
   ProtectedSalesOverviewIndexRoute: typeof ProtectedSalesOverviewIndexRoute
   ProtectedSalesPeopleIndexRoute: typeof ProtectedSalesPeopleIndexRoute
   ProtectedSalesReconciliationIndexRoute: typeof ProtectedSalesReconciliationIndexRoute
@@ -1255,6 +1276,7 @@ const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
     ProtectedSalesConfigurationsIndexRoute,
   ProtectedSalesCustomersIndexRoute: ProtectedSalesCustomersIndexRoute,
   ProtectedSalesNewInvoiceIndexRoute: ProtectedSalesNewInvoiceIndexRoute,
+  ProtectedSalesOrdersIndexRoute: ProtectedSalesOrdersIndexRoute,
   ProtectedSalesOverviewIndexRoute: ProtectedSalesOverviewIndexRoute,
   ProtectedSalesPeopleIndexRoute: ProtectedSalesPeopleIndexRoute,
   ProtectedSalesReconciliationIndexRoute:

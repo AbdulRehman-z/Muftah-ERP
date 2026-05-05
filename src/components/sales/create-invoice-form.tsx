@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { useForm } from "@tanstack/react-form";
@@ -13,22 +13,28 @@ import { useCreateInvoice, useUpdateInvoice } from "@/hooks/sales/use-invoices";
 import { useWallets } from "@/hooks/finance/use-finance";
 import { getInventoryFn } from "@/server-functions/inventory/get-inventory-fn";
 import { getCartonAvailabilityFn } from "@/server-functions/inventory/get-carton-availability-fn";
+import { getCustomerPriceAgreementsFn } from "@/server-functions/sales/sales-config-fn";
+import { getCustomerDiscountRulesFn } from "@/server-functions/sales/customer-discount-rules-fn";
 import {
     AlertCircle,
     BanknoteIcon,
     Building2Icon,
     ChevronRight,
+    Info,
     Loader2,
     MapPin,
     Phone,
     Warehouse,
     BadgeCheck,
+    Percent,
+    FileText,
+    Tag,
 } from "lucide-react";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "../ui/field";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import type { ItemFormValue, StockItem } from "./create-invoice-form/utils";
-import { PKR, findStock, Section, ModeToggle, DirtyStateNotifier, blankItem } from "./create-invoice-form/utils";
+import { PKR, findStock, Section, ModeToggle, DirtyStateNotifier, blankItem, safeEffectiveCPP } from "./create-invoice-form/utils";
 import { InvoiceItemsSection } from "./create-invoice-form/invoice-items-section";
 import { SettlementSection } from "./create-invoice-form/settlement-section";
 
@@ -37,6 +43,8 @@ type Props = {
     onCancel: () => void;
     onDirtyChange?: (isDirty: boolean) => void;
     initialData?: any;
+    defaultCustomerType?: "distributor" | "retailer" | "wholesaler";
+    lockedCustomerType?: boolean;
 };
 
 type InvoiceFormValues = {
@@ -61,15 +69,31 @@ type InvoiceFormValues = {
 
 
 
-export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange, initialData }: Props) => {
+export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange, initialData, defaultCustomerType, lockedCustomerType }: Props) => {
     const { data: customers } = useGetAllCustomers();
+    const isDistributorLocked = lockedCustomerType && defaultCustomerType === "distributor";
+
+    const filteredCustomers = useMemo(() => {
+        if (!customers) return [];
+        if (isDistributorLocked) {
+            return customers.filter((c: any) => c.customerType === "distributor");
+        }
+        return customers.filter((c: any) => c.customerType !== "distributor");
+    }, [customers, isDistributorLocked]);
+
+    const selectedCustomer = useMemo(() => {
+        const customerId = initialData ? (initialData.customerId || "") : "";
+        if (!customerId || !customers) return null;
+        return customers.find((c: any) => c.id === customerId) || null;
+    }, [customers, initialData]);
+
     const { data: inventoryData } = useSuspenseQuery({
         queryKey: ["inventory"],
         queryFn: () => getInventoryFn(),
     });
     const { data: walletsData } = useWallets();
 
-    const [customerMode, setCustomerMode] = useState<"existing" | "new">("existing");
+    const [customerMode, setCustomerMode] = useState<"existing" | "new">(isDistributorLocked ? "existing" : "existing");
     const [activeWarehouse, setActiveWarehouse] = useState<string>("");
     const [availableStock, setAvailableStock] = useState<StockItem[]>([]);
 
@@ -113,7 +137,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange, initialD
             customerCity: "",
             customerState: "",
             customerBankAccount: "",
-            customerType: (initialData.customer?.customerType || "retailer") as "distributor" | "retailer" | "wholesaler",
+            customerType: (initialData.customer?.customerType || defaultCustomerType || "retailer") as "distributor" | "retailer" | "wholesaler",
             warehouseId: initialData.warehouseId || "",
             account: initialData.account || (wallets[0]?.id || ""),
             cash: Number(initialData.cash) || 0,
@@ -142,7 +166,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange, initialD
             customerCity: "",
             customerState: "",
             customerBankAccount: "",
-            customerType: "retailer" as "distributor" | "retailer" | "wholesaler",
+            customerType: (defaultCustomerType || "retailer") as "distributor" | "retailer" | "wholesaler",
             warehouseId: "",
             account: wallets[0]?.id || "",
             cash: 0,
@@ -247,6 +271,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange, initialD
     }, [wallets, form]);
 
     useEffect(() => {
+        if (isDistributorLocked) return;
         if (customerMode === "new") {
             form.setFieldValue("customerId", "");
         } else {
@@ -256,13 +281,40 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange, initialD
             form.setFieldValue("customerCity", "");
             form.setFieldValue("customerState", "");
             form.setFieldValue("customerBankAccount", "");
-            form.setFieldValue("customerType", "retailer");
+            form.setFieldValue("customerType", defaultCustomerType || "retailer");
         }
-    }, [customerMode, form]);
+    }, [customerMode, form, isDistributorLocked, defaultCustomerType]);
 
     const handleFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
         e.target.select();
     }, []);
+
+    const selectedCustomerId = form.useStore((s) => s.values.customerId);
+    const selectedCustomerData = useMemo(() => {
+        if (!selectedCustomerId || !customers) return null;
+        return customers.find((c: any) => c.id === selectedCustomerId) || null;
+    }, [selectedCustomerId, customers]);
+
+    const { data: distributorPricing } = useQuery({
+        queryKey: ["distributor-pricing", selectedCustomerId],
+        queryFn: async () => {
+            if (!selectedCustomerId) return null;
+            const [agreements, rules] = await Promise.all([
+                getCustomerPriceAgreementsFn({ data: { customerId: selectedCustomerId } }),
+                getCustomerDiscountRulesFn({ data: { customerId: selectedCustomerId } }),
+            ]);
+            const activeAgreements = (agreements || []).filter((a: any) => {
+                const now = new Date();
+                return new Date(a.effectiveFrom) <= now && (!a.effectiveTo || new Date(a.effectiveTo) >= now);
+            });
+            const activeRules = (rules || []).filter((r: any) => {
+                const now = new Date();
+                return new Date(r.effectiveFrom) <= now && (!r.effectiveTo || new Date(r.effectiveTo) >= now);
+            });
+            return { activeAgreementsCount: activeAgreements.length, activeDiscountRulesCount: activeRules.length };
+        },
+        enabled: isDistributorLocked && !!selectedCustomerId,
+    });
 
     return (
         <form
@@ -272,29 +324,37 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange, initialD
             {onDirtyChange && <DirtyStateNotifier form={form} onDirtyChange={onDirtyChange} />}
 
             <FieldGroup>
-                <Section icon={Warehouse} title="Customer" subtitle="Who is this invoice for?" step={1}>
-                    <ModeToggle value={customerMode} onChange={setCustomerMode} />
-                    {customerMode === "existing" ? (
+                <Section icon={Warehouse} title={isDistributorLocked ? "Distributor" : "Customer"} subtitle={isDistributorLocked ? "Select a pre-configured distributor" : "Who is this invoice for?"} step={1}>
+                    {!isDistributorLocked && <ModeToggle value={customerMode} onChange={setCustomerMode} />}
+                    {customerMode === "existing" || isDistributorLocked ? (
                         <form.Field
                             name="customerId"
                             validators={{
-                                onChange: z.string().min(1, "Please select a customer"),
-                                onSubmit: z.string().min(1, "Please select a customer"),
+                                onChange: z.string().min(1, isDistributorLocked ? "Please select a distributor" : "Please select a customer"),
+                                onSubmit: z.string().min(1, isDistributorLocked ? "Please select a distributor" : "Please select a customer"),
                             }}
                         >
                             {(field) => (
                                 <Field>
-                                    <FieldLabel>Select Customer <span className="text-destructive">*</span></FieldLabel>
+                                    <FieldLabel>{isDistributorLocked ? "Select Distributor" : "Select Customer"} <span className="text-destructive">*</span></FieldLabel>
                                     <Select value={field.state.value} onValueChange={field.handleChange}>
                                         <SelectTrigger className={cn("h-10", !field.state.value && field.state.meta.isTouched && "border-destructive")}>
-                                            <SelectValue placeholder="Choose a customer…" />
+                                            <SelectValue placeholder={isDistributorLocked ? "Choose a distributor…" : "Choose a customer…"} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                             {customers?.map((customer: { id: string; name: string; customerType?: string }) => (
+                                             {filteredCustomers.map((customer: { id: string; name: string; customerType?: string; defaultMargin?: string | number | null }) => (
                                                 <SelectItem key={customer.id} value={customer.id}>
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-medium">{customer.name}</span>
-                                                        <Badge variant="secondary" className="text-[9px] capitalize px-1.5 py-0 h-4">{customer.customerType}</Badge>
+                                                        {isDistributorLocked && customer.defaultMargin != null && Number(customer.defaultMargin) > 0 && (
+                                                            <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 gap-0.5">
+                                                                <Percent className="size-2.5" />
+                                                                {customer.defaultMargin}%
+                                                            </Badge>
+                                                        )}
+                                                        {!isDistributorLocked && (
+                                                            <Badge variant="secondary" className="text-[9px] capitalize px-1.5 py-0 h-4">{customer.customerType}</Badge>
+                                                        )}
                                                     </div>
                                                 </SelectItem>
                                             ))}
@@ -304,7 +364,33 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange, initialD
                                 </Field>
                             )}
                         </form.Field>
-                    ) : (
+                    ) : null}
+                    {isDistributorLocked && selectedCustomerData && distributorPricing && (
+                        <div className="mt-3 p-3 rounded-lg bg-muted/40 border border-border/60 space-y-1.5">
+                            <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground mb-1">
+                                <Info className="size-3.5" />
+                                Distributor Pricing Info
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="flex items-center gap-1.5 text-xs">
+                                    <Percent className="size-3 text-muted-foreground" />
+                                    <span className="text-muted-foreground">Default Margin:</span>
+                                    <span className="font-semibold">{selectedCustomerData.defaultMargin || 0}%</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-xs">
+                                    <Tag className="size-3 text-muted-foreground" />
+                                    <span className="text-muted-foreground">Price Agreements:</span>
+                                    <span className="font-semibold">{distributorPricing.activeAgreementsCount}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-xs">
+                                    <FileText className="size-3 text-muted-foreground" />
+                                    <span className="text-muted-foreground">Discount Rules:</span>
+                                    <span className="font-semibold">{distributorPricing.activeDiscountRulesCount}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {!isDistributorLocked && customerMode === "new" && (
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <form.Field name="customerName">
@@ -369,7 +455,6 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange, initialD
                                                 <SelectContent>
                                                     <SelectItem value="retailer">Retailer</SelectItem>
                                                     <SelectItem value="wholesaler">Wholesaler</SelectItem>
-                                                    <SelectItem value="distributor">Distributor</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </Field>
@@ -512,8 +597,9 @@ function computeTotal(items: ItemFormValue[], availableStock: StockItem[]): numb
     return items.reduce((acc, item) => {
         const stock = findStock(availableStock, item.recipeId);
         const recipeDefault = stock?.recipe?.containersPerCarton || 1;
+        const eCPP = safeEffectiveCPP(item.packsPerCarton, recipeDefault);
         return acc + (item.unitType === "carton"
             ? (item.numberOfCartons || 0) * (item.perCartonPrice || 0)
-            : (item.numberOfUnits || 0) * ((item.perCartonPrice || 0) / Math.max(1, recipeDefault)));
+            : (item.numberOfUnits || 0) * ((item.perCartonPrice || 0) / eCPP));
     }, 0);
 }

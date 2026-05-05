@@ -98,6 +98,11 @@ export const navigations: NavigationItem[] = [
         exact: true,
       },
       {
+        title: "Orders",
+        url: "/sales/orders",
+        icon: InvoiceIcon,
+      },
+      {
         title: "Customers",
         url: "/sales/customers",
         icon: CustomersIcon,

@@ -8,8 +8,9 @@ import {
   travelLogs,
   attendance,
 } from "@/db/schemas/hr-schema";
+import { orderBookerTrips, commissionRecords, orderBookers } from "@/db/schemas/sales-erp-schema";
 import { wallets, transactions } from "@/db/schemas/finance-schema";
-import { eq, and, inArray, sql, gte, lte } from "drizzle-orm";
+import { eq, and, inArray, gte, lte, sql } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
 import {
   calculatePayslip,
@@ -248,17 +249,41 @@ export async function generateEmployeePayslipCore(
 
   // -- 5.5 Order booker TA + commission --------------------------------------
   let dynamicTA = 0;
-  let totalRecovery = 0;
-  for (const record of rawAttendance) {
-    if (record.recoveryAmount) totalRecovery += parseFloat(record.recoveryAmount);
-    if (record.isCompanyVehicle) {
-      if (record.petrolAmount) dynamicTA += parseFloat(record.petrolAmount);
-    } else if (record.paymentMode === "per_km" && record.distanceKm && record.perKmRate) {
-      dynamicTA += parseFloat(record.distanceKm) * parseFloat(record.perKmRate);
-    }
+  let orderBookerCommission = 0;
+
+  // Find linked order booker for this employee
+  const linkedOrderBooker = await db.query.orderBookers.findFirst({
+    where: eq(orderBookers.employeeId, employeeId),
+  });
+
+  if (linkedOrderBooker) {
+    // Sum trip TADA + fuel costs within payroll period
+    const trips = await db.query.orderBookerTrips.findMany({
+      where: and(
+        eq(orderBookerTrips.orderBookerId, linkedOrderBooker.id),
+        gte(orderBookerTrips.tripDate, new Date(payrollPeriod.startDate)),
+        lte(orderBookerTrips.tripDate, new Date(payrollPeriod.endDate)),
+      ),
+    });
+    dynamicTA = trips.reduce((sum, trip) => {
+      const tada = parseFloat(trip.tadaAmount || "0");
+      const fuel = parseFloat(trip.fuelCost || "0");
+      return sum + tada + fuel;
+    }, 0);
+
+    // Sum accrued commission records within payroll period
+    const commissions = await db.query.commissionRecords.findMany({
+      where: and(
+        eq(commissionRecords.orderBookerId, linkedOrderBooker.id),
+        gte(commissionRecords.calculatedAt, new Date(payrollPeriod.startDate)),
+        lte(commissionRecords.calculatedAt, new Date(payrollPeriod.endDate)),
+      ),
+    });
+    orderBookerCommission = commissions.reduce(
+      (sum, rec) => sum + parseFloat(rec.commissionAmount || "0"),
+      0,
+    );
   }
-  const commissionRate = employeeData.commissionRate ? parseFloat(employeeData.commissionRate) : 0;
-  const orderBookerCommission = totalRecovery * (commissionRate / 100);
 
   // -- 6. Calculate payslip --------------------------------------------------
   const mergedAdditional = {
@@ -279,9 +304,9 @@ export async function generateEmployeePayslipCore(
   );
 
   // -- 6.1 Strict validation for missing attendance --------------------------
-  if (payslipCalc.unmarkedDays > 0 && !ignorePastUnmarkedDays) {
-    // We throw a specific error message format that the frontend can parse
-    // to trigger the Hard Warning Modal instead of a generic toast.
+  // Salesmen and order bookers are excluded from attendance tracking
+  const isSalesOrOB = employeeData.isSalesman || employeeData.isOrderBooker;
+  if (payslipCalc.unmarkedDays > 0 && !ignorePastUnmarkedDays && !isSalesOrOB) {
     const err = new Error(`PAST_UNMARKED_DAYS:${payslipCalc.unmarkedDays}`);
     err.name = "ValidationError";
     throw err;

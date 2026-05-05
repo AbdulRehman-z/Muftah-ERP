@@ -86,6 +86,9 @@ export const {
   orderBookers,
   orders,
   orderItems,
+  orderBookerTrips,
+  commissionTiers,
+  commissionRecords,
   creditRecoveryAttempts,
 } = salesErpSchema;
 export const { wallets, expenses, transactions } = financeSchema;

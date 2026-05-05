@@ -84,7 +84,7 @@ function SalesmanProfilePage() {
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-bold tracking-tight truncate">{salesman.name}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {salesman.phone || "—"} {salesman.vehicleType && `| ${salesman.vehicleType.replace("_", " ")}`}
+            {salesman.phone || "—"}
           </p>
         </div>
       </div>

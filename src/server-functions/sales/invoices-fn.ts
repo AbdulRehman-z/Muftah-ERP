@@ -315,12 +315,13 @@ export const createInvoiceFn = createServerFn()
         let agreementId: string | null = null;
 
         if (!item.isPriceOverride && stock.recipe.productId) {
+          const perUnitPrice = item.perCartonPrice / containersPerCarton;
           const resolution = resolvePrice(
             customerId,
             stock.recipe.productId,
             containersPerCarton,
             stock.recipe.containersPerCarton ?? 1,
-            item.perCartonPrice,
+            perUnitPrice,
             agreements,
           );
           finalPerCartonPrice = resolution.cartonPrice;
@@ -329,34 +330,30 @@ export const createInvoiceFn = createServerFn()
           agreementId = resolution.agreementId;
         }
 
-        // Line amount: billed qty only (discount/promo cartons are free)
-        // Formula from Requirement 1.1: (numberOfCartons × perCartonPrice) + (quantity × perCartonPrice ÷ packsPerCarton)
-        // Support both cartons and loose packs on the same line item
         const numberOfCartonsToCharge = item.unitType === "carton" ? item.numberOfCartons : 0;
         const numberOfUnitsToCharge = item.unitType === "units" ? item.numberOfUnits : 0;
         
         const cartonsAmount = numberOfCartonsToCharge * finalPerCartonPrice;
         const loosePacksAmount = numberOfUnitsToCharge * (finalPerCartonPrice / containersPerCarton);
         
-        // Base amount before customer discount
         const baseAmount = cartonsAmount + loosePacksAmount;
         
-        // Apply promotional discount (freeCartons)
         const promoDiscount = promoFreeCartons * finalPerCartonPrice;
         const amountAfterPromo = baseAmount - promoDiscount;
         
-        // ── Customer Discount Evaluation (Task 8.2) ──────────────────────
-        // Evaluate customer discount AFTER promotional rules but BEFORE final amount
-        // Skip if isPriceOverride is true (Requirement 7.1)
+        // ── Customer Discount Evaluation (Requirement 7.1) ──────────────────────
         let customerDiscountAmount = 0;
         let customerDiscountRuleId: string | null = null;
         
         if (!item.isPriceOverride && stock.recipe.productId) {
+          const cartonEquivalents = item.unitType === "carton"
+            ? item.numberOfCartons
+            : (item.numberOfUnits || 0) / (containersPerCarton || 1);
           const productDiscountRules = discountRulesByProduct.get(stock.recipe.productId) || [];
           const discountResolution = evaluateCustomerDiscount(
             customerId,
             stock.recipe.productId,
-            item.numberOfCartons,
+            cartonEquivalents,
             finalPerCartonPrice,
             customerType,
             productDiscountRules
@@ -800,6 +797,7 @@ export const deleteInvoiceFn = createServerFn()
         const totalUnitsToRestore =
           item.numberOfCartons * containersPerCarton +
           (item.discountCartons ?? 0) * containersPerCarton +
+          (item.freeCartons ?? 0) * containersPerCarton +
           item.quantity;
         const currentUnits =
           stock.quantityCartons * containersPerCarton + stock.quantityContainers;
@@ -855,24 +853,41 @@ export const updateInvoiceFn = createServerFn()
       for (const oldItem of existing.items) {
         if (!oldItem.recipeId) continue;
         
+        const stock = await tx.query.finishedGoodsStock.findFirst({
+          where: and(
+            eq(finishedGoodsStock.warehouseId, existing.warehouseId),
+            eq(finishedGoodsStock.recipeId, oldItem.recipeId),
+          ),
+          with: { recipe: true },
+        });
+
+        if (!stock) continue;
+
         const cpp = oldItem.actualPackSize ?? 1;
         const oldUnits = oldItem.numberOfCartons > 0 
           ? (Number(oldItem.numberOfCartons) + Number(oldItem.discountCartons) + Number(oldItem.freeCartons)) * cpp
           : Number(oldItem.quantity);
 
+        const currentUnits =
+          stock.quantityCartons * cpp + stock.quantityContainers;
+        const restoredUnits = currentUnits + oldUnits;
+
+        const hasCartons = stock.recipe.cartonPackagingId != null && stock.recipe.containersPerCarton != null && stock.recipe.containersPerCarton > 0;
+        const finalQuantityCartons = hasCartons ? Math.floor(restoredUnits / cpp) : 0;
+        const finalQuantityContainers = hasCartons ? (restoredUnits % cpp) : restoredUnits;
+
         await tx
           .update(finishedGoodsStock)
           .set({
-            quantityContainers: sql`${finishedGoodsStock.quantityContainers} + ${oldUnits}`,
+            quantityCartons: finalQuantityCartons,
+            quantityContainers: finalQuantityContainers,
           })
           .where(
             and(
               eq(finishedGoodsStock.warehouseId, existing.warehouseId),
               eq(finishedGoodsStock.recipeId, oldItem.recipeId),
-            )
+            ),
           );
-          
-        // Note: We'll re-normalize cartons/containers in the next step when we deduct new stock
       }
 
       // Reverse Ledger/Customer Stats
@@ -1009,12 +1024,13 @@ export const updateInvoiceFn = createServerFn()
         let agreementId: string | null = null;
 
         if (!item.isPriceOverride && stock.recipe.productId) {
+          const perUnitPrice = item.perCartonPrice / containersPerCarton;
           const resolution = resolvePrice(
             customerId,
             stock.recipe.productId,
             containersPerCarton,
             stock.recipe.containersPerCarton ?? 1,
-            item.perCartonPrice,
+            perUnitPrice,
             agreements,
           );
           finalPerCartonPrice = resolution.cartonPrice;
@@ -1023,33 +1039,30 @@ export const updateInvoiceFn = createServerFn()
           agreementId = resolution.agreementId;
         }
 
-        // Formula from Requirement 1.1: (numberOfCartons × perCartonPrice) + (quantity × perCartonPrice ÷ packsPerCarton)
-        // Support both cartons and loose packs on the same line item
         const numberOfCartonsToCharge = item.unitType === "carton" ? item.numberOfCartons : 0;
         const numberOfUnitsToCharge = item.unitType === "units" ? item.numberOfUnits : 0;
         
         const cartonsAmount = numberOfCartonsToCharge * finalPerCartonPrice;
         const loosePacksAmount = numberOfUnitsToCharge * (finalPerCartonPrice / containersPerCarton);
         
-        // Base amount before customer discount
         const baseAmount = cartonsAmount + loosePacksAmount;
         
-        // Apply promotional discount (freeCartons)
         const promoDiscount = promoFreeCartons * finalPerCartonPrice;
         const amountAfterPromo = baseAmount - promoDiscount;
+        // ── Customer Discount Evaluation (Requirement 7.1) ──────────────────────
         
-        // ── Customer Discount Evaluation (Task 8.2) ──────────────────────
-        // Evaluate customer discount AFTER promotional rules but BEFORE final amount
-        // Skip if isPriceOverride is true (Requirement 7.1)
         let customerDiscountAmount = 0;
         let customerDiscountRuleId: string | null = null;
         
         if (!item.isPriceOverride && stock.recipe.productId) {
+          const cartonEquivalents = item.unitType === "carton"
+            ? item.numberOfCartons
+            : (item.numberOfUnits || 0) / (containersPerCarton || 1);
           const productDiscountRules = discountRulesByProduct.get(stock.recipe.productId) || [];
           const discountResolution = evaluateCustomerDiscount(
             customerId,
             stock.recipe.productId,
-            item.numberOfCartons,
+            cartonEquivalents,
             finalPerCartonPrice,
             customerType,
             productDiscountRules

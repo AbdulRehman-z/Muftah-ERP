@@ -57,15 +57,6 @@ export const leaveTypeEnum = pgEnum("leave_type", [
   "special",
 ]);
 
-export const paymentModeEnum = pgEnum("payment_mode", [
-  "per_km"
-]);
-
-export const shopTypeEnum = pgEnum("shop_type", [
-  "old",
-  "new"
-]);
-
 // --- EMPLOYEES ---
 export const employees = pgTable("employees", {
   id: text("id")
@@ -133,6 +124,7 @@ export const employees = pgTable("employees", {
 
   // Incentives / Sales
   isOrderBooker: boolean("is_order_booker").default(false).notNull(),
+  isSalesman: boolean("is_salesman").default(false).notNull(),
   commissionRate: decimal("commission_rate", {
     precision: 5,
     scale: 2,
@@ -189,19 +181,6 @@ export const attendance = pgTable(
 
     // Data source
     entrySource: text("entry_source").default("manual"),
-
-    // Order Booker / Sales Fields
-    areaVisited: text("area_visited"),
-    paymentMode: paymentModeEnum("payment_mode").default("per_km"),
-    isCompanyVehicle: boolean("is_company_vehicle").default(false),
-    distanceKm: decimal("distance_km", { precision: 8, scale: 2 }).default("0"),
-    perKmRate: decimal("per_km_rate", { precision: 8, scale: 2 }).default("0"),
-    petrolAmount: decimal("petrol_amount", { precision: 12, scale: 2 }).default("0"),
-    saleAmount: decimal("sale_amount", { precision: 12, scale: 2 }).default("0"),
-    recoveryAmount: decimal("recovery_amount", { precision: 12, scale: 2 }).default("0"),
-    returnAmount: decimal("return_amount", { precision: 12, scale: 2 }).default("0"),
-    slipNumbers: text("slip_numbers"),
-    shopType: shopTypeEnum("shop_type").default("old"),
 
     notes: text("notes"),
 

@@ -14,32 +14,13 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   useGetSalesmen,
-  useCreateSalesman,
   useGetOrderBookers,
-  useCreateOrderBooker,
   useGetDistributors,
   useGetRetailers,
 } from "@/hooks/sales/use-sales-people";
 import { CustomerPagination } from "@/components/sales/customer-pagination";
-import { Plus, BookOpen } from "lucide-react";
-import { toast } from "sonner";
+import { BookOpen } from "lucide-react";
 
 const PKR = (v: number) =>
   `PKR ${v.toLocaleString("en-PK", { minimumFractionDigits: 2 })}`;
@@ -265,92 +246,15 @@ function RetailersTab() {
 // ── Salesmen Tab ──
 function SalesmenTab() {
   const { data: salesmen } = useGetSalesmen();
-  const createMutation = useCreateSalesman();
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    vehicleType: "own_vehicle" as "own_vehicle" | "company_vehicle",
-    isCompanyVehicle: false,
-    fuelCostPerTrip: "",
-    transportCostPerDay: "",
-  });
   const navigate = useNavigate();
-
-  const handleSubmit = () => {
-    createMutation.mutate(
-      {
-        data: {
-          name: form.name,
-          phone: form.phone || undefined,
-          vehicleType: form.vehicleType,
-          isCompanyVehicle: form.isCompanyVehicle,
-          fuelCostPerTrip: Number(form.fuelCostPerTrip) || 0,
-          transportCostPerDay: Number(form.transportCostPerDay) || 0,
-        },
-      },
-      {
-        onSuccess: () => {
-          setOpen(false);
-          toast.success("Salesman created");
-          setForm({ name: "", phone: "", vehicleType: "own_vehicle", isCompanyVehicle: false, fuelCostPerTrip: "", transportCostPerDay: "" });
-        },
-      },
-    );
-  };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Salesmen</h3>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="size-4 mr-1.5" />
-              Add Salesman
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>New Salesman</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-2">
-              <div className="space-y-1.5">
-                <Label>Name</Label>
-                <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Phone</Label>
-                <Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Vehicle Type</Label>
-                <Select value={form.vehicleType} onValueChange={(v: any) => setForm((f) => ({ ...f, vehicleType: v }))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="own_vehicle">Own Vehicle</SelectItem>
-                    <SelectItem value="company_vehicle">Company Vehicle</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>Fuel Cost/Trip</Label>
-                  <Input type="number" value={form.fuelCostPerTrip} onChange={(e) => setForm((f) => ({ ...f, fuelCostPerTrip: e.target.value }))} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Transport Cost/Day</Label>
-                  <Input type="number" value={form.transportCostPerDay} onChange={(e) => setForm((f) => ({ ...f, transportCostPerDay: e.target.value }))} />
-                </div>
-              </div>
-              <Button className="w-full" onClick={handleSubmit} disabled={createMutation.isPending}>
-                Create Salesman
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <p className="text-sm text-muted-foreground">
+          Create salesmen from <span className="font-medium text-foreground">HR → Employees → Add Employee</span> by checking "Is this employee a Salesman?"
+        </p>
       </div>
 
       <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
@@ -359,8 +263,6 @@ function SalesmenTab() {
             <TableRow>
               <TableHead className="text-[11px]">Name</TableHead>
               <TableHead className="text-[11px]">Phone</TableHead>
-              <TableHead className="text-[11px]">Vehicle</TableHead>
-              <TableHead className="text-[11px] text-right">Fuel/Trip</TableHead>
               <TableHead className="text-[11px]">Status</TableHead>
               <TableHead className="text-[11px] w-[50px]" />
             </TableRow>
@@ -368,7 +270,7 @@ function SalesmenTab() {
           <TableBody>
             {!salesmen?.length ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-10 text-sm">
+                <TableCell colSpan={4} className="text-center text-muted-foreground py-10 text-sm">
                   No salesmen found.
                 </TableCell>
               </TableRow>
@@ -377,10 +279,6 @@ function SalesmenTab() {
                 <TableRow key={s.id}>
                   <TableCell className="text-sm font-medium">{s.name}</TableCell>
                   <TableCell className="text-sm">{s.phone || "—"}</TableCell>
-                  <TableCell className="text-sm capitalize">{s.vehicleType?.replace("_", " ") || "—"}</TableCell>
-                  <TableCell className="text-sm text-right tabular-nums">
-                    {Number(s.fuelCostPerTrip) > 0 ? PKR(Number(s.fuelCostPerTrip)) : "—"}
-                  </TableCell>
                   <TableCell>
                     <Badge variant={s.status === "active" ? "default" : "outline"} className="text-[10px]">
                       {s.status}
@@ -411,98 +309,15 @@ function SalesmenTab() {
 // ── Order Bookers Tab ──
 function OrderBookersTab() {
   const { data: orderBookers } = useGetOrderBookers();
-  const createMutation = useCreateOrderBooker();
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    address: "",
-    vehicleType: "own_vehicle" as "own_vehicle" | "company_vehicle",
-    isCompanyVehicle: false,
-    fuelCostPerTrip: "",
-    commissionRate: "0",
-  });
   const navigate = useNavigate();
-
-  const handleSubmit = () => {
-    createMutation.mutate(
-      {
-        data: {
-          name: form.name,
-          phone: form.phone || undefined,
-          address: form.address || undefined,
-          vehicleType: form.vehicleType,
-          isCompanyVehicle: form.isCompanyVehicle,
-          fuelCostPerTrip: Number(form.fuelCostPerTrip) || 0,
-          commissionRate: form.commissionRate,
-        },
-      },
-      {
-        onSuccess: () => {
-          setOpen(false);
-          toast.success("Order booker created");
-          setForm({ name: "", phone: "", address: "", vehicleType: "own_vehicle", isCompanyVehicle: false, fuelCostPerTrip: "", commissionRate: "0" });
-        },
-      },
-    );
-  };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Order Bookers</h3>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="size-4 mr-1.5" />
-              Add Order Booker
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>New Order Booker</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-2">
-              <div className="space-y-1.5">
-                <Label>Name</Label>
-                <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Phone</Label>
-                <Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Address</Label>
-                <Input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Vehicle Type</Label>
-                <Select value={form.vehicleType} onValueChange={(v: any) => setForm((f) => ({ ...f, vehicleType: v }))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="own_vehicle">Own Vehicle</SelectItem>
-                    <SelectItem value="company_vehicle">Company Vehicle</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>Fuel Cost/Trip</Label>
-                  <Input type="number" value={form.fuelCostPerTrip} onChange={(e) => setForm((f) => ({ ...f, fuelCostPerTrip: e.target.value }))} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Commission %</Label>
-                  <Input type="number" step="0.01" value={form.commissionRate} onChange={(e) => setForm((f) => ({ ...f, commissionRate: e.target.value }))} />
-                </div>
-              </div>
-              <Button className="w-full" onClick={handleSubmit} disabled={createMutation.isPending}>
-                Create Order Booker
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <p className="text-sm text-muted-foreground">
+          Create order bookers from <span className="font-medium text-foreground">HR → Employees → Add Employee</span> by checking "Is this employee an Order Booker?"
+        </p>
       </div>
 
       <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
@@ -511,7 +326,7 @@ function OrderBookersTab() {
             <TableRow>
               <TableHead className="text-[11px]">Name</TableHead>
               <TableHead className="text-[11px]">Phone</TableHead>
-              <TableHead className="text-[11px]">Vehicle</TableHead>
+              <TableHead className="text-[11px]">Area</TableHead>
               <TableHead className="text-[11px] text-right">Commission</TableHead>
               <TableHead className="text-[11px]">Status</TableHead>
               <TableHead className="text-[11px] w-[50px]" />
@@ -529,7 +344,7 @@ function OrderBookersTab() {
                 <TableRow key={ob.id}>
                   <TableCell className="text-sm font-medium">{ob.name}</TableCell>
                   <TableCell className="text-sm">{ob.phone || "—"}</TableCell>
-                  <TableCell className="text-sm capitalize">{ob.vehicleType?.replace("_", " ") || "—"}</TableCell>
+                  <TableCell className="text-sm">{ob.assignedArea || "—"}</TableCell>
                   <TableCell className="text-sm text-right tabular-nums">
                     {Number(ob.commissionRate) > 0 ? `${ob.commissionRate}%` : "—"}
                   </TableCell>

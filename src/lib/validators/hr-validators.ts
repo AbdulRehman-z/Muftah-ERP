@@ -63,6 +63,7 @@ export const createEmployeeSchema = z.object({
     ),
 
   isOrderBooker: z.boolean(),
+  isSalesman: z.boolean(),
 
   /**
    * Days of week this employee does NOT work.
@@ -120,19 +121,6 @@ export const upsertAttendanceSchema = z
       .enum(["none", "pending", "approved", "rejected"])
       .nullable()
       .optional(),
-
-    // Order Booker Tracking
-    areaVisited: z.string().nullable().optional(),
-    paymentMode: z.enum(["per_km"]).default("per_km"),
-    isCompanyVehicle: z.boolean().default(false),
-    distanceKm: z.string().nullable().optional(),
-    perKmRate: z.string().nullable().optional(),
-    petrolAmount: z.string().nullable().optional(),
-    saleAmount: z.string().nullable().optional(),
-    recoveryAmount: z.string().nullable().optional(),
-    returnAmount: z.string().nullable().optional(),
-    slipNumbers: z.string().nullable().optional(),
-    shopType: z.enum(["old", "new"]).nullable().optional().default("old"),
 
     entrySource: z.enum(["biometric", "manual"]).default("manual"),
     notes: z.string().nullable(),

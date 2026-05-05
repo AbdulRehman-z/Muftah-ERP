@@ -17,16 +17,13 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpsertAttendance } from "@/hooks/hr/use-upsert-attendance";
-import { useActiveTadaRate } from "@/hooks/hr/use-tada";
 import {
   Loader2,
   Clock,
   StickyNote,
   Info,
   AlertCircle,
-  CheckCircle2,
   CalendarDays,
-  Zap,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { upsertAttendanceSchema } from "@/lib/validators/hr-validators";
@@ -85,17 +82,6 @@ interface AttendanceData {
   overtimeRemarks?: string | null;
   entrySource?: "biometric" | "manual" | null;
   notes?: string | null;
-  isCompanyVehicle?: boolean | null;
-  areaVisited?: string | null;
-  paymentMode?: "per_km" | null;
-  distanceKm?: string | null;
-  perKmRate?: string | null;
-  petrolAmount?: string | null;
-  saleAmount?: string | null;
-  recoveryAmount?: string | null;
-  returnAmount?: string | null;
-  slipNumbers?: string | null;
-  shopType?: "old" | "new" | null;
 }
 
 interface Props {
@@ -269,7 +255,6 @@ export const EditAttendanceForm = ({
   onSuccess,
 }: Props) => {
   const mutate = useUpsertAttendance();
-  const { data: activeRate } = useActiveTadaRate();
   const std = employee.standardDutyHours || 8;
 
   const form = useForm({
@@ -307,18 +292,6 @@ export const EditAttendanceForm = ({
       dutyHours: attendance?.dutyHours ?? null,
       leaveApprovalStatus: attendance?.leaveApprovalStatus ?? "none",
       notes: attendance?.notes ?? null,
-
-      isCompanyVehicle: attendance?.isCompanyVehicle ?? false,
-      areaVisited: attendance?.areaVisited ?? null,
-      paymentMode: "per_km" as const,
-      distanceKm: attendance?.distanceKm ?? null,
-      perKmRate: attendance?.perKmRate ?? null,
-      petrolAmount: attendance?.petrolAmount ?? null,
-      saleAmount: attendance?.saleAmount ?? null,
-      recoveryAmount: attendance?.recoveryAmount ?? null,
-      returnAmount: attendance?.returnAmount ?? null,
-      slipNumbers: attendance?.slipNumbers ?? null,
-      shopType: (attendance?.shopType ?? "old") as "old" | "new",
     },
     onSubmit: async ({ value }) => {
       const payload = upsertAttendanceSchema.parse(value);
@@ -328,12 +301,6 @@ export const EditAttendanceForm = ({
       );
     },
   });
-
-  useEffect(() => {
-    if (activeRate?.ratePerKm && !form.getFieldValue("perKmRate")) {
-      form.setFieldValue("perKmRate", String(activeRate.ratePerKm));
-    }
-  }, [activeRate, form]);
 
   return (
     <form
@@ -439,316 +406,6 @@ export const EditAttendanceForm = ({
             }
           </form.Subscribe>
         </SectionBlock>
-
-        {/* ── Section: Order Booker Data ────────────────────────────── */}
-        {employee.isOrderBooker && (
-          <form.Subscribe selector={(s: any) => s.values.status}>
-            {(status: string) =>
-              status === "present" && (
-                <SectionBlock icon={Zap} label="Sales & Recovery Log">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <form.Field name="areaVisited">
-                      {(field) => (
-                        <Field className="md:col-span-2 space-y-1">
-                          <FieldLabel className="text-[13px] font-medium text-foreground/90">
-                            Area Visited
-                          </FieldLabel>
-                          <Input
-                            placeholder="e.g. North Nazimabad..."
-                            value={field.state.value || ""}
-                            onChange={(e) =>
-                              field.handleChange(e.target.value || null)
-                            }
-                            className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
-                          />
-                          <FieldError
-                            errors={field.state.meta.errors}
-                            className="text-[11px]"
-                          />
-                        </Field>
-                      )}
-                    </form.Field>
-
-                    <form.Field name="shopType">
-                      {(field) => (
-                        <Field className="space-y-1">
-                          <FieldLabel className="text-[13px] font-medium text-foreground/90">
-                            Shop Type
-                          </FieldLabel>
-                          <Select
-                            value={field.state.value}
-                            onValueChange={(v: "old" | "new") =>
-                              field.handleChange(v)
-                            }
-                          >
-                            <SelectTrigger className="h-9 text-[13px] bg-background border-border/60 transition-colors focus:ring-2 focus:ring-primary/20">
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectOption value="old">
-                                Existing / Old Shop
-                              </SelectOption>
-                              <SelectOption value="new">
-                                Newly Onboarded Shop
-                              </SelectOption>
-                            </SelectContent>
-                          </Select>
-                          <FieldError
-                            errors={field.state.meta.errors}
-                            className="text-[11px]"
-                          />
-                        </Field>
-                      )}
-                    </form.Field>
-
-                    <form.Field name="isCompanyVehicle">
-                      {(field) => (
-                        <div className="md:col-span-2 mt-1">
-                          <label
-                            className={cn(
-                              "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all duration-200 select-none",
-                              field.state.value
-                                ? "bg-indigo-50/50 border-indigo-200 dark:bg-indigo-950/20 dark:border-indigo-900/60"
-                                : "bg-background border-border/60 hover:bg-muted/30",
-                            )}
-                          >
-                            <Checkbox
-                              checked={field.state.value}
-                              onCheckedChange={(c) => field.handleChange(!!c)}
-                              className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
-                            />
-                            <div className="space-y-0.5">
-                              <p
-                                className={cn(
-                                  "text-[13px] font-medium",
-                                  field.state.value
-                                    ? "text-indigo-700 dark:text-indigo-400"
-                                    : "text-foreground",
-                                )}
-                              >
-                                Company Vehicle Used
-                              </p>
-                              <p className="text-[12px] text-muted-foreground">
-                                Toggle this if the trip was made using a
-                                company-provided car or bike.
-                              </p>
-                            </div>
-                          </label>
-                        </div>
-                      )}
-                    </form.Field>
-
-                    <form.Subscribe
-                      selector={(s: any) => s.values.isCompanyVehicle}
-                    >
-                      {(isCompany: boolean) => (
-                        <>
-                          {!isCompany ? (
-                            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 animate-in fade-in duration-300">
-                              <form.Field name="distanceKm">
-                                {(field) => (
-                                  <Field className="space-y-1">
-                                    <FieldLabel className="text-[13px] font-medium text-foreground/90">
-                                      Distance (KM)
-                                    </FieldLabel>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      step="0.1"
-                                      placeholder="0.0"
-                                      value={field.state.value || ""}
-                                      onChange={(e) =>
-                                        field.handleChange(
-                                          e.target.value || null,
-                                        )
-                                      }
-                                      className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
-                                    />
-                                    <FieldError
-                                      errors={field.state.meta.errors}
-                                      className="text-[11px]"
-                                    />
-                                  </Field>
-                                )}
-                              </form.Field>
-                              <form.Field name="perKmRate">
-                                {(field) => (
-                                  <Field className="space-y-1">
-                                    <FieldLabel className="text-[13px] font-medium text-foreground/90">
-                                      Rate per KM
-                                    </FieldLabel>
-                                    <div className="relative group/rate">
-                                      <Input
-                                        type="number"
-                                        readOnly
-                                        placeholder={
-                                          activeRate
-                                            ? "Rate loaded..."
-                                            : "Set Global Rate First"
-                                        }
-                                        value={field.state.value || ""}
-                                        className={cn(
-                                          "h-9 text-[13px] bg-muted/50 cursor-not-allowed pr-9 transition-colors",
-                                          !activeRate &&
-                                            "border-rose-300 text-rose-600 dark:border-rose-800 dark:text-rose-400 bg-rose-50/30 dark:bg-rose-950/10",
-                                        )}
-                                      />
-                                      {activeRate ? (
-                                        <CheckCircle2 className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-emerald-500" />
-                                      ) : (
-                                        <AlertCircle className="absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-rose-500" />
-                                      )}
-                                    </div>
-                                    {!activeRate && (
-                                      <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1 font-medium animate-in fade-in">
-                                        Action Required: First set TADA rate in
-                                        header
-                                      </p>
-                                    )}
-                                    <FieldError
-                                      errors={field.state.meta.errors}
-                                      className="text-[11px]"
-                                    />
-                                  </Field>
-                                )}
-                              </form.Field>
-                            </div>
-                          ) : (
-                            <form.Field name="petrolAmount">
-                              {(field) => (
-                                <Field className="md:col-span-2 space-y-1 animate-in fade-in duration-300">
-                                  <FieldLabel className="text-[13px] font-medium text-indigo-700 dark:text-indigo-400">
-                                    Reimbursable Fuel Cost (PKR)
-                                  </FieldLabel>
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    placeholder="PKR 0"
-                                    value={field.state.value || ""}
-                                    onChange={(e) =>
-                                      field.handleChange(e.target.value || null)
-                                    }
-                                    className="h-9 text-[13px] border-indigo-200 focus-visible:ring-indigo-500 bg-indigo-50/30 dark:border-indigo-800/60 dark:bg-indigo-950/20 transition-colors"
-                                  />
-                                  <p className="text-[12px] text-muted-foreground mt-1.5 leading-relaxed">
-                                    Since a Company Vehicle was used, per-KM
-                                    transport allowance is disabled. Enter the
-                                    actual fuel expenditure to be reimbursed.
-                                  </p>
-                                  <FieldError
-                                    errors={field.state.meta.errors}
-                                    className="text-[11px]"
-                                  />
-                                </Field>
-                              )}
-                            </form.Field>
-                          )}
-                        </>
-                      )}
-                    </form.Subscribe>
-
-                    <form.Field name="saleAmount">
-                      {(field) => (
-                        <Field className="space-y-1">
-                          <FieldLabel className="text-[13px] font-medium text-foreground/90">
-                            Total Sale
-                          </FieldLabel>
-                          <Input
-                            type="number"
-                            min="0"
-                            placeholder="PKR 0"
-                            value={field.state.value || ""}
-                            onChange={(e) =>
-                              field.handleChange(e.target.value || null)
-                            }
-                            className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500/20"
-                          />
-                          <FieldError
-                            errors={field.state.meta.errors}
-                            className="text-[11px]"
-                          />
-                        </Field>
-                      )}
-                    </form.Field>
-
-                    <form.Field name="recoveryAmount">
-                      {(field) => (
-                        <Field className="space-y-1">
-                          <FieldLabel className="text-[13px] font-medium text-foreground/90">
-                            Recovery{" "}
-                            <span className="text-muted-foreground font-normal ml-1">
-                              (Commission)
-                            </span>
-                          </FieldLabel>
-                          <Input
-                            type="number"
-                            min="0"
-                            placeholder="PKR 0"
-                            value={field.state.value || ""}
-                            onChange={(e) =>
-                              field.handleChange(e.target.value || null)
-                            }
-                            className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-blue-500/20"
-                          />
-                          <FieldError
-                            errors={field.state.meta.errors}
-                            className="text-[11px]"
-                          />
-                        </Field>
-                      )}
-                    </form.Field>
-
-                    <form.Field name="returnAmount">
-                      {(field) => (
-                        <Field className="space-y-1">
-                          <FieldLabel className="text-[13px] font-medium text-foreground/90">
-                            Return / Spoilage
-                          </FieldLabel>
-                          <Input
-                            type="number"
-                            min="0"
-                            placeholder="PKR 0"
-                            value={field.state.value || ""}
-                            onChange={(e) =>
-                              field.handleChange(e.target.value || null)
-                            }
-                            className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-rose-500/20"
-                          />
-                          <FieldError
-                            errors={field.state.meta.errors}
-                            className="text-[11px]"
-                          />
-                        </Field>
-                      )}
-                    </form.Field>
-
-                    <form.Field name="slipNumbers">
-                      {(field) => (
-                        <Field className="space-y-1">
-                          <FieldLabel className="text-[13px] font-medium text-foreground/90">
-                            Slip / Invoice #
-                          </FieldLabel>
-                          <Input
-                            placeholder="#1001, #1002"
-                            value={field.state.value || ""}
-                            onChange={(e) =>
-                              field.handleChange(e.target.value || null)
-                            }
-                            className="h-9 text-[13px] bg-background border-border/60 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
-                          />
-                          <FieldError
-                            errors={field.state.meta.errors}
-                            className="text-[11px]"
-                          />
-                        </Field>
-                      )}
-                    </form.Field>
-                  </div>
-                </SectionBlock>
-              )
-            }
-          </form.Subscribe>
-        )}
 
         {/* ── Section: Time Tracking ──────────────────────────────────── */}
         {!employee.isOrderBooker && (

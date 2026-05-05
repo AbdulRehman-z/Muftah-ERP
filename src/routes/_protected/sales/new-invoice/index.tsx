@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DatePickerWithRange } from "@/components/custom/date-range-picker";
 import { type DateRange } from "react-day-picker";
-import { Plus, ReceiptText, Trash2, Loader2, Search, X, SlidersHorizontal } from "lucide-react";
+import { ReceiptText, Trash2, Loader2, Search, X, SlidersHorizontal, Store, Truck } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { InvoiceKpiCards } from "@/components/sales/invoice-kpi-cards";
@@ -97,6 +97,8 @@ function InvoicesContent() {
   const [committedSearch, setCommittedSearch] = useState("");
 
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
+  const [sheetCustomerType, setSheetCustomerType] = useState<"distributor" | "retailer" | "wholesaler">("retailer");
+  const [sheetLocked, setSheetLocked] = useState(false);
   const [detailInvoiceId, setDetailInvoiceId] = useState<string | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [printInvoiceId, setPrintInvoiceId] = useState<string | null>(null);
@@ -248,10 +250,16 @@ function InvoicesContent() {
             {hasFilters && " (filtered)"}
           </span>
         </div>
-        <Button onClick={() => setCreateSheetOpen(true)} size="sm" className="gap-2">
-          <Plus className="size-4" />
-          New Invoice
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => { setSheetCustomerType("retailer"); setSheetLocked(false); setCreateSheetOpen(true); }} size="sm" className="gap-2">
+            <Store className="size-4" />
+            New Retailer Invoice
+          </Button>
+          <Button onClick={() => { setSheetCustomerType("distributor"); setSheetLocked(true); setCreateSheetOpen(true); }} size="sm" variant="secondary" className="gap-2">
+            <Truck className="size-4" />
+            New Distributor Invoice
+          </Button>
+        </div>
       </div>
 
       {/* Empty state */}
@@ -261,7 +269,7 @@ function InvoicesContent() {
           title="No Invoices Found"
           description="No invoices found for the selected period."
           ctaText="Create Invoice"
-          onAddChange={() => setCreateSheetOpen(true)}
+          onAddChange={() => { setSheetCustomerType("retailer"); setSheetLocked(false); setCreateSheetOpen(true); }}
         />
       ) : total === 0 && hasFilters ? (
         <GenericEmpty
@@ -318,7 +326,7 @@ function InvoicesContent() {
       )}
 
       {/* Create Invoice Sheet */}
-      <CreateInvoiceSheet open={createSheetOpen} onOpenChange={setCreateSheetOpen} />
+      <CreateInvoiceSheet open={createSheetOpen} onOpenChange={setCreateSheetOpen} defaultCustomerType={sheetCustomerType} lockedCustomerType={sheetLocked} />
 
       {/* Detail Sheet */}
       <InvoiceDetailSheet

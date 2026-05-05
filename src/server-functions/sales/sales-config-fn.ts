@@ -223,10 +223,6 @@ export const createSalesmanFn = createServerFn()
       .object({
         name: z.string().min(1),
         phone: z.string().optional(),
-        vehicleType: z.enum(["own_vehicle", "company_vehicle"]).default("own_vehicle"),
-        isCompanyVehicle: z.boolean().default(false),
-        fuelCostPerTrip: z.number().nonnegative().default(0),
-        transportCostPerDay: z.number().nonnegative().default(0),
       })
       .parse(input),
   )
@@ -236,10 +232,6 @@ export const createSalesmanFn = createServerFn()
       .values({
         name: data.name,
         phone: data.phone,
-        vehicleType: data.vehicleType,
-        isCompanyVehicle: data.isCompanyVehicle,
-        fuelCostPerTrip: data.fuelCostPerTrip.toString(),
-        transportCostPerDay: data.transportCostPerDay.toString(),
       })
       .returning();
     return inserted;
@@ -253,10 +245,6 @@ export const updateSalesmanFn = createServerFn()
         id: z.string().min(1),
         name: z.string().min(1).optional(),
         phone: z.string().optional(),
-        vehicleType: z.enum(["own_vehicle", "company_vehicle"]).optional(),
-        isCompanyVehicle: z.boolean().optional(),
-        fuelCostPerTrip: z.number().nonnegative().optional(),
-        transportCostPerDay: z.number().nonnegative().optional(),
         status: z.enum(["active", "inactive"]).optional(),
       })
       .parse(input),
@@ -266,10 +254,6 @@ export const updateSalesmanFn = createServerFn()
     const updateValues: any = {};
     if (updates.name !== undefined) updateValues.name = updates.name;
     if (updates.phone !== undefined) updateValues.phone = updates.phone;
-    if (updates.vehicleType !== undefined) updateValues.vehicleType = updates.vehicleType;
-    if (updates.isCompanyVehicle !== undefined) updateValues.isCompanyVehicle = updates.isCompanyVehicle;
-    if (updates.fuelCostPerTrip !== undefined) updateValues.fuelCostPerTrip = updates.fuelCostPerTrip.toString();
-    if (updates.transportCostPerDay !== undefined) updateValues.transportCostPerDay = updates.transportCostPerDay.toString();
     if (updates.status !== undefined) updateValues.status = updates.status;
 
     const [updated] = await db
@@ -313,9 +297,7 @@ export const createOrderBookerFn = createServerFn()
         name: data.name,
         phone: data.phone,
         address: data.address,
-        vehicleType: data.vehicleType,
-        isCompanyVehicle: data.isCompanyVehicle,
-        fuelCostPerTrip: data.fuelCostPerTrip.toString(),
+        assignedArea: data.assignedArea,
         commissionRate: data.commissionRate,
         employeeId: data.employeeId,
       })
@@ -332,9 +314,7 @@ export const updateOrderBookerFn = createServerFn()
     if (updates.name !== undefined) updateValues.name = updates.name;
     if (updates.phone !== undefined) updateValues.phone = updates.phone;
     if (updates.address !== undefined) updateValues.address = updates.address;
-    if (updates.vehicleType !== undefined) updateValues.vehicleType = updates.vehicleType;
-    if (updates.isCompanyVehicle !== undefined) updateValues.isCompanyVehicle = updates.isCompanyVehicle;
-    if (updates.fuelCostPerTrip !== undefined) updateValues.fuelCostPerTrip = updates.fuelCostPerTrip.toString();
+    if (updates.assignedArea !== undefined) updateValues.assignedArea = updates.assignedArea;
     if (updates.commissionRate !== undefined) updateValues.commissionRate = updates.commissionRate;
     if (updates.employeeId !== undefined) updateValues.employeeId = updates.employeeId;
     if (updates.status !== undefined) updateValues.status = updates.status;

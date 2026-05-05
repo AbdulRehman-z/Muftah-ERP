@@ -33,10 +33,7 @@ export const salesmen = pgTable("salesmen", {
   name: text("name").notNull(),
   phone: text("phone"),
   status: text("status").notNull().default("active"), // "active" | "inactive"
-  vehicleType: text("vehicle_type").default("own_vehicle"), // "own_vehicle" | "company_vehicle"
-  isCompanyVehicle: boolean("is_company_vehicle").default(false),
-  fuelCostPerTrip: decimal("fuel_cost_per_trip", { precision: 12, scale: 2 }).default("0"),
-  transportCostPerDay: decimal("transport_cost_per_day", { precision: 12, scale: 2 }).default("0"),
+  employeeId: text("employee_id"),
   ...timestamps,
 });
 
@@ -202,9 +199,7 @@ export const orderBookers = pgTable("order_bookers", {
   name: text("name").notNull(),
   phone: text("phone"),
   address: text("address"),
-  vehicleType: text("vehicle_type").default("own_vehicle"), // "own_vehicle" | "company_vehicle"
-  isCompanyVehicle: boolean("is_company_vehicle").default(false),
-  fuelCostPerTrip: decimal("fuel_cost_per_trip", { precision: 12, scale: 2 }).default("0"),
+  assignedArea: text("assigned_area"),
   commissionRate: decimal("commission_rate", { precision: 5, scale: 2 }).default("0"),
   employeeId: text("employee_id"), // nullable link to HR employees for payroll
   status: text("status").notNull().default("active"), // "active" | "inactive"
@@ -224,6 +219,10 @@ export const orders = pgTable("orders", {
   shopkeeperMobile: text("shopkeeper_mobile"),
   shopkeeperAddress: text("shopkeeper_address"),
   status: text("status").notNull().default("pending"), // "pending" | "confirmed" | "delivered" | "returned"
+  tripId: text("trip_id"),
+  fulfilledBySalesmanId: text("fulfilled_by_salesman_id"),
+  fulfilledAt: timestamp("fulfilled_at"),
+  fulfilledAmount: decimal("fulfilled_amount", { precision: 12, scale: 2 }),
   notes: text("notes"),
   ...timestamps,
 });
@@ -243,6 +242,58 @@ export const orderItems = pgTable("order_items", {
   quantity: integer("quantity").notNull().default(0),
   rate: decimal("rate", { precision: 12, scale: 2 }).notNull().default("0"),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull().default("0"),
+  ...timestamps,
+});
+
+// --- ORDER BOOKER TRIPS ---
+export const orderBookerTrips = pgTable("order_booker_trips", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  orderBookerId: text("order_booker_id")
+    .notNull()
+    .references(() => orderBookers.id),
+  tripDate: timestamp("trip_date").notNull(),
+  destination: text("destination").notNull(),
+  distanceKm: decimal("distance_km", { precision: 8, scale: 2 }).notNull().default("0"),
+  vehicleType: text("vehicle_type").notNull().default("own_vehicle"), // "own_vehicle" | "company_vehicle"
+  fuelCost: decimal("fuel_cost", { precision: 12, scale: 2 }).default("0"),
+  tadaAmount: decimal("tada_amount", { precision: 12, scale: 2 }).default("0"),
+  notes: text("notes"),
+  recordedById: text("recorded_by_id")
+    .references(() => user.id),
+  ...timestamps,
+});
+
+// --- COMMISSION TIERS ---
+export const commissionTiers = pgTable("commission_tiers", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  minAmount: decimal("min_amount", { precision: 12, scale: 2 }).notNull(),
+  maxAmount: decimal("max_amount", { precision: 12, scale: 2 }),
+  rate: decimal("rate", { precision: 5, scale: 2 }).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  ...timestamps,
+});
+
+// --- COMMISSION RECORDS ---
+export const commissionRecords = pgTable("commission_records", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  orderBookerId: text("order_booker_id")
+    .notNull()
+    .references(() => orderBookers.id),
+  orderId: text("order_id")
+    .notNull()
+    .references(() => orders.id),
+  fulfilledAmount: decimal("fulfilled_amount", { precision: 12, scale: 2 }).notNull(),
+  appliedRate: decimal("applied_rate", { precision: 5, scale: 2 }).notNull(),
+  commissionAmount: decimal("commission_amount", { precision: 12, scale: 2 }).notNull(),
+  calculatedAt: timestamp("calculated_at").defaultNow().notNull(),
+  status: text("status").notNull().default("accrued"), // "accrued" | "paid" | "reversed"
+  paidInPayslipId: text("paid_in_payslip_id"),
   ...timestamps,
 });
 
@@ -347,6 +398,8 @@ export const priceChangeLogRelations = relations(priceChangeLog, ({ one }) => ({
 
 export const orderBookersRelations = relations(orderBookers, ({ many }) => ({
   orders: many(orders),
+  trips: many(orderBookerTrips),
+  commissionRecords: many(commissionRecords),
 }));
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({
@@ -354,7 +407,38 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
     fields: [orders.orderBookerId],
     references: [orderBookers.id],
   }),
+  trip: one(orderBookerTrips, {
+    fields: [orders.tripId],
+    references: [orderBookerTrips.id],
+  }),
+  fulfilledBySalesman: one(salesmen, {
+    fields: [orders.fulfilledBySalesmanId],
+    references: [salesmen.id],
+  }),
   items: many(orderItems),
+}));
+
+export const orderBookerTripsRelations = relations(orderBookerTrips, ({ one, many }) => ({
+  orderBooker: one(orderBookers, {
+    fields: [orderBookerTrips.orderBookerId],
+    references: [orderBookers.id],
+  }),
+  recordedBy: one(user, {
+    fields: [orderBookerTrips.recordedById],
+    references: [user.id],
+  }),
+  orders: many(orders),
+}));
+
+export const commissionRecordsRelations = relations(commissionRecords, ({ one }) => ({
+  orderBooker: one(orderBookers, {
+    fields: [commissionRecords.orderBookerId],
+    references: [orderBookers.id],
+  }),
+  order: one(orders, {
+    fields: [commissionRecords.orderId],
+    references: [orders.id],
+  }),
 }));
 
 export const orderItemsRelations = relations(orderItems, ({ one }) => ({

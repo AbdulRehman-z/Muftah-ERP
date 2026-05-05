@@ -95,17 +95,6 @@ export const upsertAttendanceFn = createServerFn()
       entrySource: rest.entrySource || "manual",
       notes: rest.notes || null,
 
-      // Order Booker Fields
-      areaVisited: rest.areaVisited || null,
-      paymentMode: rest.paymentMode || "per_km",
-      distanceKm: rest.distanceKm || "0",
-      perKmRate: rest.perKmRate || "0",
-      saleAmount: rest.saleAmount || "0",
-      recoveryAmount: rest.recoveryAmount || "0",
-      returnAmount: rest.returnAmount || "0",
-      slipNumbers: rest.slipNumbers || null,
-      shopType: rest.shopType || "old",
-
       updatedAt: new Date(),
     };
 

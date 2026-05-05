@@ -38,6 +38,11 @@ import {
   useDeletePromotionalRule,
 } from "@/hooks/sales/use-sales-config";
 import {
+  useGetCommissionTiers,
+  useCreateCommissionTier,
+  useDeleteCommissionTier,
+} from "@/hooks/sales/use-order-booker-commission";
+import {
   getCustomerDiscountRulesFn,
   deactivateCustomerDiscountRuleFn,
 } from "@/server-functions/sales/customer-discount-rules-fn";
@@ -95,6 +100,7 @@ function ConfigurationsContent() {
         <TabsTrigger value="promotions">Promotional Rules</TabsTrigger>
         <TabsTrigger value="discounts">Discount Rules</TabsTrigger>
         <TabsTrigger value="tada">TADA Rate</TabsTrigger>
+        <TabsTrigger value="commissions">Commission Tiers</TabsTrigger>
       </TabsList>
 
       <TabsContent value="pricing">
@@ -111,6 +117,10 @@ function ConfigurationsContent() {
 
       <TabsContent value="tada">
         <TadaRateTab />
+      </TabsContent>
+
+      <TabsContent value="commissions">
+        <CommissionTiersTab />
       </TabsContent>
     </Tabs>
   );
@@ -649,6 +659,104 @@ function TadaRateTab() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm">{r.setter?.name || "—"}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+// ── Commission Tiers Tab ──
+function CommissionTiersTab() {
+  const { data: tiers } = useGetCommissionTiers();
+  const createTier = useCreateCommissionTier();
+  const deleteTier = useDeleteCommissionTier();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ minAmount: "", maxAmount: "", rate: "" });
+
+  const handleSubmit = () => {
+    createTier.mutate(
+      {
+        data: {
+          minAmount: Number(form.minAmount) || 0,
+          maxAmount: form.maxAmount ? Number(form.maxAmount) : null,
+          rate: Number(form.rate) || 0,
+        },
+      },
+      {
+        onSuccess: () => {
+          setOpen(false);
+          toast.success("Commission tier created");
+          setForm({ minAmount: "", maxAmount: "", rate: "" });
+        },
+      },
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Commission Tiers</h3>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm"><Plus className="size-4 mr-1.5" />Add Tier</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader><DialogTitle>New Commission Tier</DialogTitle></DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Min Amount (PKR)</Label>
+                  <Input type="number" value={form.minAmount} onChange={(e) => setForm((f) => ({ ...f, minAmount: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Max Amount (PKR)</Label>
+                  <Input type="number" value={form.maxAmount} onChange={(e) => setForm((f) => ({ ...f, maxAmount: e.target.value }))} placeholder="Unlimited" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Rate (%)</Label>
+                <Input type="number" step="0.01" value={form.rate} onChange={(e) => setForm((f) => ({ ...f, rate: e.target.value }))} />
+              </div>
+              <Button className="w-full" onClick={handleSubmit} disabled={createTier.isPending}>Create Tier</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-[11px]">Min Amount</TableHead>
+              <TableHead className="text-[11px]">Max Amount</TableHead>
+              <TableHead className="text-[11px] text-right">Rate</TableHead>
+              <TableHead className="text-[11px]">Status</TableHead>
+              <TableHead className="text-[11px] w-[50px]" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {!tiers?.length ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-10 text-sm">No commission tiers found.</TableCell>
+              </TableRow>
+            ) : (
+              tiers.map((tier: any) => (
+                <TableRow key={tier.id}>
+                  <TableCell className="text-sm">PKR {tier.minAmount}</TableCell>
+                  <TableCell className="text-sm">{tier.maxAmount ? `PKR ${tier.maxAmount}` : "Unlimited"}</TableCell>
+                  <TableCell className="text-sm text-right tabular-nums">{tier.rate}%</TableCell>
+                  <TableCell>
+                    <Badge variant={tier.isActive ? "default" : "outline"} className="text-[10px]">{tier.isActive ? "Active" : "Inactive"}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm" className="h-7 text-[11px] text-rose-500" onClick={() => deleteTier.mutate({ data: { id: tier.id } })}>
+                      Delete
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))
             )}

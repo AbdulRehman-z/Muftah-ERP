@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { db } from "@/db";
 import { requireHrViewMiddleware } from "@/lib/middlewares";
 import { z } from "zod";
+import { eq, and } from "drizzle-orm";
+import { employees } from "@/db/schemas/hr-schema";
 
 export const getDailyAttendanceFn = createServerFn()
   .middleware([requireHrViewMiddleware])
@@ -10,6 +12,10 @@ export const getDailyAttendanceFn = createServerFn()
     const { date } = data;
 
     const allEmployees = await db.query.employees.findMany({
+      where: and(
+        eq(employees.isOrderBooker, false),
+        eq(employees.isSalesman, false),
+      ),
       with: {
         attendance: {
           where: (table, { eq }) => eq(table.date, date),

@@ -1,8 +1,23 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useParams } from "@tanstack/react-router";
+import { createFileRoute, useParams, useRouter } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
-import { useRouter } from "@tanstack/react-router";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChevronLeft, Plus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DatePickerWithRange } from "@/components/custom/date-range-picker";
+import { useState } from "react";
+import { format, startOfMonth, endOfMonth } from "date-fns";
+import { useGetOrderBookerDetail } from "@/hooks/sales/use-sales-people";
+import { useGetOrderBookerTrips, useCreateOrderBookerTrip, useDeleteOrderBookerTrip } from "@/hooks/sales/use-order-booker-trips";
+import { useGetCommissionRecords, useGetCommissionSummary } from "@/hooks/sales/use-order-booker-commission";
+import { useGetOrders } from "@/hooks/sales/use-orders";
+import { toast } from "sonner";
+import type { DateRange } from "react-day-picker";
 
 export const Route = createFileRoute("/_protected/sales/people/order-bookers/$orderBookerId/")({
   component: OrderBookerProfilePage,
@@ -11,6 +26,16 @@ export const Route = createFileRoute("/_protected/sales/people/order-bookers/$or
 function OrderBookerProfilePage() {
   const { orderBookerId } = useParams({ from: "/_protected/sales/people/order-bookers/$orderBookerId/" });
   const router = useRouter();
+  const { data: orderBooker } = useGetOrderBookerDetail(orderBookerId);
+
+  const [tripDateRange, setTripDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+  });
+  const [commissionDateRange, setCommissionDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+  });
 
   return (
     <div className="space-y-6">
@@ -19,10 +44,327 @@ function OrderBookerProfilePage() {
           <ChevronLeft className="size-4" />
           Back
         </Button>
-        <h1 className="text-2xl font-bold">Order Booker Profile</h1>
+        <h1 className="text-2xl font-bold">{orderBooker?.name || "Order Booker"}</h1>
+        <Badge variant={orderBooker?.status === "active" ? "default" : "outline"}>{orderBooker?.status}</Badge>
       </div>
-      <p className="text-muted-foreground">Order Booker ID: {orderBookerId}</p>
-      <p className="text-sm text-muted-foreground">Full profile with orders, ledger, and transport costs coming soon.</p>
+
+      {/* Header Card */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Phone</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg font-semibold">{orderBooker?.phone || "—"}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Assigned Area</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg font-semibold">{orderBooker?.assignedArea || "—"}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Commission Rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg font-semibold">{orderBooker?.commissionRate ? `${orderBooker.commissionRate}%` : "—"}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Address</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg font-semibold">{orderBooker?.address || "—"}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="trips" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="trips">Trip Logs</TabsTrigger>
+          <TabsTrigger value="orders">Orders</TabsTrigger>
+          <TabsTrigger value="commission">Commission</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="trips">
+          <TripsTab orderBookerId={orderBookerId} dateRange={tripDateRange} onDateRangeChange={setTripDateRange} />
+        </TabsContent>
+
+        <TabsContent value="orders">
+          <OrdersTab orderBookerId={orderBookerId} />
+        </TabsContent>
+
+        <TabsContent value="commission">
+          <CommissionTab orderBookerId={orderBookerId} dateRange={commissionDateRange} onDateRangeChange={setCommissionDateRange} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// ── Trips Tab ──
+function TripsTab({ orderBookerId, dateRange, onDateRangeChange }: {
+  orderBookerId: string;
+  dateRange: DateRange | undefined;
+  onDateRangeChange: (range: DateRange | undefined) => void;
+}) {
+  const { data: trips } = useGetOrderBookerTrips(
+    orderBookerId,
+    dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined,
+    dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined,
+  );
+  const createTrip = useCreateOrderBookerTrip();
+  const deleteTrip = useDeleteOrderBookerTrip();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    tripDate: format(new Date(), "yyyy-MM-dd"),
+    destination: "",
+    distanceKm: "",
+    vehicleType: "own_vehicle" as "own_vehicle" | "company_vehicle",
+    fuelCost: "",
+    notes: "",
+  });
+
+  const handleSubmit = () => {
+    createTrip.mutate(
+      {
+        data: {
+          orderBookerId,
+          tripDate: form.tripDate,
+          destination: form.destination,
+          distanceKm: Number(form.distanceKm) || 0,
+          vehicleType: form.vehicleType,
+          fuelCost: Number(form.fuelCost) || 0,
+          notes: form.notes || undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          setOpen(false);
+          toast.success("Trip logged");
+          setForm({ tripDate: format(new Date(), "yyyy-MM-dd"), destination: "", distanceKm: "", vehicleType: "own_vehicle", fuelCost: "", notes: "" });
+        },
+      },
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <DatePickerWithRange date={dateRange} onDateChange={onDateRangeChange} />
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm"><Plus className="size-4 mr-1.5" />Add Trip</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader><DialogTitle>Log Trip</DialogTitle></DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Date</Label>
+                  <Input type="date" value={form.tripDate} onChange={(e) => setForm((f) => ({ ...f, tripDate: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Vehicle</Label>
+                  <Select value={form.vehicleType} onValueChange={(v: any) => setForm((f) => ({ ...f, vehicleType: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="own_vehicle">Own Vehicle</SelectItem>
+                      <SelectItem value="company_vehicle">Company Vehicle</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Destination</Label>
+                <Input value={form.destination} onChange={(e) => setForm((f) => ({ ...f, destination: e.target.value }))} placeholder="Area or shop visited" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Distance (KM)</Label>
+                  <Input type="number" step="0.1" value={form.distanceKm} onChange={(e) => setForm((f) => ({ ...f, distanceKm: e.target.value }))} />
+                </div>
+                {form.vehicleType === "own_vehicle" && (
+                  <div className="space-y-1.5">
+                    <Label>Fuel Cost (PKR)</Label>
+                    <Input type="number" value={form.fuelCost} onChange={(e) => setForm((f) => ({ ...f, fuelCost: e.target.value }))} />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label>Notes</Label>
+                <Input value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+              </div>
+              <Button className="w-full" onClick={handleSubmit} disabled={createTrip.isPending}>Log Trip</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-[11px]">Date</TableHead>
+              <TableHead className="text-[11px]">Destination</TableHead>
+              <TableHead className="text-[11px]">Distance</TableHead>
+              <TableHead className="text-[11px]">Vehicle</TableHead>
+              <TableHead className="text-[11px] text-right">Fuel</TableHead>
+              <TableHead className="text-[11px] text-right">TADA</TableHead>
+              <TableHead className="text-[11px] w-[50px]" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {!trips?.length ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-10 text-sm">No trips found.</TableCell>
+              </TableRow>
+            ) : (
+              trips.map((trip: any) => (
+                <TableRow key={trip.id}>
+                  <TableCell className="text-sm">{format(new Date(trip.tripDate), "dd MMM yyyy")}</TableCell>
+                  <TableCell className="text-sm">{trip.destination}</TableCell>
+                  <TableCell className="text-sm">{trip.distanceKm} km</TableCell>
+                  <TableCell className="text-sm capitalize">{trip.vehicleType.replace("_", " ")}</TableCell>
+                  <TableCell className="text-sm text-right tabular-nums">{Number(trip.fuelCost) > 0 ? `PKR ${trip.fuelCost}` : "—"}</TableCell>
+                  <TableCell className="text-sm text-right tabular-nums">{Number(trip.tadaAmount) > 0 ? `PKR ${trip.tadaAmount}` : "—"}</TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm" className="h-7 text-[11px] text-rose-500" onClick={() => deleteTrip.mutate({ data: { id: trip.id } })}>
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+// ── Orders Tab ──
+function OrdersTab({ orderBookerId }: { orderBookerId: string }) {
+  const { data: ordersList } = useGetOrders({ orderBookerId });
+  const router = useRouter();
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-[11px]">Bill #</TableHead>
+              <TableHead className="text-[11px]">Shopkeeper</TableHead>
+              <TableHead className="text-[11px]">Status</TableHead>
+              <TableHead className="text-[11px] text-right">Amount</TableHead>
+              <TableHead className="text-[11px]">Date</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {!ordersList?.length ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-10 text-sm">No orders found.</TableCell>
+              </TableRow>
+            ) : (
+              ordersList.map((order: any) => (
+                <TableRow key={order.id} className="cursor-pointer" onClick={() => router.navigate({ to: "/sales/orders" })}>
+                  <TableCell className="text-sm font-medium">#{order.billNumber}</TableCell>
+                  <TableCell className="text-sm">{order.shopkeeperName}</TableCell>
+                  <TableCell>
+                    <Badge variant={order.status === "delivered" ? "default" : order.status === "pending" ? "outline" : "secondary"} className="text-[10px] capitalize">
+                      {order.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-right tabular-nums">
+                    PKR {order.items?.reduce((sum: number, item: any) => sum + Number(item.amount), 0).toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-sm">{format(new Date(order.createdAt), "dd MMM yyyy")}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+// ── Commission Tab ──
+function CommissionTab({ orderBookerId, dateRange, onDateRangeChange }: {
+  orderBookerId: string;
+  dateRange: DateRange | undefined;
+  onDateRangeChange: (range: DateRange | undefined) => void;
+}) {
+  const fromStr = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : "";
+  const toStr = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : "";
+  const { data: records } = useGetCommissionRecords(orderBookerId, fromStr, toStr);
+  const { data: summary } = useGetCommissionSummary(orderBookerId, fromStr, toStr);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <DatePickerWithRange date={dateRange} onDateChange={onDateRangeChange} />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Accrued</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">PKR {summary?.totalAccrued.toFixed(2) || "0.00"}</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Paid</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">PKR {summary?.totalPaid.toFixed(2) || "0.00"}</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Reversed</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">PKR {summary?.totalReversed.toFixed(2) || "0.00"}</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">PKR {summary?.totalPending.toFixed(2) || "0.00"}</p></CardContent>
+        </Card>
+      </div>
+
+      <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-[11px]">Order</TableHead>
+              <TableHead className="text-[11px] text-right">Fulfilled</TableHead>
+              <TableHead className="text-[11px] text-right">Rate</TableHead>
+              <TableHead className="text-[11px] text-right">Commission</TableHead>
+              <TableHead className="text-[11px]">Status</TableHead>
+              <TableHead className="text-[11px]">Date</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {!records?.length ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-10 text-sm">No commission records found.</TableCell>
+              </TableRow>
+            ) : (
+              records.map((rec: any) => (
+                <TableRow key={rec.id}>
+                  <TableCell className="text-sm font-medium">#{rec.orderId.slice(-6)}</TableCell>
+                  <TableCell className="text-sm text-right tabular-nums">PKR {rec.fulfilledAmount}</TableCell>
+                  <TableCell className="text-sm text-right tabular-nums">{rec.appliedRate}%</TableCell>
+                  <TableCell className="text-sm text-right tabular-nums font-medium">PKR {rec.commissionAmount}</TableCell>
+                  <TableCell>
+                    <Badge variant={rec.status === "paid" ? "default" : "outline"} className="text-[10px] capitalize">{rec.status}</Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">{format(new Date(rec.calculatedAt), "dd MMM yyyy")}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

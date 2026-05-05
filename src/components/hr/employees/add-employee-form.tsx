@@ -94,6 +94,7 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
       standardSalary: "",
       commissionRate: "0",
       isOrderBooker: false,
+      isSalesman: false,
       /**
        * Days of the week that are rest days (non-working).
        * 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat.
@@ -453,6 +454,88 @@ export const AddEmployeeForm = ({ onSuccess }: Props) => {
               );
             }}
           </form.Field>
+
+          {/* ── Sales Role Toggles ──────────────────────────────────────── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <form.Field name="isSalesman">
+              {(field: AnyFieldApi) => (
+                <label
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all duration-200 select-none",
+                    field.state.value
+                      ? "bg-blue-50/50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900/60"
+                      : "bg-background border-border/60 hover:bg-muted/30",
+                  )}
+                >
+                  <Checkbox
+                    checked={field.state.value}
+                    onCheckedChange={(c) => field.handleChange(!!c)}
+                    className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                  />
+                  <div className="space-y-0.5">
+                    <p className={cn("text-[13px] font-medium", field.state.value ? "text-blue-700 dark:text-blue-400" : "text-foreground")}>
+                      Is this employee a Salesman?
+                    </p>
+                    <p className="text-[12px] text-muted-foreground">
+                      Creates a linked salesman record. Excluded from attendance.
+                    </p>
+                  </div>
+                </label>
+              )}
+            </form.Field>
+
+            <form.Field name="isOrderBooker">
+              {(field: AnyFieldApi) => (
+                <label
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all duration-200 select-none",
+                    field.state.value
+                      ? "bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/60"
+                      : "bg-background border-border/60 hover:bg-muted/30",
+                  )}
+                >
+                  <Checkbox
+                    checked={field.state.value}
+                    onCheckedChange={(c) => field.handleChange(!!c)}
+                    className="data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                  />
+                  <div className="space-y-0.5">
+                    <p className={cn("text-[13px] font-medium", field.state.value ? "text-emerald-700 dark:text-emerald-400" : "text-foreground")}>
+                      Is this employee an Order Booker?
+                    </p>
+                    <p className="text-[12px] text-muted-foreground">
+                      Creates a linked order booker record. Excluded from attendance.
+                    </p>
+                  </div>
+                </label>
+              )}
+            </form.Field>
+          </div>
+
+          <form.Subscribe selector={(s: any) => s.values.isOrderBooker}>
+            {(isOrderBooker: boolean) =>
+              isOrderBooker && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-300">
+                  <form.Field name="commissionRate">
+                    {(field: AnyFieldApi) => (
+                      <Field>
+                        <FieldLabel>Commission Rate (%)</FieldLabel>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={field.state.value as string}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                        />
+                        <FieldError errors={field.state.meta.errors} />
+                      </Field>
+                    )}
+                  </form.Field>
+                </div>
+              )
+            }
+          </form.Subscribe>
         </div>
 
         <Separator className="opacity-50" />

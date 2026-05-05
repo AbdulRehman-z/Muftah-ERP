@@ -149,6 +149,7 @@ export const EditEmployeeForm = ({ employee, onSuccess }: Props) => {
       standardSalary: employee.standardSalary ?? "",
       commissionRate: employee.commissionRate ?? "0",
       isOrderBooker: (employee as any).isOrderBooker ?? false,
+      isSalesman: (employee as any).isSalesman ?? false,
       /**
        * Migrate from DB — existing employees without restDays get [0] (Sunday off).
        * Once saved once through this form the value is persisted properly.
