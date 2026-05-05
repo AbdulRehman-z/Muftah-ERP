@@ -250,6 +250,7 @@ export async function generateEmployeePayslipCore(
   // -- 5.5 Order booker TA + commission --------------------------------------
   let dynamicTA = 0;
   let orderBookerCommission = 0;
+  let commissionIdsToPay: string[] = [];
 
   // Find linked order booker for this employee
   const linkedOrderBooker = await db.query.orderBookers.findFirst({
@@ -275,6 +276,7 @@ export async function generateEmployeePayslipCore(
     const commissions = await db.query.commissionRecords.findMany({
       where: and(
         eq(commissionRecords.orderBookerId, linkedOrderBooker.id),
+        eq(commissionRecords.status, "accrued"),
         gte(commissionRecords.calculatedAt, new Date(payrollPeriod.startDate)),
         lte(commissionRecords.calculatedAt, new Date(payrollPeriod.endDate)),
       ),
@@ -283,6 +285,7 @@ export async function generateEmployeePayslipCore(
       (sum, rec) => sum + parseFloat(rec.commissionAmount || "0"),
       0,
     );
+    commissionIdsToPay = commissions.map((c) => c.id);
   }
 
   // -- 6. Calculate payslip --------------------------------------------------
@@ -484,6 +487,18 @@ export async function generateEmployeePayslipCore(
             .where(eq(salaryAdvances.id, adv.id));
         }
       }
+    }
+
+    // 8e. Pay out accrued commission records for linked order booker
+    if (linkedOrderBooker && commissionIdsToPay.length > 0) {
+      await tx
+        .update(commissionRecords)
+        .set({
+          status: "paid",
+          paidInPayslipId: slip.id,
+          updatedAt: new Date(),
+        })
+        .where(inArray(commissionRecords.id, commissionIdsToPay));
     }
 
     return slip;

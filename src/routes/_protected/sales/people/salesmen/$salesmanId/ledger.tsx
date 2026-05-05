@@ -1,5 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useParams, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { type DateRange } from "react-day-picker";
@@ -25,19 +24,18 @@ import {
   ArrowUpRight,
   Wallet,
   Package,
+  Store,
 } from "lucide-react";
 import { formatPKR } from "@/lib/currency-format";
-import { getSalesmanShopLedgerFn } from "@/server-functions/sales/ledger-fn";
+import { generateSalesmanLedgerFn } from "@/server-functions/sales/ledger-fn";
 import { PrintExportToolbar } from "@/components/sales/ledger-print-export";
 
-export const Route = createFileRoute("/_protected/sales/people/salesmen/$salesmanId/shops/$customerId")({
-  component: PerShopLedgerPage,
+export const Route = createFileRoute("/_protected/sales/people/salesmen/$salesmanId/ledger")({
+  component: SalesmanLedgerPage,
 });
 
-function PerShopLedgerPage() {
-  const { salesmanId, customerId } = useParams({
-    from: "/_protected/sales/people/salesmen/$salesmanId/shops/$customerId",
-  });
+function SalesmanLedgerPage() {
+  const { salesmanId } = Route.useParams();
   const router = useRouter();
 
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -49,10 +47,10 @@ function PerShopLedgerPage() {
   const dateTo = dateRange.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["salesman-shop-ledger", salesmanId, customerId, dateFrom, dateTo],
+    queryKey: ["salesman-ledger", salesmanId, dateFrom, dateTo],
     queryFn: () =>
-      getSalesmanShopLedgerFn({
-        data: { salesmanId, customerId, dateFrom, dateTo },
+      generateSalesmanLedgerFn({
+        data: { salesmanId, dateFrom, dateTo },
       }),
   });
 
@@ -82,7 +80,7 @@ function PerShopLedgerPage() {
 
   if (!data) return null;
 
-  const { salesman, customer, entries, closingBalance, periodTotalSales, periodTotalCredit, periodTotalCash, periodPayments, invoiceCount } = data;
+  const { salesman, entries, closingBalance, periodTotalSales, periodTotalCredit, periodTotalCash, periodPayments, invoiceCount } = data;
 
   return (
     <div className="space-y-6">
@@ -93,14 +91,14 @@ function PerShopLedgerPage() {
           Back
         </Button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight truncate">{customer.name}</h1>
+          <h1 className="text-2xl font-bold tracking-tight truncate">{salesman.name}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Salesman: {salesman.name} · {customer.city || "—"}
+            Salesman Ledger · {invoiceCount} invoice{invoiceCount !== 1 ? "s" : ""}
           </p>
         </div>
         <PrintExportToolbar
-          title="Shop Ledger"
-          subtitle={`${customer.name} — ${salesman.name}`}
+          title="Salesman Ledger"
+          subtitle={salesman.name}
           periodLabel={`${dateFrom || "All"} to ${dateTo || "All"}`}
           entries={entries}
           summary={{
@@ -115,6 +113,7 @@ function PerShopLedgerPage() {
             { key: "date", label: "Date", format: (v: any) => format(new Date(v), "dd MMM yyyy") },
             { key: "type", label: "Type", format: (v: any) => v === "invoice" ? "Invoice" : "Payment" },
             { key: "slipNumber", label: "Reference", format: (v: any, e: any) => e.type === "invoice" ? `Inv #${v || "—"}` : `${e.method}${v ? ` — ${v}` : ""}` },
+            { key: "customerName", label: "Customer", format: (v: any) => v || "—" },
             { key: "totalPrice", label: "Debit", format: (v: any, e: any) => e.type === "invoice" ? formatPKR(Number(v || 0), false) : "—" },
             { key: "amount", label: "Credit", format: (v: any, e: any) => e.type === "payment" ? formatPKR(Number(v || 0), false) : "—" },
             { key: "runningBalance", label: "Balance", format: (v: any) => formatPKR(Number(v || 0), false) },
@@ -158,6 +157,7 @@ function PerShopLedgerPage() {
               <TableHead className="text-[11px]">Date</TableHead>
               <TableHead className="text-[11px]">Type</TableHead>
               <TableHead className="text-[11px]">Reference</TableHead>
+              <TableHead className="text-[11px]">Customer</TableHead>
               <TableHead className="text-[11px] text-right">Debit</TableHead>
               <TableHead className="text-[11px] text-right">Credit</TableHead>
               <TableHead className="text-[11px] text-right">Balance</TableHead>
@@ -166,7 +166,7 @@ function PerShopLedgerPage() {
           <TableBody>
             {entries.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-10 text-sm">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-10 text-sm">
                   No ledger entries for the selected period.
                 </TableCell>
               </TableRow>
@@ -199,6 +199,12 @@ function PerShopLedgerPage() {
                         {entry.reference || entry.method}
                       </span>
                     )}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    <span className="flex items-center gap-1">
+                      <Store className="size-3 text-muted-foreground" />
+                      {entry.customerName || "—"}
+                    </span>
                   </TableCell>
                   <TableCell className="text-sm text-right tabular-nums">
                     {entry.type === "invoice" ? (

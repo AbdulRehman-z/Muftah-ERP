@@ -249,6 +249,18 @@ export const requireIntegrityAlertsMiddleware = createPermissionMiddleware(
 export const requireAuditExportMiddleware = createPermissionMiddleware(
   "manufacturing.audit.export",
 );
+export const requireReportsViewMiddleware = createPermissionMiddleware(
+  "reports.view",
+);
+export const requireOrderBookerViewMiddleware = createPermissionMiddleware(
+  "order-booker.view",
+);
+export const requireOrderBookerOrdersManageMiddleware = createPermissionMiddleware(
+  "order-booker.orders.manage",
+);
+export const requireOrderBookerTripsManageMiddleware = createPermissionMiddleware(
+  "order-booker.trips.manage",
+);
 
 export const requireNoAuthMiddleware = createMiddleware()
   .middleware([authContextMiddleware])

@@ -924,6 +924,35 @@ export const OperatorIcon = ({ className, isActive }: IconProps) => (
   </svg>
 );
 
+export const OrderBookerIcon = ({ className, isActive }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <rect
+      x="4"
+      y="3"
+      width="16"
+      height="18"
+      rx="2"
+      stroke="currentColor"
+      strokeWidth="1.6"
+    />
+    <path
+      d="M8 8h8M8 12h8M8 16h5"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      style={{
+        animation: isActive ? "obPulse 1.6s ease-in-out infinite" : "none",
+      }}
+    />
+    <style>{`@keyframes obPulse { 0%,100%{opacity:1} 50%{opacity:.5} }`}</style>
+  </svg>
+);
+
 // ── User Management ───────────────────────────────────────────────────────────
 export const UserMgmtIcon = ({ className, isActive }: IconProps) => (
   <svg
@@ -950,6 +979,52 @@ export const UserMgmtIcon = ({ className, isActive }: IconProps) => (
       }}
     />
     <style>{`@keyframes shieldPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.3);opacity:.5} }`}</style>
+  </svg>
+);
+
+// ── Reports ───────────────────────────────────────────────────────────────────
+export const ReportsIcon = ({ className, isActive }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M14 2v6h6"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M8 13h8"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      style={{
+        animation: isActive ? "writeLine 1.4s ease-in-out infinite" : "none",
+        transformOrigin: "8px 13px",
+      }}
+    />
+    <path
+      d="M8 17h5"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      style={{
+        animation: isActive
+          ? "writeLine 1.4s 0.4s ease-in-out infinite"
+          : "none",
+        transformOrigin: "8px 17px",
+      }}
+    />
+    <style>{`@keyframes writeLine { 0%{clip-path:inset(0 100% 0 0)} 60%,100%{clip-path:inset(0 0% 0 0)} }`}</style>
   </svg>
 );
 

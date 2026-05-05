@@ -5,6 +5,7 @@ export const SYSTEM_ROLE_SLUGS = [
   "admin",
   "finance-manager",
   "operator",
+  "order-booker",
 ] as const;
 
 export type SystemRoleSlug = (typeof SYSTEM_ROLE_SLUGS)[number];
@@ -20,6 +21,7 @@ export const MODULE_KEYS = [
   "operator",
   "user-management",
   "rbac",
+  "reports",
 ] as const;
 
 export type ModuleKey = (typeof MODULE_KEYS)[number];
@@ -77,6 +79,10 @@ export const PERMISSION_KEYS = [
   "user-management.view",
   "user-management.users.manage",
   "user-management.roles.manage",
+  "reports.view",
+  "order-booker.view",
+  "order-booker.orders.manage",
+  "order-booker.trips.manage",
 ] as const;
 
 export type PermissionKey = (typeof PERMISSION_KEYS)[number];
@@ -472,6 +478,36 @@ export const PERMISSION_DEFINITIONS: PermissionDefinition[] = [
     description: "Create, update, archive, and delete roles and permissions.",
     kind: "action",
   },
+  {
+    key: "reports.view",
+    moduleKey: "reports",
+    label: "View reports",
+    description: "Open the reports module and generate operational reports.",
+    kind: "route",
+    routePattern: "/reports",
+  },
+  {
+    key: "order-booker.view",
+    moduleKey: "sales",
+    label: "Access order booker portal",
+    description: "Open the self-service order booker portal.",
+    kind: "route",
+    routePattern: "/order-booker",
+  },
+  {
+    key: "order-booker.orders.manage",
+    moduleKey: "sales",
+    label: "Manage own orders",
+    description: "Create and view own orders in the portal.",
+    kind: "action",
+  },
+  {
+    key: "order-booker.trips.manage",
+    moduleKey: "sales",
+    label: "Manage own trips",
+    description: "Log and view own trips in the portal.",
+    kind: "action",
+  },
 ];
 
 export const PERMISSION_DEFINITION_MAP = Object.fromEntries(
@@ -538,6 +574,7 @@ export const SYSTEM_ROLE_SEEDS: AppRoleSeed[] = [
       "operator.run.log",
       "operator.run.complete",
       "operator.run.fail",
+      "reports.view",
     ],
   },
   {
@@ -580,6 +617,21 @@ export const SYSTEM_ROLE_SEEDS: AppRoleSeed[] = [
       "operator.run.fail",
     ],
   },
+  {
+    slug: "order-booker",
+    name: "Order Booker",
+    description: "Self-service portal for order bookers to manage orders, trips, and view commissions.",
+    isSystem: true,
+    isArchived: false,
+    priority: 10,
+    defaultLandingPath: "/order-booker",
+    permissionKeys: [
+      "order-booker.view",
+      "order-booker.orders.manage",
+      "order-booker.trips.manage",
+      "sales.orders.view",
+    ],
+  },
 ];
 
 export const LEGACY_ROLE_FALLBACKS: Record<string, SystemRoleSlug> = {
@@ -587,6 +639,7 @@ export const LEGACY_ROLE_FALLBACKS: Record<string, SystemRoleSlug> = {
   admin: "admin",
   "finance-manager": "finance-manager",
   operator: "operator",
+  "order-booker": "order-booker",
 };
 
 export const ROUTE_PERMISSION_RULES: Array<{
@@ -657,6 +710,14 @@ export const ROUTE_PERMISSION_RULES: Array<{
     matcher: /^\/user-management(?:\/.*)?$/,
     permissions: ["user-management.view", "user-management.roles.manage"],
   },
+  {
+    matcher: /^\/reports(?:\/.*)?$/,
+    permissions: ["reports.view"],
+  },
+  {
+    matcher: /^\/order-booker(?:\/.*)?$/,
+    permissions: ["order-booker.view"],
+  },
 ];
 
 export const MODULE_PERMISSION_GROUPS: Record<
@@ -681,6 +742,7 @@ export const MODULE_PERMISSION_GROUPS: Record<
     accent: "fuchsia",
   },
   rbac: { manage: "user-management.roles.manage", accent: "indigo" },
+  reports: { view: "reports.view", accent: "teal" },
 };
 
 export const ROLE_BADGE_STYLES: Record<string, string> = {
@@ -711,6 +773,7 @@ export const LANDING_PATH_OPTIONS = [
   "/hr/approvals",
   "/hr/payroll",
   "/operator",
+  "/reports",
 ] as const;
 
 export function normalizePathname(pathname: string) {

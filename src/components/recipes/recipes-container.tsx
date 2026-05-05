@@ -1,6 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
 import { useState, useEffect } from "react";
+import { startOfMonth, endOfMonth } from "date-fns";
+import type { DateRange } from "react-day-picker";
 import { getRecipesFn } from "@/server-functions/inventory/recipes/get-recipe-fn";
 import { getProductsFn } from "@/server-functions/inventory/get-products-fn";
 import { GenericEmpty } from "../custom/empty";
@@ -12,6 +14,9 @@ import { CreateRecipeForm } from "./create-recipe-from";
 import { AddProductDialog } from "./add-product-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { ProductsTable } from "./products-table";
+import { DatePickerWithRange } from "../custom/date-range-picker";
+import { ProductKpiCards } from "./product-kpi-cards";
+import { useProductSalesKpis } from "@/hooks/inventory/use-product-sales-kpis";
 import { getRouteApi } from "@tanstack/react-router";
 
 const route = getRouteApi("/_protected/manufacturing/recipes/");
@@ -26,6 +31,10 @@ export const RecipesContainer = () => {
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [isAddProductOpen, setAddProductOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+  });
 
   const { data: recipes } = useSuspenseQuery({
     queryKey: ["recipes"],
@@ -45,6 +54,10 @@ export const RecipesContainer = () => {
     queryKey: ["products"],
     queryFn: getProductsFn,
   });
+
+  const { data: kpiData, isLoading: kpiLoading } = useProductSalesKpis(
+    activeTab === "products" ? dateRange : undefined,
+  );
 
   // Handle View Transitions
   if (isCreating || editingRecipe) {
@@ -145,12 +158,20 @@ export const RecipesContainer = () => {
                 </div>
                 <Button
                   onClick={() => setIsCreating(true)}
-                  // className="h-11 rounded-xl font-black uppercase  text-[11px] gap-2  shadow-primary/10 transition-all active:scale-95 shrink-0"
                 >
                   <PlusIcon className="size-4" />
                   Create Recipe
                 </Button>
               </>
+            )}
+            {activeTab === "products" && (
+              <DatePickerWithRange
+                date={dateRange}
+                onDateChange={(d) =>
+                  setDateRange(d ?? { from: startOfMonth(new Date()), to: endOfMonth(new Date()) })
+                }
+                className="w-full sm:w-72"
+              />
             )}
           </div>
         </div>
@@ -184,8 +205,14 @@ export const RecipesContainer = () => {
 
         <TabsContent
           value="products"
-          className="border-none p-0 mt-0 focus-visible:ring-0"
+          className="border-none p-0 mt-0 focus-visible:ring-0 space-y-6"
         >
+          <ProductKpiCards
+            totalCartons={kpiData?.overall.totalCartons ?? 0}
+            totalUnits={kpiData?.overall.totalUnits ?? 0}
+            totalRevenue={kpiData?.overall.totalRevenue ?? 0}
+            isLoading={kpiLoading}
+          />
           <ProductsTable products={products as any} />
         </TabsContent>
       </Tabs>

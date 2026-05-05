@@ -305,6 +305,52 @@ export const createOrderBookerFn = createServerFn()
     return inserted;
   });
 
+export const linkOrderBookerToUserFn = createServerFn()
+  .middleware([requireSalesPeopleManageMiddleware])
+  .inputValidator((input: any) =>
+    z
+      .object({
+        orderBookerId: z.string().min(1),
+        userId: z.string().nullable(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const ob = await db.query.orderBookers.findFirst({
+      where: eq(orderBookers.id, data.orderBookerId),
+    });
+    if (!ob) throw new Error("Order booker not found");
+
+    await db
+      .update(orderBookers)
+      .set({ userId: data.userId })
+      .where(eq(orderBookers.id, data.orderBookerId));
+
+    return { success: true };
+  });
+
+export const getOrderBookerEligibleUsersFn = createServerFn()
+  .middleware([requireSalesPeopleManageMiddleware])
+  .handler(async () => {
+    const { userRoleAssignments, appRoles, user: userTable } = await import("@/db");
+
+    const obRole = await db.query.appRoles.findFirst({
+      where: eq(appRoles.slug, "order-booker"),
+    });
+    if (!obRole) return [];
+
+    const assignments = await db.query.userRoleAssignments.findMany({
+      where: eq(userRoleAssignments.roleId, obRole.id),
+      with: { user: true },
+    });
+
+    return assignments.map((a) => ({
+      id: a.userId,
+      name: a.user?.name || "—",
+      email: a.user?.email || "—",
+    }));
+  });
+
 export const updateOrderBookerFn = createServerFn()
   .middleware([requireSalesManageMiddleware])
   .inputValidator((input: any) => updateOrderBookerSchema.parse(input))

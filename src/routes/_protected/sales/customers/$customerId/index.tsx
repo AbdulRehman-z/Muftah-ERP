@@ -34,6 +34,7 @@ import {
   FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PrintExportToolbar } from "@/components/sales/ledger-print-export";
 
 const PKR = (v: number) =>
   `PKR ${v.toLocaleString("en-PK", { minimumFractionDigits: 2 })}`;
@@ -186,9 +187,66 @@ function CustomerLedgerPage() {
             )}
           </div>
         </div>
-        <Button onClick={() => setPaymentDialogOpen(true)} size="sm">
-          Record Payment
-        </Button>
+        <div className="flex items-center gap-2">
+          <PrintExportToolbar
+            title="Customer Ledger"
+            subtitle={customer.name}
+            periodLabel={`${dateFrom || "All"} to ${dateTo || "All"}`}
+            entries={(() => {
+              const raw = [
+                ...invoices.map((inv: any) => ({
+                  type: "invoice" as const,
+                  date: inv.date,
+                  description: `Invoice #${inv.slipNumber || ""}`,
+                  warehouse: inv.warehouse?.name || "—",
+                  total: Number(inv.totalPrice),
+                  cash: Number(inv.cash),
+                  credit: Number(inv.credit),
+                })),
+                ...(paymentsData?.data || []).map((p: any) => ({
+                  type: "payment" as const,
+                  date: p.paymentDate,
+                  description: `Payment (${p.method})`,
+                  warehouse: "—",
+                  total: 0,
+                  cash: 0,
+                  credit: 0,
+                  paymentAmount: Number(p.amount),
+                })),
+              ].sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+              let balance = 0;
+              return raw.map((entry: any) => {
+                if (entry.type === "invoice") {
+                  balance += entry.credit;
+                } else {
+                  balance = Math.max(0, balance - (entry.paymentAmount || 0));
+                }
+                return { ...entry, balance };
+              });
+            })()}
+            summary={{
+              periodRevenue,
+              periodCash,
+              periodCredit,
+              outstandingCredit,
+              invoiceCount: total,
+              paymentCount: paymentsData?.total || 0,
+            }}
+            columns={[
+              { key: "date", label: "Date", format: (v: any) => format(new Date(v), "dd MMM yyyy") },
+              { key: "type", label: "Type", format: (v: any) => v === "invoice" ? "Invoice" : "Payment" },
+              { key: "description", label: "Description" },
+              { key: "warehouse", label: "Warehouse" },
+              { key: "total", label: "Total", format: (v: any) => PKR(Number(v || 0)) },
+              { key: "cash", label: "Cash", format: (v: any) => PKR(Number(v || 0)) },
+              { key: "credit", label: "Credit", format: (v: any) => PKR(Number(v || 0)) },
+              { key: "balance", label: "Balance", format: (v: any) => PKR(Number(v || 0)) },
+            ]}
+          />
+          <Button onClick={() => setPaymentDialogOpen(true)} size="sm">
+            Record Payment
+          </Button>
+        </div>
       </div>
 
       {/* ── Balance + next due date row ── */}

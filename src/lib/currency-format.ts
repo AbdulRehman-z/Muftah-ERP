@@ -57,6 +57,34 @@ export function formatPKR(value: number | string, useCompact = true): string {
 }
 
 /**
+ * Formats a number with thousand separators for reports.
+ * 10000 => "10,000"
+ * 10000.5 => "10,000.50"
+ * 5000.000 => "5,000" (trims trailing zeros)
+ */
+export function formatNumber(value: number | string, decimals = 0): string {
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(num)) return "0";
+
+  const hasDecimals = num % 1 !== 0;
+  const d = hasDecimals && decimals === 0 ? 2 : decimals;
+
+  return num.toLocaleString("en-PK", {
+    minimumFractionDigits: d,
+    maximumFractionDigits: d,
+  });
+}
+
+/**
+ * Formats a quantity with its unit for reports.
+ * 10000, "kg" => "10,000 kg"
+ */
+export function formatQuantity(value: number | string, unit?: string): string {
+  const numStr = formatNumber(value);
+  return unit ? `${numStr} ${unit}` : numStr;
+}
+
+/**
  * Parses Pakistani formatted number back to decimal
  * "1.5K" => 1500
  * "2L" => 200000

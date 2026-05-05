@@ -10,15 +10,6 @@ export async function calculateCommissionForOrder(
 ) {
   const dbOrTx = tx || db;
 
-  // Guard: skip if commission record already exists for this order
-  const existing = await dbOrTx.query.commissionRecords.findFirst({
-    where: and(
-      eq(commissionRecords.orderBookerId, orderBookerId),
-      eq(commissionRecords.orderId, orderId),
-    ),
-  });
-  if (existing) return existing;
-
   const tiers = await dbOrTx.query.commissionTiers.findMany({
     where: eq(commissionTiers.isActive, true),
     orderBy: [commissionTiers.minAmount],
@@ -54,7 +45,9 @@ export async function calculateCommissionForOrder(
     }
   }
 
-  const [record] = await dbOrTx
+  // Upsert with conflict resolution — unique index on (orderBookerId, orderId)
+  // prevents duplicate records under concurrent fulfillment
+  await dbOrTx
     .insert(commissionRecords)
     .values({
       orderBookerId,
@@ -64,7 +57,17 @@ export async function calculateCommissionForOrder(
       commissionAmount: totalCommission.toFixed(2),
       status: "accrued",
     })
-    .returning();
+    .onConflictDoNothing({
+      target: [commissionRecords.orderBookerId, commissionRecords.orderId],
+    });
+
+  // Return the record (either newly inserted or pre-existing)
+  const record = await dbOrTx.query.commissionRecords.findFirst({
+    where: and(
+      eq(commissionRecords.orderBookerId, orderBookerId),
+      eq(commissionRecords.orderId, orderId),
+    ),
+  });
 
   return record;
 }

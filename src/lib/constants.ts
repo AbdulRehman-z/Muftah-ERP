@@ -21,12 +21,14 @@ import {
   PayrollIcon,
   ProductionRunIcon,
   RecipesIcon,
+  ReportsIcon,
   SalesIcon,
   SettingsIcon,
   SuppliersIcon,
   UserMgmtIcon,
   UtilitiesIcon,
   WarehouseIcon,
+  OrderBookerIcon,
 } from "@/components/custom/nav-icons";
 
 import type { IconProps } from "@/components/custom/nav-icons";
@@ -158,6 +160,11 @@ export const navigations: NavigationItem[] = [
     ],
   },
   {
+    title: "Reports",
+    url: "/reports",
+    icon: ReportsIcon,
+  },
+  {
     title: "HR & Payroll",
     url: "/hr",
     icon: HRIcon,
@@ -188,6 +195,34 @@ export const navigations: NavigationItem[] = [
     title: "Operator Interface",
     url: "/operator",
     icon: OperatorIcon,
+  },
+  {
+    title: "Order Booker Portal",
+    url: "/order-booker",
+    icon: OrderBookerIcon,
+    items: [
+      {
+        title: "Dashboard",
+        url: "/order-booker",
+        icon: DashboardIcon,
+        exact: true,
+      },
+      {
+        title: "My Orders",
+        url: "/order-booker/orders",
+        icon: InvoiceIcon,
+      },
+      {
+        title: "My Trips",
+        url: "/order-booker/trips",
+        icon: FactoryFloorIcon,
+      },
+      {
+        title: "My Commission",
+        url: "/order-booker/commission",
+        icon: LedgerIcon,
+      },
+    ],
   },
   {
     title: "User Management",

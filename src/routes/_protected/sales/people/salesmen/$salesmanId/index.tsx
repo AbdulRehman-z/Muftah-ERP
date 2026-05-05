@@ -14,7 +14,7 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import { ChevronLeft, AlertCircle, BookOpen } from "lucide-react";
+import { ChevronLeft, AlertCircle, BookOpen, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { getSalesmanSummaryFn } from "@/server-functions/sales/ledger-fn";
@@ -87,6 +87,20 @@ function SalesmanProfilePage() {
             {salesman.phone || "—"}
           </p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() =>
+            router.navigate({
+              to: "/sales/people/salesmen/$salesmanId/ledger",
+              params: { salesmanId },
+            })
+          }
+        >
+          <FileText className="size-4" />
+          View Ledger
+        </Button>
       </div>
 
       {/* Filters */}

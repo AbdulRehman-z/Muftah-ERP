@@ -202,6 +202,7 @@ export const orderBookers = pgTable("order_bookers", {
   assignedArea: text("assigned_area"),
   commissionRate: decimal("commission_rate", { precision: 5, scale: 2 }).default("0"),
   employeeId: text("employee_id"), // nullable link to HR employees for payroll
+  userId: text("user_id"), // links to auth user for self-service login
   status: text("status").notNull().default("active"), // "active" | "inactive"
   ...timestamps,
 });

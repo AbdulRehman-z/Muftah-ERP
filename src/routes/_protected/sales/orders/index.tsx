@@ -10,13 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DatePickerWithRange } from "@/components/custom/date-range-picker";
 import { useState } from "react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import { Plus, Search, CheckCircle } from "lucide-react";
-import { useGetOrders, useCreateOrder, useFulfillOrder } from "@/hooks/sales/use-orders";
+import { Search, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
+import { useGetOrders, useFulfillOrder } from "@/hooks/sales/use-orders";
 import { useGetSalesmen } from "@/hooks/sales/use-sales-people";
 import { useGetOrderBookers } from "@/hooks/sales/use-sales-people";
-import { getProductsFn } from "@/server-functions/sales/sales-config-fn";
-import { useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { CreateOrderPadDialog } from "@/components/sales/create-order-pad-dialog";
 import type { DateRange } from "react-day-picker";
 
 export const Route = createFileRoute("/_protected/sales/orders/")({
@@ -55,7 +54,7 @@ function OrdersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Orders</h1>
-        <CreateOrderDialog orderBookers={orderBookers || []} />
+        <CreateOrderPadDialog orderBookers={orderBookers || []} />
       </div>
 
       {/* Filters */}
@@ -230,119 +229,4 @@ function OrderRow({ order, salesmen }: { order: any; salesmen: any[] }) {
   );
 }
 
-function CreateOrderDialog({ orderBookers }: { orderBookers: any[] }) {
-  const [open, setOpen] = useState(false);
-  const create = useCreateOrder();
-  const { data: products } = useQuery({ queryKey: ["products"], queryFn: () => getProductsFn({ data: {} }) });
-  const [form, setForm] = useState({
-    orderBookerId: "",
-    shopkeeperName: "",
-    shopkeeperMobile: "",
-    shopkeeperAddress: "",
-    productId: "",
-    quantity: "",
-    rate: "",
-    notes: "",
-  });
 
-  const handleSubmit = () => {
-    if (!form.orderBookerId || !form.shopkeeperName) {
-      toast.error("Order booker and shopkeeper name are required");
-      return;
-    }
-    if (!form.productId || !form.quantity || !form.rate) {
-      toast.error("Product, quantity, and rate are required");
-      return;
-    }
-    create.mutate(
-      {
-        data: {
-          orderBookerId: form.orderBookerId,
-          shopkeeperName: form.shopkeeperName,
-          shopkeeperMobile: form.shopkeeperMobile || undefined,
-          shopkeeperAddress: form.shopkeeperAddress || undefined,
-          items: [
-            {
-              productId: form.productId,
-              unitType: "full_carton" as const,
-              quantity: Number(form.quantity),
-              rate: Number(form.rate),
-            },
-          ],
-          notes: form.notes || undefined,
-        },
-      },
-      {
-        onSuccess: () => {
-          setOpen(false);
-          toast.success("Order created");
-          setForm({ orderBookerId: "", shopkeeperName: "", shopkeeperMobile: "", shopkeeperAddress: "", productId: "", quantity: "", rate: "", notes: "" });
-        },
-      },
-    );
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm"><Plus className="size-4 mr-1.5" />New Order</Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader><DialogTitle>Create Order</DialogTitle></DialogHeader>
-        <div className="space-y-4 pt-2">
-          <div className="space-y-1.5">
-            <Label>Order Booker</Label>
-            <Select value={form.orderBookerId} onValueChange={(v) => setForm((f) => ({ ...f, orderBookerId: v }))}>
-              <SelectTrigger><SelectValue placeholder="Select order booker" /></SelectTrigger>
-              <SelectContent>
-                {orderBookers.map((ob) => (
-                  <SelectItem key={ob.id} value={ob.id}>{ob.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Shopkeeper Name</Label>
-            <Input value={form.shopkeeperName} onChange={(e) => setForm((f) => ({ ...f, shopkeeperName: e.target.value }))} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Mobile</Label>
-              <Input value={form.shopkeeperMobile} onChange={(e) => setForm((f) => ({ ...f, shopkeeperMobile: e.target.value }))} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Address</Label>
-              <Input value={form.shopkeeperAddress} onChange={(e) => setForm((f) => ({ ...f, shopkeeperAddress: e.target.value }))} />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Product</Label>
-            <Select value={form.productId} onValueChange={(v) => setForm((f) => ({ ...f, productId: v }))}>
-              <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
-              <SelectContent>
-                {(products || []).map((p: any) => (
-                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Quantity</Label>
-              <Input type="number" value={form.quantity} onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Rate (PKR)</Label>
-              <Input type="number" value={form.rate} onChange={(e) => setForm((f) => ({ ...f, rate: e.target.value }))} />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Notes</Label>
-            <Input value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
-          </div>
-          <Button className="w-full" onClick={handleSubmit} disabled={create.isPending}>Create Order</Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}

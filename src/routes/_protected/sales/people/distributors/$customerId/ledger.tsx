@@ -14,10 +14,11 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import { ChevronLeft, AlertCircle, Printer } from "lucide-react";
+import { ChevronLeft, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateDistributorLedgerFn } from "@/server-functions/sales/ledger-fn";
 import { useQuery } from "@tanstack/react-query";
+import { PrintExportToolbar } from "@/components/sales/ledger-print-export";
 
 const PKR = (v: number) =>
   `PKR ${v.toLocaleString("en-PK", { minimumFractionDigits: 2 })}`;
@@ -45,76 +46,6 @@ function DistributorLedgerPage() {
         data: { customerId, dateFrom, dateTo },
       }),
   });
-
-  const handlePrint = () => {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-
-    const html = `
-      <html>
-        <head>
-          <title>Distributor Ledger - ${data?.customer?.name || ""}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 12px; }
-            th { background: #f5f5f5; }
-            .text-right { text-align: right; }
-            .header { margin-bottom: 16px; }
-            .header h2 { margin: 0; font-size: 18px; }
-            .meta { color: #666; font-size: 12px; margin-top: 4px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h2>Distributor Ledger</h2>
-            <div class="meta">
-              ${data?.customer?.name || ""} | Period: ${dateFrom || "All"} to ${dateTo || "All"}
-            </div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Description</th>
-                <th class="text-right">Debit</th>
-                <th class="text-right">Credit</th>
-                <th class="text-right">Balance</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${data?.entries
-                ?.map(
-                  (entry: any) => `
-                <tr>
-                  <td>${format(new Date(entry.date), "dd MMM yyyy")}</td>
-                  <td>
-                    ${entry.type === "invoice" ? `Invoice #${entry.slipNumber || ""}` : `Payment (${entry.method})`}
-                    ${entry.warehouseName ? ` — ${entry.warehouseName}` : ""}
-                  </td>
-                  <td class="text-right">${entry.type === "invoice" ? PKR(entry.totalPrice) : "—"}</td>
-                  <td class="text-right">${entry.type === "payment" ? PKR(entry.amount) : "—"}</td>
-                  <td class="text-right">${PKR(entry.runningBalance)}</td>
-                </tr>
-              `
-                )
-                .join("")}
-            </tbody>
-          </table>
-          <div style="margin-top: 16px; font-size: 12px; color: #666;">
-            Closing Balance: ${PKR(data?.closingBalance || 0)}
-          </div>
-        </body>
-      </html>
-    `;
-
-    printWindow.document.write(html);
-    printWindow.document.close();
-    setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-    }, 400);
-  };
 
   if (isLoading) {
     return (
@@ -160,12 +91,25 @@ function DistributorLedgerPage() {
           </div>
           <p className="text-sm text-muted-foreground mt-1">Distributor Ledger</p>
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={handlePrint}>
-            <Printer className="size-4 mr-1.5" />
-            Print
-          </Button>
-        </div>
+        <PrintExportToolbar
+          title="Distributor Ledger"
+          subtitle={customer.name}
+          periodLabel={`${dateFrom || "All"} to ${dateTo || "All"}`}
+          entries={entries}
+          summary={{
+            periodTotalSales,
+            periodPayments,
+            closingBalance,
+            invoiceCount: entries.length,
+          }}
+          columns={[
+            { key: "date", label: "Date", format: (v: any) => format(new Date(v), "dd MMM yyyy") },
+            { key: "type", label: "Type", format: (v: any, e: any) => v === "invoice" ? `Invoice #${e.slipNumber || ""}` : `Payment (${e.method})` },
+            { key: "totalPrice", label: "Debit", format: (v: any, e: any) => e.type === "invoice" ? PKR(Number(v || 0)) : "—" },
+            { key: "amount", label: "Credit", format: (v: any, e: any) => e.type === "payment" ? PKR(Number(v || 0)) : "—" },
+            { key: "runningBalance", label: "Balance", format: (v: any) => PKR(Number(v || 0)) },
+          ]}
+        />
       </div>
 
       {/* Filters */}

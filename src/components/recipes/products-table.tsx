@@ -1,4 +1,5 @@
-import { Trash2, ArrowUpDown, Plus, Pencil } from "lucide-react";
+import { Trash2, ArrowUpDown, Plus, Pencil, Eye } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "../ui/button";
 import { useState, useMemo } from "react";
 import { useProductActions } from "@/hooks/inventory/use-product-actions";
@@ -31,6 +32,7 @@ type ProductsTableProps = {
 };
 
 export const ProductsTable = ({ products }: ProductsTableProps) => {
+  const navigate = useNavigate();
   const [addProductOpen, setAddProductOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -120,6 +122,16 @@ export const ProductsTable = ({ products }: ProductsTableProps) => {
         id: "actions",
         cell: ({ row }) => (
           <div className="flex justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7 text-blue-500 hover:bg-blue-50 hover:text-blue-600 rounded-md transition-colors"
+              onClick={() => {
+                navigate({ to: `/manufacturing/products/${row.original.id}` });
+              }}
+            >
+              <Eye className="size-3.5" />
+            </Button>
             <Button
               variant="ghost"
               size="icon"

@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { useForm } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createInvoiceSchema } from "@/db/zod_schemas";
 import { Button } from "@/components/ui/button";
@@ -289,7 +289,7 @@ export const CreateInvoiceForm = ({ onSuccess, onCancel, onDirtyChange, initialD
         e.target.select();
     }, []);
 
-    const selectedCustomerId = form.useStore((s) => s.values.customerId);
+    const selectedCustomerId = useStore(form.store, (s) => s.values.customerId);
     const selectedCustomerData = useMemo(() => {
         if (!selectedCustomerId || !customers) return null;
         return customers.find((c: any) => c.id === selectedCustomerId) || null;

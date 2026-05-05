@@ -16,6 +16,7 @@ import {
   sql,
   sum,
   count,
+  inArray,
 } from "drizzle-orm";
 import { parseISO, isValid } from "date-fns";
 
@@ -253,8 +254,6 @@ export const getShopkeeperLedgerFn = createServerFn()
             quantity: true,
             perCartonPrice: true,
             amount: true,
-            tpPrice: true,
-            marginPercent: true,
             isPriceOverride: true,
             priceAgreementId: true,
           },
@@ -353,7 +352,7 @@ export const getSalesmanSummaryFn = createServerFn()
       };
     }
 
-    const conditions = [sql`${invoices.customerId} = ANY(${customerIds})`];
+    const conditions = [inArray(invoices.customerId, customerIds)];
     if (data.dateFrom) {
       const f = parseISO(data.dateFrom);
       if (isValid(f)) conditions.push(gte(invoices.date, f));
@@ -391,6 +390,373 @@ export const getSalesmanSummaryFn = createServerFn()
       totalCredit: Number(agg.totalCredit) || 0,
       totalCash: Number(agg.totalCash) || 0,
       outstandingBalance: totalOutstanding,
+      invoiceCount: Number(agg.invoiceCount) || 0,
+    };
+  });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SALESMAN LEDGER
+// All invoices + payments across all customers assigned to a salesman.
+// Chronological running balance.
+// ═══════════════════════════════════════════════════════════════════════════
+export const generateSalesmanLedgerFn = createServerFn()
+  .middleware([requireSalesViewMiddleware])
+  .inputValidator((input: any) =>
+    z
+      .object({
+        salesmanId: z.string(),
+        dateFrom: z.string().optional(),
+        dateTo: z.string().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const salesman = await db.query.salesmen.findFirst({
+      where: eq(salesmen.id, data.salesmanId),
+    });
+    if (!salesman) throw new Error("Salesman not found");
+
+    const linkedCustomers = await db.query.customers.findMany({
+      where: eq(customers.salesmanId, data.salesmanId),
+      columns: { id: true, name: true },
+    });
+    const customerIds = linkedCustomers.map((c) => c.id);
+
+    if (customerIds.length === 0) {
+      return {
+        salesman,
+        entries: [],
+        openingBalance: 0,
+        closingBalance: 0,
+        periodTotalSales: 0,
+        periodTotalCash: 0,
+        periodTotalCredit: 0,
+        periodPayments: 0,
+        invoiceCount: 0,
+      };
+    }
+
+    // Invoices for these customers (optionally scoped to salesman)
+    const invConditions = [inArray(invoices.customerId, customerIds)];
+    if (data.dateFrom) {
+      const f = parseISO(data.dateFrom);
+      if (isValid(f)) invConditions.push(gte(invoices.date, f));
+    }
+    if (data.dateTo) {
+      const t = parseISO(data.dateTo);
+      if (isValid(t)) invConditions.push(lte(invoices.date, t));
+    }
+
+    const invoiceRows = await db.query.invoices.findMany({
+      where: and(...invConditions),
+      with: {
+        customer: { columns: { name: true } },
+        warehouse: { columns: { name: true } },
+      },
+      orderBy: [asc(invoices.date)],
+    });
+
+    // Payments for these customers
+    const payConditions = [inArray(payments.customerId, customerIds)];
+    if (data.dateFrom) {
+      const f = parseISO(data.dateFrom);
+      if (isValid(f)) payConditions.push(gte(payments.paymentDate, f));
+    }
+    if (data.dateTo) {
+      const t = parseISO(data.dateTo);
+      if (isValid(t)) payConditions.push(lte(payments.paymentDate, t));
+    }
+
+    const paymentRows = await db.query.payments.findMany({
+      where: and(...payConditions),
+      orderBy: [asc(payments.paymentDate)],
+      columns: {
+        id: true,
+        amount: true,
+        method: true,
+        reference: true,
+        notes: true,
+        paymentDate: true,
+        customerId: true,
+      },
+    });
+
+    // Build customer name map for payment entries
+    const customerMap = new Map(linkedCustomers.map((c) => [c.id, c.name]));
+
+    type LedgerEntry =
+      | {
+          type: "invoice";
+          date: Date;
+          slipNumber: string | null;
+          customerName: string | null;
+          warehouseName: string | null;
+          totalPrice: number;
+          cash: number;
+          credit: number;
+          status: string;
+          runningBalance: number;
+        }
+      | {
+          type: "payment";
+          date: Date;
+          reference: string | null;
+          method: string;
+          amount: number;
+          notes: string | null;
+          customerName: string | null;
+          runningBalance: number;
+        };
+
+    const entries: LedgerEntry[] = [];
+    const timeline: Array<{ date: Date; kind: "invoice" | "payment"; idx: number }> = [];
+    invoiceRows.forEach((inv, i) =>
+      timeline.push({ date: new Date(inv.date), kind: "invoice", idx: i }),
+    );
+    paymentRows.forEach((pay, i) =>
+      timeline.push({ date: new Date(pay.paymentDate), kind: "payment", idx: i }),
+    );
+    timeline.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    let runningBalance = 0;
+    for (const t of timeline) {
+      if (t.kind === "invoice") {
+        const inv = invoiceRows[t.idx];
+        const credit = Number(inv.credit);
+        runningBalance += credit;
+        entries.push({
+          type: "invoice",
+          date: new Date(inv.date),
+          slipNumber: inv.slipNumber,
+          customerName: inv.customer?.name ?? null,
+          warehouseName: inv.warehouse?.name ?? null,
+          totalPrice: Number(inv.totalPrice),
+          cash: Number(inv.cash),
+          credit,
+          status: inv.status,
+          runningBalance,
+        });
+      } else {
+        const pay = paymentRows[t.idx];
+        const amount = Number(pay.amount);
+        runningBalance = Math.max(0, runningBalance - amount);
+        entries.push({
+          type: "payment",
+          date: new Date(pay.paymentDate),
+          reference: pay.reference,
+          method: pay.method,
+          amount,
+          notes: pay.notes,
+          customerName: customerMap.get(pay.customerId) ?? null,
+          runningBalance,
+        });
+      }
+    }
+
+    const [agg] = await db
+      .select({
+        totalSales: sum(invoices.totalPrice),
+        totalCash: sum(invoices.cash),
+        totalCredit: sum(invoices.credit),
+        invoiceCount: count(),
+      })
+      .from(invoices)
+      .where(and(...invConditions));
+
+    const [payAgg] = await db
+      .select({ totalPaid: sum(payments.amount) })
+      .from(payments)
+      .where(and(...payConditions));
+
+    return {
+      salesman,
+      entries,
+      openingBalance: 0,
+      closingBalance: runningBalance,
+      periodTotalSales: Number(agg.totalSales) || 0,
+      periodTotalCash: Number(agg.totalCash) || 0,
+      periodTotalCredit: Number(agg.totalCredit) || 0,
+      periodPayments: Number(payAgg.totalPaid) || 0,
+      invoiceCount: Number(agg.invoiceCount) || 0,
+    };
+  });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SALESMAN-SHOP LEDGER
+// Per-shop ledger scoped to a specific salesman.
+// Only includes invoices where this salesman made the sale.
+// ═══════════════════════════════════════════════════════════════════════════
+export const getSalesmanShopLedgerFn = createServerFn()
+  .middleware([requireSalesViewMiddleware])
+  .inputValidator((input: any) =>
+    z
+      .object({
+        salesmanId: z.string(),
+        customerId: z.string(),
+        dateFrom: z.string().optional(),
+        dateTo: z.string().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const salesman = await db.query.salesmen.findFirst({
+      where: eq(salesmen.id, data.salesmanId),
+    });
+    if (!salesman) throw new Error("Salesman not found");
+
+    const customer = await db.query.customers.findFirst({
+      where: eq(customers.id, data.customerId),
+    });
+    if (!customer) throw new Error("Customer not found");
+
+    const conditions = [
+      eq(invoices.customerId, data.customerId),
+      eq(invoices.salesmanId, data.salesmanId),
+    ];
+    if (data.dateFrom) {
+      const f = parseISO(data.dateFrom);
+      if (isValid(f)) conditions.push(gte(invoices.date, f));
+    }
+    if (data.dateTo) {
+      const t = parseISO(data.dateTo);
+      if (isValid(t)) conditions.push(lte(invoices.date, t));
+    }
+
+    const invoiceRows = await db.query.invoices.findMany({
+      where: and(...conditions),
+      with: {
+        items: {
+          columns: {
+            pack: true,
+            numberOfCartons: true,
+            discountCartons: true,
+            freeCartons: true,
+            quantity: true,
+            perCartonPrice: true,
+            amount: true,
+          },
+        },
+        warehouse: { columns: { name: true } },
+      },
+      orderBy: [asc(invoices.date)],
+    });
+
+    // Payments for this customer (not scoped to salesman — payments are customer-level)
+    const payConditions = [eq(payments.customerId, data.customerId)];
+    if (data.dateFrom) {
+      const f = parseISO(data.dateFrom);
+      if (isValid(f)) payConditions.push(gte(payments.paymentDate, f));
+    }
+    if (data.dateTo) {
+      const t = parseISO(data.dateTo);
+      if (isValid(t)) payConditions.push(lte(payments.paymentDate, t));
+    }
+
+    const paymentRows = await db.query.payments.findMany({
+      where: and(...payConditions),
+      orderBy: [asc(payments.paymentDate)],
+      columns: {
+        id: true,
+        amount: true,
+        method: true,
+        reference: true,
+        notes: true,
+        paymentDate: true,
+      },
+    });
+
+    type LedgerEntry =
+      | {
+          type: "invoice";
+          date: Date;
+          slipNumber: string | null;
+          warehouseName: string | null;
+          totalPrice: number;
+          cash: number;
+          credit: number;
+          status: string;
+          runningBalance: number;
+          items: any[];
+        }
+      | {
+          type: "payment";
+          date: Date;
+          reference: string | null;
+          method: string;
+          amount: number;
+          notes: string | null;
+          runningBalance: number;
+        };
+
+    const entries: LedgerEntry[] = [];
+    const timeline: Array<{ date: Date; kind: "invoice" | "payment"; idx: number }> = [];
+    invoiceRows.forEach((inv, i) =>
+      timeline.push({ date: new Date(inv.date), kind: "invoice", idx: i }),
+    );
+    paymentRows.forEach((pay, i) =>
+      timeline.push({ date: new Date(pay.paymentDate), kind: "payment", idx: i }),
+    );
+    timeline.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    let runningBalance = 0;
+    for (const t of timeline) {
+      if (t.kind === "invoice") {
+        const inv = invoiceRows[t.idx];
+        const credit = Number(inv.credit);
+        runningBalance += credit;
+        entries.push({
+          type: "invoice",
+          date: new Date(inv.date),
+          slipNumber: inv.slipNumber,
+          warehouseName: inv.warehouse?.name ?? null,
+          totalPrice: Number(inv.totalPrice),
+          cash: Number(inv.cash),
+          credit,
+          status: inv.status,
+          runningBalance,
+          items: inv.items,
+        });
+      } else {
+        const pay = paymentRows[t.idx];
+        const amount = Number(pay.amount);
+        runningBalance = Math.max(0, runningBalance - amount);
+        entries.push({
+          type: "payment",
+          date: new Date(pay.paymentDate),
+          reference: pay.reference,
+          method: pay.method,
+          amount,
+          notes: pay.notes,
+          runningBalance,
+        });
+      }
+    }
+
+    const [agg] = await db
+      .select({
+        totalSales: sum(invoices.totalPrice),
+        totalCash: sum(invoices.cash),
+        totalCredit: sum(invoices.credit),
+        invoiceCount: count(),
+      })
+      .from(invoices)
+      .where(and(...conditions));
+
+    const [payAgg] = await db
+      .select({ totalPaid: sum(payments.amount) })
+      .from(payments)
+      .where(and(...payConditions));
+
+    return {
+      salesman,
+      customer,
+      entries,
+      openingBalance: 0,
+      closingBalance: runningBalance,
+      periodTotalSales: Number(agg.totalSales) || 0,
+      periodTotalCash: Number(agg.totalCash) || 0,
+      periodTotalCredit: Number(agg.totalCredit) || 0,
+      periodPayments: Number(payAgg.totalPaid) || 0,
       invoiceCount: Number(agg.invoiceCount) || 0,
     };
   });

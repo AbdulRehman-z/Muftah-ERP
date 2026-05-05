@@ -18,6 +18,9 @@ import { useGetCommissionRecords, useGetCommissionSummary } from "@/hooks/sales/
 import { useGetOrders } from "@/hooks/sales/use-orders";
 import { toast } from "sonner";
 import type { DateRange } from "react-day-picker";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getOrderBookerEligibleUsersFn, linkOrderBookerToUserFn } from "@/server-functions/sales/sales-config-fn";
+import { User } from "lucide-react";
 
 export const Route = createFileRoute("/_protected/sales/people/order-bookers/$orderBookerId/")({
   component: OrderBookerProfilePage,
@@ -82,6 +85,7 @@ function OrderBookerProfilePage() {
             <p className="text-lg font-semibold">{orderBooker?.address || "—"}</p>
           </CardContent>
         </Card>
+        <PortalAccountCard orderBookerId={orderBookerId} userId={orderBooker?.userId} />
       </div>
 
       <Tabs defaultValue="trips" className="space-y-4">
@@ -366,5 +370,88 @@ function CommissionTab({ orderBookerId, dateRange, onDateRangeChange }: {
         </Table>
       </div>
     </div>
+  );
+}
+
+function PortalAccountCard({ orderBookerId, userId }: { orderBookerId: string; userId?: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(userId || "__none__");
+  const qc = useQueryClient();
+
+  const { data: eligibleUsers } = useQuery({
+    queryKey: ["ob-eligible-users"],
+    queryFn: () => getOrderBookerEligibleUsersFn({ data: {} }),
+  });
+
+  const handleLink = async () => {
+    try {
+      await linkOrderBookerToUserFn({
+        data: {
+          orderBookerId,
+          userId: selectedUserId === "__none__" ? null : selectedUserId,
+        },
+      });
+      toast.success("Portal account updated");
+      qc.invalidateQueries({ queryKey: ["order-booker-detail", orderBookerId] });
+      setOpen(false);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update");
+    }
+  };
+
+  const linkedUser = eligibleUsers?.find((u: any) => u.id === userId);
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+          <User className="size-3.5" />
+          Portal Account
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {linkedUser ? (
+          <div className="space-y-1">
+            <p className="text-sm font-semibold">{linkedUser.name}</p>
+            <p className="text-xs text-muted-foreground">{linkedUser.email}</p>
+          </div>
+        ) : userId ? (
+          <p className="text-sm text-muted-foreground">Linked (user ID: {userId.slice(0, 8)}…)</p>
+        ) : (
+          <p className="text-sm text-muted-foreground">Not linked</p>
+        )}
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button variant="ghost" size="sm" className="mt-2 h-7 text-[11px]">
+              {userId ? "Change" : "Link Account"}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-sm">Link Portal Account</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 pt-2">
+              <div className="space-y-1">
+                <Label className="text-xs">User with Order Booker Role</Label>
+                <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select user" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— None —</SelectItem>
+                    {(eligibleUsers || []).map((u: any) => (
+                      <SelectItem key={u.id} value={u.id}>{u.name} ({u.email})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button className="w-full" size="sm" onClick={handleLink}>
+                Save
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
   );
 }

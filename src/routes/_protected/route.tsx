@@ -33,7 +33,9 @@ export const Route = createFileRoute("/_protected")({
 function RouteComponent() {
   return (
     <SidebarProvider defaultOpen>
-      <AppSidebar />
+      <div className="print:hidden">
+        <AppSidebar />
+      </div>
       <SidebarInset className="relative px-10 py-7 ">
         <Outlet />
       </SidebarInset>

@@ -14,8 +14,11 @@ import { Route as AuthLayoutRouteRouteImport } from './routes/_authLayout/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvestorIndexRouteImport } from './routes/investor/index'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ProtectedReportsRouteRouteImport } from './routes/_protected/reports/route'
 import { Route as ProtectedUserManagementIndexRouteImport } from './routes/_protected/user-management/index'
 import { Route as ProtectedSuppliersIndexRouteImport } from './routes/_protected/suppliers/index'
+import { Route as ProtectedReportsIndexRouteImport } from './routes/_protected/reports/index'
+import { Route as ProtectedOrderBookerIndexRouteImport } from './routes/_protected/order-booker/index'
 import { Route as ProtectedOperatorIndexRouteImport } from './routes/_protected/operator/index'
 import { Route as ProtectedHrIndexRouteImport } from './routes/_protected/hr/index'
 import { Route as ProtectedDashboardIndexRouteImport } from './routes/_protected/dashboard/index'
@@ -36,6 +39,14 @@ import { Route as ProtectedSalesOrdersIndexRouteImport } from './routes/_protect
 import { Route as ProtectedSalesNewInvoiceIndexRouteImport } from './routes/_protected/sales/new-invoice/index'
 import { Route as ProtectedSalesCustomersIndexRouteImport } from './routes/_protected/sales/customers/index'
 import { Route as ProtectedSalesConfigurationsIndexRouteImport } from './routes/_protected/sales/configurations/index'
+import { Route as ProtectedReportsSalesIndexRouteImport } from './routes/_protected/reports/sales/index'
+import { Route as ProtectedReportsSalariesIndexRouteImport } from './routes/_protected/reports/salaries/index'
+import { Route as ProtectedReportsPurchasesIndexRouteImport } from './routes/_protected/reports/purchases/index'
+import { Route as ProtectedReportsExpensesIndexRouteImport } from './routes/_protected/reports/expenses/index'
+import { Route as ProtectedReportsCreditsIndexRouteImport } from './routes/_protected/reports/credits/index'
+import { Route as ProtectedOrderBookerTripsIndexRouteImport } from './routes/_protected/order-booker/trips/index'
+import { Route as ProtectedOrderBookerOrdersIndexRouteImport } from './routes/_protected/order-booker/orders/index'
+import { Route as ProtectedOrderBookerCommissionIndexRouteImport } from './routes/_protected/order-booker/commission/index'
 import { Route as ProtectedManufacturingRecipesIndexRouteImport } from './routes/_protected/manufacturing/recipes/index'
 import { Route as ProtectedManufacturingProductionsIndexRouteImport } from './routes/_protected/manufacturing/productions/index'
 import { Route as ProtectedInventoryWarehousesIndexRouteImport } from './routes/_protected/inventory/warehouses/index'
@@ -54,6 +65,7 @@ import { Route as ProtectedHrEmployeesEmployeeIdRouteImport } from './routes/_pr
 import { Route as ProtectedHrAttendanceEmployeeIdRouteImport } from './routes/_protected/hr/attendance/$employeeId'
 import { Route as ProtectedManufacturingProductionsRunIdRouteRouteImport } from './routes/_protected/manufacturing/productions/$runId/route'
 import { Route as ProtectedSalesCustomersCustomerIdIndexRouteImport } from './routes/_protected/sales/customers/$customerId/index'
+import { Route as ProtectedManufacturingProductsProductIdIndexRouteImport } from './routes/_protected/manufacturing/products/$productId/index'
 import { Route as ProtectedManufacturingProductionsRunIdIndexRouteImport } from './routes/_protected/manufacturing/productions/$runId/index'
 import { Route as ProtectedHrPayrollEmployeeIndexRouteImport } from './routes/_protected/hr/payroll/employee/index'
 import { Route as ProtectedFinanceExpensesSettingsIndexRouteImport } from './routes/_protected/finance/expenses/settings/index'
@@ -64,6 +76,7 @@ import { Route as ProtectedSalesPeopleOrderBookersOrderBookerIdIndexRouteImport 
 import { Route as ProtectedSalesPeopleDistributorsCustomerIdIndexRouteImport } from './routes/_protected/sales/people/distributors/$customerId/index'
 import { Route as ProtectedManufacturingProductionsRunIdCartonsIndexRouteImport } from './routes/_protected/manufacturing/productions/$runId/cartons/index'
 import { Route as ProtectedInventoryItemItemTypeItemIdIndexRouteImport } from './routes/_protected/inventory/item/$itemType/$itemId/index'
+import { Route as ProtectedSalesPeopleSalesmenSalesmanIdLedgerRouteImport } from './routes/_protected/sales/people/salesmen/$salesmanId/ledger'
 import { Route as ProtectedSalesPeopleDistributorsCustomerIdLedgerRouteImport } from './routes/_protected/sales/people/distributors/$customerId/ledger'
 import { Route as ProtectedSalesPeopleSalesmenSalesmanIdShopsCustomerIdRouteImport } from './routes/_protected/sales/people/salesmen/$salesmanId/shops/$customerId'
 
@@ -90,6 +103,11 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProtectedReportsRouteRoute = ProtectedReportsRouteRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => ProtectedRouteRoute,
+} as any)
 const ProtectedUserManagementIndexRoute =
   ProtectedUserManagementIndexRouteImport.update({
     id: '/user-management/',
@@ -101,6 +119,17 @@ const ProtectedSuppliersIndexRoute = ProtectedSuppliersIndexRouteImport.update({
   path: '/suppliers/',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
+const ProtectedReportsIndexRoute = ProtectedReportsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProtectedReportsRouteRoute,
+} as any)
+const ProtectedOrderBookerIndexRoute =
+  ProtectedOrderBookerIndexRouteImport.update({
+    id: '/order-booker/',
+    path: '/order-booker/',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
 const ProtectedOperatorIndexRoute = ProtectedOperatorIndexRouteImport.update({
   id: '/operator/',
   path: '/operator/',
@@ -213,6 +242,54 @@ const ProtectedSalesConfigurationsIndexRoute =
     path: '/sales/configurations/',
     getParentRoute: () => ProtectedRouteRoute,
   } as any)
+const ProtectedReportsSalesIndexRoute =
+  ProtectedReportsSalesIndexRouteImport.update({
+    id: '/sales/',
+    path: '/sales/',
+    getParentRoute: () => ProtectedReportsRouteRoute,
+  } as any)
+const ProtectedReportsSalariesIndexRoute =
+  ProtectedReportsSalariesIndexRouteImport.update({
+    id: '/salaries/',
+    path: '/salaries/',
+    getParentRoute: () => ProtectedReportsRouteRoute,
+  } as any)
+const ProtectedReportsPurchasesIndexRoute =
+  ProtectedReportsPurchasesIndexRouteImport.update({
+    id: '/purchases/',
+    path: '/purchases/',
+    getParentRoute: () => ProtectedReportsRouteRoute,
+  } as any)
+const ProtectedReportsExpensesIndexRoute =
+  ProtectedReportsExpensesIndexRouteImport.update({
+    id: '/expenses/',
+    path: '/expenses/',
+    getParentRoute: () => ProtectedReportsRouteRoute,
+  } as any)
+const ProtectedReportsCreditsIndexRoute =
+  ProtectedReportsCreditsIndexRouteImport.update({
+    id: '/credits/',
+    path: '/credits/',
+    getParentRoute: () => ProtectedReportsRouteRoute,
+  } as any)
+const ProtectedOrderBookerTripsIndexRoute =
+  ProtectedOrderBookerTripsIndexRouteImport.update({
+    id: '/order-booker/trips/',
+    path: '/order-booker/trips/',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
+const ProtectedOrderBookerOrdersIndexRoute =
+  ProtectedOrderBookerOrdersIndexRouteImport.update({
+    id: '/order-booker/orders/',
+    path: '/order-booker/orders/',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
+const ProtectedOrderBookerCommissionIndexRoute =
+  ProtectedOrderBookerCommissionIndexRouteImport.update({
+    id: '/order-booker/commission/',
+    path: '/order-booker/commission/',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
 const ProtectedManufacturingRecipesIndexRoute =
   ProtectedManufacturingRecipesIndexRouteImport.update({
     id: '/manufacturing/recipes/',
@@ -320,6 +397,12 @@ const ProtectedSalesCustomersCustomerIdIndexRoute =
     path: '/sales/customers/$customerId/',
     getParentRoute: () => ProtectedRouteRoute,
   } as any)
+const ProtectedManufacturingProductsProductIdIndexRoute =
+  ProtectedManufacturingProductsProductIdIndexRouteImport.update({
+    id: '/manufacturing/products/$productId/',
+    path: '/manufacturing/products/$productId/',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
 const ProtectedManufacturingProductionsRunIdIndexRoute =
   ProtectedManufacturingProductionsRunIdIndexRouteImport.update({
     id: '/',
@@ -380,6 +463,12 @@ const ProtectedInventoryItemItemTypeItemIdIndexRoute =
     path: '/inventory/item/$itemType/$itemId/',
     getParentRoute: () => ProtectedRouteRoute,
   } as any)
+const ProtectedSalesPeopleSalesmenSalesmanIdLedgerRoute =
+  ProtectedSalesPeopleSalesmenSalesmanIdLedgerRouteImport.update({
+    id: '/sales/people/salesmen/$salesmanId/ledger',
+    path: '/sales/people/salesmen/$salesmanId/ledger',
+    getParentRoute: () => ProtectedRouteRoute,
+  } as any)
 const ProtectedSalesPeopleDistributorsCustomerIdLedgerRoute =
   ProtectedSalesPeopleDistributorsCustomerIdLedgerRouteImport.update({
     id: '/sales/people/distributors/$customerId/ledger',
@@ -395,6 +484,7 @@ const ProtectedSalesPeopleSalesmenSalesmanIdShopsCustomerIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/reports': typeof ProtectedReportsRouteRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/investor/': typeof InvestorIndexRoute
   '/operator/$runId': typeof ProtectedOperatorRunIdRoute
@@ -409,6 +499,8 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof ProtectedDashboardIndexRoute
   '/hr/': typeof ProtectedHrIndexRoute
   '/operator/': typeof ProtectedOperatorIndexRoute
+  '/order-booker/': typeof ProtectedOrderBookerIndexRoute
+  '/reports/': typeof ProtectedReportsIndexRoute
   '/suppliers/': typeof ProtectedSuppliersIndexRoute
   '/user-management/': typeof ProtectedUserManagementIndexRoute
   '/manufacturing/productions/$runId': typeof ProtectedManufacturingProductionsRunIdRouteRouteWithChildren
@@ -428,6 +520,14 @@ export interface FileRoutesByFullPath {
   '/inventory/warehouses/': typeof ProtectedInventoryWarehousesIndexRoute
   '/manufacturing/productions/': typeof ProtectedManufacturingProductionsIndexRoute
   '/manufacturing/recipes/': typeof ProtectedManufacturingRecipesIndexRoute
+  '/order-booker/commission/': typeof ProtectedOrderBookerCommissionIndexRoute
+  '/order-booker/orders/': typeof ProtectedOrderBookerOrdersIndexRoute
+  '/order-booker/trips/': typeof ProtectedOrderBookerTripsIndexRoute
+  '/reports/credits/': typeof ProtectedReportsCreditsIndexRoute
+  '/reports/expenses/': typeof ProtectedReportsExpensesIndexRoute
+  '/reports/purchases/': typeof ProtectedReportsPurchasesIndexRoute
+  '/reports/salaries/': typeof ProtectedReportsSalariesIndexRoute
+  '/reports/sales/': typeof ProtectedReportsSalesIndexRoute
   '/sales/configurations/': typeof ProtectedSalesConfigurationsIndexRoute
   '/sales/customers/': typeof ProtectedSalesCustomersIndexRoute
   '/sales/new-invoice/': typeof ProtectedSalesNewInvoiceIndexRoute
@@ -441,8 +541,10 @@ export interface FileRoutesByFullPath {
   '/finance/expenses/settings/': typeof ProtectedFinanceExpensesSettingsIndexRoute
   '/hr/payroll/employee/': typeof ProtectedHrPayrollEmployeeIndexRoute
   '/manufacturing/productions/$runId/': typeof ProtectedManufacturingProductionsRunIdIndexRoute
+  '/manufacturing/products/$productId/': typeof ProtectedManufacturingProductsProductIdIndexRoute
   '/sales/customers/$customerId/': typeof ProtectedSalesCustomersCustomerIdIndexRoute
   '/sales/people/distributors/$customerId/ledger': typeof ProtectedSalesPeopleDistributorsCustomerIdLedgerRoute
+  '/sales/people/salesmen/$salesmanId/ledger': typeof ProtectedSalesPeopleSalesmenSalesmanIdLedgerRoute
   '/inventory/item/$itemType/$itemId/': typeof ProtectedInventoryItemItemTypeItemIdIndexRoute
   '/manufacturing/productions/$runId/cartons/': typeof ProtectedManufacturingProductionsRunIdCartonsIndexRoute
   '/sales/people/distributors/$customerId/': typeof ProtectedSalesPeopleDistributorsCustomerIdIndexRoute
@@ -466,6 +568,8 @@ export interface FileRoutesByTo {
   '/dashboard': typeof ProtectedDashboardIndexRoute
   '/hr': typeof ProtectedHrIndexRoute
   '/operator': typeof ProtectedOperatorIndexRoute
+  '/order-booker': typeof ProtectedOrderBookerIndexRoute
+  '/reports': typeof ProtectedReportsIndexRoute
   '/suppliers': typeof ProtectedSuppliersIndexRoute
   '/user-management': typeof ProtectedUserManagementIndexRoute
   '/hr/attendance/$employeeId': typeof ProtectedHrAttendanceEmployeeIdRoute
@@ -484,6 +588,14 @@ export interface FileRoutesByTo {
   '/inventory/warehouses': typeof ProtectedInventoryWarehousesIndexRoute
   '/manufacturing/productions': typeof ProtectedManufacturingProductionsIndexRoute
   '/manufacturing/recipes': typeof ProtectedManufacturingRecipesIndexRoute
+  '/order-booker/commission': typeof ProtectedOrderBookerCommissionIndexRoute
+  '/order-booker/orders': typeof ProtectedOrderBookerOrdersIndexRoute
+  '/order-booker/trips': typeof ProtectedOrderBookerTripsIndexRoute
+  '/reports/credits': typeof ProtectedReportsCreditsIndexRoute
+  '/reports/expenses': typeof ProtectedReportsExpensesIndexRoute
+  '/reports/purchases': typeof ProtectedReportsPurchasesIndexRoute
+  '/reports/salaries': typeof ProtectedReportsSalariesIndexRoute
+  '/reports/sales': typeof ProtectedReportsSalesIndexRoute
   '/sales/configurations': typeof ProtectedSalesConfigurationsIndexRoute
   '/sales/customers': typeof ProtectedSalesCustomersIndexRoute
   '/sales/new-invoice': typeof ProtectedSalesNewInvoiceIndexRoute
@@ -497,8 +609,10 @@ export interface FileRoutesByTo {
   '/finance/expenses/settings': typeof ProtectedFinanceExpensesSettingsIndexRoute
   '/hr/payroll/employee': typeof ProtectedHrPayrollEmployeeIndexRoute
   '/manufacturing/productions/$runId': typeof ProtectedManufacturingProductionsRunIdIndexRoute
+  '/manufacturing/products/$productId': typeof ProtectedManufacturingProductsProductIdIndexRoute
   '/sales/customers/$customerId': typeof ProtectedSalesCustomersCustomerIdIndexRoute
   '/sales/people/distributors/$customerId/ledger': typeof ProtectedSalesPeopleDistributorsCustomerIdLedgerRoute
+  '/sales/people/salesmen/$salesmanId/ledger': typeof ProtectedSalesPeopleSalesmenSalesmanIdLedgerRoute
   '/inventory/item/$itemType/$itemId': typeof ProtectedInventoryItemItemTypeItemIdIndexRoute
   '/manufacturing/productions/$runId/cartons': typeof ProtectedManufacturingProductionsRunIdCartonsIndexRoute
   '/sales/people/distributors/$customerId': typeof ProtectedSalesPeopleDistributorsCustomerIdIndexRoute
@@ -511,6 +625,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authLayout': typeof AuthLayoutRouteRouteWithChildren
   '/_protected': typeof ProtectedRouteRouteWithChildren
+  '/_protected/reports': typeof ProtectedReportsRouteRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/investor/': typeof InvestorIndexRoute
   '/_protected/operator/$runId': typeof ProtectedOperatorRunIdRoute
@@ -525,6 +640,8 @@ export interface FileRoutesById {
   '/_protected/dashboard/': typeof ProtectedDashboardIndexRoute
   '/_protected/hr/': typeof ProtectedHrIndexRoute
   '/_protected/operator/': typeof ProtectedOperatorIndexRoute
+  '/_protected/order-booker/': typeof ProtectedOrderBookerIndexRoute
+  '/_protected/reports/': typeof ProtectedReportsIndexRoute
   '/_protected/suppliers/': typeof ProtectedSuppliersIndexRoute
   '/_protected/user-management/': typeof ProtectedUserManagementIndexRoute
   '/_protected/manufacturing/productions/$runId': typeof ProtectedManufacturingProductionsRunIdRouteRouteWithChildren
@@ -544,6 +661,14 @@ export interface FileRoutesById {
   '/_protected/inventory/warehouses/': typeof ProtectedInventoryWarehousesIndexRoute
   '/_protected/manufacturing/productions/': typeof ProtectedManufacturingProductionsIndexRoute
   '/_protected/manufacturing/recipes/': typeof ProtectedManufacturingRecipesIndexRoute
+  '/_protected/order-booker/commission/': typeof ProtectedOrderBookerCommissionIndexRoute
+  '/_protected/order-booker/orders/': typeof ProtectedOrderBookerOrdersIndexRoute
+  '/_protected/order-booker/trips/': typeof ProtectedOrderBookerTripsIndexRoute
+  '/_protected/reports/credits/': typeof ProtectedReportsCreditsIndexRoute
+  '/_protected/reports/expenses/': typeof ProtectedReportsExpensesIndexRoute
+  '/_protected/reports/purchases/': typeof ProtectedReportsPurchasesIndexRoute
+  '/_protected/reports/salaries/': typeof ProtectedReportsSalariesIndexRoute
+  '/_protected/reports/sales/': typeof ProtectedReportsSalesIndexRoute
   '/_protected/sales/configurations/': typeof ProtectedSalesConfigurationsIndexRoute
   '/_protected/sales/customers/': typeof ProtectedSalesCustomersIndexRoute
   '/_protected/sales/new-invoice/': typeof ProtectedSalesNewInvoiceIndexRoute
@@ -557,8 +682,10 @@ export interface FileRoutesById {
   '/_protected/finance/expenses/settings/': typeof ProtectedFinanceExpensesSettingsIndexRoute
   '/_protected/hr/payroll/employee/': typeof ProtectedHrPayrollEmployeeIndexRoute
   '/_protected/manufacturing/productions/$runId/': typeof ProtectedManufacturingProductionsRunIdIndexRoute
+  '/_protected/manufacturing/products/$productId/': typeof ProtectedManufacturingProductsProductIdIndexRoute
   '/_protected/sales/customers/$customerId/': typeof ProtectedSalesCustomersCustomerIdIndexRoute
   '/_protected/sales/people/distributors/$customerId/ledger': typeof ProtectedSalesPeopleDistributorsCustomerIdLedgerRoute
+  '/_protected/sales/people/salesmen/$salesmanId/ledger': typeof ProtectedSalesPeopleSalesmenSalesmanIdLedgerRoute
   '/_protected/inventory/item/$itemType/$itemId/': typeof ProtectedInventoryItemItemTypeItemIdIndexRoute
   '/_protected/manufacturing/productions/$runId/cartons/': typeof ProtectedManufacturingProductionsRunIdCartonsIndexRoute
   '/_protected/sales/people/distributors/$customerId/': typeof ProtectedSalesPeopleDistributorsCustomerIdIndexRoute
@@ -570,6 +697,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/reports'
     | '/api/health'
     | '/investor/'
     | '/operator/$runId'
@@ -584,6 +712,8 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/hr/'
     | '/operator/'
+    | '/order-booker/'
+    | '/reports/'
     | '/suppliers/'
     | '/user-management/'
     | '/manufacturing/productions/$runId'
@@ -603,6 +733,14 @@ export interface FileRouteTypes {
     | '/inventory/warehouses/'
     | '/manufacturing/productions/'
     | '/manufacturing/recipes/'
+    | '/order-booker/commission/'
+    | '/order-booker/orders/'
+    | '/order-booker/trips/'
+    | '/reports/credits/'
+    | '/reports/expenses/'
+    | '/reports/purchases/'
+    | '/reports/salaries/'
+    | '/reports/sales/'
     | '/sales/configurations/'
     | '/sales/customers/'
     | '/sales/new-invoice/'
@@ -616,8 +754,10 @@ export interface FileRouteTypes {
     | '/finance/expenses/settings/'
     | '/hr/payroll/employee/'
     | '/manufacturing/productions/$runId/'
+    | '/manufacturing/products/$productId/'
     | '/sales/customers/$customerId/'
     | '/sales/people/distributors/$customerId/ledger'
+    | '/sales/people/salesmen/$salesmanId/ledger'
     | '/inventory/item/$itemType/$itemId/'
     | '/manufacturing/productions/$runId/cartons/'
     | '/sales/people/distributors/$customerId/'
@@ -641,6 +781,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/hr'
     | '/operator'
+    | '/order-booker'
+    | '/reports'
     | '/suppliers'
     | '/user-management'
     | '/hr/attendance/$employeeId'
@@ -659,6 +801,14 @@ export interface FileRouteTypes {
     | '/inventory/warehouses'
     | '/manufacturing/productions'
     | '/manufacturing/recipes'
+    | '/order-booker/commission'
+    | '/order-booker/orders'
+    | '/order-booker/trips'
+    | '/reports/credits'
+    | '/reports/expenses'
+    | '/reports/purchases'
+    | '/reports/salaries'
+    | '/reports/sales'
     | '/sales/configurations'
     | '/sales/customers'
     | '/sales/new-invoice'
@@ -672,8 +822,10 @@ export interface FileRouteTypes {
     | '/finance/expenses/settings'
     | '/hr/payroll/employee'
     | '/manufacturing/productions/$runId'
+    | '/manufacturing/products/$productId'
     | '/sales/customers/$customerId'
     | '/sales/people/distributors/$customerId/ledger'
+    | '/sales/people/salesmen/$salesmanId/ledger'
     | '/inventory/item/$itemType/$itemId'
     | '/manufacturing/productions/$runId/cartons'
     | '/sales/people/distributors/$customerId'
@@ -685,6 +837,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authLayout'
     | '/_protected'
+    | '/_protected/reports'
     | '/api/health'
     | '/investor/'
     | '/_protected/operator/$runId'
@@ -699,6 +852,8 @@ export interface FileRouteTypes {
     | '/_protected/dashboard/'
     | '/_protected/hr/'
     | '/_protected/operator/'
+    | '/_protected/order-booker/'
+    | '/_protected/reports/'
     | '/_protected/suppliers/'
     | '/_protected/user-management/'
     | '/_protected/manufacturing/productions/$runId'
@@ -718,6 +873,14 @@ export interface FileRouteTypes {
     | '/_protected/inventory/warehouses/'
     | '/_protected/manufacturing/productions/'
     | '/_protected/manufacturing/recipes/'
+    | '/_protected/order-booker/commission/'
+    | '/_protected/order-booker/orders/'
+    | '/_protected/order-booker/trips/'
+    | '/_protected/reports/credits/'
+    | '/_protected/reports/expenses/'
+    | '/_protected/reports/purchases/'
+    | '/_protected/reports/salaries/'
+    | '/_protected/reports/sales/'
     | '/_protected/sales/configurations/'
     | '/_protected/sales/customers/'
     | '/_protected/sales/new-invoice/'
@@ -731,8 +894,10 @@ export interface FileRouteTypes {
     | '/_protected/finance/expenses/settings/'
     | '/_protected/hr/payroll/employee/'
     | '/_protected/manufacturing/productions/$runId/'
+    | '/_protected/manufacturing/products/$productId/'
     | '/_protected/sales/customers/$customerId/'
     | '/_protected/sales/people/distributors/$customerId/ledger'
+    | '/_protected/sales/people/salesmen/$salesmanId/ledger'
     | '/_protected/inventory/item/$itemType/$itemId/'
     | '/_protected/manufacturing/productions/$runId/cartons/'
     | '/_protected/sales/people/distributors/$customerId/'
@@ -788,6 +953,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_protected/reports': {
+      id: '/_protected/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ProtectedReportsRouteRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
     '/_protected/user-management/': {
       id: '/_protected/user-management/'
       path: '/user-management'
@@ -800,6 +972,20 @@ declare module '@tanstack/react-router' {
       path: '/suppliers'
       fullPath: '/suppliers/'
       preLoaderRoute: typeof ProtectedSuppliersIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/reports/': {
+      id: '/_protected/reports/'
+      path: '/'
+      fullPath: '/reports/'
+      preLoaderRoute: typeof ProtectedReportsIndexRouteImport
+      parentRoute: typeof ProtectedReportsRouteRoute
+    }
+    '/_protected/order-booker/': {
+      id: '/_protected/order-booker/'
+      path: '/order-booker'
+      fullPath: '/order-booker/'
+      preLoaderRoute: typeof ProtectedOrderBookerIndexRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
     '/_protected/operator/': {
@@ -942,6 +1128,62 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedSalesConfigurationsIndexRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
+    '/_protected/reports/sales/': {
+      id: '/_protected/reports/sales/'
+      path: '/sales'
+      fullPath: '/reports/sales/'
+      preLoaderRoute: typeof ProtectedReportsSalesIndexRouteImport
+      parentRoute: typeof ProtectedReportsRouteRoute
+    }
+    '/_protected/reports/salaries/': {
+      id: '/_protected/reports/salaries/'
+      path: '/salaries'
+      fullPath: '/reports/salaries/'
+      preLoaderRoute: typeof ProtectedReportsSalariesIndexRouteImport
+      parentRoute: typeof ProtectedReportsRouteRoute
+    }
+    '/_protected/reports/purchases/': {
+      id: '/_protected/reports/purchases/'
+      path: '/purchases'
+      fullPath: '/reports/purchases/'
+      preLoaderRoute: typeof ProtectedReportsPurchasesIndexRouteImport
+      parentRoute: typeof ProtectedReportsRouteRoute
+    }
+    '/_protected/reports/expenses/': {
+      id: '/_protected/reports/expenses/'
+      path: '/expenses'
+      fullPath: '/reports/expenses/'
+      preLoaderRoute: typeof ProtectedReportsExpensesIndexRouteImport
+      parentRoute: typeof ProtectedReportsRouteRoute
+    }
+    '/_protected/reports/credits/': {
+      id: '/_protected/reports/credits/'
+      path: '/credits'
+      fullPath: '/reports/credits/'
+      preLoaderRoute: typeof ProtectedReportsCreditsIndexRouteImport
+      parentRoute: typeof ProtectedReportsRouteRoute
+    }
+    '/_protected/order-booker/trips/': {
+      id: '/_protected/order-booker/trips/'
+      path: '/order-booker/trips'
+      fullPath: '/order-booker/trips/'
+      preLoaderRoute: typeof ProtectedOrderBookerTripsIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/order-booker/orders/': {
+      id: '/_protected/order-booker/orders/'
+      path: '/order-booker/orders'
+      fullPath: '/order-booker/orders/'
+      preLoaderRoute: typeof ProtectedOrderBookerOrdersIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/order-booker/commission/': {
+      id: '/_protected/order-booker/commission/'
+      path: '/order-booker/commission'
+      fullPath: '/order-booker/commission/'
+      preLoaderRoute: typeof ProtectedOrderBookerCommissionIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
     '/_protected/manufacturing/recipes/': {
       id: '/_protected/manufacturing/recipes/'
       path: '/manufacturing/recipes'
@@ -1068,6 +1310,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedSalesCustomersCustomerIdIndexRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
+    '/_protected/manufacturing/products/$productId/': {
+      id: '/_protected/manufacturing/products/$productId/'
+      path: '/manufacturing/products/$productId'
+      fullPath: '/manufacturing/products/$productId/'
+      preLoaderRoute: typeof ProtectedManufacturingProductsProductIdIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
     '/_protected/manufacturing/productions/$runId/': {
       id: '/_protected/manufacturing/productions/$runId/'
       path: '/'
@@ -1138,6 +1387,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedInventoryItemItemTypeItemIdIndexRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
+    '/_protected/sales/people/salesmen/$salesmanId/ledger': {
+      id: '/_protected/sales/people/salesmen/$salesmanId/ledger'
+      path: '/sales/people/salesmen/$salesmanId/ledger'
+      fullPath: '/sales/people/salesmen/$salesmanId/ledger'
+      preLoaderRoute: typeof ProtectedSalesPeopleSalesmenSalesmanIdLedgerRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
     '/_protected/sales/people/distributors/$customerId/ledger': {
       id: '/_protected/sales/people/distributors/$customerId/ledger'
       path: '/sales/people/distributors/$customerId/ledger'
@@ -1175,6 +1431,29 @@ const AuthLayoutRouteRouteWithChildren = AuthLayoutRouteRoute._addFileChildren(
   AuthLayoutRouteRouteChildren,
 )
 
+interface ProtectedReportsRouteRouteChildren {
+  ProtectedReportsIndexRoute: typeof ProtectedReportsIndexRoute
+  ProtectedReportsCreditsIndexRoute: typeof ProtectedReportsCreditsIndexRoute
+  ProtectedReportsExpensesIndexRoute: typeof ProtectedReportsExpensesIndexRoute
+  ProtectedReportsPurchasesIndexRoute: typeof ProtectedReportsPurchasesIndexRoute
+  ProtectedReportsSalariesIndexRoute: typeof ProtectedReportsSalariesIndexRoute
+  ProtectedReportsSalesIndexRoute: typeof ProtectedReportsSalesIndexRoute
+}
+
+const ProtectedReportsRouteRouteChildren: ProtectedReportsRouteRouteChildren = {
+  ProtectedReportsIndexRoute: ProtectedReportsIndexRoute,
+  ProtectedReportsCreditsIndexRoute: ProtectedReportsCreditsIndexRoute,
+  ProtectedReportsExpensesIndexRoute: ProtectedReportsExpensesIndexRoute,
+  ProtectedReportsPurchasesIndexRoute: ProtectedReportsPurchasesIndexRoute,
+  ProtectedReportsSalariesIndexRoute: ProtectedReportsSalariesIndexRoute,
+  ProtectedReportsSalesIndexRoute: ProtectedReportsSalesIndexRoute,
+}
+
+const ProtectedReportsRouteRouteWithChildren =
+  ProtectedReportsRouteRoute._addFileChildren(
+    ProtectedReportsRouteRouteChildren,
+  )
+
 interface ProtectedManufacturingProductionsRunIdRouteRouteChildren {
   ProtectedManufacturingProductionsRunIdIndexRoute: typeof ProtectedManufacturingProductionsRunIdIndexRoute
   ProtectedManufacturingProductionsRunIdCartonsIndexRoute: typeof ProtectedManufacturingProductionsRunIdCartonsIndexRoute
@@ -1194,11 +1473,13 @@ const ProtectedManufacturingProductionsRunIdRouteRouteWithChildren =
   )
 
 interface ProtectedRouteRouteChildren {
+  ProtectedReportsRouteRoute: typeof ProtectedReportsRouteRouteWithChildren
   ProtectedOperatorRunIdRoute: typeof ProtectedOperatorRunIdRoute
   ProtectedSuppliersSupplierIdRoute: typeof ProtectedSuppliersSupplierIdRoute
   ProtectedDashboardIndexRoute: typeof ProtectedDashboardIndexRoute
   ProtectedHrIndexRoute: typeof ProtectedHrIndexRoute
   ProtectedOperatorIndexRoute: typeof ProtectedOperatorIndexRoute
+  ProtectedOrderBookerIndexRoute: typeof ProtectedOrderBookerIndexRoute
   ProtectedSuppliersIndexRoute: typeof ProtectedSuppliersIndexRoute
   ProtectedUserManagementIndexRoute: typeof ProtectedUserManagementIndexRoute
   ProtectedManufacturingProductionsRunIdRouteRoute: typeof ProtectedManufacturingProductionsRunIdRouteRouteWithChildren
@@ -1218,6 +1499,9 @@ interface ProtectedRouteRouteChildren {
   ProtectedInventoryWarehousesIndexRoute: typeof ProtectedInventoryWarehousesIndexRoute
   ProtectedManufacturingProductionsIndexRoute: typeof ProtectedManufacturingProductionsIndexRoute
   ProtectedManufacturingRecipesIndexRoute: typeof ProtectedManufacturingRecipesIndexRoute
+  ProtectedOrderBookerCommissionIndexRoute: typeof ProtectedOrderBookerCommissionIndexRoute
+  ProtectedOrderBookerOrdersIndexRoute: typeof ProtectedOrderBookerOrdersIndexRoute
+  ProtectedOrderBookerTripsIndexRoute: typeof ProtectedOrderBookerTripsIndexRoute
   ProtectedSalesConfigurationsIndexRoute: typeof ProtectedSalesConfigurationsIndexRoute
   ProtectedSalesCustomersIndexRoute: typeof ProtectedSalesCustomersIndexRoute
   ProtectedSalesNewInvoiceIndexRoute: typeof ProtectedSalesNewInvoiceIndexRoute
@@ -1230,8 +1514,10 @@ interface ProtectedRouteRouteChildren {
   ProtectedInventoryFactoryFloorCartonsRecipeIdRoute: typeof ProtectedInventoryFactoryFloorCartonsRecipeIdRoute
   ProtectedFinanceExpensesSettingsIndexRoute: typeof ProtectedFinanceExpensesSettingsIndexRoute
   ProtectedHrPayrollEmployeeIndexRoute: typeof ProtectedHrPayrollEmployeeIndexRoute
+  ProtectedManufacturingProductsProductIdIndexRoute: typeof ProtectedManufacturingProductsProductIdIndexRoute
   ProtectedSalesCustomersCustomerIdIndexRoute: typeof ProtectedSalesCustomersCustomerIdIndexRoute
   ProtectedSalesPeopleDistributorsCustomerIdLedgerRoute: typeof ProtectedSalesPeopleDistributorsCustomerIdLedgerRoute
+  ProtectedSalesPeopleSalesmenSalesmanIdLedgerRoute: typeof ProtectedSalesPeopleSalesmenSalesmanIdLedgerRoute
   ProtectedInventoryItemItemTypeItemIdIndexRoute: typeof ProtectedInventoryItemItemTypeItemIdIndexRoute
   ProtectedSalesPeopleDistributorsCustomerIdIndexRoute: typeof ProtectedSalesPeopleDistributorsCustomerIdIndexRoute
   ProtectedSalesPeopleOrderBookersOrderBookerIdIndexRoute: typeof ProtectedSalesPeopleOrderBookersOrderBookerIdIndexRoute
@@ -1240,11 +1526,13 @@ interface ProtectedRouteRouteChildren {
 }
 
 const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
+  ProtectedReportsRouteRoute: ProtectedReportsRouteRouteWithChildren,
   ProtectedOperatorRunIdRoute: ProtectedOperatorRunIdRoute,
   ProtectedSuppliersSupplierIdRoute: ProtectedSuppliersSupplierIdRoute,
   ProtectedDashboardIndexRoute: ProtectedDashboardIndexRoute,
   ProtectedHrIndexRoute: ProtectedHrIndexRoute,
   ProtectedOperatorIndexRoute: ProtectedOperatorIndexRoute,
+  ProtectedOrderBookerIndexRoute: ProtectedOrderBookerIndexRoute,
   ProtectedSuppliersIndexRoute: ProtectedSuppliersIndexRoute,
   ProtectedUserManagementIndexRoute: ProtectedUserManagementIndexRoute,
   ProtectedManufacturingProductionsRunIdRouteRoute:
@@ -1272,6 +1560,10 @@ const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
     ProtectedManufacturingProductionsIndexRoute,
   ProtectedManufacturingRecipesIndexRoute:
     ProtectedManufacturingRecipesIndexRoute,
+  ProtectedOrderBookerCommissionIndexRoute:
+    ProtectedOrderBookerCommissionIndexRoute,
+  ProtectedOrderBookerOrdersIndexRoute: ProtectedOrderBookerOrdersIndexRoute,
+  ProtectedOrderBookerTripsIndexRoute: ProtectedOrderBookerTripsIndexRoute,
   ProtectedSalesConfigurationsIndexRoute:
     ProtectedSalesConfigurationsIndexRoute,
   ProtectedSalesCustomersIndexRoute: ProtectedSalesCustomersIndexRoute,
@@ -1289,10 +1581,14 @@ const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
   ProtectedFinanceExpensesSettingsIndexRoute:
     ProtectedFinanceExpensesSettingsIndexRoute,
   ProtectedHrPayrollEmployeeIndexRoute: ProtectedHrPayrollEmployeeIndexRoute,
+  ProtectedManufacturingProductsProductIdIndexRoute:
+    ProtectedManufacturingProductsProductIdIndexRoute,
   ProtectedSalesCustomersCustomerIdIndexRoute:
     ProtectedSalesCustomersCustomerIdIndexRoute,
   ProtectedSalesPeopleDistributorsCustomerIdLedgerRoute:
     ProtectedSalesPeopleDistributorsCustomerIdLedgerRoute,
+  ProtectedSalesPeopleSalesmenSalesmanIdLedgerRoute:
+    ProtectedSalesPeopleSalesmenSalesmanIdLedgerRoute,
   ProtectedInventoryItemItemTypeItemIdIndexRoute:
     ProtectedInventoryItemItemTypeItemIdIndexRoute,
   ProtectedSalesPeopleDistributorsCustomerIdIndexRoute:
